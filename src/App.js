@@ -6,7 +6,9 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, increment, ar
 
 // --- Firebase Configuration ---
 // This will be populated by the environment.
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const firebaseConfig = typeof __firebase_config !== 'undefined' 
+    ? JSON.parse(__firebase_config) 
+    : JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
 
 // --- Initialize Firebase ---
 const app = initializeApp(firebaseConfig);
