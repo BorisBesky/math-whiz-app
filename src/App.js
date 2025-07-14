@@ -1,3 +1,4 @@
+/* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronsRight, HelpCircle, Sparkles, X, Settings, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
