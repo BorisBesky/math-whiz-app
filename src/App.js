@@ -1,6 +1,6 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronsRight, HelpCircle, Sparkles, X, Settings, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle } from 'lucide-react';
+import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
@@ -213,6 +213,22 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     };
                 }
                 break;
+            default:
+                // Fallback to equivalent fractions if unexpected value
+                const def_f_num_eq = getRandomInt(1, 8);
+                const def_f_den_eq = getRandomInt(def_f_num_eq + 1, 9);
+                const def_multiplier = getRandomInt(2, 4);
+                const def_eq_num = def_f_num_eq * def_multiplier;
+                const def_eq_den = def_f_den_eq * def_multiplier;
+                question = {
+                    question: `Which fraction is equivalent to ${def_f_num_eq}/${def_f_den_eq}?`,
+                    correctAnswer: `${def_eq_num}/${def_eq_den}`,
+                    options: shuffleArray([`${def_eq_num}/${def_eq_den}`, `${def_f_num_eq + 1}/${def_f_den_eq}`, `${def_f_num_eq}/${def_f_den_eq + 1}`, `${def_eq_num}/${def_eq_den + def_multiplier}`]),
+                    hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
+                    standard: "3.NF.A.3.b",
+                    concept: "Equivalent Fractions"
+                };
+                break;
         }
         break;
       case 'Measurement & Data':
@@ -256,6 +272,20 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
                     standard: "3.MD.C.5",
                     concept: "Volume"
+                };
+                break;
+            default:
+                // Fallback to area question if unexpected value
+                const def_length = getRandomInt(3, 15);
+                const def_width = getRandomInt(2, 10);
+                const def_area = def_length * def_width;
+                question = { 
+                    question: `A rectangle has a length of ${def_length} cm and a width of ${def_width} cm. What is its area?`, 
+                    correctAnswer: `${def_area} cm²`, 
+                    options: shuffleArray([`${def_area} cm²`, `${(def_length + def_width) * 2} cm²`, `${def_length + def_width} cm²`, `${def_area + 10} cm²`]), 
+                    hint: "Area of a rectangle is found by multiplying its length and width.", 
+                    standard: "3.MD.C.7.b", 
+                    concept: "Area" 
                 };
                 break;
         }
