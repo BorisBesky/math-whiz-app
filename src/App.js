@@ -1,4 +1,4 @@
-/* global __firebase_config, __app_id, __initial_auth_token, __gemini_api_key */
+/* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
@@ -6,28 +6,29 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken }
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 
 // --- Firebase Configuration ---
-// This will be populated by the environment or build variables.
+// Using individual environment variables for better security
 let firebaseConfig = {};
 
 if (typeof __firebase_config !== 'undefined') {
   console.log('Using __firebase_config');
   firebaseConfig = JSON.parse(__firebase_config);
-} else if (process.env.REACT_APP_FIREBASE_CONFIG) {
-  console.log('Using process.env.REACT_APP_FIREBASE_CONFIG');
-  try {
-    firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
-    console.log('Parsed config:', firebaseConfig);
-    console.log('typeof firebaseConfig:', typeof firebaseConfig);
-    console.log('firebaseConfig keys:', Object.keys(firebaseConfig));
-    console.log('firebaseConfig values:', Object.values(firebaseConfig));
-  } catch (error) {
-    console.error('Failed to parse REACT_APP_FIREBASE_CONFIG:', error);
-  }
 } else {
-  console.log('No config found, using empty object');
+  // Use individual environment variables (these are safe to expose)
+  firebaseConfig = {
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID
+  };
+  
+  // Check if we have the minimum required config
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.warn('Firebase configuration incomplete. Some features may not work.');
+  }
 }
 
-console.log('Final firebaseConfig:', firebaseConfig);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -657,34 +658,25 @@ const App = () => {
   };
 
 
-  // --- Gemini API Call ---
+  // --- Gemini API Call via Netlify Function ---
   const callGeminiAPI = async (prompt) => {
       setIsGenerating(true);
       setGeneratedContent('');
       
-      const apiKey = typeof __gemini_api_key !== 'undefined'
-          ? ""
-          : (typeof process !== 'undefined' && process.env.REACT_APP_GEMINI_API_KEY ? process.env.REACT_APP_GEMINI_API_KEY : "");
-
       try {
-          let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-          const payload = { contents: chatHistory };
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-          const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const response = await fetch('/.netlify/functions/gemini-proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt })
+          });
           
-          if (!response.ok) { 
-              if (response.status === 401 || response.status === 403) {
-                  throw new Error(`Authentication failed. Please check if your Gemini API key is valid.`);
-              }
-              throw new Error(`API call failed with status: ${response.status}`); 
+          if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || `API call failed with status: ${response.status}`);
           }
 
           const result = await response.json();
-          if (result.candidates?.[0]?.content?.parts?.[0]) {
-              setGeneratedContent(result.candidates[0].content.parts[0].text);
-          } else {
-              setGeneratedContent("Sorry, I couldn't generate a response. Please try again.");
-          }
+          setGeneratedContent(result.content);
       } catch (error) {
           console.error("Gemini API error:", error);
           setGeneratedContent(`There was an error: ${error.message}`);
