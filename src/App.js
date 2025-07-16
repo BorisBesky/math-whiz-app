@@ -1,20 +1,124 @@
-/* global __firebase_config, __app_id, __initial_auth_token */
+/* global __firebase_config, __app_id, __initial_auth_token, __gemini_api_key */
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle } from 'lucide-react';
+import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 
 // --- Firebase Configuration ---
-// This will be populated by the environment.
-const firebaseConfig = typeof __firebase_config !== 'undefined' 
-    ? JSON.parse(__firebase_config) 
-    : JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+// This will be populated by the environment or build variables.
+let firebaseConfig = {};
 
-// --- Initialize Firebase ---
+if (typeof __firebase_config !== 'undefined') {
+  console.log('Using __firebase_config');
+  firebaseConfig = JSON.parse(__firebase_config);
+} else if (process.env.REACT_APP_FIREBASE_CONFIG) {
+  console.log('Using process.env.REACT_APP_FIREBASE_CONFIG');
+  try {
+    firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+    console.log('Parsed config:', firebaseConfig);
+    console.log('typeof firebaseConfig:', typeof firebaseConfig);
+    console.log('firebaseConfig keys:', Object.keys(firebaseConfig));
+    console.log('firebaseConfig values:', Object.values(firebaseConfig));
+  } catch (error) {
+    console.error('Failed to parse REACT_APP_FIREBASE_CONFIG:', error);
+  }
+} else {
+  console.log('No config found, using empty object');
+}
+
+console.log('Final firebaseConfig:', firebaseConfig);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// --- Pre-generated Concept Explanations ---
+const conceptExplanations = {
+  "Multiplication": `
+    <h4 class="font-bold text-lg mb-2">What is Multiplication?</h4>
+    <p class="mb-4">Think of multiplication as a super-fast way of adding! It's for when you have groups of the same number.</p>
+    <p class="mb-2"><strong>Example: The Cookie Plate</strong></p>
+    <p class="mb-2">Imagine you have 4 plates, and each plate has 3 cookies.</p>
+    <div class="text-2xl mb-2">🍪🍪🍪 &nbsp; 🍪🍪🍪 &nbsp; 🍪🍪🍪 &nbsp; 🍪🍪🍪</div>
+    <p class="mb-2">You could add them up: <code class="bg-gray-200 p-1 rounded">3 + 3 + 3 + 3 = 12</code></p>
+    <p class="mb-4">But the faster way is to multiply! We say we have "4 groups of 3".</p>
+    <p class="mb-2">We write this as: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">4 x 3 = 12</code></p>
+    <p>The 'x' symbol means "times" or "groups of". So, 4 times 3 is 12. It's the same answer, just much quicker!</p>
+  `,
+  "Division": `
+    <h4 class="font-bold text-lg mb-2">What is Division?</h4>
+    <p class="mb-4">Division is all about sharing equally or splitting something into equal groups.</p>
+    <p class="mb-2"><strong>Example: Sharing Stickers</strong></p>
+    <p class="mb-2">Let's say you have 12 stickers and you want to share them equally among 3 friends.</p>
+    <div class="text-2xl mb-2">⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐</div>
+    <p class="mb-2">How many stickers does each friend get? You are dividing 12 into 3 groups.</p>
+    <p class="mb-4">We write this as: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">12 ÷ 3 = 4</code></p>
+    <p class="mb-2">The '÷' symbol means "divide". So, 12 divided by 3 is 4. Each friend gets 4 stickers!</p>
+    <p><strong>Hint:</strong> Division is the opposite of multiplication! If you know <code class="bg-gray-200 p-1 rounded">3 x 4 = 12</code>, then you also know <code class="bg-gray-200 p-1 rounded">12 ÷ 3 = 4</code>.</p>
+  `,
+  "Fractions": `
+    <h4 class="font-bold text-lg mb-2">What are Fractions?</h4>
+    <p class="mb-4">A fraction is a part of a whole thing. Think of a pizza!</p>
+    <p class="mb-2"><strong>Example: The Pizza Slice</strong></p>
+    <p class="mb-2">A whole pizza is one whole thing. If you cut it into 4 equal slices, each slice is a fraction of the whole pizza.</p>
+    <div class="text-2xl mb-2">🍕</div>
+    <p class="mb-2">A fraction has two parts:</p>
+    <ul>
+        <li class="mb-2">The <strong>Numerator</strong> (top number) tells you how many slices you have.</li>
+        <li class="mb-2">The <strong>Denominator</strong> (bottom number) tells you how many equal slices the whole pizza was cut into.</li>
+    </ul>
+    <p class="mt-4">So, if you have 1 slice of a pizza cut into 4, you have <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">1/4</code> of the pizza!</p>
+  `,
+  "Area": `
+    <h4 class="font-bold text-lg mb-2">What is Area?</h4>
+    <p class="mb-4">Area is the amount of space inside a flat, 2D shape. It's like counting the squares on a chocolate bar!</p>
+    <p class="mb-2"><strong>Example: A Chocolate Bar</strong></p>
+    <p class="mb-2">Imagine a chocolate bar that is 4 squares long and 3 squares wide.</p>
+    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
+[ ] [ ] [ ] [ ]
+[ ] [ ] [ ] [ ]
+[ ] [ ] [ ] [ ]
+    </pre>
+    <p class="mb-2">To find the area, you can count all the squares (there are 12), or you can use multiplication!</p>
+    <p class="mb-4">The formula is: <code class="bg-gray-200 p-1 rounded">Area = Length x Width</code></p>
+    <p>So, for our chocolate bar: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">4 x 3 = 12</code> square units.</p>
+  `,
+  "Perimeter": `
+    <h4 class="font-bold text-lg mb-2">What is Perimeter?</h4>
+    <p class="mb-4">Perimeter is the total distance all the way around the outside of a shape. It's like walking around a fence that encloses a park.</p>
+    <p class="mb-2"><strong>Example: A Rectangular Park</strong></p>
+    <p class="mb-2">Imagine a park that is 5 meters long and 3 meters wide.</p>
+    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
+      5 meters
++-----------------+
+|                 | 3 meters
++-----------------+
+    </pre>
+    <p class="mb-2">To find the perimeter, you add up the lengths of all four sides:</p>
+    <p class="mb-4"><code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">5 + 3 + 5 + 3 = 16</code> meters.</p>
+    <p>You have to walk 16 meters to go all the way around the park's fence!</p>
+  `,
+  "Volume": `
+    <h4 class="font-bold text-lg mb-2">What is Volume?</h4>
+    <p class="mb-4">Volume is the amount of space a 3D object takes up. Think about how many Lego blocks it takes to build a box.</p>
+    <p class="mb-2"><strong>Example: Building with Blocks</strong></p>
+    <p class="mb-2">Imagine you build a small box with Lego blocks. It's 3 blocks long, 2 blocks wide, and 2 blocks high.</p>
+    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
+   /---/---/---/|
+  /---/---/---/|/|
+ /---/---/---/|/|/|
++-----------+ |/|
+|           |/|/
+|           |/
++-----------+
+    </pre>
+    <p class="mb-2">To find the volume, you multiply all three measurements:</p>
+    <p class="mb-4"><code class="bg-gray-200 p-1 rounded">Volume = Length x Width x Height</code></p>
+    <p>So, for our box: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">3 x 2 x 2 = 12</code> blocks.</p>
+    <p>The volume of the box is 12 blocks!</p>
+  `
+};
+
 
 // --- Helper Functions ---
 const getTodayDateString = () => {
@@ -126,7 +230,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     options: shuffleArray([`${eq_num}/${eq_den}`, `${f_num_eq + 1}/${f_den_eq}`, `${f_num_eq}/${f_den_eq + 1}`, `${eq_num}/${eq_den + multiplier}`]),
                     hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
                     standard: "3.NF.A.3.b",
-                    concept: "Equivalent Fractions"
+                    concept: "Fractions"
                 };
                 break;
             case 2: // Fraction Addition with unlike denominators
@@ -149,7 +253,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     ]),
                     hint: "To add fractions with different denominators, you first need to find a common denominator!",
                     standard: "4.NF.B.3", // Note: This is a 4th grade standard
-                    concept: "Fraction Addition"
+                    concept: "Fractions"
                 };
                 break;
             case 3: // Fraction Subtraction with unlike denominators
@@ -180,7 +284,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     ]),
                     hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
                     standard: "4.NF.B.3", // Note: This is a 4th grade standard
-                    concept: "Fraction Subtraction"
+                    concept: "Fractions"
                 };
                 break;
             case 4: // Fraction Comparison
@@ -196,7 +300,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                         options: shuffleArray(['<', '>', '=']),
                         hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
                         standard: "3.NF.A.3.d",
-                        concept: "Comparing Fractions"
+                        concept: "Fractions"
                     };
                 } else { // Same numerator
                     const comp_num = getRandomInt(1, 10);
@@ -209,7 +313,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                         options: shuffleArray(['<', '>', '=']),
                         hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
                         standard: "3.NF.A.3.d",
-                        concept: "Comparing Fractions"
+                        concept: "Fractions"
                     };
                 }
                 break;
@@ -226,7 +330,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     options: shuffleArray([`${def_eq_num}/${def_eq_den}`, `${def_f_num_eq + 1}/${def_f_den_eq}`, `${def_f_num_eq}/${def_f_den_eq + 1}`, `${def_eq_num}/${def_eq_den + def_multiplier}`]),
                     hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
                     standard: "3.NF.A.3.b",
-                    concept: "Equivalent Fractions"
+                    concept: "Fractions"
                 };
                 break;
         }
@@ -557,13 +661,24 @@ const App = () => {
   const callGeminiAPI = async (prompt) => {
       setIsGenerating(true);
       setGeneratedContent('');
+      
+      const apiKey = typeof __gemini_api_key !== 'undefined'
+          ? ""
+          : (typeof process !== 'undefined' && process.env.REACT_APP_GEMINI_API_KEY ? process.env.REACT_APP_GEMINI_API_KEY : "");
+
       try {
           let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
           const payload = { contents: chatHistory };
-          const apiKey = ""; 
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
           const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
+          
+          if (!response.ok) { 
+              if (response.status === 401 || response.status === 403) {
+                  throw new Error(`Authentication failed. Please check if your Gemini API key is valid.`);
+              }
+              throw new Error(`API call failed with status: ${response.status}`); 
+          }
+
           const result = await response.json();
           if (result.candidates?.[0]?.content?.parts?.[0]) {
               setGeneratedContent(result.candidates[0].content.parts[0].text);
@@ -572,17 +687,17 @@ const App = () => {
           }
       } catch (error) {
           console.error("Gemini API error:", error);
-          setGeneratedContent("There was an error connecting to the AI.");
+          setGeneratedContent(`There was an error: ${error.message}`);
       } finally {
           setIsGenerating(false);
       }
   };
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
-    const prompt = `Explain the math concept of "${concept}" to a 3rd grader. Be thorough but keep the language simple and encouraging. Use a text-based visual example or a simple analogy to make it very clear. For example, for Area, you could describe a grid of chocolate squares. For Perimeter, walking around a park. For Volume, building with lego blocks.`;
+    const explanation = conceptExplanations[concept] || "<p>Sorry, no explanation is available for this concept yet!</p>";
     setModalTitle(`✨ What is ${concept}?`);
+    setGeneratedContent(explanation);
     setShowModal(true);
-    callGeminiAPI(prompt);
   };
   const handleCreateStoryProblem = () => {
     const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long and then state the question clearly. At the end, on a new line, provide the answer in the format "Answer: [your answer]".`;
@@ -604,6 +719,9 @@ const App = () => {
         <button onClick={() => setQuizState('dashboard')} className="p-2 rounded-full hover:bg-gray-200 transition">
             <BarChart2 size={24} className="text-blue-600" />
         </button>
+        <button onClick={returnToTopics} className="p-2 rounded-full hover:bg-gray-200 transition">
+            <Home size={24} className="text-green-600" />
+        </button>
     </div>
   );
 
@@ -618,7 +736,7 @@ const App = () => {
     const topicsPracticed = todaysProgress ? Object.keys(todaysProgress).filter(key => key !== 'all') : [];
 
     return (
-        <div className="w-full max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
+        <div className="w-full max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
             <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Daily Goal Progress</h2>
             <div className="mb-8">
                 <div className="flex items-center gap-4 mb-2">
@@ -677,7 +795,7 @@ const App = () => {
 
   const renderStore = () => {
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
+      <div className="w-full max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">Rewards Store</h2>
         <p className="text-lg text-gray-600 mb-8 text-center">Use your coins to buy new backgrounds!</p>
         
@@ -723,7 +841,7 @@ const App = () => {
   };
 
   const renderTopicSelection = () => (
-    <div className="text-center">
+    <div className="text-center mt-20">
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Math Whiz!</h1>
       <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -737,7 +855,7 @@ const App = () => {
     const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
-      <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+      <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl mt-20">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
           <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
@@ -779,7 +897,7 @@ const App = () => {
     else if (percentage >= 60) { message = "Good Job! Keep practicing!"; emoji = '👍'; }
     else { message = "Nice try! Don't give up, practice makes perfect!"; emoji = '🧠'; }
     return (
-      <div className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto">
+      <div className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
         <div className="text-6xl mb-4">{emoji}</div>
         <p className="text-xl text-gray-600 mb-2">{message}</p>
@@ -797,11 +915,26 @@ const App = () => {
     if (!showModal) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative">
-                <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
-                {isGenerating && (<div className="flex items-center justify-center h-32"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>)}
-                {generatedContent && (<div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{generatedContent}</div>)}
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative flex flex-col max-h-[80vh]">
+                <div className='flex-shrink-0'>
+                    <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+                        <X size={24} />
+                    </button>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
+                </div>
+                <div className="flex-grow overflow-y-auto pr-4">
+                    {isGenerating && (
+                        <div className="flex items-center justify-center h-32">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        </div>
+                    )}
+                    {generatedContent && (
+                        <div 
+                            className="text-gray-700 whitespace-pre-wrap leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: generatedContent }}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     );
