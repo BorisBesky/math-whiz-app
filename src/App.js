@@ -426,6 +426,7 @@ const App = () => {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [topicToResume, setTopicToResume] = useState(null);
   const [purchaseFeedback, setPurchaseFeedback] = useState('');
+  const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] = useState(false);
 
 
   const questionStartTime = useRef(null);
@@ -462,7 +463,8 @@ const App = () => {
               progress: { [today]: { all: { correct: 0, incorrect: 0, timeSpent: 0 } } },
               pausedQuizzes: {},
               ownedBackgrounds: ['default'],
-              activeBackground: 'default'
+              activeBackground: 'default',
+              dailyStories: { [today]: {} }
             };
             setDoc(userDocRef, initialData).then(() => setUserData(initialData));
           }
@@ -508,6 +510,7 @@ const App = () => {
     questionStartTime.current = Date.now();
     resetQuiz();
     setShowResumeModal(false);
+    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for new quiz
   };
 
   const resumePausedQuiz = () => {
@@ -519,6 +522,7 @@ const App = () => {
     setQuizState('inProgress');
     questionStartTime.current = Date.now();
     setShowResumeModal(false);
+    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
   };
 
   const pauseQuiz = async () => {
@@ -566,10 +570,10 @@ const App = () => {
       setScore(score + 1);
       feedbackMessage = (
         <span className="flex items-center justify-center gap-2">
-          Correct! +5 Coins! <Coins className="text-yellow-500" />
+          Correct! +1 Coin! <Coins className="text-yellow-500" />
         </span>
       );
-      updates.coins = increment(5);
+      updates.coins = increment(1);
       updates[`${allProgress_path}.correct`] = increment(1);
       updates[`${topicProgress_path}.correct`] = increment(1);
     } else {
@@ -586,15 +590,15 @@ const App = () => {
         <span className="flex flex-col items-center justify-center gap-1">
           {isCorrect && (
             <span className="flex items-center justify-center gap-2">
-              Correct! +5 Coins! <Coins className="text-yellow-500" />
+              Correct! +1 Coin! <Coins className="text-yellow-500" />
             </span>
           )}
           <span className="flex items-center justify-center gap-2 font-bold">
-            Daily Goal Met! +50 Bonus Coins! <Award className="text-orange-500" />
+            Daily Goal Met! +10 Bonus Coins! <Award className="text-orange-500" />
           </span>
         </span>
       );
-      updates.coins = increment(50);
+      updates.coins = increment(10);
     }
     
     setFeedback({ message: feedbackMessage, type: feedbackType });
@@ -636,7 +640,7 @@ const App = () => {
 
   // --- Store Logic ---
   const handlePurchase = async (item) => {
-    const cost = userData.dailyGoal;
+    const cost = 20;
     if (userData.coins >= cost) {
       const userDocRef = getUserDocRef(user.uid);
       await updateDoc(userDocRef, {
@@ -691,10 +695,38 @@ const App = () => {
     setGeneratedContent(explanation);
     setShowModal(true);
   };
-  const handleCreateStoryProblem = () => {
+  const handleCreateStoryProblem = async () => {
+    if (storyCreatedForCurrentQuiz) {
+      setFeedback({ message: "You've already created a story problem for this quiz!", type: 'error' });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+
+    const today = getTodayDateString();
+    const todaysStories = userData?.dailyStories?.[today] || {};
+    
+    // Check if user has already created a story for this topic today
+    if (todaysStories[currentTopic]) {
+      setFeedback({ message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`, type: 'error' });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+
     const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long and then state the question clearly. At the end, on a new line, provide the answer in the format "Answer: [your answer]".`;
     setModalTitle(`✨ A Fun Story Problem!`);
     setShowModal(true);
+    
+    // Update user data to mark that a story has been created for this topic today
+    if (user) {
+      const userDocRef = getUserDocRef(user.uid);
+      if (userDocRef) {
+        await updateDoc(userDocRef, {
+          [`dailyStories.${today}.${currentTopic}`]: true
+        });
+      }
+    }
+    
+    setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
     callGeminiAPI(prompt);
   };
 
@@ -801,7 +833,7 @@ const App = () => {
           {storeItems.map(item => {
             const isOwned = userData.ownedBackgrounds.includes(item.id);
             const isActive = userData.activeBackground === item.id;
-            const cost = userData.dailyGoal;
+            const cost = 20;
 
             return (
               <div key={item.id} className="border rounded-lg p-4 flex flex-col items-center justify-between bg-gray-50 shadow-md">
@@ -847,37 +879,70 @@ const App = () => {
     const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
-      <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl mt-20">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
-          <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
+      <>
+        <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
+            <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6"><div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div>
+          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">{currentQuestion.question}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = userAnswer === option;
+              const isCorrect = option === currentQuestion.correctAnswer;
+              let buttonClass = 'bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400';
+              if (isAnswered) {
+                if (isCorrect) buttonClass = 'bg-green-100 border-2 border-green-500 text-green-800';
+                else if (isSelected && !isCorrect) buttonClass = 'bg-red-100 border-2 border-red-500 text-red-800';
+                else buttonClass = 'bg-gray-100 border-2 border-gray-300 text-gray-500';
+              } else if (isSelected) {
+                buttonClass = 'bg-blue-100 border-2 border-blue-500';
+              }
+              return (<button key={index} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}>{option}</button>);
+            })}
+          </div>
+          {showHint && !isAnswered && (<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg"><p><span className="font-bold">Hint:</span> {currentQuestion.hint}</p></div>)}
+
+          {/* Bottom layout: two rows, responsive */}
+          <div className="mt-auto w-full">
+            {/* First row: Explain Concept | Show/Hide Hint */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <button onClick={handleExplainConcept} className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition">
+                <Sparkles size={20} /> Explain the Concept
+              </button>
+              <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}
+              </button>
+            </div>
+            {/* Second row: Response Field | Check/Next Button */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Response Field: show feedback, selected answer, or prompt to select */}
+              <div className={`flex items-center justify-center w-full min-h-[48px] rounded-lg border px-4 text-lg font-medium ${
+                feedback 
+                  ? feedback.type === 'success' 
+                    ? 'bg-green-100 border-green-500 text-green-800' 
+                    : 'bg-red-100 border-red-500 text-red-800'
+                  : 'bg-gray-50 border-gray-200 text-gray-700'
+              }`}>
+                {feedback 
+                  ? feedback.message
+                  : userAnswer !== null
+                    ? <span>Selected: <span className="font-bold">{userAnswer}</span></span>
+                    : <span className="italic text-gray-400">Select an answer</span>
+                }
+              </div>
+              <div className="flex items-center justify-center w-full">
+                {isAnswered
+                  ? <button onClick={nextQuestion} className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">Next Question <ChevronsRight size={20} /></button>
+                  : <button onClick={checkAnswer} disabled={userAnswer === null} className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed">Check Answer</button>
+                }
+              </div>
+            </div>
+          </div>
+          <div className="text-center mt-4"><p className="text-xs text-gray-400">CA Standard: {currentQuestion.standard}</p></div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6"><div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div>
-        <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">{currentQuestion.question}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {currentQuestion.options.map((option, index) => {
-            const isSelected = userAnswer === option;
-            const isCorrect = option === currentQuestion.correctAnswer;
-            let buttonClass = 'bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400';
-            if (isAnswered) {
-              if (isCorrect) buttonClass = 'bg-green-100 border-2 border-green-500 text-green-800';
-              else if (isSelected && !isCorrect) buttonClass = 'bg-red-100 border-2 border-red-500 text-red-800';
-              else buttonClass = 'bg-gray-100 border-2 border-gray-300 text-gray-500';
-            } else if (isSelected) {
-              buttonClass = 'bg-blue-100 border-2 border-blue-500';
-            }
-            return (<button key={index} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}>{option}</button>);
-          })}
-        </div>
-        {feedback && (<div className={`p-4 rounded-lg mb-4 text-center font-semibold ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{feedback.message}</div>)}
-        {showHint && !isAnswered && (<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg"><p><span className="font-bold">Hint:</span> {currentQuestion.hint}</p></div>)}
-        <div className="flex items-center justify-start gap-4 mb-6"><button onClick={handleExplainConcept} className="flex items-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition"><Sparkles size={20} /> Explain the Concept</button></div>
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6">
-          <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="flex items-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed mb-4 sm:mb-0"><HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}</button>
-          {isAnswered ? (<button onClick={nextQuestion} className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">Next Question <ChevronsRight size={20} /></button>) : (<button onClick={checkAnswer} disabled={userAnswer === null} className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed">Check Answer</button>)}
-        </div>
-        <div className="text-center mt-4"><p className="text-xs text-gray-400">CA Standard: {currentQuestion.standard}</p></div>
-      </div>
+      </>
     );
   };
 
@@ -888,14 +953,40 @@ const App = () => {
     else if (percentage >= 80) { message = "Excellent Work! You really know your stuff!"; emoji = '🎉'; }
     else if (percentage >= 60) { message = "Good Job! Keep practicing!"; emoji = '👍'; }
     else { message = "Nice try! Don't give up, practice makes perfect!"; emoji = '🧠'; }
+
+    // Check if user can create a story for this topic today
+    const today = getTodayDateString();
+    const todaysStories = userData?.dailyStories?.[today] || {};
+    const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
+
     return (
       <div className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
         <div className="text-6xl mb-4">{emoji}</div>
         <p className="text-xl text-gray-600 mb-2">{message}</p>
         <p className="text-2xl font-bold text-blue-600 mb-6">You scored {score} out of {currentQuiz.length} ({percentage}%)</p>
+        {feedback && (
+          <div className={`p-4 rounded-lg mb-4 text-center font-semibold ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {feedback.message}
+          </div>
+        )}
         <div className="flex flex-col gap-4 justify-center">
-            <button onClick={handleCreateStoryProblem} className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2"><Sparkles size={20} /> Create a Story Problem</button>
+            {canCreateStory ? (
+              <button onClick={handleCreateStoryProblem} className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                <Sparkles size={20} /> Create a Story Problem
+              </button>
+            ) : (
+              <div className="bg-gray-100 text-gray-600 font-medium py-3 px-6 rounded-lg flex flex-col items-center justify-center gap-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={20} /> Story Problem Unavailable
+                </div>
+                <div className="text-sm text-gray-500">
+                  {todaysStories[currentTopic] 
+                    ? `You've already created a story for ${currentTopic} today!` 
+                    : "You've already created a story for this quiz!"}
+                </div>
+              </div>
+            )}
             <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
             <button onClick={returnToTopics} className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105">Choose New Topic</button>
         </div>
