@@ -4,6 +4,7 @@ import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause,
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
+import conceptExplanationsData from './conceptExplanations.json';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -32,94 +33,6 @@ if (typeof __firebase_config !== 'undefined') {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// --- Pre-generated Concept Explanations ---
-const conceptExplanations = {
-  "Multiplication": `
-    <h4 class="font-bold text-lg mb-2">What is Multiplication?</h4>
-    <p class="mb-4">Think of multiplication as a super-fast way of adding! It's for when you have groups of the same number.</p>
-    <p class="mb-2"><strong>Example: The Cookie Plate</strong></p>
-    <p class="mb-2">Imagine you have 4 plates, and each plate has 3 cookies.</p>
-    <div class="text-2xl mb-2">🍪🍪🍪 &nbsp; 🍪🍪🍪 &nbsp; 🍪🍪🍪 &nbsp; 🍪🍪🍪</div>
-    <p class="mb-2">You could add them up: <code class="bg-gray-200 p-1 rounded">3 + 3 + 3 + 3 = 12</code></p>
-    <p class="mb-4">But the faster way is to multiply! We say we have "4 groups of 3".</p>
-    <p class="mb-2">We write this as: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">4 x 3 = 12</code></p>
-    <p>The 'x' symbol means "times" or "groups of". So, 4 times 3 is 12. It's the same answer, just much quicker!</p>
-  `,
-  "Division": `
-    <h4 class="font-bold text-lg mb-2">What is Division?</h4>
-    <p class="mb-4">Division is all about sharing equally or splitting something into equal groups.</p>
-    <p class="mb-2"><strong>Example: Sharing Stickers</strong></p>
-    <p class="mb-2">Let's say you have 12 stickers and you want to share them equally among 3 friends.</p>
-    <div class="text-2xl mb-2">⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐</div>
-    <p class="mb-2">How many stickers does each friend get? You are dividing 12 into 3 groups.</p>
-    <p class="mb-4">We write this as: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">12 ÷ 3 = 4</code></p>
-    <p class="mb-2">The '÷' symbol means "divide". So, 12 divided by 3 is 4. Each friend gets 4 stickers!</p>
-    <p><strong>Hint:</strong> Division is the opposite of multiplication! If you know <code class="bg-gray-200 p-1 rounded">3 x 4 = 12</code>, then you also know <code class="bg-gray-200 p-1 rounded">12 ÷ 3 = 4</code>.</p>
-  `,
-  "Fractions": `
-    <h4 class="font-bold text-lg mb-2">What are Fractions?</h4>
-    <p class="mb-4">A fraction is a part of a whole thing. Think of a pizza!</p>
-    <p class="mb-2"><strong>Example: The Pizza Slice</strong></p>
-    <p class="mb-2">A whole pizza is one whole thing. If you cut it into 4 equal slices, each slice is a fraction of the whole pizza.</p>
-    <div class="text-2xl mb-2">🍕</div>
-    <p class="mb-2">A fraction has two parts:</p>
-    <ul>
-        <li class="mb-2">The <strong>Numerator</strong> (top number) tells you how many slices you have.</li>
-        <li class="mb-2">The <strong>Denominator</strong> (bottom number) tells you how many equal slices the whole pizza was cut into.</li>
-    </ul>
-    <p class="mt-4">So, if you have 1 slice of a pizza cut into 4, you have <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">1/4</code> of the pizza!</p>
-  `,
-  "Area": `
-    <h4 class="font-bold text-lg mb-2">What is Area?</h4>
-    <p class="mb-4">Area is the amount of space inside a flat, 2D shape. It's like counting the squares on a chocolate bar!</p>
-    <p class="mb-2"><strong>Example: A Chocolate Bar</strong></p>
-    <p class="mb-2">Imagine a chocolate bar that is 4 squares long and 3 squares wide.</p>
-    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
-[ ] [ ] [ ] [ ]
-[ ] [ ] [ ] [ ]
-[ ] [ ] [ ] [ ]
-    </pre>
-    <p class="mb-2">To find the area, you can count all the squares (there are 12), or you can use multiplication!</p>
-    <p class="mb-4">The formula is: <code class="bg-gray-200 p-1 rounded">Area = Length x Width</code></p>
-    <p>So, for our chocolate bar: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">4 x 3 = 12</code> square units.</p>
-  `,
-  "Perimeter": `
-    <h4 class="font-bold text-lg mb-2">What is Perimeter?</h4>
-    <p class="mb-4">Perimeter is the total distance all the way around the outside of a shape. It's like walking around a fence that encloses a park.</p>
-    <p class="mb-2"><strong>Example: A Rectangular Park</strong></p>
-    <p class="mb-2">Imagine a park that is 5 meters long and 3 meters wide.</p>
-    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
-      5 meters
-+-----------------+
-|                 | 3 meters
-+-----------------+
-    </pre>
-    <p class="mb-2">To find the perimeter, you add up the lengths of all four sides:</p>
-    <p class="mb-4"><code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">5 + 3 + 5 + 3 = 16</code> meters.</p>
-    <p>You have to walk 16 meters to go all the way around the park's fence!</p>
-  `,
-  "Volume": `
-    <h4 class="font-bold text-lg mb-2">What is Volume?</h4>
-    <p class="mb-4">Volume is the amount of space a 3D object takes up. Think about how many Lego blocks it takes to build a box.</p>
-    <p class="mb-2"><strong>Example: Building with Blocks</strong></p>
-    <p class="mb-2">Imagine you build a small box with Lego blocks. It's 3 blocks long, 2 blocks wide, and 2 blocks high.</p>
-    <pre class="bg-gray-100 p-2 rounded text-center mb-2 font-mono">
-   /---/---/---/|
-  /---/---/---/|/|
- /---/---/---/|/|/|
-+-----------+ |/|
-|           |/|/
-|           |/
-+-----------+
-    </pre>
-    <p class="mb-2">To find the volume, you multiply all three measurements:</p>
-    <p class="mb-4"><code class="bg-gray-200 p-1 rounded">Volume = Length x Width x Height</code></p>
-    <p>So, for our box: <code class="bg-blue-100 text-blue-800 font-bold p-1 rounded">3 x 2 x 2 = 12</code> blocks.</p>
-    <p>The volume of the box is 12 blocks!</p>
-  `
-};
-
 
 // --- Helper Functions ---
 const getTodayDateString = () => {
@@ -690,9 +603,15 @@ const App = () => {
   };
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
-    const explanation = conceptExplanations[concept] || "<p>Sorry, no explanation is available for this concept yet!</p>";
-    setModalTitle(`✨ What is ${concept}?`);
-    setGeneratedContent(explanation);
+    const explanationData = conceptExplanationsData[concept];
+
+    if (explanationData) {
+        setModalTitle(`✨ ${explanationData.title}`);
+        setGeneratedContent(explanationData.content);
+    } else {
+        setModalTitle(`✨ What is ${concept}?`);
+        setGeneratedContent("<p>Sorry, no explanation is available for this concept yet!</p>");
+    }
     setShowModal(true);
   };
   const handleCreateStoryProblem = async () => {
