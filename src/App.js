@@ -652,7 +652,7 @@ const App = () => {
 
   // --- UI Rendering ---
   const renderHeader = () => (
-    <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
+    <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
         <div className="flex items-center gap-2 text-yellow-600 font-bold px-2">
             <Coins size={24} />
             <span>{userData?.coins || 0}</span>
@@ -680,7 +680,7 @@ const App = () => {
     const topicsPracticed = todaysProgress ? Object.keys(todaysProgress).filter(key => key !== 'all') : [];
 
     return (
-        <div className="w-full max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
+        <div className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
             <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Daily Goal Progress</h2>
             <div className="mb-8">
                 <div className="flex items-center gap-4 mb-2">
@@ -739,7 +739,7 @@ const App = () => {
 
   const renderStore = () => {
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
+      <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">Rewards Store</h2>
         <p className="text-lg text-gray-600 mb-8 text-center">Use your coins to buy new backgrounds!</p>
         
@@ -789,7 +789,7 @@ const App = () => {
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Math Whiz!</h1>
       <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {quizTopics.map(topic => (<button key={topic} onClick={() => handleTopicSelection(topic)} className="w-full bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group"><div className="p-4 bg-blue-100 rounded-full mb-4 transition-colors duration-300 group-hover:bg-blue-500"><Sparkles className="text-blue-500 group-hover:text-white transition-colors duration-300" /></div><h3 className="text-xl md:text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-600">{topic}</h3><p className="text-gray-500 mt-2">Practice your skills!</p></button>))}
+        {quizTopics.map(topic => (<button key={topic} onClick={() => handleTopicSelection(topic)} className="w-full bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group"><div className="p-4 bg-blue-100 rounded-full mb-4 transition-colors duration-300 group-hover:bg-blue-500"><Sparkles className="text-blue-500 group-hover:text-white transition-colors duration-300" /></div><h3 className="text-xl md:text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-600">{topic}</h3><p className="text-gray-500 mt-2">Practice your skills!</p></button>))}
       </div>
     </div>
   );
@@ -800,7 +800,7 @@ const App = () => {
     const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
       <>
-        <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
+        <div className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
             <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
@@ -880,7 +880,7 @@ const App = () => {
     const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
     return (
-      <div className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
+      <div className="text-center bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
         <div className="text-6xl mb-4">{emoji}</div>
         <p className="text-xl text-gray-600 mb-2">{message}</p>
@@ -918,7 +918,7 @@ const App = () => {
     if (!showModal) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative flex flex-col max-h-[80vh]">
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-lg w-full p-6 relative flex flex-col max-h-[80vh]">
                 <div className='flex-shrink-0'>
                     <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                         <X size={24} />
@@ -947,7 +947,7 @@ const App = () => {
     if (!showResumeModal) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Paused Quiz Found!</h3>
           <p className="text-gray-600 mb-8">Do you want to continue your quiz on "{topicToResume}" or start a new one?</p>
           <div className="flex flex-col gap-4">
