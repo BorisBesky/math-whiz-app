@@ -498,21 +498,22 @@ const App = () => {
   
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
     const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
-    if (userData.dailyGoal > 0 && totalAnsweredToday + 1 === userData.dailyGoal) {
+    if (userData.dailyGoal > 0 && ((totalAnsweredToday + 1) % userData.dailyGoal === 0)) {
       feedbackType = 'success';
+      const DAILY_GOAL_BONUS = 10;
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
           {isCorrect && (
-            <span className="flex items-center justify-center gap-2">
-              Correct! +1 Coin! <Coins className="text-yellow-500" />
-            </span>
+        <span className="flex items-center justify-center gap-2">
+          Correct! +1 Coin! <Coins className="text-yellow-500" />
+        </span>
           )}
           <span className="flex items-center justify-center gap-2 font-bold">
-            Daily Goal Met! +10 Bonus Coins! <Award className="text-orange-500" />
+        Daily Goal Met! +{DAILY_GOAL_BONUS} Bonus Coins! <Award className="text-orange-500" />
           </span>
         </span>
       );
-      updates.coins = increment(10);
+      updates.coins = increment(DAILY_GOAL_BONUS);
     }
     
     setFeedback({ message: feedbackMessage, type: feedbackType });
