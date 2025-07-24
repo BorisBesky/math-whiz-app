@@ -378,7 +378,8 @@ const App = () => {
               pausedQuizzes: {},
               ownedBackgrounds: ['default'],
               activeBackground: 'default',
-              dailyStories: { [today]: {} }
+              dailyStories: { [today]: {} },
+              answeredQuestions: [] // field to track all answered questions
             };
             setDoc(userDocRef, initialData).then(() => setUserData(initialData));
           }
@@ -458,7 +459,7 @@ const App = () => {
     setUserAnswer(option);
   };
 
-  const checkAnswer = async () => {
+const checkAnswer = async () => {
     if (userAnswer === null || !user) return;
   
     setIsAnswered(true);
@@ -475,6 +476,26 @@ const App = () => {
     // Increment time for both all and topic-specific stats
     updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
     updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
+
+    // Create question record for tracking
+    const questionRecord = {
+      id: `${Date.now()}_${currentQuestionIndex}`, // Unique ID
+      timestamp: new Date().toISOString(),
+      date: today,
+      topic: currentTopic,
+      question: currentQuiz[currentQuestionIndex].question,
+      correctAnswer: currentQuiz[currentQuestionIndex].correctAnswer,
+      userAnswer: userAnswer,
+      isCorrect: isCorrect,
+      timeTaken: timeTaken,
+      options: currentQuiz[currentQuestionIndex].options,
+      hint: currentQuiz[currentQuestionIndex].hint,
+      standard: currentQuiz[currentQuestionIndex].standard,
+      concept: currentQuiz[currentQuestionIndex].concept
+    };
+
+    // Add question to answered questions array
+    updates[`answeredQuestions`] = arrayUnion(questionRecord);
   
     let feedbackMessage;
     let feedbackType = 'error';
@@ -679,9 +700,13 @@ const App = () => {
     const avgTime = totalAnswered > 0 ? (overallStats.timeSpent / totalAnswered).toFixed(1) : 0;
     
     const topicsPracticed = todaysProgress ? Object.keys(todaysProgress).filter(key => key !== 'all') : [];
+    
+    // Get today's answered questions
+    const todaysQuestions = userData?.answeredQuestions?.filter(q => q.date === today) || [];
+    const totalQuestionsAnswered = userData?.answeredQuestions?.length || 0;
 
     return (
-        <div className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
+        <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
             <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Daily Goal Progress</h2>
             <div className="mb-8">
                 <div className="flex items-center gap-4 mb-2">
@@ -692,10 +717,11 @@ const App = () => {
             </div>
             
             <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">Today's Performance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8">
                 <div className="bg-blue-100 p-4 rounded-lg"><p className="text-lg text-blue-800">Total Answered</p><p className="text-3xl font-bold text-blue-600">{totalAnswered}</p></div>
                 <div className="bg-green-100 p-4 rounded-lg"><p className="text-lg text-green-800">Overall Accuracy</p><p className="text-3xl font-bold text-green-600">{accuracy}%</p></div>
                 <div className="bg-yellow-100 p-4 rounded-lg"><p className="text-lg text-yellow-800">Avg. Time</p><p className="text-3xl font-bold text-yellow-600">{avgTime}s</p></div>
+                <div className="bg-purple-100 p-4 rounded-lg"><p className="text-lg text-purple-800">All Time Total</p><p className="text-3xl font-bold text-purple-600">{totalQuestionsAnswered}</p></div>
             </div>
             
             {topicsPracticed.length > 0 && (
@@ -727,6 +753,33 @@ const App = () => {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {todaysQuestions.length > 0 && (
+                <div className="mt-8">
+                    <h4 className="text-xl font-bold text-gray-700 mb-4">Today's Questions:</h4>
+                    <div className="max-h-60 overflow-y-auto">
+                        {todaysQuestions.map((q, index) => (
+                            <div key={q.id} className={`p-3 mb-2 rounded-lg border-l-4 ${q.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-semibold text-sm text-gray-600">{q.topic}</span>
+                                    <span className="text-xs text-gray-500">{q.timeTaken.toFixed(1)}s</span>
+                                </div>
+                                <p className="text-sm text-gray-800 mb-1">{q.question}</p>
+                                <div className="text-xs">
+                                    <span className="text-gray-600">Your answer: </span>
+                                    <span className={q.isCorrect ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{q.userAnswer}</span>
+                                    {!q.isCorrect && (
+                                        <>
+                                            <span className="text-gray-600 ml-2">Correct: </span>
+                                            <span className="text-green-600 font-semibold">{q.correctAnswer}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
