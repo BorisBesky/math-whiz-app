@@ -871,17 +871,34 @@ const checkAnswer = async () => {
 
   const renderTopicSelection = () => (
     <div className="text-center mt-20">
+      <style jsx>{`
+        @keyframes spinLetter {
+          from { transform: rotateY(0deg); }
+          to { transform: rotateY(360deg); }
+        }
+        
+        .letter-spin-0 { animation: spinLetter 0.6s ease-in-out 0s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 0s; }
+        .letter-spin-1 { animation: spinLetter 0.6s ease-in-out 0.2s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 0.2s; }
+        .letter-spin-2 { animation: spinLetter 0.6s ease-in-out 0.4s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 0.4s; }
+        .letter-spin-3 { animation: spinLetter 0.6s ease-in-out 0.6s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 0.6s; }
+        .letter-spin-4 { animation: spinLetter 0.6s ease-in-out 0.8s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 0.8s; }
+        .letter-spin-5 { animation: spinLetter 0.6s ease-in-out 1.0s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 1.0s; }
+        .letter-spin-6 { animation: spinLetter 0.6s ease-in-out 1.2s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 1.2s; }
+        .letter-spin-7 { animation: spinLetter 0.6s ease-in-out 1.4s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 1.4s; }
+        .letter-spin-8 { animation: spinLetter 0.6s ease-in-out 1.6s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 1.6s; }
+        .letter-spin-9 { animation: spinLetter 0.6s ease-in-out 1.8s infinite; animation-iteration-count: infinite; animation-duration: 8s; animation-delay: 1.8s; }
+      `}</style>
       <h1 className="text-4xl md:text-5xl font-extrabold mb-2 flex justify-center items-center gap-1">
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">M</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">a</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">t</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">h</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default mx-2"> </span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">W</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">h</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">i</span>
-        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">z</span>
-        <span className="text-purple-500 hover:animate-spin transition-all duration-500 cursor-default">!</span>
+        <span className="text-red-500 letter-spin-0 inline-block cursor-default">M</span>
+        <span className="text-orange-500 letter-spin-1 inline-block cursor-default">a</span>
+        <span className="text-yellow-500 letter-spin-2 inline-block cursor-default">t</span>
+        <span className="text-green-500 letter-spin-3 inline-block cursor-default">h</span>
+        <span className="text-blue-500 letter-spin-4 inline-block cursor-default mx-2"> </span>
+        <span className="text-indigo-500 letter-spin-5 inline-block cursor-default">W</span>
+        <span className="text-purple-500 letter-spin-6 inline-block cursor-default">h</span>
+        <span className="text-pink-500 letter-spin-7 inline-block cursor-default">i</span>
+        <span className="text-red-600 letter-spin-8 inline-block cursor-default">z</span>
+        <span className="text-orange-600 letter-spin-9 inline-block cursor-default">!</span>
       </h1>
       <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
