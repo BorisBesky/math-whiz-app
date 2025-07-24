@@ -786,7 +786,18 @@ const App = () => {
 
   const renderTopicSelection = () => (
     <div className="text-center mt-20">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Math Whiz!</h1>
+      <h1 className="text-4xl md:text-5xl font-extrabold mb-2 flex justify-center items-center gap-1">
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">M</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">a</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">t</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">h</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default mx-2"> </span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">W</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">h</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">i</span>
+        <span className="text-indigo-500 hover:animate-spin transition-all duration-500 cursor-default">z</span>
+        <span className="text-purple-500 hover:animate-spin transition-all duration-500 cursor-default">!</span>
+      </h1>
       <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         {quizTopics.map(topic => (<button key={topic} onClick={() => handleTopicSelection(topic)} className="w-full bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group"><div className="p-4 bg-blue-100 rounded-full mb-4 transition-colors duration-300 group-hover:bg-blue-500"><Sparkles className="text-blue-500 group-hover:text-white transition-colors duration-300" /></div><h3 className="text-xl md:text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-600">{topic}</h3><p className="text-gray-500 mt-2">Practice your skills!</p></button>))}
