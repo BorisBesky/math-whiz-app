@@ -577,10 +577,6 @@ const checkAnswer = async () => {
     const allProgress_path = `progress.${today}.all`;
     const topicProgress_path = `progress.${today}.${currentTopic}`;
 
-    // Increment time for both all and topic-specific stats
-    updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
-    updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
-
     // Create question record for tracking
     const questionRecord = {
       id: `${Date.now()}_${currentQuestionIndex}`, // Unique ID
@@ -603,6 +599,7 @@ const checkAnswer = async () => {
   
     let feedbackMessage;
     let feedbackType = 'error';
+    let shouldResetProgress = false;
 
     if (isCorrect) {
       feedbackType = 'success';
@@ -613,8 +610,6 @@ const checkAnswer = async () => {
         </span>
       );
       updates.coins = increment(1);
-      updates[`${allProgress_path}.correct`] = increment(1);
-      updates[`${topicProgress_path}.correct`] = increment(1);
       
       // Check if all topics will be completed after this answer
       const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
@@ -631,17 +626,9 @@ const checkAnswer = async () => {
           return topicProgress.correct >= numQuestions;
         });
         
-        // If all topics will be completed, reset all progress counters
+        // If all topics will be completed, we need to reset
         if (allTopicsWillBeCompleted) {
-          quizTopics.forEach(topic => {
-            updates[`progress.${today}.${topic}.correct`] = 0;
-            updates[`progress.${today}.${topic}.incorrect`] = 0;
-            updates[`progress.${today}.${topic}.timeSpent`] = 0;
-          });
-          
-          // Set the current topic to 1 since we just answered correctly
-          updates[`progress.${today}.${currentTopic}.correct`] = 1;
-          
+          shouldResetProgress = true;
           feedbackMessage = (
             <span className="flex flex-col items-center justify-center gap-1">
               <span className="flex items-center justify-center gap-2">
@@ -656,8 +643,37 @@ const checkAnswer = async () => {
       }
     } else {
       feedbackMessage = `Not quite. The correct answer is ${currentQuiz[currentQuestionIndex].correctAnswer}.`;
-      updates[`${allProgress_path}.incorrect`] = increment(1);
-      updates[`${topicProgress_path}.incorrect`] = increment(1);
+    }
+
+    // Handle progress updates based on whether we're resetting or not
+    if (shouldResetProgress) {
+      // Reset all topic progress counters
+      quizTopics.forEach(topic => {
+        updates[`progress.${today}.${topic}.correct`] = 0;
+        updates[`progress.${today}.${topic}.incorrect`] = 0;
+        updates[`progress.${today}.${topic}.timeSpent`] = 0;
+      });
+      
+      // Set the current topic to 1 since we just answered correctly
+      updates[`progress.${today}.${currentTopic}.correct`] = 1;
+      updates[`progress.${today}.${currentTopic}.timeSpent`] = timeTaken;
+      
+      // Update all progress (these don't get reset, they continue accumulating)
+      updates[`${allProgress_path}.correct`] = increment(1);
+      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+    } else {
+      // Normal increments
+      if (isCorrect) {
+        updates[`${allProgress_path}.correct`] = increment(1);
+        updates[`${topicProgress_path}.correct`] = increment(1);
+      } else {
+        updates[`${allProgress_path}.incorrect`] = increment(1);
+        updates[`${topicProgress_path}.incorrect`] = increment(1);
+      }
+      
+      // Always increment time
+      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+      updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
     }
   
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
@@ -865,17 +881,34 @@ const checkAnswer = async () => {
 
   const renderDashboard = () => {
     const today = getTodayDateString();
-    const todaysProgress = userData?.progress?.[today];
-    const overallStats = todaysProgress?.all || { correct: 0, incorrect: 0, timeSpent: 0 };
-    const totalAnswered = overallStats.correct + overallStats.incorrect;
-    const accuracy = totalAnswered > 0 ? Math.round((overallStats.correct / totalAnswered) * 100) : 0;
-    const avgTime = totalAnswered > 0 ? (overallStats.timeSpent / totalAnswered).toFixed(1) : 0;
     
-    const topicsPracticed = todaysProgress ? Object.keys(todaysProgress).filter(key => key !== 'all') : [];
-    
-    // Get today's answered questions
+    // Get today's answered questions for accurate calculations
     const todaysQuestions = userData?.answeredQuestions?.filter(q => q.date === today) || [];
     const totalQuestionsAnswered = userData?.answeredQuestions?.length || 0;
+    
+    // Calculate overall stats from actual answered questions
+    const correctAnswers = todaysQuestions.filter(q => q.isCorrect).length;
+    const totalAnswered = todaysQuestions.length;
+    const totalTimeSpent = todaysQuestions.reduce((sum, q) => sum + q.timeTaken, 0);
+    
+    const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    const avgTime = totalAnswered > 0 ? (totalTimeSpent / totalAnswered).toFixed(1) : 0;
+    
+    // Calculate topic breakdown from actual answered questions
+    const topicStats = {};
+    todaysQuestions.forEach(q => {
+      if (!topicStats[q.topic]) {
+        topicStats[q.topic] = { correct: 0, incorrect: 0, total: 0 };
+      }
+      if (q.isCorrect) {
+        topicStats[q.topic].correct++;
+      } else {
+        topicStats[q.topic].incorrect++;
+      }
+      topicStats[q.topic].total++;
+    });
+    
+    const topicsPracticed = Object.keys(topicStats);
 
     return (
         <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
@@ -911,14 +944,13 @@ const checkAnswer = async () => {
                             </thead>
                             <tbody>
                                 {topicsPracticed.map(topic => {
-                                    const stats = todaysProgress[topic];
-                                    const total = (stats.correct || 0) + (stats.incorrect || 0);
-                                    const topicAccuracy = total > 0 ? Math.round(((stats.correct || 0) / total) * 100) : 0;
+                                    const stats = topicStats[topic];
+                                    const topicAccuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
                                     return (
                                         <tr key={topic} className="border-b bg-white hover:bg-gray-50">
                                             <td className="p-3 font-semibold">{topic}</td>
-                                            <td className="p-3 text-center text-green-600 font-semibold">{stats.correct || 0}</td>
-                                            <td className="p-3 text-center text-red-600 font-semibold">{stats.incorrect || 0}</td>
+                                            <td className="p-3 text-center text-green-600 font-semibold">{stats.correct}</td>
+                                            <td className="p-3 text-center text-red-600 font-semibold">{stats.incorrect}</td>
                                             <td className="p-3 text-center font-semibold">{topicAccuracy}%</td>
                                         </tr>
                                     );
@@ -1027,41 +1059,6 @@ const checkAnswer = async () => {
         </div>
         <p className="text-lg text-gray-600 mb-4">Choose a topic to start your 3rd Grade math adventure!</p>
         
-        {/* Progress Info */}
-        <div className="mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
-          <p className="text-sm text-gray-700 font-medium">
-            {allCompleted ? (
-              <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
-            ) : unavailableTopics.length > 0 ? (
-              <span>Complete {numQuestions} questions correctly in each available topic to unlock the others!</span>
-            ) : (
-              <span>Answer {numQuestions} questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
-            )}
-          </p>
-          {topicStats && (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              {topicStats.map(stat => (
-                <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                  <div className="font-semibold">{stat.topic}</div>
-                  <div>{stat.correctAnswers}/{numQuestions} ✓</div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Reset button when all topics are completed */}
-          {allCompleted && (
-            <div className="mt-4">
-              <button 
-                onClick={resetAllProgress}
-                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
-              >
-                <Award size={20} /> Start Fresh Cycle
-              </button>
-            </div>
-          )}
-        </div>
-        
         {/* Feedback message */}
         {feedback && (
           <div className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
@@ -1113,6 +1110,40 @@ const checkAnswer = async () => {
               </button>
             );
           })}
+        </div>
+        {/* Progress Info */}
+        <div className="mt-8 mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
+          <p className="text-sm text-gray-700 font-medium">
+            {allCompleted ? (
+              <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
+            ) : unavailableTopics.length > 0 ? (
+              <span>Complete {numQuestions} questions correctly in each available topic to unlock the others!</span>
+            ) : (
+              <span>Answer {numQuestions} questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
+            )}
+          </p>
+          {topicStats && (
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              {topicStats.map(stat => (
+                <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                  <div className="font-semibold">{stat.topic}</div>
+                  <div>{stat.correctAnswers}/{numQuestions} ✓</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Reset button when all topics are completed */}
+          {allCompleted && (
+            <div className="mt-4">
+              <button 
+                onClick={resetAllProgress}
+                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
+              >
+                <Award size={20} /> Start Fresh Cycle
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
