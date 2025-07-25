@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplication with Cookies! 🍪</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2e7d32;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .problem {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 40px;
+            border: 3px solid #4caf50;
+        }
+        
+        .step {
+            margin-bottom: 50px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 8px solid #ff9800;
+        }
+        
+        .step h2 {
+            color: #e65100;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .cookie-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .cookie-plate {
+            background: #f5f5f5;
+            border: 3px solid #8d6e63;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        
+        .cookie {
+            font-size: 1.5em;
+        }
+        
+        .plate-label {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .explanation {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff9800;
+            margin: 20px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #4caf50;
+            margin: 0 15px;
+        }
+        
+        .plate-wrapper {
+            text-align: center;
+        }
+        
+        .thinking-bubble {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 2px solid #4caf50;
+        }
+        
+        .thinking-bubble::before {
+            content: "💭";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 1.5em;
+        }
+        
+        .math-equation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1976d2;
+            margin: 20px 0;
+            border: 3px solid #2196f3;
+        }
+        
+        .highlight {
+            background: #ffeb3b !important;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>What is Multiplication? 🍪</h1>
+        <div class="subtitle">Think of multiplication as a super-fast way of adding! It's for when you have groups of the same number.</div>
+        
+        <div class="problem">
+            4 × 3 = ?
+        </div>
+        
+        <div class="step">
+            <h2>Step 1: The Cookie Plate Problem 🍪</h2>
+            <div class="explanation">
+                Imagine you have 4 plates, and each plate has 3 cookies. How many cookies do you have in total?
+            </div>
+            
+            <div class="cookie-container">
+                <div class="plate-wrapper">
+                    <div class="cookie-plate">
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                    </div>
+                    <div class="plate-label">Plate 1<br>3 cookies</div>
+                </div>
+                
+                <div class="plate-wrapper">
+                    <div class="cookie-plate">
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                    </div>
+                    <div class="plate-label">Plate 2<br>3 cookies</div>
+                </div>
+                
+                <div class="plate-wrapper">
+                    <div class="cookie-plate">
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                    </div>
+                    <div class="plate-label">Plate 3<br>3 cookies</div>
+                </div>
+                
+                <div class="plate-wrapper">
+                    <div class="cookie-plate">
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                        <div class="cookie">🍪</div>
+                    </div>
+                    <div class="plate-label">Plate 4<br>3 cookies</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 2: The Slow Way - Addition 🐌</h2>
+            <div class="explanation">
+                You could add them up the long way:
+            </div>
+            
+            <div class="math-equation">
+                3 + 3 + 3 + 3 = 12
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>That works, but it's slow!</strong><br>
+                What if you had 100 plates with 3 cookies each? You'd have to write 3 one hundred times and add them all up!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 3: The Fast Way - Multiplication! ⚡</h2>
+            <div class="explanation">
+                Multiplication is a shortcut! When you have the same number repeated multiple times, you can multiply instead of adding.
+            </div>
+            
+            <div class="math-equation highlight">
+                4 × 3 = 12
+            </div>
+            
+            <div class="explanation">
+                This means "4 groups of 3" or "3 taken 4 times". The × symbol means "times" or "groups of".
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Much faster!</strong><br>
+                Instead of writing 3 + 3 + 3 + 3, we just write 4 × 3. Same answer (12), but way quicker!
+                <br><br>
+                <strong>Remember:</strong> The first number tells you how many groups you have, and the second number tells you how many items are in each group.
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 4: Try It Yourself! 🎯</h2>
+            <div class="explanation">
+                Can you figure out these multiplication problems by thinking about groups?
+            </div>
+            
+            <div class="cookie-container">
+                <div class="plate-wrapper">
+                    <div style="font-size: 2em; color: #e65100;">2 × 4 = ?</div>
+                    <div class="plate-label">2 groups of 4</div>
+                </div>
+                
+                <div class="plate-wrapper">
+                    <div style="font-size: 2em; color: #e65100;">5 × 2 = ?</div>
+                    <div class="plate-label">5 groups of 2</div>
+                </div>
+                
+                <div class="plate-wrapper">
+                    <div style="font-size: 2em; color: #e65100;">3 × 6 = ?</div>
+                    <div class="plate-label">3 groups of 6</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Hint:</strong> Draw circles (groups) and put dots (items) inside them, or think about arrays like our cookie plates!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

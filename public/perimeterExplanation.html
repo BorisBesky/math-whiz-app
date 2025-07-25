@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Perimeter with a Park! 🏞️</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2e7d32;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .problem {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 40px;
+            border: 3px solid #4caf50;
+        }
+        
+        .step {
+            margin-bottom: 50px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 8px solid #03a9f4;
+        }
+        
+        .step h2 {
+            color: #0277bd;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .park-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .park {
+            position: relative;
+            margin: 50px;
+        }
+        
+        .park-area {
+            background: #c8e6c9;
+            border: 4px solid #388e3c;
+            border-radius: 8px;
+            width: 200px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            position: relative;
+        }
+        
+        .measurement {
+            position: absolute;
+            background: #1976d2;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.7em;
+        }
+        
+        .measurement.top {
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .measurement.bottom {
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .measurement.left {
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+        
+        .measurement.right {
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+        }
+        
+        .walking-path {
+            position: absolute;
+            border: 3px dashed #f44336;
+            border-radius: 8px;
+            width: 208px;
+            height: 128px;
+            top: -8px;
+            left: -8px;
+            animation: march 3s linear infinite;
+        }
+        
+        @keyframes march {
+            0% { border-color: #f44336; }
+            25% { border-color: #ff9800; }
+            50% { border-color: #4caf50; }
+            75% { border-color: #2196f3; }
+            100% { border-color: #f44336; }
+        }
+        
+        .park-label {
+            text-align: center;
+            margin-top: 30px;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .explanation {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff9800;
+            margin: 20px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #4caf50;
+            margin: 0 15px;
+        }
+        
+        .park-wrapper {
+            text-align: center;
+        }
+        
+        .thinking-bubble {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 2px solid #4caf50;
+        }
+        
+        .thinking-bubble::before {
+            content: "💭";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 1.5em;
+        }
+        
+        .math-equation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1976d2;
+            margin: 20px 0;
+            border: 3px solid #2196f3;
+        }
+        
+        .highlight {
+            background: #ffeb3b !important;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .side-label {
+            background: #ff9800;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 5px;
+            display: inline-block;
+        }
+        
+        .walker {
+            position: absolute;
+            font-size: 1.5em;
+            animation: walk 4s linear infinite;
+        }
+        
+        @keyframes walk {
+            0% { top: -20px; left: 0; }
+            25% { top: -20px; left: 200px; }
+            50% { top: 120px; left: 200px; }
+            75% { top: 120px; left: 0; }
+            100% { top: -20px; left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>What is Perimeter? 🏞️</h1>
+        <div class="subtitle">Perimeter is the total distance all the way around the outside of a shape. It's like walking around a fence!</div>
+        
+        <div class="problem">
+            Perimeter = Add all the sides
+        </div>
+        
+        <div class="step">
+            <h2>Step 1: Meet the Rectangular Park! 🏞️</h2>
+            <div class="explanation">
+                Imagine a beautiful rectangular park. To find the perimeter, we need to measure how far it is to walk all the way around the outside edge!
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div class="park">
+                        <div class="park-area">
+                            🌳🌼🌳
+                            <div class="walker">🚶‍♂️</div>
+                            <div class="walking-path"></div>
+                        </div>
+                        <div class="measurement top">5 meters</div>
+                        <div class="measurement bottom">5 meters</div>
+                        <div class="measurement left">3 meters</div>
+                        <div class="measurement right">3 meters</div>
+                    </div>
+                    <div class="park-label">
+                        Park: 5m long × 3m wide<br>
+                        <small>(Watch the person walk around!)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 2: Walking Around the Fence 🚶‍♂️</h2>
+            <div class="explanation">
+                To find the perimeter, let's imagine walking around the fence that goes all the way around the park. We need to add up the length of each side:
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div style="display: flex; align-items: center; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <div class="side-label">Top: 5m</div>
+                        <span style="font-size: 1.5em;">+</span>
+                        <div class="side-label">Right: 3m</div>
+                        <span style="font-size: 1.5em;">+</span>
+                        <div class="side-label">Bottom: 5m</div>
+                        <span style="font-size: 1.5em;">+</span>
+                        <div class="side-label">Left: 3m</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Think about it:</strong><br>
+                You start at one corner and walk along each side until you get back to where you started. The total distance you walked is the perimeter!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 3: Adding Up the Sides ➕</h2>
+            <div class="explanation">
+                Now let's add up all four sides to get the total perimeter:
+            </div>
+            
+            <div class="math-equation highlight">
+                5 + 3 + 5 + 3 = 16 meters
+            </div>
+            
+            <div class="explanation">
+                So the perimeter of our park is 16 meters. That means if you walk all the way around the park's fence, you'll walk 16 meters total!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 4: Shortcut for Rectangles! ⚡</h2>
+            <div class="explanation">
+                For rectangles, there's a faster way! Notice that opposite sides are always the same length:
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div style="display: flex; align-items: center; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <div class="side-label" style="background: #4caf50;">2 × 5m = 10m</div>
+                        <span style="font-size: 1.5em;">+</span>
+                        <div class="side-label" style="background: #2196f3;">2 × 3m = 6m</div>
+                        <span style="font-size: 1.5em;">=</span>
+                        <div class="side-label" style="background: #9c27b0;">16m</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="math-equation">
+                Perimeter = 2 × (Length + Width)
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Cool shortcut!</strong><br>
+                Since rectangles have two pairs of equal sides, we can multiply each pair by 2 and add them together!
+                <br><br>
+                2 × (5 + 3) = 2 × 8 = 16 meters
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 5: Try Different Shapes! 🎯</h2>
+            <div class="explanation">
+                Can you calculate the perimeter of these different parks?
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div class="park">
+                        <div class="park-area" style="width: 120px; height: 120px;">
+                            🌺
+                        </div>
+                        <div class="measurement top">4m</div>
+                        <div class="measurement bottom">4m</div>
+                        <div class="measurement left">4m</div>
+                        <div class="measurement right">4m</div>
+                    </div>
+                    <div class="park-label">Square Park<br>4 + 4 + 4 + 4 = ?</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div class="park">
+                        <div class="park-area" style="width: 150px; height: 80px;">
+                            🦆🏊‍♂️
+                        </div>
+                        <div class="measurement top">6m</div>
+                        <div class="measurement bottom">6m</div>
+                        <div class="measurement left">2m</div>
+                        <div class="measurement right">2m</div>
+                    </div>
+                    <div class="park-label">Pool Park<br>6 + 2 + 6 + 2 = ?</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div class="park">
+                        <div class="park-area" style="width: 100px; height: 150px;">
+                            🌲🏠
+                        </div>
+                        <div class="measurement top">3m</div>
+                        <div class="measurement bottom">3m</div>
+                        <div class="measurement left">5m</div>
+                        <div class="measurement right">5m</div>
+                    </div>
+                    <div class="park-label">Tall Park<br>3 + 5 + 3 + 5 = ?</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Remember:</strong> Perimeter is always measured in regular units like meters, centimeters, or feet - whatever unit you're using for the sides!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

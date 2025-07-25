@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adding Fractions with Pizza! 🍕</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #ffeb3b, #ff9800);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #d32f2f;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .problem {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 40px;
+            border: 3px solid #2196f3;
+        }
+        
+        .step {
+            margin-bottom: 50px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 8px solid #4caf50;
+        }
+        
+        .step h2 {
+            color: #2e7d32;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .pizza-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .pizza {
+            width: 150px;
+            height: 150px;
+        }
+        
+        .pizza-label {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+
+        
+        .highlight {
+            background: #ff6b6b !important;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .explanation {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff9800;
+            margin: 20px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #4caf50;
+            margin: 0 15px;
+        }
+        
+        .pizza-wrapper {
+            text-align: center;
+        }
+        
+        .step3-container {
+            background: #f3e5f5;
+            padding: 25px;
+            border-radius: 15px;
+            border: 3px solid #9c27b0;
+            text-align: center;
+        }
+        
+        .thinking-bubble {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 2px solid #4caf50;
+        }
+        
+        .thinking-bubble::before {
+            content: "💭";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Adding Fractions with Pizza! 🍕</h1>
+        <div class="subtitle">Let's learn how to add 2/5 + 1/2 using delicious pizza!</div>
+        
+        <div class="problem">
+            2/5 + 1/2 = ?
+        </div>
+        
+        <div class="step">
+            <h2>Step 1: Understanding Different Pizza Slices 🍕</h2>
+            <div class="explanation">
+                First, let's see how pizza can be cut into different numbers of slices. We'll look at pizza cut into 2 pieces, 5 pieces, and 10 pieces!
+            </div>
+            
+            <div class="pizza-container">
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-2"></div>
+                    <div class="pizza-label">Pizza cut into 2 slices<br>Each slice = 1/2</div>
+                </div>
+                
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-5"></div>
+                    <div class="pizza-label">Pizza cut into 5 slices<br>Each slice = 1/5</div>
+                </div>
+                
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-10"></div>
+                    <div class="pizza-label">Pizza cut into 10 slices<br>Each slice = 1/10</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 2: Making Equal Pieces 🔄</h2>
+            <div class="explanation">
+                To add fractions, we need the same-sized pieces! Let's see how 2/5 (2 slices of a 5-piece pizza) equals 4/10 (4 slices of a 10-piece pizza).
+            </div>
+            
+            <div class="pizza-container">
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-5-highlighted"></div>
+                    <div class="pizza-label">2/5 of pizza<br>(2 out of 5 slices)</div>
+                </div>
+                
+                <div class="arrow">→</div>
+                
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-10-equivalent"></div>
+                    <div class="pizza-label">Same amount as 4/10<br>(4 out of 10 slices)</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Why does this work?</strong><br>
+                When we cut each slice of the 5-piece pizza in half, we get 10 smaller slices! 
+                So 2 big slices become 4 small slices, but it's still the same amount of pizza!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 3: Now We Can Add! 🧮</h2>
+            <div class="step3-container">
+                <div class="explanation">
+                    Now that both fractions have the same denominator (bottom number), we can add them!
+                    <br><br>
+                    1/2 = 5/10 (because half of 10 is 5)
+                    <br>
+                    2/5 = 4/10 (as we saw above)
+                </div>
+                
+                <div class="pizza-container">
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-4-tenths"></div>
+                        <div class="pizza-label">4/10</div>
+                    </div>
+                    
+                    <div class="arrow">+</div>
+                    
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-5-tenths"></div>
+                        <div class="pizza-label">5/10</div>
+                    </div>
+                    
+                    <div class="arrow">=</div>
+                    
+                    <div class="pizza-wrapper">
+                        <div style="font-size: 3em; color: #9c27b0;">?</div>
+                        <div class="pizza-label">Can you figure it out?</div>
+                    </div>
+                </div>
+                
+                <div class="thinking-bubble">
+                    <strong>Think about it:</strong><br>
+                    If you have 4 slices out of 10, and then you get 5 more slices out of 10, how many slices do you have in total?
+                    <br><br>
+                    Remember: You're adding the top numbers (numerators) and keeping the bottom number (denominator) the same!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to create pizza slices using SVG
+        function createPizzaSlices(pizzaId, numSlices, highlightSlices = []) {
+            const pizzaContainer = document.getElementById(pizzaId);
+            pizzaContainer.innerHTML = '';
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '150');
+            svg.setAttribute('height', '150');
+            svg.setAttribute('viewBox', '0 0 150 150');
+            
+            const centerX = 75;
+            const centerY = 75;
+            const radius = 70;
+            
+            // Create each slice
+            for (let i = 0; i < numSlices; i++) {
+                const startAngle = (i * 360 / numSlices) - 90; // Start from top
+                const endAngle = ((i + 1) * 360 / numSlices) - 90;
+                
+                const startX = centerX + radius * Math.cos(startAngle * Math.PI / 180);
+                const startY = centerY + radius * Math.sin(startAngle * Math.PI / 180);
+                const endX = centerX + radius * Math.cos(endAngle * Math.PI / 180);
+                const endY = centerY + radius * Math.sin(endAngle * Math.PI / 180);
+                
+                const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
+                
+                const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${startX} ${startY}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                    'Z'
+                ].join(' ');
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('stroke', '#d4a000');
+                path.setAttribute('stroke-width', '2');
+                
+                if (highlightSlices.includes(i)) {
+                    path.setAttribute('fill', '#ff6b6b');
+                    path.style.animation = 'pulse 2s infinite';
+                } else {
+                    path.setAttribute('fill', '#ffd93d');
+                }
+                
+                svg.appendChild(path);
+            }
+            
+            // Add outer circle border
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', centerX);
+            circle.setAttribute('cy', centerY);
+            circle.setAttribute('r', radius);
+            circle.setAttribute('fill', 'none');
+            circle.setAttribute('stroke', '#d4a000');
+            circle.setAttribute('stroke-width', '4');
+            svg.appendChild(circle);
+            
+            pizzaContainer.appendChild(svg);
+        }
+        
+        // Create all pizzas when page loads
+        window.onload = function() {
+            createPizzaSlices('pizza-2', 2);
+            createPizzaSlices('pizza-5', 5);
+            createPizzaSlices('pizza-10', 10);
+            createPizzaSlices('pizza-5-highlighted', 5, [0, 1]); // Highlight first 2 slices
+            createPizzaSlices('pizza-10-equivalent', 10, [0, 1, 2, 3]); // Highlight first 4 slices
+            createPizzaSlices('pizza-4-tenths', 10, [0, 1, 2, 3]); // 4/10
+            createPizzaSlices('pizza-5-tenths', 10, [0, 1, 2, 3, 4]); // 5/10
+        };
+    </script>
+</body>
+</html>

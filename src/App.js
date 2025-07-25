@@ -1,10 +1,9 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
+import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home, ExternalLink } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
-import conceptExplanationsData from './conceptExplanations.json';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -84,6 +83,16 @@ const getSimplifiedFraction = (numerator, denominator) => {
     return simplifiedNumerator.toString(); // It's a whole number
   }
   return `${simplifiedNumerator}/${simplifiedDenominator}`;
+};
+
+// --- Concept Explanation HTML Files Mapping ---
+const conceptExplanationFiles = {
+  'Multiplication': '/multiplicationExplanation.html',
+  'Division': '/divisionExplanation.html', 
+  'Fractions': '/fractionsExplanation.html',
+  'Area': '/areaExplanation.html',
+  'Perimeter': '/perimeterExplanation.html',
+  'Volume': '/volumeExplanation.html'
 };
 
 // --- Store Items ---
@@ -350,6 +359,59 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
 
 const quizTopics = ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'];
 
+// --- Helper function to check topic availability ---
+const getTopicAvailability = (userData, dailyGoal) => {
+  if (!userData) return { availableTopics: [], unavailableTopics: [], allCompleted: false };
+  
+  const today = getTodayDateString();
+  const todaysProgress = userData?.progress?.[today] || {};
+  const numQuestions = Math.max(1, Math.floor(dailyGoal / 4));
+  
+  const topicStats = quizTopics.map(topic => {
+    const stats = todaysProgress[topic] || { correct: 0, incorrect: 0 };
+    return {
+      topic,
+      correctAnswers: stats.correct,
+      completed: stats.correct >= numQuestions
+    };
+  });
+  
+  const completedTopics = topicStats.filter(t => t.completed);
+  const incompleteTopics = topicStats.filter(t => !t.completed);
+  
+  // If all topics are completed, make all available again
+  // This handles the case where reset didn't happen properly or user came back after all topics were done
+  if (completedTopics.length === quizTopics.length) {
+    return {
+      availableTopics: quizTopics,
+      unavailableTopics: [],
+      allCompleted: true,
+      topicStats
+    };
+  }
+  
+  // If no topics are completed, all are available
+  if (completedTopics.length === 0) {
+    return {
+      availableTopics: quizTopics,
+      unavailableTopics: [],
+      allCompleted: false,
+      topicStats
+    };
+  }
+  
+  // Some topics are completed - those become unavailable until others catch up
+  const availableTopics = incompleteTopics.map(t => t.topic);
+  const unavailableTopics = completedTopics.map(t => t.topic);
+  
+  return {
+    availableTopics,
+    unavailableTopics,
+    allCompleted: false,
+    topicStats
+  };
+};
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -440,6 +502,17 @@ const App = () => {
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
+    const { availableTopics } = getTopicAvailability(userData, userData.dailyGoal);
+    
+    if (!availableTopics.includes(topic)) {
+      setFeedback({
+        message: `Complete other topics first before returning to ${topic}!`,
+        type: 'error'
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+    
     if (userData?.pausedQuizzes?.[topic]) {
       setTopicToResume(topic);
       setShowResumeModal(true);
@@ -542,6 +615,45 @@ const checkAnswer = async () => {
       updates.coins = increment(1);
       updates[`${allProgress_path}.correct`] = increment(1);
       updates[`${topicProgress_path}.correct`] = increment(1);
+      
+      // Check if all topics will be completed after this answer
+      const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+      const currentTopicProgress = userData?.progress?.[today]?.[currentTopic] || { correct: 0, incorrect: 0 };
+      const newCorrectCount = currentTopicProgress.correct + 1;
+      
+      // Check if this makes the current topic completed and if all other topics are already completed
+      if (newCorrectCount >= numQuestions) {
+        const allTopicsWillBeCompleted = quizTopics.every(topic => {
+          if (topic === currentTopic) {
+            return true; // Current topic will be completed with this answer
+          }
+          const topicProgress = userData?.progress?.[today]?.[topic] || { correct: 0, incorrect: 0 };
+          return topicProgress.correct >= numQuestions;
+        });
+        
+        // If all topics will be completed, reset all progress counters
+        if (allTopicsWillBeCompleted) {
+          quizTopics.forEach(topic => {
+            updates[`progress.${today}.${topic}.correct`] = 0;
+            updates[`progress.${today}.${topic}.incorrect`] = 0;
+            updates[`progress.${today}.${topic}.timeSpent`] = 0;
+          });
+          
+          // Set the current topic to 1 since we just answered correctly
+          updates[`progress.${today}.${currentTopic}.correct`] = 1;
+          
+          feedbackMessage = (
+            <span className="flex flex-col items-center justify-center gap-1">
+              <span className="flex items-center justify-center gap-2">
+                Correct! +1 Coin! <Coins className="text-yellow-500" />
+              </span>
+              <span className="flex items-center justify-center gap-2 font-bold text-purple-600">
+                🎉 All Topics Mastered! Progress Reset! <Award className="text-purple-500" />
+              </span>
+            </span>
+          );
+        }
+      }
     } else {
       feedbackMessage = `Not quite. The correct answer is ${currentQuiz[currentQuestionIndex].correctAnswer}.`;
       updates[`${allProgress_path}.incorrect`] = increment(1);
@@ -605,6 +717,30 @@ const checkAnswer = async () => {
     }
   };
 
+  const resetAllProgress = async () => {
+    if (!user) return;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+    
+    const today = getTodayDateString();
+    const updates = {};
+    
+    // Reset all topic progress counters
+    quizTopics.forEach(topic => {
+      updates[`progress.${today}.${topic}.correct`] = 0;
+      updates[`progress.${today}.${topic}.incorrect`] = 0;
+      updates[`progress.${today}.${topic}.timeSpent`] = 0;
+    });
+    
+    await updateDoc(userDocRef, updates);
+    
+    setFeedback({
+      message: '🎉 Progress reset! All topics are now available for a fresh start!',
+      type: 'success'
+    });
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   // --- Store Logic ---
   const handlePurchase = async (item) => {
     const cost = 20;
@@ -657,16 +793,17 @@ const checkAnswer = async () => {
   };
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
-    const explanationData = conceptExplanationsData[concept];
+    const explanationFile = conceptExplanationFiles[concept];
 
-    if (explanationData) {
-        setModalTitle(`✨ ${explanationData.title}`);
-        setGeneratedContent(explanationData.content);
+    if (explanationFile) {
+        // Open the HTML explanation file in a new tab
+        window.open(explanationFile, '_blank');
     } else {
+        // Fallback: show modal with basic explanation
         setModalTitle(`✨ What is ${concept}?`);
-        setGeneratedContent("<p>Sorry, no explanation is available for this concept yet!</p>");
+        setGeneratedContent("<p>Sorry, no detailed explanation is available for this concept yet!</p>");
+        setShowModal(true);
     }
-    setShowModal(true);
   };
   const handleCreateStoryProblem = async () => {
     if (storyCreatedForCurrentQuiz) {
@@ -869,23 +1006,113 @@ const checkAnswer = async () => {
     );
   };
 
-  const renderTopicSelection = () => (
-    <div className="text-center mt-20">
-      <div className="mb-2 flex justify-center items-center">
-        {/* Using animated gif for better performance */}
-        <img 
-          src="/math-whiz-title.gif" 
-          alt="Math Whiz!" 
-          className="h-16 md:h-20 w-auto mb-4"
-          style={{ imageRendering: 'auto' }}
-        />
+  const renderTopicSelection = () => {
+    const { availableTopics, unavailableTopics, allCompleted, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+    
+    return (
+      <div className="text-center mt-20">
+        <div className="mb-2 flex justify-center items-center">
+          {/* Using animated gif for better performance */}
+          <img 
+            src="/math-whiz-title.gif" 
+            alt="Math Whiz!" 
+            className="h-16 md:h-20 w-auto mb-4"
+            style={{ imageRendering: 'auto' }}
+          />
+        </div>
+        <p className="text-lg text-gray-600 mb-4">Choose a topic to start your 3rd Grade math adventure!</p>
+        
+        {/* Progress Info */}
+        <div className="mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
+          <p className="text-sm text-gray-700 font-medium">
+            {allCompleted ? (
+              <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
+            ) : unavailableTopics.length > 0 ? (
+              <span>Complete {numQuestions} questions correctly in each available topic to unlock the others!</span>
+            ) : (
+              <span>Answer {numQuestions} questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
+            )}
+          </p>
+          {topicStats && (
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              {topicStats.map(stat => (
+                <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                  <div className="font-semibold">{stat.topic}</div>
+                  <div>{stat.correctAnswers}/{numQuestions} ✓</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Reset button when all topics are completed */}
+          {allCompleted && (
+            <div className="mt-4">
+              <button 
+                onClick={resetAllProgress}
+                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
+              >
+                <Award size={20} /> Start Fresh Cycle
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Feedback message */}
+        {feedback && (
+          <div className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
+            feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {feedback.message}
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {quizTopics.map(topic => {
+            const isAvailable = availableTopics.includes(topic);
+            const isCompleted = topicStats?.find(t => t.topic === topic)?.completed || false;
+            
+            return (
+              <button 
+                key={topic} 
+                onClick={() => handleTopicSelection(topic)} 
+                disabled={!isAvailable}
+                className={`w-full p-6 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group ${
+                  isAvailable 
+                    ? 'bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer'
+                    : 'bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60'
+                }`}
+              >
+                <div className={`p-4 rounded-full mb-4 transition-colors duration-300 ${
+                  isAvailable 
+                    ? 'bg-blue-100 group-hover:bg-blue-500' 
+                    : 'bg-gray-200'
+                }`}>
+                  {isCompleted ? (
+                    <Award className={`${isAvailable ? 'text-green-500' : 'text-gray-400'} transition-colors duration-300`} />
+                  ) : (
+                    <Sparkles className={`${isAvailable ? 'text-blue-500 group-hover:text-white' : 'text-gray-400'} transition-colors duration-300`} />
+                  )}
+                </div>
+                <h3 className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
+                  isAvailable 
+                    ? 'text-gray-800 group-hover:text-blue-600' 
+                    : 'text-gray-500'
+                }`}>
+                  {topic}
+                </h3>
+                <p className={`mt-2 ${isAvailable ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {isCompleted && !isAvailable ? '✅ Waiting for others...' : 
+                   isCompleted && isAvailable ? '✅ Ready to practice!' :
+                   isAvailable ? 'Practice your skills!' : 'Complete other topics first'}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {quizTopics.map(topic => (<button key={topic} onClick={() => handleTopicSelection(topic)} className="w-full bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group"><div className="p-4 bg-blue-100 rounded-full mb-4 transition-colors duration-300 group-hover:bg-blue-500"><Sparkles className="text-blue-500 group-hover:text-white transition-colors duration-300" /></div><h3 className="text-xl md:text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-600">{topic}</h3><p className="text-gray-500 mt-2">Practice your skills!</p></button>))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderQuiz = () => {
     if (currentQuiz.length === 0) return null;
@@ -922,7 +1149,7 @@ const checkAnswer = async () => {
             {/* First row: Explain Concept | Show/Hide Hint */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <button onClick={handleExplainConcept} className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition">
-                <Sparkles size={20} /> Explain the Concept
+                <ExternalLink size={20} /> Learn About This
               </button>
               <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}
