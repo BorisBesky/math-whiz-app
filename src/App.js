@@ -1234,6 +1234,13 @@ const checkAnswer = async () => {
     const todaysStories = userData?.dailyStories?.[today] || {};
     const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
+    // Check if current topic has reached daily goal and some topics are still not complete
+    const { availableTopics, unavailableTopics, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const currentTopicStats = topicStats?.find(t => t.topic === currentTopic);
+    const isCurrentTopicCompleted = currentTopicStats?.completed || false;
+    const hasIncompleteTopics = availableTopics.length > 0;
+    const shouldGreyOutTryAgain = isCurrentTopicCompleted && hasIncompleteTopics;
+
     return (
       <div className="text-center bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
@@ -1262,7 +1269,14 @@ const checkAnswer = async () => {
                 </div>
               </div>
             )}
-            <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
+            {shouldGreyOutTryAgain ? (
+              <div className="bg-gray-300 text-gray-500 font-bold py-3 px-6 rounded-lg cursor-not-allowed flex items-center justify-center gap-2">
+                <span>Try Again</span>
+                <span className="text-xs">(Complete other topics first)</span>
+              </div>
+            ) : (
+              <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
+            )}
             <button onClick={returnToTopics} className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105">Choose New Topic</button>
         </div>
       </div>
