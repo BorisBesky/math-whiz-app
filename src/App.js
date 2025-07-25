@@ -1,6 +1,6 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home, ExternalLink } from 'lucide-react';
+import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
@@ -796,13 +796,17 @@ const checkAnswer = async () => {
     const explanationFile = conceptExplanationFiles[concept];
 
     if (explanationFile) {
-        // Open the HTML explanation file in a new tab
-        window.open(explanationFile, '_blank');
+        setModalTitle(`✨ Understanding ${concept}`);
+        setShowModal(true);
+        setIsGenerating(false);
+        // Set the iframe source instead of HTML content
+        setGeneratedContent(`<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`);
     } else {
         // Fallback: show modal with basic explanation
         setModalTitle(`✨ What is ${concept}?`);
         setGeneratedContent("<p>Sorry, no detailed explanation is available for this concept yet!</p>");
         setShowModal(true);
+        setIsGenerating(false);
     }
   };
   const handleCreateStoryProblem = async () => {
@@ -1149,7 +1153,7 @@ const checkAnswer = async () => {
             {/* First row: Explain Concept | Show/Hide Hint */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <button onClick={handleExplainConcept} className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition">
-                <ExternalLink size={20} /> Learn About This
+                <Sparkles size={20} /> Learn About This
               </button>
               <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}
@@ -1238,14 +1242,14 @@ const checkAnswer = async () => {
     if (!showModal) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-lg w-full p-6 relative flex flex-col max-h-[80vh]">
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
                 <div className='flex-shrink-0'>
                     <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                         <X size={24} />
                     </button>
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
                 </div>
-                <div className="flex-grow overflow-y-auto pr-4">
+                <div className="flex-grow overflow-hidden">
                     {isGenerating && (
                         <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -1253,7 +1257,7 @@ const checkAnswer = async () => {
                     )}
                     {generatedContent && (
                         <div 
-                            className="text-gray-700 whitespace-pre-wrap leading-relaxed"
+                            className="text-gray-700 whitespace-pre-wrap leading-relaxed h-full"
                             dangerouslySetInnerHTML={{ __html: generatedContent }}
                         />
                     )}
