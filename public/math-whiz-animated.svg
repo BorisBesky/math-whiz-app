@@ -1,0 +1,38 @@
+<svg width="400" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80">
+  <defs>
+    <style>
+      .letter { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        font-weight: 900; 
+        font-size: 48px; 
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .bounce0 { animation: bounce 2s ease-in-out infinite; animation-delay: 0s; }
+      .bounce1 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.1s; }
+      .bounce2 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.2s; }
+      .bounce3 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.3s; }
+      .bounce4 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.5s; }
+      .bounce5 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.6s; }
+      .bounce6 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.7s; }
+      .bounce7 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.8s; }
+      .bounce8 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.9s; }
+      
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-12px); }
+      }
+    </style>
+  </defs>
+  
+  <text x="35" y="50" class="letter bounce0" fill="#ef4444">M</text>
+  <text x="70" y="50" class="letter bounce1" fill="#f97316">a</text>
+  <text x="95" y="50" class="letter bounce2" fill="#eab308">t</text>
+  <text x="125" y="50" class="letter bounce3" fill="#22c55e">h</text>
+  
+  <text x="185" y="50" class="letter bounce4" fill="#6366f1">W</text>
+  <text x="225" y="50" class="letter bounce5" fill="#8b5cf6">h</text>
+  <text x="250" y="50" class="letter bounce6" fill="#ec4899">i</text>
+  <text x="275" y="50" class="letter bounce7" fill="#dc2626">z</text>
+  <text x="305" y="50" class="letter bounce8" fill="#ea580c">!</text>
+</svg>
