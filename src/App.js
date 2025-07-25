@@ -1235,7 +1235,7 @@ const checkAnswer = async () => {
     const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
     // Check if current topic has reached daily goal and some topics are still not complete
-    const { availableTopics, unavailableTopics, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const { availableTopics, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
     const currentTopicStats = topicStats?.find(t => t.topic === currentTopic);
     const isCurrentTopicCompleted = currentTopicStats?.completed || false;
     const hasIncompleteTopics = availableTopics.length > 0;
