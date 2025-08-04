@@ -170,6 +170,12 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     console.error('Gemini API error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
     
     // Return appropriate error messages
     if (error.message.includes('authorization') || error.message.includes('authentication')) {
@@ -196,10 +202,17 @@ exports.handler = async (event) => {
       };
     }
     
+    // For debugging - include more error info in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const errorResponse = {
+      error: 'Internal server error',
+      ...(isDevelopment && { details: error.message, stack: error.stack })
+    };
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify(errorResponse)
     };
   }
 }; 
