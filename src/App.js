@@ -787,10 +787,23 @@ const checkAnswer = async () => {
       setGeneratedContent('');
       
       try {
+          // Get the current user's auth token
+          if (!user) {
+            throw new Error('User not authenticated');
+          }
+          
+          const token = await user.getIdToken();
+          
           const response = await fetch('/.netlify/functions/gemini-proxy', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt })
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ 
+                prompt: prompt,
+                topic: currentTopic
+              })
           });
           
           if (!response.ok) {
