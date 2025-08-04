@@ -447,6 +447,15 @@ const App = () => {
 
       if (currentUser) {
         setUser(currentUser);
+        
+        // Temporary: Expose auth objects globally for testing
+        // Remove this in production
+        if (process.env.NODE_ENV === 'development') {
+          window.firebaseAuth = auth;
+          window.currentUser = currentUser;
+          console.log('🧪 Firebase auth exposed for testing:', currentUser.uid);
+        }
+        
         const userDocRef = getUserDocRef(currentUser.uid);
 
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
