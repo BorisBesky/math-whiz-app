@@ -798,10 +798,19 @@ const checkAnswer = async () => {
       try {
           // Get the current user's auth token
           if (!user) {
+            console.error('❌ No user found during API call');
             throw new Error('User not authenticated');
           }
           
+          console.log('🔐 Getting auth token for user:', user.uid);
           const token = await user.getIdToken();
+          console.log('✅ Got auth token, making API call...');
+          
+          const requestBody = { 
+            prompt: prompt,
+            topic: currentTopic
+          };
+          console.log('📤 Request body:', requestBody);
           
           const response = await fetch('/.netlify/functions/gemini-proxy', {
               method: 'POST',
@@ -809,18 +818,19 @@ const checkAnswer = async () => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({ 
-                prompt: prompt,
-                topic: currentTopic
-              })
+              body: JSON.stringify(requestBody)
           });
+          
+          console.log('📥 Response status:', response.status);
           
           if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
+              console.error('❌ API Error:', errorData);
               throw new Error(errorData.error || `API call failed with status: ${response.status}`);
           }
 
           const result = await response.json();
+          console.log('✅ API Success! Content length:', result.content?.length);
           setGeneratedContent(result.content);
       } catch (error) {
           console.error("Gemini API error:", error);
