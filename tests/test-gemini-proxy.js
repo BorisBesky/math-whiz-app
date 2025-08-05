@@ -10,6 +10,23 @@ const fetch = require('node-fetch');
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   try {
+    console.log('🔧 Initializing Firebase Admin SDK...');
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      throw new Error('Missing Firebase environment variables');
+    }
+    
+    // Ensure private key is base64 encoded or properly formatted
+    if (process.env.FIREBASE_PRIVATE_KEY && !process.env.FIREBASE_PRIVATE_KEY.includes('-----BEGIN PRIVATE KEY-----')) {
+      console.log('🔄 Detected base64 encoded private key, decoding...');
+      process.env.FIREBASE_PRIVATE_KEY = Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('utf8');
+    }
+
+    // Handle escaped newlines in private key
+    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PRIVATE_KEY.includes('\\n')) {
+      console.log('🔄 Replacing escaped newlines in private key...');
+      process.env.FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
