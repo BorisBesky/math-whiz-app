@@ -4,7 +4,6 @@ import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause,
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
-import conceptExplanationsData from './conceptExplanations.json';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -86,48 +85,67 @@ const getSimplifiedFraction = (numerator, denominator) => {
   return `${simplifiedNumerator}/${simplifiedDenominator}`;
 };
 
+// --- Concept Explanation HTML Files Mapping ---
+const conceptExplanationFiles = {
+  'Multiplication': '/multiplicationExplanation.html',
+  'Division': '/divisionExplanation.html', 
+  'Fractions': '/fractionsExplanation.html',
+  'Area': '/areaExplanation.html',
+  'Perimeter': '/perimeterExplanation.html',
+  'Volume': '/volumeExplanation.html'
+};
+
 // --- Store Items ---
 const storeItems = [
     { id: 'bg1', name: 'Silly Giraffe', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_funny_cute_plastic_toy_gira-3.jpg' },
     { id: 'bg2', name: 'Cool Lion', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_cool_felt-stitched_toy_lion_w-1.jpg' },
     { id: 'bg3', name: 'Playful Monkey', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_playful_claymation-style_toy-0.jpg' },
     { id: 'bg4', name: 'Happy Hippo', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Happy_Hippo_A_cheerful_round_h-0.jpg' },
-    { id: 'bg5', name: 'Zebra Stripes', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/zebra-neon.jpg' },
-    { id: 'bg6', name: 'Funky Frog', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/frog.jpg' },
+    { id: 'bg5', name: 'Zebra Stripes', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/zebra.jpeg' },
+    { id: 'bg6', name: 'Funky Frog', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/frog.jpeg' },
     { id: 'bg7', name: 'Dapper Dog', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/puppy_hat_and_a_monocle.jpg' },
-    { id: 'bg8', name: 'Cuddly Cat', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/fluffy_kitten_3D_cartoon.jpg' },
-    { id: 'bg9', name: 'Penguin Party', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/penguin_sledding.jpg' },
+    { id: 'bg8', name: 'Cuddly Cat', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/kitten.jpeg' },
+    { id: 'bg9', name: 'Penguin Party', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/penguins.jpeg' },
     { id: 'bg10', name: 'Bear Hugs', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/polar_bear_cub_with_glasses.jpg' },
-    { id: 'bg11', name: 'Wacky Walrus', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/walrus.jpg' },
-    { id: 'bg12', name: 'Jumping Kangaroo', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Kangaroo.jpg' },
+    { id: 'bg11', name: 'Wacky Walrus', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/walrus.jpeg' },
+    { id: 'bg12', name: 'Jumping Kangaroo', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/kangaroo.jpeg' },
     { id: 'bg13', name: 'Sleepy Sloth', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/sloth.jpeg' },
-    { id: 'bg14', name: 'Clever Fox', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Fox.jpeg' },
-    { id: 'bg15', name: 'Wise Owl', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Owl.jpeg' },
-    { id: 'bg16', name: 'Busy Beaver', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Beaver.jpeg' },
-    { id: 'bg17', name: 'Panda Peace', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Panda.jpeg' },
+    { id: 'bg14', name: 'Clever Fox', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/fox.jpeg' },
+    { id: 'bg15', name: 'Wise Owl', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/owl.jpeg' },
+    { id: 'bg16', name: 'Busy Beaver', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/beaver.jpeg' },
+    { id: 'bg17', name: 'Panda Peace', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/panda.jpeg' },
     { id: 'bg18', name: 'Koala Cuddles', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Koala2.jpg' },
-    { id: 'bg19', name: 'Raccoon Rascal', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Racoon.jpeg' },
-    { id: 'bg20', name: 'Elephant Smiles', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Elephant.jpeg' },
+    { id: 'bg19', name: 'Raccoon Rascal', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/racoon.jpeg' },
+    { id: 'bg20', name: 'Elephant Smiles', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/elephant.jpeg' },
 ];
 
 
 // --- Dynamic Quiz Generation ---
 const generateQuizQuestions = (topic, dailyGoal = 8) => {
   const questions = [];
+  const usedQuestions = new Set(); // Track unique question signatures
   const numQuestions = Math.max(1, Math.floor(dailyGoal / 4));
-  for (let i = 0; i < numQuestions; i++) {
+  let attempts = 0;
+  const maxAttempts = numQuestions * 10; // Prevent infinite loops
+  
+  while (questions.length < numQuestions && attempts < maxAttempts) {
+    attempts++;
     let question = {};
+    let questionSignature = '';
+    
     switch (topic) {
       case 'Multiplication':
         const m1 = getRandomInt(2, 12);
         const m2 = getRandomInt(2, 9);
         const mAnswer = m1 * m2;
+        questionSignature = `mult_${m1}_${m2}`;
         question = { question: `What is ${m1} x ${m2}?`, correctAnswer: mAnswer.toString(), options: shuffleArray([mAnswer.toString(), (mAnswer + getRandomInt(1, 5)).toString(), (m1 * (m2 + 1)).toString(), ((m1 - 1) * m2).toString()]), hint: `Try skip-counting by ${m2}, ${m1} times!`, standard: "3.OA.C.7", concept: "Multiplication" };
         break;
       case 'Division':
         const d_quotient = getRandomInt(2, 9);
         const d_divisor = getRandomInt(2, 9);
         const d_dividend = d_quotient * d_divisor;
+        questionSignature = `div_${d_dividend}_${d_divisor}`;
         question = { question: `What is ${d_dividend} ÷ ${d_divisor}?`, correctAnswer: d_quotient.toString(), options: shuffleArray([d_quotient.toString(), (d_quotient + 1).toString(), (d_quotient - 1).toString(), (d_quotient + getRandomInt(2, 4)).toString()]), hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`, standard: "3.OA.C.7", concept: "Division" };
         break;
       case 'Fractions':
@@ -139,6 +157,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const multiplier = getRandomInt(2, 4);
                 const eq_num = f_num_eq * multiplier;
                 const eq_den = f_den_eq * multiplier;
+                questionSignature = `frac_equiv_${f_num_eq}_${f_den_eq}`;
                 question = {
                     question: `Which fraction is equivalent to ${f_num_eq}/${f_den_eq}?`,
                     correctAnswer: `${eq_num}/${eq_den}`,
@@ -157,6 +176,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const common_add_den = add_den1 * add_den2;
                 const add_sum_num = (add_num1 * add_den2) + (add_num2 * add_den1);
                 const add_answer = getSimplifiedFraction(add_sum_num, common_add_den);
+                questionSignature = `frac_add_${add_num1}_${add_den1}_${add_num2}_${add_den2}`;
                 question = {
                     question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
                     correctAnswer: add_answer,
@@ -188,6 +208,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const common_sub_den = sub_den1 * sub_den2;
                 const sub_diff_num = (sub_num1 * sub_den2) - (sub_num2 * sub_den1);
                 const sub_answer = getSimplifiedFraction(sub_diff_num, common_sub_den);
+                questionSignature = `frac_sub_${sub_num1}_${sub_den1}_${sub_num2}_${sub_den2}`;
                 question = {
                     question: `What is ${sub_num1}/${sub_den1} - ${sub_num2}/${sub_den2}?`,
                     correctAnswer: sub_answer,
@@ -209,6 +230,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     let comp_num1 = getRandomInt(1, comp_den - 1);
                     let comp_num2 = getRandomInt(1, comp_den - 1);
                     while (comp_num1 === comp_num2) { comp_num2 = getRandomInt(1, comp_den - 1); }
+                    questionSignature = `frac_comp_same_den_${comp_num1}_${comp_num2}_${comp_den}`;
                     question = {
                         question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
                         correctAnswer: comp_num1 > comp_num2 ? '>' : '<',
@@ -222,6 +244,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                     let comp_den1 = getRandomInt(comp_num + 1, 15);
                     let comp_den2 = getRandomInt(comp_num + 1, 15);
                     while (comp_den1 === comp_den2) { comp_den2 = getRandomInt(comp_num + 1, 15); }
+                    questionSignature = `frac_comp_same_num_${comp_num}_${comp_den1}_${comp_den2}`;
                     question = {
                         question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
                         correctAnswer: comp_den1 < comp_den2 ? '>' : '<',
@@ -239,6 +262,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const def_multiplier = getRandomInt(2, 4);
                 const def_eq_num = def_f_num_eq * def_multiplier;
                 const def_eq_den = def_f_den_eq * def_multiplier;
+                questionSignature = `frac_equiv_default_${def_f_num_eq}_${def_f_den_eq}`;
                 question = {
                     question: `Which fraction is equivalent to ${def_f_num_eq}/${def_f_den_eq}?`,
                     correctAnswer: `${def_eq_num}/${def_eq_den}`,
@@ -257,6 +281,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const length = getRandomInt(3, 15);
                 const width = getRandomInt(2, 10);
                 const area = length * width;
+                questionSignature = `area_${length}_${width}`;
                 question = { 
                     question: `A rectangle has a length of ${length} cm and a width of ${width} cm. What is its area?`, 
                     correctAnswer: `${area} cm²`, 
@@ -270,6 +295,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const side1 = getRandomInt(5, 20);
                 const side2 = getRandomInt(5, 20);
                 const perimeter = 2 * (side1 + side2);
+                questionSignature = `perimeter_${side1}_${side2}`;
                 question = {
                     question: `What is the perimeter of a rectangle with sides of length ${side1} inches and ${side2} inches?`,
                     correctAnswer: `${perimeter} inches`,
@@ -284,6 +310,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const vol_w = getRandomInt(2, 4);
                 const vol_h = getRandomInt(1, 3);
                 const volume = vol_l * vol_w * vol_h;
+                questionSignature = `volume_${vol_l}_${vol_w}_${vol_h}`;
                 question = {
                     question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
                     correctAnswer: `${volume} cubes`,
@@ -298,6 +325,7 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
                 const def_length = getRandomInt(3, 15);
                 const def_width = getRandomInt(2, 10);
                 const def_area = def_length * def_width;
+                questionSignature = `area_default_${def_length}_${def_width}`;
                 question = { 
                     question: `A rectangle has a length of ${def_length} cm and a width of ${def_width} cm. What is its area?`, 
                     correctAnswer: `${def_area} cm²`, 
@@ -310,14 +338,79 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
         }
         break;
       default:
+        questionSignature = 'default_no_question';
         question = { question: 'No question generated', options: [], correctAnswer: '', concept: 'Math' };
     }
-    questions.push(question);
+    
+    // Only add the question if it's unique
+    if (!usedQuestions.has(questionSignature)) {
+      usedQuestions.add(questionSignature);
+      questions.push(question);
+    }
   }
+  
+  // If we couldn't generate enough unique questions, log a warning
+  if (questions.length < numQuestions) {
+    console.warn(`Could only generate ${questions.length} unique questions out of ${numQuestions} requested for ${topic}`);
+  }
+  
   return questions;
 };
 
 const quizTopics = ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'];
+
+// --- Helper function to check topic availability ---
+const getTopicAvailability = (userData, dailyGoal) => {
+  if (!userData) return { availableTopics: [], unavailableTopics: [], allCompleted: false };
+  
+  const today = getTodayDateString();
+  const todaysProgress = userData?.progress?.[today] || {};
+  const numQuestions = Math.max(1, Math.floor(dailyGoal / 4));
+  
+  const topicStats = quizTopics.map(topic => {
+    const stats = todaysProgress[topic] || { correct: 0, incorrect: 0 };
+    return {
+      topic,
+      correctAnswers: stats.correct,
+      completed: stats.correct >= numQuestions
+    };
+  });
+  
+  const completedTopics = topicStats.filter(t => t.completed);
+  const incompleteTopics = topicStats.filter(t => !t.completed);
+  
+  // If all topics are completed, make all available again
+  // This handles the case where reset didn't happen properly or user came back after all topics were done
+  if (completedTopics.length === quizTopics.length) {
+    return {
+      availableTopics: quizTopics,
+      unavailableTopics: [],
+      allCompleted: true,
+      topicStats
+    };
+  }
+  
+  // If no topics are completed, all are available
+  if (completedTopics.length === 0) {
+    return {
+      availableTopics: quizTopics,
+      unavailableTopics: [],
+      allCompleted: false,
+      topicStats
+    };
+  }
+  
+  // Some topics are completed - those become unavailable until others catch up
+  const availableTopics = incompleteTopics.map(t => t.topic);
+  const unavailableTopics = completedTopics.map(t => t.topic);
+  
+  return {
+    availableTopics,
+    unavailableTopics,
+    allCompleted: false,
+    topicStats
+  };
+};
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -354,6 +447,15 @@ const App = () => {
 
       if (currentUser) {
         setUser(currentUser);
+        
+        // Temporary: Expose auth objects globally for testing
+        // Remove this in production
+        if (process.env.NODE_ENV === 'development') {
+          window.firebaseAuth = auth;
+          window.currentUser = currentUser;
+          console.log('🧪 Firebase auth exposed for testing:', currentUser.uid);
+        }
+        
         const userDocRef = getUserDocRef(currentUser.uid);
 
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
@@ -378,7 +480,8 @@ const App = () => {
               pausedQuizzes: {},
               ownedBackgrounds: ['default'],
               activeBackground: 'default',
-              dailyStories: { [today]: {} }
+              dailyStories: { [today]: {} },
+              answeredQuestions: [] // field to track all answered questions
             };
             setDoc(userDocRef, initialData).then(() => setUserData(initialData));
           }
@@ -408,6 +511,17 @@ const App = () => {
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
+    const { availableTopics } = getTopicAvailability(userData, userData.dailyGoal);
+    
+    if (!availableTopics.includes(topic)) {
+      setFeedback({
+        message: `Complete other topics first before returning to ${topic}!`,
+        type: 'error'
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+    
     if (userData?.pausedQuizzes?.[topic]) {
       setTopicToResume(topic);
       setShowResumeModal(true);
@@ -458,7 +572,7 @@ const App = () => {
     setUserAnswer(option);
   };
 
-  const checkAnswer = async () => {
+const checkAnswer = async () => {
     if (userAnswer === null || !user) return;
   
     setIsAnswered(true);
@@ -472,12 +586,29 @@ const App = () => {
     const allProgress_path = `progress.${today}.all`;
     const topicProgress_path = `progress.${today}.${currentTopic}`;
 
-    // Increment time for both all and topic-specific stats
-    updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
-    updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
+    // Create question record for tracking
+    const questionRecord = {
+      id: `${Date.now()}_${currentQuestionIndex}`, // Unique ID
+      timestamp: new Date().toISOString(),
+      date: today,
+      topic: currentTopic,
+      question: currentQuiz[currentQuestionIndex].question,
+      correctAnswer: currentQuiz[currentQuestionIndex].correctAnswer,
+      userAnswer: userAnswer,
+      isCorrect: isCorrect,
+      timeTaken: timeTaken,
+      options: currentQuiz[currentQuestionIndex].options,
+      hint: currentQuiz[currentQuestionIndex].hint,
+      standard: currentQuiz[currentQuestionIndex].standard,
+      concept: currentQuiz[currentQuestionIndex].concept
+    };
+
+    // Add question to answered questions array
+    updates[`answeredQuestions`] = arrayUnion(questionRecord);
   
     let feedbackMessage;
     let feedbackType = 'error';
+    let shouldResetProgress = false;
 
     if (isCorrect) {
       feedbackType = 'success';
@@ -488,31 +619,90 @@ const App = () => {
         </span>
       );
       updates.coins = increment(1);
-      updates[`${allProgress_path}.correct`] = increment(1);
-      updates[`${topicProgress_path}.correct`] = increment(1);
+      
+      // Check if all topics will be completed after this answer
+      const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+      const currentTopicProgress = userData?.progress?.[today]?.[currentTopic] || { correct: 0, incorrect: 0 };
+      const newCorrectCount = currentTopicProgress.correct + 1;
+      
+      // Check if this makes the current topic completed and if all other topics are already completed
+      if (newCorrectCount >= numQuestions) {
+        const allTopicsWillBeCompleted = quizTopics.every(topic => {
+          if (topic === currentTopic) {
+            return true; // Current topic will be completed with this answer
+          }
+          const topicProgress = userData?.progress?.[today]?.[topic] || { correct: 0, incorrect: 0 };
+          return topicProgress.correct >= numQuestions;
+        });
+        
+        // If all topics will be completed, we need to reset
+        if (allTopicsWillBeCompleted) {
+          shouldResetProgress = true;
+          feedbackMessage = (
+            <span className="flex flex-col items-center justify-center gap-1">
+              <span className="flex items-center justify-center gap-2">
+                Correct! +1 Coin! <Coins className="text-yellow-500" />
+              </span>
+              <span className="flex items-center justify-center gap-2 font-bold text-purple-600">
+                🎉 All Topics Mastered! Progress Reset! <Award className="text-purple-500" />
+              </span>
+            </span>
+          );
+        }
+      }
     } else {
       feedbackMessage = `Not quite. The correct answer is ${currentQuiz[currentQuestionIndex].correctAnswer}.`;
-      updates[`${allProgress_path}.incorrect`] = increment(1);
-      updates[`${topicProgress_path}.incorrect`] = increment(1);
+    }
+
+    // Handle progress updates based on whether we're resetting or not
+    if (shouldResetProgress) {
+      // Reset all topic progress counters
+      quizTopics.forEach(topic => {
+        updates[`progress.${today}.${topic}.correct`] = 0;
+        updates[`progress.${today}.${topic}.incorrect`] = 0;
+        updates[`progress.${today}.${topic}.timeSpent`] = 0;
+      });
+      
+      // Set the current topic to 1 since we just answered correctly
+      updates[`progress.${today}.${currentTopic}.correct`] = 1;
+      updates[`progress.${today}.${currentTopic}.timeSpent`] = timeTaken;
+      
+      // Update all progress (these don't get reset, they continue accumulating)
+      updates[`${allProgress_path}.correct`] = increment(1);
+      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+    } else {
+      // Normal increments
+      if (isCorrect) {
+        updates[`${allProgress_path}.correct`] = increment(1);
+        updates[`${topicProgress_path}.correct`] = increment(1);
+      } else {
+        updates[`${allProgress_path}.incorrect`] = increment(1);
+        updates[`${topicProgress_path}.incorrect`] = increment(1);
+      }
+      
+      // Always increment time
+      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+      updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
     }
   
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
     const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
-    if (userData.dailyGoal > 0 && totalAnsweredToday + 1 === userData.dailyGoal) {
+    if (userData.dailyGoal > 0 && ((totalAnsweredToday + 1) % userData.dailyGoal === 0)) {
       feedbackType = 'success';
+      const DAILY_GOAL_BONUS = 10;
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
           {isCorrect && (
-            <span className="flex items-center justify-center gap-2">
-              Correct! +1 Coin! <Coins className="text-yellow-500" />
-            </span>
+        <span className="flex items-center justify-center gap-2">
+          Correct! +1 Coin! <Coins className="text-yellow-500" />
+        </span>
           )}
           <span className="flex items-center justify-center gap-2 font-bold">
-            Daily Goal Met! +10 Bonus Coins! <Award className="text-orange-500" />
+        Daily Goal Met! +{DAILY_GOAL_BONUS} Bonus Coins! <Award className="text-orange-500" />
           </span>
         </span>
       );
-      updates.coins = increment(10);
+      updates.coins = increment(DAILY_GOAL_BONUS);
     }
     
     setFeedback({ message: feedbackMessage, type: feedbackType });
@@ -552,6 +742,30 @@ const App = () => {
     }
   };
 
+  const resetAllProgress = async () => {
+    if (!user) return;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+    
+    const today = getTodayDateString();
+    const updates = {};
+    
+    // Reset all topic progress counters
+    quizTopics.forEach(topic => {
+      updates[`progress.${today}.${topic}.correct`] = 0;
+      updates[`progress.${today}.${topic}.incorrect`] = 0;
+      updates[`progress.${today}.${topic}.timeSpent`] = 0;
+    });
+    
+    await updateDoc(userDocRef, updates);
+    
+    setFeedback({
+      message: '🎉 Progress reset! All topics are now available for a fresh start!',
+      type: 'success'
+    });
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   // --- Store Logic ---
   const handlePurchase = async (item) => {
     const cost = 20;
@@ -582,18 +796,41 @@ const App = () => {
       setGeneratedContent('');
       
       try {
+          // Get the current user's auth token
+          if (!user) {
+            console.error('❌ No user found during API call');
+            throw new Error('User not authenticated');
+          }
+          
+          console.log('🔐 Getting auth token for user:', user.uid);
+          const token = await user.getIdToken();
+          console.log('✅ Got auth token, making API call...');
+          
+          const requestBody = { 
+            prompt: prompt,
+            topic: currentTopic
+          };
+          console.log('📤 Request body:', requestBody);
+          
           const response = await fetch('/.netlify/functions/gemini-proxy', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt })
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(requestBody)
           });
+          
+          console.log('📥 Response status:', response.status);
           
           if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
+              console.error('❌ API Error:', errorData);
               throw new Error(errorData.error || `API call failed with status: ${response.status}`);
           }
 
           const result = await response.json();
+          console.log('✅ API Success! Content length:', result.content?.length);
           setGeneratedContent(result.content);
       } catch (error) {
           console.error("Gemini API error:", error);
@@ -604,16 +841,21 @@ const App = () => {
   };
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
-    const explanationData = conceptExplanationsData[concept];
+    const explanationFile = conceptExplanationFiles[concept];
 
-    if (explanationData) {
-        setModalTitle(`✨ ${explanationData.title}`);
-        setGeneratedContent(explanationData.content);
+    if (explanationFile) {
+        setModalTitle(`✨ Understanding ${concept}`);
+        setShowModal(true);
+        setIsGenerating(false);
+        // Set the iframe source instead of HTML content
+        setGeneratedContent(`<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`);
     } else {
+        // Fallback: show modal with basic explanation
         setModalTitle(`✨ What is ${concept}?`);
-        setGeneratedContent("<p>Sorry, no explanation is available for this concept yet!</p>");
+        setGeneratedContent("<p>Sorry, no detailed explanation is available for this concept yet!</p>");
+        setShowModal(true);
+        setIsGenerating(false);
     }
-    setShowModal(true);
   };
   const handleCreateStoryProblem = async () => {
     if (storyCreatedForCurrentQuiz) {
@@ -652,7 +894,7 @@ const App = () => {
 
   // --- UI Rendering ---
   const renderHeader = () => (
-    <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
+    <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
         <div className="flex items-center gap-2 text-yellow-600 font-bold px-2">
             <Coins size={24} />
             <span>{userData?.coins || 0}</span>
@@ -671,30 +913,52 @@ const App = () => {
 
   const renderDashboard = () => {
     const today = getTodayDateString();
-    const todaysProgress = userData?.progress?.[today];
-    const overallStats = todaysProgress?.all || { correct: 0, incorrect: 0, timeSpent: 0 };
-    const totalAnswered = overallStats.correct + overallStats.incorrect;
-    const accuracy = totalAnswered > 0 ? Math.round((overallStats.correct / totalAnswered) * 100) : 0;
-    const avgTime = totalAnswered > 0 ? (overallStats.timeSpent / totalAnswered).toFixed(1) : 0;
     
-    const topicsPracticed = todaysProgress ? Object.keys(todaysProgress).filter(key => key !== 'all') : [];
+    // Get today's answered questions for accurate calculations
+    const todaysQuestions = userData?.answeredQuestions?.filter(q => q.date === today) || [];
+    const totalQuestionsAnswered = userData?.answeredQuestions?.length || 0;
+    
+    // Calculate overall stats from actual answered questions
+    const correctAnswers = todaysQuestions.filter(q => q.isCorrect).length;
+    const totalAnswered = todaysQuestions.length;
+    const totalTimeSpent = todaysQuestions.reduce((sum, q) => sum + q.timeTaken, 0);
+    
+    const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    const avgTime = totalAnswered > 0 ? (totalTimeSpent / totalAnswered).toFixed(1) : 0;
+    
+    // Calculate topic breakdown from actual answered questions
+    const topicStats = {};
+    todaysQuestions.forEach(q => {
+      if (!topicStats[q.topic]) {
+        topicStats[q.topic] = { correct: 0, incorrect: 0, total: 0 };
+      }
+      if (q.isCorrect) {
+        topicStats[q.topic].correct++;
+      } else {
+        topicStats[q.topic].incorrect++;
+      }
+      topicStats[q.topic].total++;
+    });
+    
+    const topicsPracticed = Object.keys(topicStats);
 
     return (
-        <div className="w-full max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
+        <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
             <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Daily Goal Progress</h2>
             <div className="mb-8">
                 <div className="flex items-center gap-4 mb-2">
-                    <input type="range" min="4" max="40" step="4" value={userData?.dailyGoal || 8} onChange={handleGoalChange} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                    <input type="range" min="8" max="40" step="4" value={userData?.dailyGoal || 8} onChange={handleGoalChange} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                     <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">{userData?.dailyGoal || 8} Qs</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-green-500 h-4 rounded-full text-xs text-white text-center font-bold flex items-center justify-center" style={{ width: `${Math.min((totalAnswered / (userData?.dailyGoal || 1)) * 100, 100)}%` }}>{totalAnswered} / {userData?.dailyGoal || 8}</div></div>
             </div>
             
             <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">Today's Performance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8">
                 <div className="bg-blue-100 p-4 rounded-lg"><p className="text-lg text-blue-800">Total Answered</p><p className="text-3xl font-bold text-blue-600">{totalAnswered}</p></div>
                 <div className="bg-green-100 p-4 rounded-lg"><p className="text-lg text-green-800">Overall Accuracy</p><p className="text-3xl font-bold text-green-600">{accuracy}%</p></div>
                 <div className="bg-yellow-100 p-4 rounded-lg"><p className="text-lg text-yellow-800">Avg. Time</p><p className="text-3xl font-bold text-yellow-600">{avgTime}s</p></div>
+                <div className="bg-purple-100 p-4 rounded-lg"><p className="text-lg text-purple-800">All Time Total</p><p className="text-3xl font-bold text-purple-600">{totalQuestionsAnswered}</p></div>
             </div>
             
             {topicsPracticed.length > 0 && (
@@ -712,20 +976,46 @@ const App = () => {
                             </thead>
                             <tbody>
                                 {topicsPracticed.map(topic => {
-                                    const stats = todaysProgress[topic];
-                                    const total = (stats.correct || 0) + (stats.incorrect || 0);
-                                    const topicAccuracy = total > 0 ? Math.round(((stats.correct || 0) / total) * 100) : 0;
+                                    const stats = topicStats[topic];
+                                    const topicAccuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
                                     return (
                                         <tr key={topic} className="border-b bg-white hover:bg-gray-50">
                                             <td className="p-3 font-semibold">{topic}</td>
-                                            <td className="p-3 text-center text-green-600 font-semibold">{stats.correct || 0}</td>
-                                            <td className="p-3 text-center text-red-600 font-semibold">{stats.incorrect || 0}</td>
+                                            <td className="p-3 text-center text-green-600 font-semibold">{stats.correct}</td>
+                                            <td className="p-3 text-center text-red-600 font-semibold">{stats.incorrect}</td>
                                             <td className="p-3 text-center font-semibold">{topicAccuracy}%</td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {todaysQuestions.length > 0 && (
+                <div className="mt-8">
+                    <h4 className="text-xl font-bold text-gray-700 mb-4">Today's Questions:</h4>
+                    <div className="max-h-60 overflow-y-auto">
+                        {todaysQuestions.map((q, index) => (
+                            <div key={q.id} className={`p-3 mb-2 rounded-lg border-l-4 ${q.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-semibold text-sm text-gray-600">{q.topic}</span>
+                                    <span className="text-xs text-gray-500">{q.timeTaken.toFixed(1)}s</span>
+                                </div>
+                                <p className="text-sm text-gray-800 mb-1">{q.question}</p>
+                                <div className="text-xs">
+                                    <span className="text-gray-600">Your answer: </span>
+                                    <span className={q.isCorrect ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{q.userAnswer}</span>
+                                    {!q.isCorrect && (
+                                        <>
+                                            <span className="text-gray-600 ml-2">Correct: </span>
+                                            <span className="text-green-600 font-semibold">{q.correctAnswer}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
@@ -739,7 +1029,7 @@ const App = () => {
 
   const renderStore = () => {
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-xl mt-20">
+      <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">Rewards Store</h2>
         <p className="text-lg text-gray-600 mb-8 text-center">Use your coins to buy new backgrounds!</p>
         
@@ -784,15 +1074,112 @@ const App = () => {
     );
   };
 
-  const renderTopicSelection = () => (
-    <div className="text-center mt-20">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Math Whiz!</h1>
-      <p className="text-lg text-gray-600 mb-10">Choose a topic to start your 3rd Grade math adventure!</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {quizTopics.map(topic => (<button key={topic} onClick={() => handleTopicSelection(topic)} className="w-full bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group"><div className="p-4 bg-blue-100 rounded-full mb-4 transition-colors duration-300 group-hover:bg-blue-500"><Sparkles className="text-blue-500 group-hover:text-white transition-colors duration-300" /></div><h3 className="text-xl md:text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-600">{topic}</h3><p className="text-gray-500 mt-2">Practice your skills!</p></button>))}
+  const renderTopicSelection = () => {
+    const { availableTopics, unavailableTopics, allCompleted, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+    
+    return (
+      <div className="text-center mt-20">
+        <div className="mb-2 flex justify-center items-center">
+          {/* Using animated gif for better performance */}
+          <img 
+            src="/math-whiz-title.gif" 
+            alt="Math Whiz!" 
+            className="h-16 md:h-20 w-auto mb-4"
+            style={{ imageRendering: 'auto' }}
+          />
+        </div>
+        <p className="text-lg text-gray-600 mb-4">Choose a topic to start your 3rd Grade math adventure!</p>
+        
+        {/* Feedback message */}
+        {feedback && (
+          <div className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
+            feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {feedback.message}
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {quizTopics.map(topic => {
+            const isAvailable = availableTopics.includes(topic);
+            const isCompleted = topicStats?.find(t => t.topic === topic)?.completed || false;
+            
+            return (
+              <button 
+                key={topic} 
+                onClick={() => handleTopicSelection(topic)} 
+                disabled={!isAvailable}
+                className={`w-full p-6 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group ${
+                  isAvailable 
+                    ? 'bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer'
+                    : 'bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60'
+                }`}
+              >
+                <div className={`p-4 rounded-full mb-4 transition-colors duration-300 ${
+                  isAvailable 
+                    ? 'bg-blue-100 group-hover:bg-blue-500' 
+                    : 'bg-gray-200'
+                }`}>
+                  {isCompleted ? (
+                    <Award className={`${isAvailable ? 'text-green-500' : 'text-gray-400'} transition-colors duration-300`} />
+                  ) : (
+                    <Sparkles className={`${isAvailable ? 'text-blue-500 group-hover:text-white' : 'text-gray-400'} transition-colors duration-300`} />
+                  )}
+                </div>
+                <h3 className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
+                  isAvailable 
+                    ? 'text-gray-800 group-hover:text-blue-600' 
+                    : 'text-gray-500'
+                }`}>
+                  {topic}
+                </h3>
+                <p className={`mt-2 ${isAvailable ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {isCompleted && !isAvailable ? '✅ Waiting for others...' : 
+                   isCompleted && isAvailable ? '✅ Ready to practice!' :
+                   isAvailable ? 'Practice your skills!' : 'Complete other topics first'}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        {/* Progress Info */}
+        <div className="mt-8 mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
+          <p className="text-sm text-gray-700 font-medium">
+            {allCompleted ? (
+              <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
+            ) : unavailableTopics.length > 0 ? (
+              <span>Complete {numQuestions} questions correctly in each available topic to unlock the others!</span>
+            ) : (
+              <span>Answer {numQuestions} questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
+            )}
+          </p>
+          {topicStats && (
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              {topicStats.map(stat => (
+                <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                  <div className="font-semibold">{stat.topic}</div>
+                  <div>{stat.correctAnswers}/{numQuestions} ✓</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Reset button when all topics are completed */}
+          {allCompleted && (
+            <div className="mt-4">
+              <button 
+                onClick={resetAllProgress}
+                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
+              >
+                <Award size={20} /> Start Fresh Cycle
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderQuiz = () => {
     if (currentQuiz.length === 0) return null;
@@ -800,7 +1187,7 @@ const App = () => {
     const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
       <>
-        <div className="w-full max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
+        <div className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
             <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
@@ -829,7 +1216,7 @@ const App = () => {
             {/* First row: Explain Concept | Show/Hide Hint */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <button onClick={handleExplainConcept} className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition">
-                <Sparkles size={20} /> Explain the Concept
+                <Sparkles size={20} /> Learn About This
               </button>
               <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}
@@ -879,8 +1266,15 @@ const App = () => {
     const todaysStories = userData?.dailyStories?.[today] || {};
     const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
+    // Check if current topic has reached daily goal and some topics are still not complete
+    const { availableTopics, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const currentTopicStats = topicStats?.find(t => t.topic === currentTopic);
+    const isCurrentTopicCompleted = currentTopicStats?.completed || false;
+    const hasIncompleteTopics = availableTopics.length > 0;
+    const shouldGreyOutTryAgain = isCurrentTopicCompleted && hasIncompleteTopics;
+
     return (
-      <div className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
+      <div className="text-center bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
         <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
         <div className="text-6xl mb-4">{emoji}</div>
         <p className="text-xl text-gray-600 mb-2">{message}</p>
@@ -907,7 +1301,14 @@ const App = () => {
                 </div>
               </div>
             )}
-            <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
+            {shouldGreyOutTryAgain ? (
+              <div className="bg-gray-300 text-gray-500 font-bold py-3 px-6 rounded-lg cursor-not-allowed flex items-center justify-center gap-2">
+                <span>Try Again</span>
+                <span className="text-xs">(Complete other topics first)</span>
+              </div>
+            ) : (
+              <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
+            )}
             <button onClick={returnToTopics} className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105">Choose New Topic</button>
         </div>
       </div>
@@ -918,14 +1319,14 @@ const App = () => {
     if (!showModal) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative flex flex-col max-h-[80vh]">
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
                 <div className='flex-shrink-0'>
                     <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                         <X size={24} />
                     </button>
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
                 </div>
-                <div className="flex-grow overflow-y-auto pr-4">
+                <div className="flex-grow overflow-hidden">
                     {isGenerating && (
                         <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -933,7 +1334,7 @@ const App = () => {
                     )}
                     {generatedContent && (
                         <div 
-                            className="text-gray-700 whitespace-pre-wrap leading-relaxed"
+                            className="text-gray-700 whitespace-pre-wrap leading-relaxed h-full"
                             dangerouslySetInnerHTML={{ __html: generatedContent }}
                         />
                     )}
@@ -947,7 +1348,7 @@ const App = () => {
     if (!showResumeModal) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Paused Quiz Found!</h3>
           <p className="text-gray-600 mb-8">Do you want to continue your quiz on "{topicToResume}" or start a new one?</p>
           <div className="flex flex-col gap-4">

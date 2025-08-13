@@ -1,0 +1,102 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hatGradient512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#3730a3;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#581c87;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c2d12;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="brimGradient512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="starGradient512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+    
+    <radialGradient id="backgroundGradient512" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#f3f4f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ddd6fe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+    </radialGradient>
+    
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="4" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#backgroundGradient512)" stroke="#6366f1" stroke-width="8"/>
+  
+  <!-- Wizard hat brim with shadow -->
+  <ellipse cx="256" cy="350" rx="140" ry="35" fill="url(#brimGradient512)" filter="url(#shadow)"/>
+  
+  <!-- Wizard hat cone with shadow -->
+  <path d="M 256 80 L 170 330 L 342 330 Z" fill="url(#hatGradient512)" stroke="#1e1b4b" stroke-width="4" filter="url(#shadow)"/>
+  
+  <!-- Hat decorations - stars and celestial symbols -->
+  <g fill="url(#starGradient512)">
+    <!-- Large stars -->
+    <path d="M 200 150 L 205 165 L 220 165 L 208 175 L 213 190 L 200 180 L 187 190 L 192 175 L 180 165 L 195 165 Z"/>
+    <path d="M 280 180 L 285 195 L 300 195 L 288 205 L 293 220 L 280 210 L 267 220 L 272 205 L 260 195 L 275 195 Z"/>
+    <path d="M 220 240 L 225 255 L 240 255 L 228 265 L 233 280 L 220 270 L 207 280 L 212 265 L 200 255 L 215 255 Z"/>
+    <path d="M 290 260 L 295 275 L 310 275 L 298 285 L 303 300 L 290 290 L 277 300 L 282 285 L 270 275 L 285 275 Z"/>
+    
+    <!-- Small sparkle stars -->
+    <path d="M 240 120 L 242 126 L 248 126 L 243 130 L 245 136 L 240 132 L 235 136 L 237 130 L 232 126 L 238 126 Z"/>
+    <path d="M 320 140 L 322 146 L 328 146 L 323 150 L 325 156 L 320 152 L 315 156 L 317 150 L 312 146 L 318 146 Z"/>
+  </g>
+  
+  <!-- Crescent moons -->
+  <g fill="url(#starGradient512)">
+    <path d="M 300 160 C 310 160 310 180 300 180 C 305 180 308 170 308 170 C 308 170 305 160 300 160 Z"/>
+    <path d="M 180 200 C 190 200 190 220 180 220 C 185 220 188 210 188 210 C 188 210 185 200 180 200 Z"/>
+  </g>
+  
+  <!-- Math symbols floating around the hat -->
+  <g fill="#3730a3" font-family="Arial, sans-serif" font-weight="bold" font-size="36">
+    <text x="100" y="140">+</text>
+    <text x="380" y="120">×</text>
+    <text x="80" y="320">÷</text>
+    <text x="400" y="340">−</text>
+    <text x="350" y="90">=</text>
+    <text x="120" y="380">√</text>
+    <text x="380" y="380">%</text>
+  </g>
+  
+  <!-- Magical sparkles with animation -->
+  <g fill="#fbbf24">
+    <circle cx="150" cy="100" r="4">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="380" cy="150" r="3">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="2;4;2" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="420" cy="280" r="4">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="3;5;3" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="90" cy="250" r="3">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="2;4;2" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="180" cy="80" r="3">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2.2s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="2;4;2" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="450" y="200" r="4">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="3;5;3" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Title text -->
+  <text x="256" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#1e3a8a">Math Whiz</text>
+  <text x="256" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="normal" fill="#6366f1">Magical Learning</text>
+</svg>

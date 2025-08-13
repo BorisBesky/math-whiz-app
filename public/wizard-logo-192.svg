@@ -1,0 +1,72 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3730a3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#581c87;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="brimGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    
+    <radialGradient id="backgroundGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ddd6fe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="90" fill="url(#backgroundGradient)" stroke="#6366f1" stroke-width="4"/>
+  
+  <!-- Wizard hat brim -->
+  <ellipse cx="96" cy="130" rx="55" ry="15" fill="url(#brimGradient)"/>
+  
+  <!-- Wizard hat cone -->
+  <path d="M 96 40 L 65 125 L 127 125 Z" fill="url(#hatGradient)" stroke="#1e1b4b" stroke-width="2"/>
+  
+  <!-- Hat decorations - stars and moons -->
+  <g fill="url(#starGradient)">
+    <!-- Stars -->
+    <path d="M 80 70 L 82 76 L 88 76 L 83 80 L 85 86 L 80 82 L 75 86 L 77 80 L 72 76 L 78 76 Z"/>
+    <path d="M 105 85 L 107 91 L 113 91 L 108 95 L 110 101 L 105 97 L 100 101 L 102 95 L 97 91 L 103 91 Z"/>
+    <path d="M 85 100 L 87 106 L 93 106 L 88 110 L 90 116 L 85 112 L 80 116 L 82 110 L 77 106 L 83 106 Z"/>
+  </g>
+  
+  <!-- Moon -->
+  <path d="M 110 70 C 115 70 115 80 110 80 C 112 80 114 75 114 75 C 114 75 112 70 110 70 Z" fill="url(#starGradient)"/>
+  
+  <!-- Math symbols floating around -->
+  <g fill="#3730a3" font-family="Arial, sans-serif" font-weight="bold" font-size="16">
+    <text x="45" y="60">+</text>
+    <text x="135" y="55">×</text>
+    <text x="50" y="140">÷</text>
+    <text x="140" y="145">−</text>
+    <text x="120" y="40">=</text>
+  </g>
+  
+  <!-- Sparkles -->
+  <g fill="#fbbf24">
+    <circle cx="60" cy="50" r="2">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="140" cy="65" r="1.5">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="150" cy="120" r="2">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="40" cy="110" r="1.5">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Title text -->
+  <text x="96" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e3a8a">Math Whiz</text>
+</svg>

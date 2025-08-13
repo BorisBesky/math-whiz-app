@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Division with Stickers! ⭐</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #9c27b0, #e91e63);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #7b1fa2;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .problem {
+            background: #f3e5f5;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #7b1fa2;
+            margin-bottom: 40px;
+            border: 3px solid #9c27b0;
+        }
+        
+        .step {
+            margin-bottom: 50px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border-left: 8px solid #2196f3;
+        }
+        
+        .step h2 {
+            color: #1976d2;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        .sticker-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .sticker-group {
+            background: #e8f5e8;
+            border: 3px solid #4caf50;
+            border-radius: 15px;
+            padding: 15px;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .sticker-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 5px 0;
+            flex-wrap: wrap;
+        }
+        
+        .sticker {
+            font-size: 1.5em;
+        }
+        
+        .group-label {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .explanation {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff9800;
+            margin: 20px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #4caf50;
+            margin: 0 15px;
+        }
+        
+        .group-wrapper {
+            text-align: center;
+        }
+        
+        .thinking-bubble {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 2px solid #4caf50;
+        }
+        
+        .thinking-bubble::before {
+            content: "💭";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 1.5em;
+        }
+        
+        .math-equation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1976d2;
+            margin: 20px 0;
+            border: 3px solid #2196f3;
+        }
+        
+        .highlight {
+            background: #ffeb3b !important;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .all-stickers {
+            text-align: center;
+            font-size: 2em;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>What is Division? ⭐</h1>
+        <div class="subtitle">Division is all about sharing equally or splitting something into equal groups!</div>
+        
+        <div class="problem">
+            12 ÷ 3 = ?
+        </div>
+        
+        <div class="step">
+            <h2>Step 1: The Sticker Sharing Problem ⭐</h2>
+            <div class="explanation">
+                Let's say you have 12 stickers and you want to share them equally among 3 friends. How many stickers does each friend get?
+            </div>
+            
+            <div class="all-stickers">
+                ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ⭐
+                <div style="font-size: 0.6em; color: #666; margin-top: 10px;">12 stickers total</div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 2: Making Equal Groups 👥</h2>
+            <div class="explanation">
+                When we divide, we split things into equal groups. Let's give each friend the same number of stickers!
+            </div>
+            
+            <div class="sticker-container">
+                <div class="group-wrapper">
+                    <div class="sticker-group">
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                    </div>
+                    <div class="group-label">Friend 1<br>4 stickers</div>
+                </div>
+                
+                <div class="group-wrapper">
+                    <div class="sticker-group">
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                    </div>
+                    <div class="group-label">Friend 2<br>4 stickers</div>
+                </div>
+                
+                <div class="group-wrapper">
+                    <div class="sticker-group">
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                        <div class="sticker-row">
+                            <span class="sticker">⭐</span>
+                            <span class="sticker">⭐</span>
+                        </div>
+                    </div>
+                    <div class="group-label">Friend 3<br>4 stickers</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Look!</strong> Each friend gets exactly 4 stickers, and we used all 12 stickers. That's fair sharing!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 3: Writing the Division ➗</h2>
+            <div class="explanation">
+                We write this division problem like this:
+            </div>
+            
+            <div class="math-equation highlight">
+                12 ÷ 3 = 4
+            </div>
+            
+            <div class="explanation">
+                This means "12 divided by 3 equals 4". The ÷ symbol means "divide" or "split into equal groups".
+                <br><br>
+                <strong>Reading it:</strong> "12 divided into 3 equal groups gives us 4 in each group."
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 4: Division is the Opposite of Multiplication! 🔄</h2>
+            <div class="explanation">
+                Here's a cool connection: Division and multiplication are opposites!
+            </div>
+            
+            <div class="sticker-container">
+                <div class="math-equation" style="background: #e8f5e8; border-color: #4caf50; color: #2e7d32;">
+                    3 × 4 = 12
+                </div>
+                
+                <div class="arrow">↔️</div>
+                
+                <div class="math-equation" style="background: #f3e5f5; border-color: #9c27b0; color: #7b1fa2;">
+                    12 ÷ 3 = 4
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Think about it:</strong><br>
+                • Multiplication: 3 groups of 4 stickers = 12 stickers total<br>
+                • Division: 12 stickers split into 3 groups = 4 stickers per group<br><br>
+                If you know one, you can figure out the other!
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2>Step 5: Try It Yourself! 🎯</h2>
+            <div class="explanation">
+                Can you solve these division problems by thinking about equal groups?
+            </div>
+            
+            <div class="sticker-container">
+                <div class="group-wrapper">
+                    <div style="font-size: 2em; color: #7b1fa2;">8 ÷ 2 = ?</div>
+                    <div class="group-label">8 items into 2 groups</div>
+                </div>
+                
+                <div class="group-wrapper">
+                    <div style="font-size: 2em; color: #7b1fa2;">15 ÷ 5 = ?</div>
+                    <div class="group-label">15 items into 5 groups</div>
+                </div>
+                
+                <div class="group-wrapper">
+                    <div style="font-size: 2em; color: #7b1fa2;">20 ÷ 4 = ?</div>
+                    <div class="group-label">20 items into 4 groups</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Hint:</strong> Draw circles for the groups and put dots inside them equally, or think about what multiplication fact would give you the starting number!
+            </div>
+        </div>
+    </div>
+</body>
+</html>
