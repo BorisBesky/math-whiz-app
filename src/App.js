@@ -881,9 +881,13 @@ const checkAnswer = async () => {
     const totalDailyGoal = quizTopics.reduce((sum, topic) => sum + (userData.dailyGoals[topic] || DEFAULT_DAILY_GOAL), 0);
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
     const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
-    if (totalDailyGoal > 0 && ((totalAnsweredToday + 1) % totalDailyGoal === 0)) {
-      console.log('🎉 Daily goal met! Awarding bonus coins!');
+    if (process.env.NODE_ENV === 'development') {
       console.log('Total answered today: ', totalAnsweredToday, ' , out of: ', totalDailyGoal);
+    }
+    if (totalDailyGoal > 0 && ((totalAnsweredToday + 1) % totalDailyGoal === 0)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎉 Daily goal met! Awarding bonus coins!');
+      }
       feedbackType = 'success';
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
