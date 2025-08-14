@@ -17,6 +17,9 @@
     .thinking-bubble { background: #e8f5e8; padding: 20px; border-radius: 20px; margin: 20px 0; position: relative; border: 2px solid #4caf50; }
     .thinking-bubble::before { content: "💭"; position: absolute; top: -10px; left: 20px; font-size: 1.5em; }
   </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});"></script>
 </head>
 <body>
   <div class="container">
@@ -24,36 +27,36 @@
     <div class="subtitle">Different-looking fractions can show the same amount!</div>
 
     <div class="explanation">
-      Two fractions are equivalent if they represent the same part of a whole, even if the numbers look different. For example, 1/2 and 2/4 are the same amount because if you cut a pizza into 2 slices and eat 1, it's the same as cutting it into 4 slices and eating 2.
+    Two fractions are equivalent if they represent the same part of a whole, even if the numbers look different. For example, \(\tfrac{1}{2}\) and \(\tfrac{2}{4}\) are the same amount because if you cut a pizza into 2 slices and eat 1, it's the same as cutting it into 4 slices and eating 2.
     </div>
 
     <div class="pizza-container">
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-2-half"></div>
-        <div class="pizza-label">1/2 (1 out of 2)</div>
+  <div class="pizza-label">\(\tfrac{1}{2}\) (1 out of 2)</div>
       </div>
       <div class="arrow">=</div>
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-4-halves"></div>
-        <div class="pizza-label">2/4 (2 out of 4)</div>
+  <div class="pizza-label">\(\tfrac{2}{4}\) (2 out of 4)</div>
       </div>
     </div>
 
     <div class="explanation">
-      To find an equivalent fraction, multiply the top and bottom by the same number. To simplify back, divide the top and bottom by the same number.
-      <br />
-      Example: 3/5 × 2/2 = 6/10 (same amount, smaller slices!)
+    To find an equivalent fraction, multiply the top and bottom by the same number. To simplify back, divide the top and bottom by the same number.
+    <br />
+    Example: \(\tfrac{3}{5} \times \tfrac{2}{2} = \tfrac{6}{10}\) (same amount, smaller slices!)
     </div>
 
     <div class="pizza-container">
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-3-5"></div>
-        <div class="pizza-label">3/5</div>
+  <div class="pizza-label">\(\tfrac{3}{5}\)</div>
       </div>
       <div class="arrow">=</div>
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-6-10"></div>
-        <div class="pizza-label">6/10</div>
+  <div class="pizza-label">\(\tfrac{6}{10}\)</div>
       </div>
     </div>
 

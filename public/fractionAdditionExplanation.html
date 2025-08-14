@@ -21,13 +21,16 @@
         .thinking-bubble { background: #e8f5e8; padding: 20px; border-radius: 20px; margin: 20px 0; position: relative; border: 2px solid #4caf50; }
         .thinking-bubble::before { content: "💭"; position: absolute; top: -10px; left: 20px; font-size: 1.5em; }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});"></script>
     </head>
     <body>
     <div class="container">
         <h1>Adding Fractions (Even with Different Denominators!) 🍕➕🍕</h1>
         <div class="subtitle">Let’s add 2/5 + 1/2 by making equal-sized pieces.</div>
 
-        <div class="problem">2/5 + 1/2 = ?</div>
+    <div class="problem">\(\frac{2}{5} + \frac{1}{2}\) = ?</div>
 
         <div class="step">
             <h2>Step 1: See the Slice Sizes</h2>
@@ -50,7 +53,7 @@
             <div class="pizza-container">
                 <div class="pizza-wrapper">
                     <div class="pizza" id="pizza-5-highlighted"></div>
-                    <div class="pizza-label">2/5 = 4/10</div>
+                    <div class="pizza-label">\(\tfrac{2}{5} = \tfrac{4}{10}\)</div>
                 </div>
                 <div class="arrow">→</div>
                 <div class="pizza-wrapper">
@@ -58,13 +61,13 @@
                     <div class="pizza-label">Now in tenths</div>
                 </div>
             </div>
-            <div class="explanation">Also, 1/2 = 5/10 because half of ten slices is five.</div>
+            <div class="explanation">Also, \(\tfrac{1}{2} = \tfrac{5}{10}\) because half of ten slices is five.</div>
         </div>
 
         <div class="step">
             <h2>Step 3: Add the Numerators</h2>
             <div class="step3-container">
-                <div class="explanation">Keep the denominator (10) the same and add the tops: 4/10 + 5/10 = 9/10.</div>
+                <div class="explanation">Keep the denominator (10) the same and add the tops: \(\tfrac{4}{10} + \tfrac{5}{10} = \tfrac{9}{10}\).</div>
                 <div class="pizza-container">
                     <div class="pizza-wrapper">
                         <div class="pizza" id="pizza-4-tenths"></div>

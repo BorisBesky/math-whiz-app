@@ -1,5 +1,7 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from 'react';
+import 'katex/dist/katex.min.css';
+import renderMathInElement from 'katex/contrib/auto-render';
 import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
@@ -509,6 +511,34 @@ const App = () => {
   const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState({});
 
   const questionStartTime = useRef(null);
+  const quizContainerRef = useRef(null);
+
+  // Utility: convert simple a/b patterns to TeX fractions for display
+  const formatMathText = (text) => {
+    if (typeof text !== 'string') return text;
+    // Replace bare fractions with TeX inline form \(\frac{a}{b}\)
+    return text.replace(/(?<![\\\d])\b(\d+)\s*\/\s*(\d+)\b/g, (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`);
+  };
+
+  // Auto-render KaTeX inside the quiz container when content changes
+  useEffect(() => {
+    if (quizState === 'inProgress' && quizContainerRef.current) {
+      try {
+        renderMathInElement(quizContainerRef.current, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true },
+          ],
+          throwOnError: false,
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('KaTeX render error:', e);
+      }
+    }
+  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered]);
 
   const updateDifficulty = (score, numQuestions) => {
     const newDifficulty = Math.min(1, Math.max(0, difficulty + (score / numQuestions - 0.75) / 10));
@@ -1472,17 +1502,17 @@ Answer: [The answer]`;
 
   const renderQuiz = () => {
     if (currentQuiz.length === 0) return null;
-    const currentQuestion = currentQuiz[currentQuestionIndex];
+  const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
       <>
-        <div className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
+  <div ref={quizContainerRef} className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
             <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6"><div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div>
-          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">{currentQuestion.question}</p>
+          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">{formatMathText(currentQuestion.question)}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {currentQuestion.options.map((option, index) => {
               const isSelected = userAnswer === option;
@@ -1495,7 +1525,11 @@ Answer: [The answer]`;
               } else if (isSelected) {
                 buttonClass = 'bg-blue-100 border-2 border-blue-500';
               }
-              return (<button key={index} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}>{option}</button>);
+              return (
+                <button key={index} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}>
+                  {formatMathText(option)}
+                </button>
+              );
             })}
           </div>
           {showHint && !isAnswered && (<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg"><p><span className="font-bold">Hint:</span> {currentQuestion.hint}</p></div>)}

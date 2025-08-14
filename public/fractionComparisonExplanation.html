@@ -17,6 +17,9 @@
     .thinking-bubble { background: #e8f5e8; padding: 20px; border-radius: 20px; margin: 20px 0; position: relative; border: 2px solid #4caf50; }
     .thinking-bubble::before { content: "💭"; position: absolute; top: -10px; left: 20px; font-size: 1.5em; }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});"></script>
 </head>
 <body>
   <div class="container">
@@ -24,18 +27,18 @@
     <div class="subtitle">Decide which fraction is bigger using simple rules.</div>
 
     <div class="explanation">
-      If two fractions have the same denominator (bottom number), the bigger numerator (top number) means the bigger fraction. Example: 5/8 > 3/8.
+      If two fractions have the same denominator (bottom number), the bigger numerator (top number) means the bigger fraction. Example: \(\tfrac{5}{8} > \tfrac{3}{8}\).
     </div>
 
     <div class="pizza-container">
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-5-8"></div>
-        <div class="pizza-label">5/8</div>
+        <div class="pizza-label">\(\tfrac{5}{8}\)</div>
       </div>
       <div class="arrow">></div>
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-3-8"></div>
-        <div class="pizza-label">3/8</div>
+        <div class="pizza-label">\(\tfrac{3}{8}\)</div>
       </div>
     </div>
 
@@ -46,12 +49,12 @@
     <div class="pizza-container">
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-3-5"></div>
-        <div class="pizza-label">3/5</div>
+        <div class="pizza-label">\(\tfrac{3}{5}\)</div>
       </div>
       <div class="arrow">></div>
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-3-7"></div>
-        <div class="pizza-label">3/7</div>
+        <div class="pizza-label">\(\tfrac{3}{7}\)</div>
       </div>
     </div>
 
@@ -62,12 +65,12 @@
     <div class="pizza-container">
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-2-3"></div>
-        <div class="pizza-label">2/3 = 4/6</div>
+        <div class="pizza-label">\(\tfrac{2}{3} = \tfrac{4}{6}\)</div>
       </div>
       <div class="arrow">></div>
       <div class="pizza-wrapper">
         <div class="pizza" id="pizza-1-2"></div>
-        <div class="pizza-label">1/2 = 3/6</div>
+        <div class="pizza-label">\(\tfrac{1}{2} = \tfrac{3}{6}\)</div>
       </div>
     </div>
 

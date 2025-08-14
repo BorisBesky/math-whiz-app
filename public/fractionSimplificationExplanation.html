@@ -16,6 +16,9 @@
         .thinking-bubble { background: #e8f5e8; padding: 20px; border-radius: 20px; margin: 20px 0; position: relative; border: 2px solid #4caf50; }
         .thinking-bubble::before { content: "💭"; position: absolute; top: -10px; left: 20px; font-size: 1.5em; }
     </style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});"></script>
 </head>
 <body>
     <div class="container">
@@ -26,37 +29,37 @@
         </div>
 
         <div class="pizza-container">
-            <div class="pizza-wrapper">
-                <div class="pizza" id="pizza-8-start"></div>
-                <div class="pizza-label">4/8</div>
-            </div>
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-8-start"></div>
+                        <div class="pizza-label">\(\tfrac{4}{8}\)</div>
+                    </div>
             <div class="arrow">→</div>
-            <div class="pizza-wrapper">
-                <div class="pizza" id="pizza-2-simplified"></div>
-                <div class="pizza-label">1/2</div>
-            </div>
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-2-simplified"></div>
+                        <div class="pizza-label">\(\tfrac{1}{2}\)</div>
+                    </div>
         </div>
 
         <div class="explanation">
-            Why does 4/8 become 1/2? Because both 4 and 8 can be divided by 4.
-            <br />
-            4 ÷ 4 = 1 and 8 ÷ 4 = 2
+                    Why does \(\tfrac{4}{8}\) become \(\tfrac{1}{2}\)? Because both 4 and 8 can be divided by 4.
+                    <br />
+                    \(4 \\div 4 = 1\) and \(8 \\div 4 = 2\)
         </div>
 
         <div class="pizza-container">
-            <div class="pizza-wrapper">
-                <div class="pizza" id="pizza-6-9"></div>
-                <div class="pizza-label">6/9</div>
-            </div>
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-6-9"></div>
+                        <div class="pizza-label">\(\tfrac{6}{9}\)</div>
+                    </div>
             <div class="arrow">→</div>
-            <div class="pizza-wrapper">
-                <div class="pizza" id="pizza-2-3"></div>
-                <div class="pizza-label">2/3</div>
-            </div>
+                    <div class="pizza-wrapper">
+                        <div class="pizza" id="pizza-2-3"></div>
+                        <div class="pizza-label">\(\tfrac{2}{3}\)</div>
+                    </div>
         </div>
 
         <div class="explanation">
-            Try it: The greatest common factor (GCF) of 6 and 9 is 3, so 6/9 ÷ 3/3 = 2/3.
+                    Try it: The greatest common factor (GCF) of 6 and 9 is 3, so \(\tfrac{6}{9} \\div \tfrac{3}{3} = \tfrac{2}{3}\).
         </div>
 
         <div class="thinking-bubble">
