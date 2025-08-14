@@ -435,6 +435,10 @@ const App = () => {
   const [purchaseFeedback, setPurchaseFeedback] = useState('');
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] = useState(false);
 
+  // New state variables for story problem functionality
+  const [showStoryHint, setShowStoryHint] = useState(false);
+  const [showStoryAnswer, setShowStoryAnswer] = useState(false);
+  const [storyData, setStoryData] = useState(null);
 
   const questionStartTime = useRef(null);
 
@@ -539,6 +543,10 @@ const App = () => {
     resetQuiz();
     setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for new quiz
+    // Reset story state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
   };
 
   const resumePausedQuiz = () => {
@@ -551,6 +559,10 @@ const App = () => {
     questionStartTime.current = Date.now();
     setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
+    // Reset story state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
   };
 
   const pauseQuiz = async () => {
@@ -731,7 +743,15 @@ const checkAnswer = async () => {
 
   const resetQuestionState = () => { setUserAnswer(null); setShowHint(false); setFeedback(null); setIsAnswered(false); };
   const resetQuiz = () => { setCurrentQuestionIndex(0); setScore(0); resetQuestionState(); };
-  const returnToTopics = () => { setQuizState('topicSelection'); setCurrentTopic(null); setCurrentQuiz([]); };
+  const returnToTopics = () => { 
+    setQuizState('topicSelection'); 
+    setCurrentTopic(null); 
+    setCurrentQuiz([]); 
+    // Reset story state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
+  };
   
   const handleGoalChange = async (e) => {
     const newGoal = parseInt(e.target.value, 10);
@@ -832,6 +852,11 @@ const checkAnswer = async () => {
           const result = await response.json();
           console.log('✅ API Success! Content length:', result.content?.length);
           setGeneratedContent(result.content);
+          
+          // Parse story content if this is a story problem
+          if (modalTitle === '✨ A Fun Story Problem!') {
+            parseStoryContent(result.content);
+          }
       } catch (error) {
           console.error("Gemini API error:", error);
           setGeneratedContent(`There was an error: ${error.message}`);
@@ -839,6 +864,85 @@ const checkAnswer = async () => {
           setIsGenerating(false);
       }
   };
+
+  // Function to parse story content and extract components
+  const parseStoryContent = (content) => {
+    try {
+      console.log('🔍 Parsing story content:', content);
+      const lines = content.split('\n').filter(line => line.trim());
+      console.log('📝 Filtered lines:', lines);
+      
+      let story = '';
+      let question = '';
+      let hint = '';
+      let answer = '';
+      
+      let currentSection = 'story';
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (line.startsWith('Hint:')) {
+          currentSection = 'hint';
+          hint = line.replace('Hint:', '').trim();
+        } else if (line.startsWith('Answer:')) {
+          currentSection = 'answer';
+          answer = line.replace('Answer:', '').trim();
+        } else if (currentSection === 'story') {
+          if (story) story += ' ';
+          story += line;
+        } else if (currentSection === 'hint') {
+          if (hint) hint += ' ';
+          hint += line;
+        } else if (currentSection === 'answer') {
+          if (answer) answer += ' ';
+          answer += line;
+        }
+      }
+      
+      console.log('📖 Initial parsing results:', { story, question, hint, answer });
+      
+      // Try to extract question from the story if it wasn't explicitly provided
+      if (!question && story) {
+        const sentences = story.split(/[.!?]+/).filter(s => s.trim());
+        for (let i = sentences.length - 1; i >= 0; i--) {
+          const sentence = sentences[i].trim();
+          if (sentence.includes('?') || sentence.includes('how many') || sentence.includes('what is') || sentence.includes('find')) {
+            question = sentence + (sentence.endsWith('?') ? '' : '?');
+            story = story.replace(sentence, '').trim();
+            break;
+          }
+        }
+      }
+      
+      // Clean up the story by removing the question if it was extracted
+      if (question && story.includes(question)) {
+        story = story.replace(question, '').trim();
+      }
+      
+      console.log('✅ Final parsing results:', { story, question, hint, answer });
+      
+      setStoryData({
+        story: story || 'Story content could not be parsed',
+        question: question || 'Question could not be parsed',
+        hint: hint || 'Hint could not be parsed',
+        answer: answer || 'Answer could not be parsed'
+      });
+      
+      // Reset story UI state
+      setShowStoryHint(false);
+      setShowStoryAnswer(false);
+    } catch (error) {
+      console.error('Error parsing story content:', error);
+      setStoryData({
+        story: 'Error parsing story content',
+        question: 'Error parsing question',
+        hint: 'Error parsing hint',
+        answer: 'Error parsing answer'
+      });
+    }
+  };
+
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
     const explanationFile = conceptExplanationFiles[concept];
@@ -874,7 +978,17 @@ const checkAnswer = async () => {
       return;
     }
 
-    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long and then state the question clearly. At the end, on a new line, provide the answer in the format "Answer: [your answer]".`;
+    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long and then state the question clearly. 
+
+After the question, provide a helpful hint on how to solve it in the format "Hint: [your hint]".
+
+At the end, on a new line, provide the answer in the format "Answer: [your answer]".
+
+Please structure it exactly like this:
+[Story paragraph]
+[Question]
+Hint: [Hint text]
+Answer: [Answer]`;
     setModalTitle(`✨ A Fun Story Problem!`);
     setShowModal(true);
     
@@ -1321,7 +1435,15 @@ const checkAnswer = async () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
                 <div className='flex-shrink-0'>
-                    <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+                    <button onClick={() => {
+                        setShowModal(false);
+                        // Reset story state when modal is closed
+                        if (modalTitle === '✨ A Fun Story Problem!') {
+                            setStoryData(null);
+                            setShowStoryHint(false);
+                            setShowStoryAnswer(false);
+                        }
+                    }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                         <X size={24} />
                     </button>
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
@@ -1332,12 +1454,58 @@ const checkAnswer = async () => {
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         </div>
                     )}
-                    {generatedContent && (
+                    {generatedContent && modalTitle === '✨ A Fun Story Problem!' && storyData ? (
+                        <div className="space-y-6">
+                            {/* Story Section */}
+                            <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                                <h4 className="font-bold text-blue-800 mb-2">📖 The Story</h4>
+                                <p className="text-gray-700">{storyData.story}</p>
+                            </div>
+                            
+                            {/* Question Section */}
+                            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                                <h4 className="font-bold text-green-800 mb-2">❓ The Question</h4>
+                                <p className="text-gray-700">{storyData.question}</p>
+                            </div>
+                            
+                            {/* Hint Section */}
+                            <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="font-bold text-yellow-800">💡 Hint</h4>
+                                    <button 
+                                        onClick={() => setShowStoryHint(!showStoryHint)}
+                                        className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 transition"
+                                    >
+                                        {showStoryHint ? 'Hide Hint' : 'Show Hint'}
+                                    </button>
+                                </div>
+                                {showStoryHint && (
+                                    <p className="text-gray-700">{storyData.hint}</p>
+                                )}
+                            </div>
+                            
+                            {/* Answer Section */}
+                            <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="font-bold text-purple-800">✅ Answer</h4>
+                                    <button 
+                                        onClick={() => setShowStoryAnswer(!showStoryAnswer)}
+                                        className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600 transition"
+                                    >
+                                        {showStoryAnswer ? 'Hide Answer' : 'Check Answer'}
+                                    </button>
+                                </div>
+                                {showStoryAnswer && (
+                                    <p className="text-gray-700 font-semibold">{storyData.answer}</p>
+                                )}
+                            </div>
+                        </div>
+                    ) : generatedContent ? (
                         <div 
                             className="text-gray-700 whitespace-pre-wrap leading-relaxed h-full"
                             dangerouslySetInnerHTML={{ __html: generatedContent }}
                         />
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

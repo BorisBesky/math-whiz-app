@@ -72,6 +72,6 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ## TODO
 
 1. Generate story should have a hint button with instructions on how to solve
-2. Generate store should have a check answer button
+2. Generate story should have a check answer button that only shows answer after it is clicked.
 3. Adjust question complexity based on student's progress
 4. Allow setting areas of emphasis to address particular topic (currently daily goal is evenly devide for all topics)
