@@ -74,22 +74,22 @@ const checkRateLimit = async (userId, topic) => {
   }
   
   const data = userData.data();
-  const dailyQueries = data.dailyQueries?.[today] || {};
+  const dailyStories = data.dailyStories?.[today] || {};
   
   // Check if user has already used this topic today
-  if (dailyQueries[topic]) {
+  if (dailyStories[topic]) {
     throw new Error(`You have already created a story problem for ${topic} today. Please try a different topic or come back tomorrow.`);
   }
   
   // Check total queries for today (max 4 per day)
-  const totalQueriesToday = Object.keys(dailyQueries).length;
-  if (totalQueriesToday >= 4) {
+  const totalStoriesToday = Object.keys(dailyStories).length;
+  if (totalStoriesToday >= 4) {
     throw new Error('You have reached your daily limit of 4 story problems. Please come back tomorrow.');
   }
   
   // Update the rate limit counter
   await userDoc.update({
-    [`dailyQueries.${today}.${topic}`]: true
+    [`dailyStories.${today}.${topic}`]: true
   });
   
   return true;

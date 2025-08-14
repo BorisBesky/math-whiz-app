@@ -577,11 +577,18 @@ const App = () => {
       [`pausedQuizzes.${currentTopic}`]: pausedQuizData
     });
     setQuizState('topicSelection');
+    // Reset story UI state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
   };
   
   const handleAnswer = (option) => {
     if (isAnswered) return;
     setUserAnswer(option);
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
   };
 
 const checkAnswer = async () => {
@@ -869,64 +876,31 @@ const checkAnswer = async () => {
   const parseStoryContent = (content) => {
     try {
       console.log('🔍 Parsing story content:', content);
-      const lines = content.split('\n').filter(line => line.trim());
-      console.log('📝 Filtered lines:', lines);
       
-      let story = '';
-      let question = '';
-      let hint = '';
-      let answer = '';
-      
-      let currentSection = 'story';
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        if (line.startsWith('Hint:')) {
-          currentSection = 'hint';
-          hint = line.replace('Hint:', '').trim();
-        } else if (line.startsWith('Answer:')) {
-          currentSection = 'answer';
-          answer = line.replace('Answer:', '').trim();
-        } else if (currentSection === 'story') {
-          if (story) story += ' ';
-          story += line;
-        } else if (currentSection === 'hint') {
-          if (hint) hint += ' ';
-          hint += line;
-        } else if (currentSection === 'answer') {
-          if (answer) answer += ' ';
-          answer += line;
-        }
-      }
-      
-      console.log('📖 Initial parsing results:', { story, question, hint, answer });
-      
-      // Try to extract question from the story if it wasn't explicitly provided
-      if (!question && story) {
-        const sentences = story.split(/[.!?]+/).filter(s => s.trim());
-        for (let i = sentences.length - 1; i >= 0; i--) {
-          const sentence = sentences[i].trim();
-          if (sentence.includes('?') || sentence.includes('how many') || sentence.includes('what is') || sentence.includes('find')) {
-            question = sentence + (sentence.endsWith('?') ? '' : '?');
-            story = story.replace(sentence, '').trim();
-            break;
-          }
-        }
-      }
-      
-      // Clean up the story by removing the question if it was extracted
-      if (question && story.includes(question)) {
-        story = story.replace(question, '').trim();
-      }
-      
+      // Use regex to handle variations in newlines from the API
+      const questionRegex = /Question:(.*?)(?=Hint:|Answer:|$)/s;
+      const hintRegex = /Hint:(.*?)(?=Answer:|$)/s;
+      const answerRegex = /Answer:(.*)/s;
+
+      const questionMatch = content.match(questionRegex);
+      const hintMatch = content.match(hintRegex);
+      const answerMatch = content.match(answerRegex);
+
+      const question = questionMatch ? questionMatch[1].trim() : '';
+      const hint = hintMatch ? hintMatch[1].trim() : '';
+      const answer = answerMatch ? answerMatch[1].trim() : '';
+
+      // The story is whatever is before "Question:"
+      const storyEndIndex = content.indexOf("Question:");
+      const story = storyEndIndex !== -1 ? content.substring(0, storyEndIndex).trim() : 'Story could not be parsed.';
+
       console.log('✅ Final parsing results:', { story, question, hint, answer });
       
       setStoryData({
-        story: story || 'Story content could not be parsed',
-        question: question || 'Question could not be parsed',
-        hint: hint || 'Hint could not be parsed',
-        answer: answer || 'Answer could not be parsed'
+        story: story,
+        question: question || 'Question could not be parsed.',
+        hint: hint || 'Hint could not be parsed.',
+        answer: answer || 'Answer could not be parsed.'
       });
       
       // Reset story UI state
@@ -978,29 +952,24 @@ const checkAnswer = async () => {
       return;
     }
 
-    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long and then state the question clearly. 
+    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
 
-After the question, provide a helpful hint on how to solve it in the format "Hint: [your hint]".
+Then, on a new line, state the question clearly, starting with "Question:".
 
-At the end, on a new line, provide the answer in the format "Answer: [your answer]".
+After the question, on a new line, provide a helpful hint on how to solve it, starting with "Hint:".
+
+At the end, on a new line, provide the answer, starting with "Answer:".
 
 Please structure it exactly like this:
 [Story paragraph]
-[Question]
-Hint: [Hint text]
-Answer: [Answer]`;
+Question: [The question]
+Hint: [The hint]
+Answer: [The answer]`;
     setModalTitle(`✨ A Fun Story Problem!`);
     setShowModal(true);
-    
-    // Update user data to mark that a story has been created for this topic today
-    if (user) {
-      const userDocRef = getUserDocRef(user.uid);
-      if (userDocRef) {
-        await updateDoc(userDocRef, {
-          [`dailyStories.${today}.${currentTopic}`]: true
-        });
-      }
-    }
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
+    setStoryData(null);
     
     setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
     callGeminiAPI(prompt);
@@ -1439,7 +1408,6 @@ Answer: [Answer]`;
                         setShowModal(false);
                         // Reset story state when modal is closed
                         if (modalTitle === '✨ A Fun Story Problem!') {
-                            setStoryData(null);
                             setShowStoryHint(false);
                             setShowStoryAnswer(false);
                         }
@@ -1449,12 +1417,11 @@ Answer: [Answer]`;
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
                 </div>
                 <div className="flex-grow overflow-hidden">
-                    {isGenerating && (
+                    {isGenerating && (!storyData || modalTitle !== '✨ A Fun Story Problem!') ? (
                         <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         </div>
-                    )}
-                    {generatedContent && modalTitle === '✨ A Fun Story Problem!' && storyData ? (
+                    ) : storyData ? (
                         <div className="space-y-6">
                             {/* Story Section */}
                             <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">

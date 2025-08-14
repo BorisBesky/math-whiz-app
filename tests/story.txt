@@ -1,0 +1,5 @@
+Lily is making a pizza for her and her two best friends. She cut the pizza into 8 equal slices. Lily ate 2 slices, and one of her friends, Maya, ate 3 slices. Her other friend, Noah, ate 1 slice.
+
+Question: What fraction of the pizza did Lily, Maya, and Noah eat altogether?
+Hint: Add the number of slices each person ate, and then write that number as the numerator of a fraction with the total number of slices (8) as the denominator.
+Answer: 6/8
