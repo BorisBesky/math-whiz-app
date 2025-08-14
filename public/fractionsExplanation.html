@@ -37,6 +37,20 @@
             margin-bottom: 30px;
         }
         
+        .simplification-step {
+            margin-bottom: 50px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #eef1f5;
+            border-left: 8px solid #3f51b5;
+        }
+
+        .simplification-step h2 {
+            color: #303f9f;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
         .problem {
             background: #e3f2fd;
             padding: 20px;
@@ -148,6 +162,33 @@
         <h1>Adding Fractions with Pizza! 🍕</h1>
         <div class="subtitle">Let's learn how to add 2/5 + 1/2 using delicious pizza!</div>
         
+        <div class="simplification-step">
+            <h2>Let's Simplify Fractions! ✂️</h2>
+            <div class="explanation">
+                Simplifying a fraction means finding the smallest, easiest way to write it. Think of it like swapping big pizza slices for fewer, even bigger slices, while keeping the same amount of pizza! Let's try to simplify <strong>4/8</strong>.
+            </div>
+
+            <div class="pizza-container">
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-8-start"></div>
+                    <div class="pizza-label">This is 4/8 of a pizza.<br>(4 slices out of 8)</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-2-simplified"></div>
+                    <div class="pizza-label">It's the same as 1/2!<br>(1 slice out of 2)</div>
+                </div>
+            </div>
+
+            <div class="thinking-bubble">
+                <strong>How did we do that?</strong><br>
+                We found the biggest number that can divide both the top (4) and the bottom (8) number. That number is 4!<br><br>
+                <strong>4 ÷ 4 = 1</strong> (the new top number)<br>
+                <strong>8 ÷ 4 = 2</strong> (the new bottom number)<br><br>
+                So, 4/8 simplifies to 1/2!
+            </div>
+        </div>
+
         <div class="problem">
             2/5 + 1/2 = ?
         </div>
@@ -309,6 +350,8 @@
         
         // Create all pizzas when page loads
         window.onload = function() {
+            createPizzaSlices('pizza-8-start', 8, [0, 1, 2, 3]); // 4/8
+            createPizzaSlices('pizza-2-simplified', 2, [0]);     // 1/2
             createPizzaSlices('pizza-2', 2);
             createPizzaSlices('pizza-5', 5);
             createPizzaSlices('pizza-10', 10);

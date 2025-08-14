@@ -157,7 +157,7 @@ const generateQuizQuestions = (topic, dailyGoals) => {
         question = { question: `What is ${d_dividend} ÷ ${d_divisor}?`, correctAnswer: d_quotient.toString(), options: shuffleArray([d_quotient.toString(), (d_quotient + 1).toString(), (d_quotient - 1).toString(), (d_quotient + getRandomInt(2, 4)).toString()]), hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`, standard: "3.OA.C.7", concept: "Division" };
         break;
       case 'Fractions':
-        const fractionQuestionType = getRandomInt(1, 4);
+        const fractionQuestionType = getRandomInt(1, 5);
         switch (fractionQuestionType) {
             case 1: // Equivalent Fractions
                 const f_num_eq = getRandomInt(1, 8);
@@ -262,6 +262,29 @@ const generateQuizQuestions = (topic, dailyGoals) => {
                         concept: "Fractions"
                     };
                 }
+                break;
+            case 5: // Fraction Simplification
+                const simp_multiplier = getRandomInt(3, 9);
+                const simp_num = getRandomInt(1, 5);
+                const simp_den = getRandomInt(simp_num + 1, 11);
+                const starting_num = simp_num * simp_multiplier;
+                const starting_den = simp_den * simp_multiplier;
+                const simplified_fraction = getSimplifiedFraction(starting_num, starting_den);
+
+                questionSignature = `frac_simp_${starting_num}_${starting_den}`;
+                question = {
+                    question: `Simplify the fraction ${starting_num}/${starting_den}`,
+                    correctAnswer: simplified_fraction,
+                    options: shuffleArray([
+                        simplified_fraction,
+                        `${simp_num}/${simp_den + getRandomInt(1, 3)}`,
+                        `${Math.abs(simp_num - getRandomInt(1, 3))}/${simp_den}`,
+                        `${Math.floor(starting_num / 2)}/${Math.floor(starting_den / 2) }` // Common mistake if not fully simplified
+                    ]),
+                    hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
+                    standard: "4.NF.A.1", 
+                    concept: "Fractions"
+                };
                 break;
             default:
                 // Fallback to equivalent fractions if unexpected value
