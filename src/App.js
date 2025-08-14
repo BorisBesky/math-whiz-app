@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion, deleteField } from 'firebase/firestore';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -33,6 +33,13 @@ if (typeof __firebase_config !== 'undefined') {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+const DEFAULT_DAILY_GOAL = 4;
+const DAILY_GOAL_BONUS = 10;
+const STORE_BACKGROUND_COST = 20;
+const GOAL_RANGE_MIN = 4;
+const GOAL_RANGE_MAX = 40;
+const GOAL_RANGE_STEP = 1;
 
 // --- Helper Functions ---
 const getTodayDateString = () => {
@@ -121,10 +128,11 @@ const storeItems = [
 
 
 // --- Dynamic Quiz Generation ---
-const generateQuizQuestions = (topic, dailyGoal = 8) => {
+const generateQuizQuestions = (topic, dailyGoals) => {
+  const dailyGoal = dailyGoals?.[topic] || DEFAULT_DAILY_GOAL;
   const questions = [];
   const usedQuestions = new Set(); // Track unique question signatures
-  const numQuestions = Math.max(1, Math.floor(dailyGoal / 4));
+  const numQuestions = Math.max(1, dailyGoal);
   let attempts = 0;
   const maxAttempts = numQuestions * 10; // Prevent infinite loops
   
@@ -360,19 +368,20 @@ const generateQuizQuestions = (topic, dailyGoal = 8) => {
 const quizTopics = ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'];
 
 // --- Helper function to check topic availability ---
-const getTopicAvailability = (userData, dailyGoal) => {
-  if (!userData) return { availableTopics: [], unavailableTopics: [], allCompleted: false };
+const getTopicAvailability = (userData) => {
+  if (!userData || !userData.dailyGoals) return { availableTopics: [], unavailableTopics: [], allCompleted: false, topicStats: [] };
   
   const today = getTodayDateString();
   const todaysProgress = userData?.progress?.[today] || {};
-  const numQuestions = Math.max(1, Math.floor(dailyGoal / 4));
   
   const topicStats = quizTopics.map(topic => {
+    const goalForTopic = userData.dailyGoals[topic] || DEFAULT_DAILY_GOAL;
     const stats = todaysProgress[topic] || { correct: 0, incorrect: 0 };
     return {
       topic,
       correctAnswers: stats.correct,
-      completed: stats.correct >= numQuestions
+      completed: stats.correct >= goalForTopic,
+      goal: goalForTopic
     };
   });
   
@@ -466,20 +475,47 @@ const App = () => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             const today = getTodayDateString();
+            const updatePayload = {};
+            let needsUpdate = false;
+
+            // Migration from single goal to per-topic goals
+            if (data.dailyGoal && !data.dailyGoals) {
+                const newGoals = {};
+                quizTopics.forEach(topic => {
+                    newGoals[topic] = data.dailyGoal;
+                });
+                data.dailyGoals = newGoals;
+                updatePayload.dailyGoals = newGoals;
+                updatePayload.dailyGoal = deleteField();
+                delete data.dailyGoal; // for local state
+                needsUpdate = true;
+            }
+
             // If user logs in on a new day, create a progress entry for today
             if (!data.progress?.[today]) {
                 const initialTodayProgress = { all: { correct: 0, incorrect: 0, timeSpent: 0 } };
-                const updatedData = { ...data, progress: { ...data.progress, [today]: initialTodayProgress }};
-                setUserData(updatedData);
-                updateDoc(userDocRef, { [`progress.${today}`]: initialTodayProgress });
-            } else {
-                setUserData(data);
+                if (!data.progress) {
+                    data.progress = {};
+                }
+                data.progress[today] = initialTodayProgress;
+                updatePayload[`progress.${today}`] = initialTodayProgress;
+                needsUpdate = true;
+            }
+            
+            setUserData({...data});
+
+            if (needsUpdate) {
+                updateDoc(userDocRef, updatePayload);
             }
           } else {
             const today = getTodayDateString();
+            const initialDailyGoals = {};
+            quizTopics.forEach(topic => {
+                initialDailyGoals[topic] = DEFAULT_DAILY_GOAL;
+            });
             const initialData = {
               coins: 0,
-              dailyGoal: 8,
+              dailyGoals: initialDailyGoals,
               progress: { [today]: { all: { correct: 0, incorrect: 0, timeSpent: 0 } } },
               pausedQuizzes: {},
               ownedBackgrounds: ['default'],
@@ -515,7 +551,7 @@ const App = () => {
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
-    const { availableTopics } = getTopicAvailability(userData, userData.dailyGoal);
+    const { availableTopics } = getTopicAvailability(userData);
     
     if (!availableTopics.includes(topic)) {
       setFeedback({
@@ -536,7 +572,7 @@ const App = () => {
   
   const startNewQuiz = (topic) => {
     setCurrentTopic(topic);
-    const newQuestions = generateQuizQuestions(topic, userData.dailyGoal);
+    const newQuestions = generateQuizQuestions(topic, userData.dailyGoals);
     setCurrentQuiz(newQuestions);
     setQuizState('inProgress');
     questionStartTime.current = Date.now();
@@ -640,18 +676,19 @@ const checkAnswer = async () => {
       updates.coins = increment(1);
       
       // Check if all topics will be completed after this answer
-      const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+      const goalForTopic = userData.dailyGoals?.[currentTopic] || DEFAULT_DAILY_GOAL;
       const currentTopicProgress = userData?.progress?.[today]?.[currentTopic] || { correct: 0, incorrect: 0 };
       const newCorrectCount = currentTopicProgress.correct + 1;
       
       // Check if this makes the current topic completed and if all other topics are already completed
-      if (newCorrectCount >= numQuestions) {
+      if (newCorrectCount >= goalForTopic) {
         const allTopicsWillBeCompleted = quizTopics.every(topic => {
           if (topic === currentTopic) {
             return true; // Current topic will be completed with this answer
           }
           const topicProgress = userData?.progress?.[today]?.[topic] || { correct: 0, incorrect: 0 };
-          return topicProgress.correct >= numQuestions;
+          const goalForOtherTopic = userData.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL;
+          return topicProgress.correct >= goalForOtherTopic;
         });
         
         // If all topics will be completed, we need to reset
@@ -704,11 +741,11 @@ const checkAnswer = async () => {
       updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
     }
   
+    const totalDailyGoal = quizTopics.reduce((sum, topic) => sum + (userData.dailyGoals[topic] || DEFAULT_DAILY_GOAL), 0);
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
     const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
-    if (userData.dailyGoal > 0 && ((totalAnsweredToday + 1) % userData.dailyGoal === 0)) {
+    if (totalDailyGoal > 0 && ((totalAnsweredToday + 1) % totalDailyGoal === 0)) {
       feedbackType = 'success';
-      const DAILY_GOAL_BONUS = 10;
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
           {isCorrect && (
@@ -760,12 +797,12 @@ const checkAnswer = async () => {
     setShowStoryAnswer(false);
   };
   
-  const handleGoalChange = async (e) => {
+  const handleGoalChange = async (e, topic) => {
     const newGoal = parseInt(e.target.value, 10);
-    if (user && !isNaN(newGoal) && newGoal > 0) {
+    if (user && userData.dailyGoals && !isNaN(newGoal) && newGoal > 0) {
       const userDocRef = getUserDocRef(user.uid);
       if (!userDocRef) return;
-      await updateDoc(userDocRef, { dailyGoal: newGoal });
+      await updateDoc(userDocRef, { [`dailyGoals.${topic}`]: newGoal });
     }
   };
 
@@ -795,11 +832,10 @@ const checkAnswer = async () => {
 
   // --- Store Logic ---
   const handlePurchase = async (item) => {
-    const cost = 20;
-    if (userData.coins >= cost) {
+    if (userData.coins >= STORE_BACKGROUND_COST) {
       const userDocRef = getUserDocRef(user.uid);
       await updateDoc(userDocRef, {
-        coins: increment(-cost),
+        coins: increment(-STORE_BACKGROUND_COST),
         ownedBackgrounds: arrayUnion(item.id)
       });
       setPurchaseFeedback({ type: 'success', message: `Successfully purchased ${item.name}!` });
@@ -1027,13 +1063,26 @@ Answer: [The answer]`;
 
     return (
         <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Daily Goal Progress</h2>
-            <div className="mb-8">
-                <div className="flex items-center gap-4 mb-2">
-                    <input type="range" min="8" max="40" step="4" value={userData?.dailyGoal || 8} onChange={handleGoalChange} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
-                    <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">{userData?.dailyGoal || 8} Qs</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-green-500 h-4 rounded-full text-xs text-white text-center font-bold flex items-center justify-center" style={{ width: `${Math.min((totalAnswered / (userData?.dailyGoal || 1)) * 100, 100)}%` }}>{totalAnswered} / {userData?.dailyGoal || 8}</div></div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Daily Goals & Progress</h2>
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {quizTopics.map(topic => (
+                    <div key={topic}>
+                        <label htmlFor={`goal-${topic}`} className="block text-lg font-bold text-gray-700 mb-1">{topic}</label>
+                        <div className="flex items-center gap-4">
+                            <input 
+                                type="range" 
+                                id={`goal-${topic}`}
+                                min={GOAL_RANGE_MIN} max={GOAL_RANGE_MAX} step={GOAL_RANGE_STEP} 
+                                value={userData?.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL} 
+                                onChange={(e) => handleGoalChange(e, topic)} 
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                            />
+                            <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
+                                {userData?.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL} Qs
+                            </span>
+                        </div>
+                    </div>
+                ))}
             </div>
             
             <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">Today's Performance</h3>
@@ -1126,7 +1175,6 @@ Answer: [The answer]`;
           {storeItems.map(item => {
             const isOwned = userData.ownedBackgrounds.includes(item.id);
             const isActive = userData.activeBackground === item.id;
-            const cost = 20;
 
             return (
               <div key={item.id} className="border rounded-lg p-4 flex flex-col items-center justify-between bg-gray-50 shadow-md">
@@ -1143,7 +1191,7 @@ Answer: [The answer]`;
                   </button>
                 ) : (
                   <button onClick={() => handlePurchase(item)} className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
-                    <Coins size={16} /> {cost}
+                    <Coins size={16} /> {STORE_BACKGROUND_COST}
                   </button>
                 )}
               </div>
@@ -1158,8 +1206,7 @@ Answer: [The answer]`;
   };
 
   const renderTopicSelection = () => {
-    const { availableTopics, unavailableTopics, allCompleted, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
-    const numQuestions = Math.max(1, Math.floor(userData.dailyGoal / 4));
+    const { availableTopics, unavailableTopics, allCompleted, topicStats } = getTopicAvailability(userData);
     
     return (
       <div className="text-center mt-20">
@@ -1232,9 +1279,9 @@ Answer: [The answer]`;
             {allCompleted ? (
               <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
             ) : unavailableTopics.length > 0 ? (
-              <span>Complete {numQuestions} questions correctly in each available topic to unlock the others!</span>
+              <span>Complete the goal for each available topic to unlock the others!</span>
             ) : (
-              <span>Answer {numQuestions} questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
+              <span>Answer the required questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
             )}
           </p>
           {topicStats && (
@@ -1242,7 +1289,7 @@ Answer: [The answer]`;
               {topicStats.map(stat => (
                 <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
                   <div className="font-semibold">{stat.topic}</div>
-                  <div>{stat.correctAnswers}/{numQuestions} ✓</div>
+                  <div>{stat.correctAnswers}/{stat.goal} ✓</div>
                 </div>
               ))}
             </div>
@@ -1350,7 +1397,7 @@ Answer: [The answer]`;
     const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
     // Check if current topic has reached daily goal and some topics are still not complete
-    const { availableTopics, topicStats } = getTopicAvailability(userData, userData.dailyGoal);
+    const { availableTopics, topicStats } = getTopicAvailability(userData);
     const currentTopicStats = topicStats?.find(t => t.topic === currentTopic);
     const isCurrentTopicCompleted = currentTopicStats?.completed || false;
     const hasIncompleteTopics = availableTopics.length > 0;
