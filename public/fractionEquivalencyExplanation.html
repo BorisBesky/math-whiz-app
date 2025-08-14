@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equivalent Fractions Explained! 🟰</title>
+  <style>
+    body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(135deg, #ffeb3b, #ff9800); margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    h1 { text-align: center; color: #d32f2f; font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+    .subtitle { text-align: center; font-size: 1.2em; color: #666; margin-bottom: 30px; }
+    .explanation { background: #fff3e0; padding: 20px; border-radius: 10px; border: 2px solid #ff9800; margin: 20px 0; font-size: 1.1em; line-height: 1.6; }
+    .pizza-container { display: flex; justify-content: center; align-items: center; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
+    .pizza { width: 150px; height: 150px; }
+    .pizza-label { text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #333; }
+    .arrow { font-size: 2em; color: #4caf50; margin: 0 15px; }
+    .thinking-bubble { background: #e8f5e8; padding: 20px; border-radius: 20px; margin: 20px 0; position: relative; border: 2px solid #4caf50; }
+    .thinking-bubble::before { content: "💭"; position: absolute; top: -10px; left: 20px; font-size: 1.5em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Equivalent Fractions with Pizza! 🍕🟰🍕</h1>
+    <div class="subtitle">Different-looking fractions can show the same amount!</div>
+
+    <div class="explanation">
+      Two fractions are equivalent if they represent the same part of a whole, even if the numbers look different. For example, 1/2 and 2/4 are the same amount because if you cut a pizza into 2 slices and eat 1, it's the same as cutting it into 4 slices and eating 2.
+    </div>
+
+    <div class="pizza-container">
+      <div class="pizza-wrapper">
+        <div class="pizza" id="pizza-2-half"></div>
+        <div class="pizza-label">1/2 (1 out of 2)</div>
+      </div>
+      <div class="arrow">=</div>
+      <div class="pizza-wrapper">
+        <div class="pizza" id="pizza-4-halves"></div>
+        <div class="pizza-label">2/4 (2 out of 4)</div>
+      </div>
+    </div>
+
+    <div class="explanation">
+      To find an equivalent fraction, multiply the top and bottom by the same number. To simplify back, divide the top and bottom by the same number.
+      <br />
+      Example: 3/5 × 2/2 = 6/10 (same amount, smaller slices!)
+    </div>
+
+    <div class="pizza-container">
+      <div class="pizza-wrapper">
+        <div class="pizza" id="pizza-3-5"></div>
+        <div class="pizza-label">3/5</div>
+      </div>
+      <div class="arrow">=</div>
+      <div class="pizza-wrapper">
+        <div class="pizza" id="pizza-6-10"></div>
+        <div class="pizza-label">6/10</div>
+      </div>
+    </div>
+
+    <div class="thinking-bubble">
+      Rule: Multiply or divide the numerator and denominator by the same number to get an equivalent fraction.
+    </div>
+  </div>
+
+  <script>
+    function createPizzaSlices(pizzaId, numSlices, highlightSlices = []) {
+      const pizzaContainer = document.getElementById(pizzaId);
+      if (!pizzaContainer) return;
+      pizzaContainer.innerHTML = '';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '150'); svg.setAttribute('height', '150'); svg.setAttribute('viewBox', '0 0 150 150');
+      const centerX = 75, centerY = 75, radius = 70;
+      for (let i = 0; i < numSlices; i++) {
+        const startAngle = (i * 360 / numSlices) - 90;
+        const endAngle = ((i + 1) * 360 / numSlices) - 90;
+        const startX = centerX + radius * Math.cos(startAngle * Math.PI / 180);
+        const startY = centerY + radius * Math.sin(startAngle * Math.PI / 180);
+        const endX = centerX + radius * Math.cos(endAngle * Math.PI / 180);
+        const endY = centerY + radius * Math.sin(endAngle * Math.PI / 180);
+        const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
+        const pathData = `M ${centerX} ${centerY} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', '#d4a000'); path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', highlightSlices.includes(i) ? '#ff6b6b' : '#ffd93d');
+        if (highlightSlices.includes(i)) path.style.animation = 'pulse 2s infinite';
+        svg.appendChild(path);
+      }
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', centerX); circle.setAttribute('cy', centerY); circle.setAttribute('r', radius);
+      circle.setAttribute('fill', 'none'); circle.setAttribute('stroke', '#d4a000'); circle.setAttribute('stroke-width', '4');
+      svg.appendChild(circle); pizzaContainer.appendChild(svg);
+    }
+
+    window.onload = function() {
+      createPizzaSlices('pizza-2-half', 2, [0]);
+      createPizzaSlices('pizza-4-halves', 4, [0,1]);
+      createPizzaSlices('pizza-3-5', 5, [0,1,2]);
+      createPizzaSlices('pizza-6-10', 10, [0,1,2,3,4,5]);
+    };
+  </script>
+</body>
+</html>

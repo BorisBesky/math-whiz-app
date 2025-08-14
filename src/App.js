@@ -97,7 +97,13 @@ const getSimplifiedFraction = (numerator, denominator) => {
 const conceptExplanationFiles = {
   'Multiplication': '/multiplicationExplanation.html',
   'Division': '/divisionExplanation.html', 
-  'Fractions': '/fractionsExplanation.html',
+  // Fraction subtopics
+  'Fractions: Addition': '/fractionAdditionExplanation.html',
+  'Fractions: Simplification': '/fractionSimplificationExplanation.html',
+  'Fractions: Equivalency': '/fractionEquivalencyExplanation.html',
+  'Fractions: Comparison': '/fractionComparisonExplanation.html',
+  // Fallback for any generic fractions (kept for backward compatibility)
+  'Fractions': '/fractionAdditionExplanation.html',
   'Area': '/areaExplanation.html',
   'Perimeter': '/perimeterExplanation.html',
   'Volume': '/volumeExplanation.html'
@@ -191,7 +197,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 options: shuffleArray([`${eq_num}/${eq_den}`, `${f_num_eq + 1}/${f_den_eq}`, `${f_num_eq}/${f_den_eq + 1}`, `${eq_num}/${eq_den + multiplier}`]),
                 hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
                 standard: "3.NF.A.3.b",
-                concept: "Fractions"
+                concept: "Fractions: Equivalency"
             };
             break;
           case 2: // Fraction Addition with unlike denominators
@@ -215,7 +221,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 ]),
                 hint: "To add fractions with different denominators, you first need to find a common denominator!",
                 standard: "4.NF.B.3", // Note: This is a 4th grade standard
-                concept: "Fractions"
+                concept: "Fractions: Addition"
             };
             break;
           case 3: // Fraction Subtraction with unlike denominators
@@ -247,7 +253,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 ]),
                 hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
                 standard: "4.NF.B.3", // Note: This is a 4th grade standard
-                concept: "Fractions"
+                concept: "Fractions: Addition"
             };
             break;
           case 4: // Fraction Comparison
@@ -264,7 +270,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                     options: shuffleArray(['<', '>', '=']),
                     hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
                     standard: "3.NF.A.3.d",
-                    concept: "Fractions"
+                    concept: "Fractions: Comparison"
                 };
             } else { // Same numerator
                 const comp_num = getRandomInt(1, 10);
@@ -278,7 +284,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                     options: shuffleArray(['<', '>', '=']),
                     hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
                     standard: "3.NF.A.3.d",
-                    concept: "Fractions"
+                    concept: "Fractions: Comparison"
                 };
             }
             break;
@@ -302,7 +308,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 ]),
                 hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
                 standard: "4.NF.A.1", 
-                concept: "Fractions"
+                concept: "Fractions: Simplification"
             };
             break;
           default:
@@ -319,7 +325,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 options: shuffleArray([`${def_eq_num}/${def_eq_den}`, `${def_f_num_eq + 1}/${def_f_den_eq}`, `${def_f_num_eq}/${def_f_den_eq + 1}`, `${def_eq_num}/${def_eq_den + def_multiplier}`]),
                 hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
                 standard: "3.NF.A.3.b",
-                concept: "Fractions"
+                concept: "Fractions: Equivalency"
             };
             break;
         }
