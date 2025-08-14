@@ -8,13 +8,14 @@
         body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(135deg, #ffeb3b, #ff9800); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         h1 { text-align: center; color: #d32f2f; font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-        .subtitle { text-align: center; font-size: 1.2em; color: #666; margin-bottom: 30px; }
+        .subtitle { text-align: center; font-size: 1.5em; font-weight: bold; color: #666; margin-bottom: 30px; }
         .problem { background: #e3f2fd; padding: 20px; border-radius: 15px; text-align: center; font-size: 2em; font-weight: bold; color: #1976d2; margin-bottom: 40px; border: 3px solid #2196f3; }
         .step { margin-bottom: 50px; padding: 25px; border-radius: 15px; background: #f8f9fa; border-left: 8px solid #4caf50; }
         .step h2 { color: #2e7d32; font-size: 1.8em; margin-bottom: 20px; }
         .pizza-container { display: flex; justify-content: center; align-items: center; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
         .pizza { width: 150px; height: 150px; }
-        .pizza-label { text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #333; }
+        .pizza-label { text-align: center; margin-top: 15px; font-size: 1.1em; color: #333; }
+        .pizza-label-fraction { font-size: 2em; font-weight: bold; color: #1976d2; }
         .arrow { font-size: 2em; color: #4caf50; margin: 0 15px; }
         .explanation { background: #fff3e0; padding: 20px; border-radius: 10px; border: 2px solid #ff9800; margin: 20px 0; font-size: 1.1em; line-height: 1.6; }
         .step3-container { background: #f3e5f5; padding: 25px; border-radius: 15px; border: 3px solid #9c27b0; text-align: center; }
@@ -28,7 +29,7 @@
     <body>
     <div class="container">
         <h1>Adding Fractions (Even with Different Denominators!) 🍕➕🍕</h1>
-        <div class="subtitle">Let’s add 2/5 + 1/2 by making equal-sized pieces.</div>
+        <div class="subtitle">Let’s add \(\frac{2}{5} + \frac{1}{2}\) by making equal-sized pieces.</div>
 
     <div class="problem">\(\frac{2}{5} + \frac{1}{2}\) = ?</div>
 
@@ -38,50 +39,64 @@
             <div class="pizza-container">
                 <div class="pizza-wrapper">
                     <div class="pizza" id="pizza-5"></div>
-                    <div class="pizza-label">Cut into 5 slices → 1/5 each</div>
+                    <div class="pizza-label">Cut into 5 slices → \(\frac{1}{5}\) each</div>
                 </div>
                 <div class="pizza-wrapper">
                     <div class="pizza" id="pizza-2"></div>
-                    <div class="pizza-label">Cut into 2 slices → 1/2 each</div>
+                    <div class="pizza-label">Cut into 2 slices → \(\frac{1}{2}\) each</div>
                 </div>
             </div>
         </div>
 
         <div class="step">
             <h2>Step 2: Make Equal Pieces (Find a Common Denominator)</h2>
-            <div class="explanation">A good common denominator for 2 and 5 is 10. We turn each fraction into tenths.</div>
+            <div class="explanation">The easiest way to find a common denominator for \(\tfrac{1}{2}\) and \(\tfrac{2}{5}\) is to multiply the denominators (5 \(\cdot\) 2 = 10). 
+                Here is how we find equivalent fractions with a denominator of 10.
+                <br />
+                \(\tfrac{1 \cdot 5}{2 \cdot 5}\ = \tfrac{5}{10}\), so \(\tfrac{1}{2}\) is equivalent to \(\tfrac{5}{10}\) and \(\tfrac{2 \cdot 2}{5 \cdot 2}\ = \tfrac{4}{10}\), so \(\tfrac{2}{5}\) is equivalent to \(\tfrac{4}{10}\). Look at the pizza slices below to see how we change the fractions to have a common denominator of 10.
+            </div>
             <div class="pizza-container">
                 <div class="pizza-wrapper">
                     <div class="pizza" id="pizza-5-highlighted"></div>
-                    <div class="pizza-label">\(\tfrac{2}{5} = \tfrac{4}{10}\)</div>
+                    <div class="pizza-label-fraction">\(\tfrac{2}{5}\)</div>
                 </div>
                 <div class="arrow">→</div>
                 <div class="pizza-wrapper">
                     <div class="pizza" id="pizza-10-equivalent"></div>
-                    <div class="pizza-label">Now in tenths</div>
+                    <div class="pizza-label-fraction">\(\tfrac{4}{10}\)</div>
                 </div>
             </div>
-            <div class="explanation">Also, \(\tfrac{1}{2} = \tfrac{5}{10}\) because half of ten slices is five.</div>
+            <div class="pizza-container">
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-2-highlighted"></div>
+                    <div class="pizza-label-fraction">\(\tfrac{1}{2}\)</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="pizza-wrapper">
+                    <div class="pizza" id="pizza-10-half-equivalent"></div>
+                    <div class="pizza-label-fraction">\(\tfrac{5}{10}\)</div>
+                </div>
+            </div>
         </div>
 
         <div class="step">
             <h2>Step 3: Add the Numerators</h2>
             <div class="step3-container">
-                <div class="explanation">Keep the denominator (10) the same and add the tops: \(\tfrac{4}{10} + \tfrac{5}{10} = \tfrac{9}{10}\).</div>
+                <div class="explanation">Keep the denominator (10) the same and add the tops: \(\tfrac{4}{10} + \tfrac{5}{10} = \tfrac{4 + 5}{10} = \tfrac{9}{10}\).</div>
                 <div class="pizza-container">
                     <div class="pizza-wrapper">
                         <div class="pizza" id="pizza-4-tenths"></div>
-                        <div class="pizza-label">4/10</div>
+                        <div class="pizza-label-fraction">\(\frac{4}{10}\)</div>
                     </div>
                     <div class="arrow">+</div>
                     <div class="pizza-wrapper">
                         <div class="pizza" id="pizza-5-tenths"></div>
-                        <div class="pizza-label">5/10</div>
+                        <div class="pizza-label-fraction">\(\frac{5}{10}\)</div>
                     </div>
                     <div class="arrow">=</div>
                     <div class="pizza-wrapper">
                         <div class="pizza" id="pizza-9-tenths"></div>
-                        <div class="pizza-label">9/10 ✅</div>
+                        <div class="pizza-label-fraction">\(\frac{9}{10}\) ✅</div>
                     </div>
                 </div>
             </div>
@@ -125,8 +140,10 @@
         window.onload = function() {
             createPizzaSlices('pizza-5', 5);
             createPizzaSlices('pizza-2', 2);
+            createPizzaSlices('pizza-2-highlighted', 2, [0]);
             createPizzaSlices('pizza-5-highlighted', 5, [0,1]);
             createPizzaSlices('pizza-10-equivalent', 10, [0,1,2,3]);
+            createPizzaSlices('pizza-10-half-equivalent', 10, [0,1,2,3,4]);
             createPizzaSlices('pizza-4-tenths', 10, [0,1,2,3]);
             createPizzaSlices('pizza-5-tenths', 10, [0,1,2,3,4]);
             createPizzaSlices('pizza-9-tenths', 10, [0,1,2,3,4,5,6,7,8]);

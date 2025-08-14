@@ -882,6 +882,8 @@ const checkAnswer = async () => {
     const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
     const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
     if (totalDailyGoal > 0 && ((totalAnsweredToday + 1) % totalDailyGoal === 0)) {
+      console.log('🎉 Daily goal met! Awarding bonus coins!');
+      console.log('Total answered today: ', totalAnsweredToday, ' , out of: ', totalDailyGoal);
       feedbackType = 'success';
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
@@ -1558,7 +1560,7 @@ Answer: [The answer]`;
                 {feedback 
                   ? feedback.message
                   : userAnswer !== null
-                    ? <span>Selected: <span className="font-bold">{userAnswer}</span></span>
+                    ? <span>Selected: <span className="font-bold">{formatMathText(userAnswer)}</span></span>
                     : <span className="italic text-gray-400">Select an answer</span>
                 }
               </div>
