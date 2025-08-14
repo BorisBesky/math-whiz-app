@@ -4,6 +4,7 @@ import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause,
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion, deleteField, getDoc } from 'firebase/firestore';
+import { adaptAnsweredHistory, nextTargetComplexity, computePerTopicComplexity, rankQuestionsByComplexity } from './utils/complexityEngine';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -462,8 +463,7 @@ const getTopicAvailability = (userData) => {
 
 const getQuestionHistory = async (userId) => {
   if (!userId) return [];
-  const db = getFirestore();
-  const userDocRef = doc(db, 'users', userId);
+  const userDocRef = getUserDocRef(userId);
   const userDoc = await getDoc(userDocRef);
   if (userDoc.exists() && userDoc.data().answeredQuestions) {
     return userDoc.data().answeredQuestions;
@@ -500,6 +500,7 @@ const App = () => {
   const [storyData, setStoryData] = useState(null);
 
   const [difficulty, setDifficulty] = useState(0.5);
+  const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState({});
 
   const questionStartTime = useRef(null);
 
@@ -528,7 +529,7 @@ const App = () => {
         
         const userDocRef = getUserDocRef(currentUser.uid);
 
-        unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+  unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             const today = getTodayDateString();
@@ -558,8 +559,17 @@ const App = () => {
                 updatePayload[`progress.${today}`] = initialTodayProgress;
                 needsUpdate = true;
             }
+
+      // Ensure we have a stored lastAskedComplexityByTopic map
+      if (!data.lastAskedComplexityByTopic) {
+        data.lastAskedComplexityByTopic = {};
+        updatePayload.lastAskedComplexityByTopic = {};
+        needsUpdate = true;
+      }
             
             setUserData({...data});
+      // keep local state in sync
+      setLastAskedComplexityByTopic(data.lastAskedComplexityByTopic || {});
 
             if (needsUpdate) {
                 updateDoc(userDocRef, updatePayload);
@@ -578,9 +588,11 @@ const App = () => {
               ownedBackgrounds: ['default'],
               activeBackground: 'default',
               dailyStories: { [today]: {} },
-              answeredQuestions: [] // field to track all answered questions
+              answeredQuestions: [], // field to track all answered questions
+              lastAskedComplexityByTopic: {}
             };
             setDoc(userDocRef, initialData).then(() => setUserData(initialData));
+            setLastAskedComplexityByTopic({});
           }
         }, (error) => {
             console.error("Firestore snapshot error:", error);
@@ -629,8 +641,39 @@ const App = () => {
   
   const startNewQuiz = async (topic) => {
     setCurrentTopic(topic);
-    const questionHistory = await getQuestionHistory(user.uid);
-    const newQuestions = generateQuizQuestions(topic, userData.dailyGoals, questionHistory, difficulty);
+    const answered = await getQuestionHistory(user.uid);
+    // Adapt and compute per-topic target complexity
+    const adapted = adaptAnsweredHistory(answered, user?.uid);
+    const lastAsked = lastAskedComplexityByTopic[topic];
+    const target = nextTargetComplexity({ history: adapted, topic, mode: 'progressive', lastAskedComplexity: lastAsked });
+
+    // Optional: expose diagnostics in dev
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        window.__complexityDiagnostics = {
+          target,
+          perTopic: computePerTopicComplexity(adapted),
+          ranked: rankQuestionsByComplexity(adapted).slice(0, 20),
+        };
+        // eslint-disable-next-line no-console
+        console.log('💡 Complexity target for', topic, '=>', target);
+      } catch (e) {}
+    }
+
+    // Remember last asked per topic, set difficulty, and persist to Firestore
+    setLastAskedComplexityByTopic(prev => ({ ...prev, [topic]: target }));
+    try {
+      const userDocRef = getUserDocRef(user.uid);
+      if (userDocRef) {
+        await updateDoc(userDocRef, { [`lastAskedComplexityByTopic.${topic}`]: target });
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Could not persist lastAskedComplexityByTopic:', e);
+    }
+    setDifficulty(target);
+
+    const newQuestions = generateQuizQuestions(topic, userData.dailyGoals, answered, target);
     setCurrentQuiz(newQuestions);
     setQuizState('inProgress');
     questionStartTime.current = Date.now();
@@ -1118,7 +1161,22 @@ Answer: [The answer]`;
       topicStats[q.topic].total++;
     });
     
-    const topicsPracticed = Object.keys(topicStats);
+  const topicsPracticed = Object.keys(topicStats);
+
+  // Complexity insights across all history
+    const adaptedAllHistory = adaptAnsweredHistory(userData?.answeredQuestions || [], user?.uid);
+    const perTopicComplexity = computePerTopicComplexity(adaptedAllHistory);
+    const rankedAll = rankQuestionsByComplexity(adaptedAllHistory);
+    // Deduplicate by topic: keep the highest-complexity (and most recent tie-breaker) per topic
+    const seenTopicsSet = new Set();
+    const topRankedUniqueByTopic = [];
+    for (const r of rankedAll) {
+      if (!seenTopicsSet.has(r.topic)) {
+        seenTopicsSet.add(r.topic);
+        topRankedUniqueByTopic.push(r);
+      }
+      if (topRankedUniqueByTopic.length >= quizTopics.length) break;
+    }
 
     return (
         <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
@@ -1180,6 +1238,42 @@ Answer: [The answer]`;
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Complexity Insights */}
+            {perTopicComplexity.length > 0 && (
+                <div className="mt-8">
+                    <h4 className="text-xl font-bold text-gray-700 mb-4">Complexity Insights</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg shadow p-4">
+                            <h5 className="font-semibold text-gray-800 mb-2">Per-Topic Average Complexity</h5>
+                            <ul className="space-y-1">
+                                {perTopicComplexity.map(t => (
+                                    <li key={t.topic} className="flex justify-between text-sm">
+                                        <span className="font-medium">{t.topic}</span>
+                                        <span className="text-gray-600">{Math.round((t.avg || 0) * 100) / 100}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        {topRankedUniqueByTopic.length > 0 && (
+                          <div className="bg-white rounded-lg shadow p-4">
+                            <h5 className="font-semibold text-gray-800 mb-2">Most Complex Recent Topics</h5>
+                            <ul className="space-y-2 max-h-40 overflow-y-auto">
+                              {topRankedUniqueByTopic.map(r => (
+                                <li key={r.questionId + String(r.createdAt)} className="text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">{r.topic}</span>
+                                    <span className="text-purple-700 font-semibold">{Math.round((r.complexityScore || 0) * 100) / 100}</span>
+                                  </div>
+                                  <div className="text-gray-600 truncate" title={r.question || ''}>{r.question || ''}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                     </div>
                 </div>
             )}
