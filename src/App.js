@@ -1427,8 +1427,8 @@ Answer: [The answer]`;
             style={{ imageRendering: 'auto' }}
           />
         </div>
-        <p className="text-lg text-gray-600 mb-4">Choose a topic to start your 3rd Grade math adventure!</p>
-        
+        <p className="text-2xl font-bold text-blue-600 mb-4 text-center pt-6">Choose a topic to start your 3rd Grade math adventure!</p>
+
         {/* Feedback message */}
         {feedback && (
           <div className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
