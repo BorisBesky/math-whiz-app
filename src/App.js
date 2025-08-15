@@ -164,21 +164,20 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
   while (questions.length < numQuestions && attempts < maxAttempts) {
     attempts++;
     let question = {};
-    //let questionSignature = '';
     
   switch (topic) {
       case 'Multiplication':
         const m1 = getRandomInt(2, 2 + Math.floor(10 * difficulty));
         const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const mAnswer = m1 * m2;
-        //questionSignature = `mult_${m1}_${m2}`;
+        
         question = { question: `What is ${m1} x ${m2}?`, correctAnswer: mAnswer.toString(), options: shuffleArray([mAnswer.toString(), (mAnswer + getRandomInt(1, 5)).toString(), (m1 * (m2 + 1)).toString(), ((m1 - 1) * m2).toString()]), hint: `Try skip-counting by ${m2}, ${m1} times!`, standard: "3.OA.C.7", concept: "Multiplication" };
   break;
       case 'Division':
         const d_quotient = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_divisor = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_dividend = d_quotient * d_divisor;
-        //questionSignature = `div_${d_dividend}_${d_divisor}`;
+        
         question = { question: `What is ${d_dividend} ÷ ${d_divisor}?`, correctAnswer: d_quotient.toString(), options: shuffleArray([d_quotient.toString(), (d_quotient + 1).toString(), (d_quotient - 1).toString(), (d_quotient + getRandomInt(2, 4)).toString()]), hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`, standard: "3.OA.C.7", concept: "Division" };
   break;
       case 'Fractions':
@@ -191,7 +190,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const multiplier = getRandomInt(2, 4);
             const eq_num = f_num_eq * multiplier;
             const eq_den = f_den_eq * multiplier;
-            //questionSignature = `frac_equiv_${f_num_eq}_${f_den_eq}`;
+            
             question = {
                 question: `Which fraction is equivalent to ${f_num_eq}/${f_den_eq}?`,
                 correctAnswer: `${eq_num}/${eq_den}`,
@@ -210,7 +209,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const common_add_den = add_den1 * add_den2;
             const add_sum_num = (add_num1 * add_den2) + (add_num2 * add_den1);
             const add_answer = getSimplifiedFraction(add_sum_num, common_add_den);
-            //questionSignature = `frac_add_${add_num1}_${add_den1}_${add_num2}_${add_den2}`;
+            
             question = {
                 question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
                 correctAnswer: add_answer,
@@ -242,7 +241,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const common_sub_den = sub_den1 * sub_den2;
             const sub_diff_num = (sub_num1 * sub_den2) - (sub_num2 * sub_den1);
             const sub_answer = getSimplifiedFraction(sub_diff_num, common_sub_den);
-            //questionSignature = `frac_sub_${sub_num1}_${sub_den1}_${sub_num2}_${sub_den2}`;
+            
             question = {
                 question: `What is ${sub_num1}/${sub_den1} - ${sub_num2}/${sub_den2}?`,
                 correctAnswer: sub_answer,
@@ -264,7 +263,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 let comp_num1 = getRandomInt(1, comp_den - 1);
                 let comp_num2 = getRandomInt(1, comp_den - 1);
                 while (comp_num1 === comp_num2) { comp_num2 = getRandomInt(1, comp_den - 1); }
-                //questionSignature = `frac_comp_same_den_${comp_num1}_${comp_num2}_${comp_den}`;
+                
                 question = {
                     question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
                     correctAnswer: comp_num1 > comp_num2 ? '>' : '<',
@@ -278,7 +277,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 let comp_den1 = getRandomInt(comp_num + 1, 15);
                 let comp_den2 = getRandomInt(comp_num + 1, 15);
                 while (comp_den1 === comp_den2) { comp_den2 = getRandomInt(comp_num + 1, 15); }
-                //questionSignature = `frac_comp_same_num_${comp_num}_${comp_den1}_${comp_den2}`;
+                
                 question = {
                     question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
                     correctAnswer: comp_den1 < comp_den2 ? '>' : '<',
@@ -297,7 +296,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const starting_den = simp_den * simp_multiplier;
             const simplified_fraction = getSimplifiedFraction(starting_num, starting_den);
 
-            //questionSignature = `frac_simp_${starting_num}_${starting_den}`;
+            
             question = {
                 question: `Simplify the fraction ${starting_num}/${starting_den}`,
                 correctAnswer: simplified_fraction,
@@ -319,7 +318,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const def_multiplier = getRandomInt(2, 4);
             const def_eq_num = def_f_num_eq * def_multiplier;
             const def_eq_den = def_f_den_eq * def_multiplier;
-            //questionSignature = `frac_equiv_default_${def_f_num_eq}_${def_f_den_eq}`;
+            
             question = {
                 question: `Which fraction is equivalent to ${def_f_num_eq}/${def_f_den_eq}?`,
                 correctAnswer: `${def_eq_num}/${def_eq_den}`,
@@ -338,7 +337,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
           case 1: // Area
             const md_length = getRandomInt(3, 15);
             const md_width = getRandomInt(3, 10);
-            //questionSignature = `area_${md_length}_${md_width}`;
+            
             question = { 
                 question: `A rectangle has a length of ${md_length} cm and a width of ${md_width} cm. What is its area?`, 
                 correctAnswer: `${md_length * md_width} cm²`, 
@@ -351,7 +350,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
           case 2: // Perimeter
             const md_side1 = getRandomInt(5, 20);
             const md_side2 = getRandomInt(5, 20);
-            //questionSignature = `perimeter_${md_side1}_${md_side2}`;
+            
             question = {
                 question: `What is the perimeter of a rectangle with sides of length ${md_side1} inches and ${md_side2} inches?`,
                 correctAnswer: `${2 * (md_side1 + md_side2)} inches`,
@@ -366,7 +365,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const vol_w = getRandomInt(2, 4);
             const vol_h = getRandomInt(1, 3);
             const volume = vol_l * vol_w * vol_h;
-            //questionSignature = `volume_${vol_l}_${vol_w}_${vol_h}`;
+            
             question = {
                 question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
                 correctAnswer: `${volume} cubes`,
@@ -380,7 +379,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             // Fallback to area question if unexpected value
             const def_length = getRandomInt(3, 15);
             const def_width = getRandomInt(3, 10);
-            //questionSignature = `area_default_${def_length}_${def_width}`;
+            
             question = { 
                 question: `A rectangle has a length of ${def_length} cm and a width of ${def_width} cm. What is its area?`, 
                 correctAnswer: `${def_length * def_width} cm²`, 
@@ -393,7 +392,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
         }
         break;
       default:
-        //questionSignature = 'default_no_question';
+        
         question = { question: 'No question generated', options: [], correctAnswer: '', concept: 'Math' };
     }
     // Use complexity-based mastery to bias selection toward struggled/unseen items
