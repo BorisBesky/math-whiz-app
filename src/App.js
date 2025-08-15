@@ -144,7 +144,6 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
   
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
   const questionMastery = new Map();
-  //const clean = (s) => (typeof s === 'string' ? s.replace(/[^a-zA-Z0-9]/g, '') : '');
   
   ranked.forEach(r => {
     if (!questionMastery.has(r.question)) {
