@@ -124,7 +124,7 @@ export function nextTargetComplexity({ history, topic, mode = 'progressive', las
 }
 
 // Helper to adapt app's answeredQuestions to engine format
-export function adaptAnsweredHistory(answeredQuestions, userId) {
+export function adaptAnsweredHistory(answeredQuestions) {
   return (answeredQuestions || []).map(q => {
     // createdAt: prefer timestamp ISO if present; else date string; else Date.now
     let createdAt;
@@ -133,8 +133,9 @@ export function adaptAnsweredHistory(answeredQuestions, userId) {
     else createdAt = new Date();
 
     return {
-      userId: userId || q.userId || 'unknown',
       questionId: q.id || `${q.topic}|${q.question?.slice(0, 40) || 'unknown'}`,
+      question: q.question,
+      signature: q.signature,
       topic: q.topic,
       isCorrect: !!q.isCorrect,
       timeSpentMs: Math.max(0, Number(q.timeTaken || 0) * 1000),
