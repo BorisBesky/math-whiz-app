@@ -24,8 +24,27 @@ function percentile(sorted, p) {
   return sorted[lo] * (1 - w) + sorted[hi] * w;
 }
 
+// Welford's online algorithm for computing mean and variance in one pass
+function welfordStats(values) {
+  let count = 0;
+  let mean = 0;
+  let m2 = 0;
+  
+  for (const x of values) {
+    count += 1;
+    const delta = x - mean;
+    mean += delta / count;
+    const delta2 = x - mean;
+    m2 += delta * delta2;
+  }
+  
+  const variance = count > 1 ? m2 / count : 0;
+  return { mean, variance, stdDev: Math.sqrt(variance), count };
+}
+
 // Normalize time within a topic: compare each answer's time to the topic median,
-// cap at MAX_TIME_MULTIPLIER, then map to [0,1].
+// cap at MAX_TIME_MULTIPLIER, then map to [0,1]. Remove outliers beyond 3 standard deviations.
+// Uses log-transformation since response times follow log-normal distribution.
 function normalizeTimesWithinTopic(records) {
   const map = new Map(); // key -> normalized time [0,1]
 
@@ -37,9 +56,26 @@ function normalizeTimesWithinTopic(records) {
 
   const topicMedian = new Map();
   for (const [topic, recs] of byTopic.entries()) {
-    const times = recs.map(r => Math.max(0, r.timeSpentMs)).sort((a, b) => a - b);
-    const med = percentile(times, 0.5) || 1;
-    topicMedian.set(topic, med);
+    const rawTimes = recs.map(r => Math.max(1, r.timeSpentMs)); // min 1ms to avoid log(0)
+    
+    // Remove outliers beyond 3 standard deviations using log-transformed times
+    if (rawTimes.length > 2) {
+      const logTimes = rawTimes.map(t => Math.log(t));
+      const { mean: logMean, stdDev: logStdDev } = welfordStats(logTimes);
+      
+      // Filter outliers in log space, then transform back
+      const filteredTimes = rawTimes.filter((t, i) => 
+        Math.abs(logTimes[i] - logMean) <= 3 * logStdDev
+      );
+      
+      const times = (filteredTimes.length > 0 ? filteredTimes : rawTimes).sort((a, b) => a - b);
+      const med = percentile(times, 0.5) || 1;
+      topicMedian.set(topic, med);
+    } else {
+      const times = rawTimes.sort((a, b) => a - b);
+      const med = percentile(times, 0.5) || 1;
+      topicMedian.set(topic, med);
+    }
   }
 
   for (const r of records) {

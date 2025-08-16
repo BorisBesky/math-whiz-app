@@ -1009,59 +1009,59 @@ const App = () => {
 
 
   // --- Gemini API Call via Netlify Function ---
-  const callGeminiAPI = async (prompt) => {
-    setIsGenerating(true);
-    setGeneratedContent('');
+const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
+  setIsGenerating(true);
+  setGeneratedContent('Generating story problem...');
 
-    try {
-      // Get the current user's auth token
-      if (!user) {
-        console.error('❌ No user found during API call');
-        throw new Error('User not authenticated');
-      }
-
-      console.log('🔐 Getting auth token for user:', user.uid);
-      const token = await user.getIdToken();
-      console.log('✅ Got auth token, making API call...');
-
-      const requestBody = {
-        prompt: prompt,
-        topic: currentTopic
-      };
-      console.log('📤 Request body:', requestBody);
-
-      const response = await fetch('/.netlify/functions/gemini-proxy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      console.log('📥 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ API Error:', errorData);
-        throw new Error(errorData.error || `API call failed with status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ API Success! Content length:', result.content?.length);
-      setGeneratedContent(result.content);
-
-      // Parse story content if this is a story problem
-      if (modalTitle === '✨ A Fun Story Problem!') {
-        parseStoryContent(result.content);
-      }
-    } catch (error) {
-      console.error("Gemini API error:", error);
-      setGeneratedContent(`There was an error: ${error.message}`);
-    } finally {
-      setIsGenerating(false);
+  try {
+    // Get the current user's auth token
+    if (!user) {
+      console.error('❌ No user found during API call');
+      throw new Error('User not authenticated');
     }
-  };
+
+    console.log('🔐 Getting auth token for user:', user.uid);
+    const token = await user.getIdToken();
+    console.log('✅ Got auth token, making API call...');
+
+    const requestBody = {
+      prompt: prompt,
+      topic: currentTopic
+    };
+    console.log('📤 Request body:', requestBody);
+
+    const response = await fetch('/.netlify/functions/gemini-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('📥 Response status:', response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ API Error:', errorData);
+      throw new Error(errorData.error || `API call failed with status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ API Success! Content length:', result.content?.length);
+    setGeneratedContent(result.content);
+
+    // Parse story content if requested (avoid relying on modalTitle state timing)
+    if (parseAsStory) {
+      parseStoryContent(result.content);
+    }
+  } catch (error) {
+    console.error("Gemini API error:", error);
+    setGeneratedContent(`There was an error: ${error.message}`);
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   // Function to parse story content and extract components
   const parseStoryContent = (content) => {
@@ -1126,24 +1126,24 @@ const App = () => {
       setIsGenerating(false);
     }
   };
-  const handleCreateStoryProblem = async () => {
-    if (storyCreatedForCurrentQuiz) {
-      setFeedback({ message: "You've already created a story problem for this quiz!", type: 'error' });
-      setTimeout(() => setFeedback(null), 3000);
-      return;
-    }
+const handleCreateStoryProblem = async () => {
+  if (storyCreatedForCurrentQuiz) {
+    setFeedback({ message: "You've already created a story problem for this quiz!", type: 'error' });
+    setTimeout(() => setFeedback(null), 3000);
+    return;
+  }
 
-    const today = getTodayDateString();
-    const todaysStories = userData?.dailyStories?.[today] || {};
+  const today = getTodayDateString();
+  const todaysStories = userData?.dailyStories?.[today] || {};
 
-    // Check if user has already created a story for this topic today
-    if (todaysStories[currentTopic]) {
-      setFeedback({ message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`, type: 'error' });
-      setTimeout(() => setFeedback(null), 3000);
-      return;
-    }
+  // Check if user has already created a story for this topic today
+  if (todaysStories[currentTopic]) {
+    setFeedback({ message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`, type: 'error' });
+    setTimeout(() => setFeedback(null), 3000);
+    return;
+  }
 
-    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
+  const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
 
 Then, on a new line, state the question clearly, starting with "Question:".
 
@@ -1156,15 +1156,16 @@ Please structure it exactly like this:
 Question: [The question]
 Hint: [The hint]
 Answer: [The answer]`;
-    setModalTitle(`✨ A Fun Story Problem!`);
-    setShowModal(true);
-    setShowStoryHint(false);
-    setShowStoryAnswer(false);
-    setStoryData(null);
+  setModalTitle(`✨ A Fun Story Problem!`);
+  setShowModal(true);
+  setShowStoryHint(false);
+  setShowStoryAnswer(false);
+  setStoryData(null);
 
-    setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
-    callGeminiAPI(prompt);
-  };
+  // Pass explicit flag to avoid modalTitle timing issues
+  await callGeminiAPI(prompt, { parseAsStory: true });
+  setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
+};
 
   // --- UI Rendering ---
   const renderHeader = () => (
