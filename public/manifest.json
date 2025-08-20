@@ -8,13 +8,13 @@
       "type": "image/x-icon"
     },
     {
-      "src": "wizard-logo-192.png",
-      "type": "image/png",
+      "src": "wizard-logo-192.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
     },
     {
-      "src": "wizard-logo-512.png",
-      "type": "image/png",
+      "src": "wizard-logo-512.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512"
     }
   ],
