@@ -120,6 +120,15 @@ const shuffleArray = (array) => {
   return array;
 };
 
+// --- Helper function to sanitize topic names for Firestore field paths ---
+const sanitizeTopicName = (topicName) => {
+  // Replace problematic characters with underscores
+  return topicName
+    .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
+    .replace(/_+/g, "_") // Replace multiple underscores with single
+    .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
+};
+
 // --- Helper function to find the greatest common divisor ---
 const gcd = (a, b) => {
   if (b === 0) {
@@ -1276,9 +1285,6 @@ const quizTopicsByGrade = {
   ],
 };
 
-// Legacy support - will be updated to use grade-specific topics
-const quizTopics = quizTopicsByGrade.G3;
-
 // --- Helper function to check topic availability ---
 const getTopicAvailability = (userData, selectedGrade = "G3") => {
   if (!userData)
@@ -1303,7 +1309,12 @@ const getTopicAvailability = (userData, selectedGrade = "G3") => {
 
   const topicStats = currentTopics.map((topic) => {
     const goalForTopic = dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL;
-    const stats = progressForGrade[topic] || { correct: 0, incorrect: 0 };
+    const sanitizedTopic = sanitizeTopicName(topic);
+    const stats = progressForGrade[sanitizedTopic] || {
+      correct: 0,
+      incorrect: 0,
+    };
+
     return {
       topic,
       correctAnswers: stats.correct,
@@ -1500,7 +1511,8 @@ const App = () => {
 
                   // Initialize G4 progress for this date
                   quizTopicsByGrade.G4.forEach((topic) => {
-                    progressByGrade[date].G4[topic] = {
+                    const sanitizedTopic = sanitizeTopicName(topic);
+                    progressByGrade[date].G4[sanitizedTopic] = {
                       correct: 0,
                       incorrect: 0,
                     };
@@ -1535,10 +1547,18 @@ const App = () => {
 
                 // Initialize topic-specific progress for both grades
                 quizTopicsByGrade.G3.forEach((topic) => {
-                  initialTodayProgress.G3[topic] = { correct: 0, incorrect: 0 };
+                  const sanitizedTopic = sanitizeTopicName(topic);
+                  initialTodayProgress.G3[sanitizedTopic] = {
+                    correct: 0,
+                    incorrect: 0,
+                  };
                 });
                 quizTopicsByGrade.G4.forEach((topic) => {
-                  initialTodayProgress.G4[topic] = { correct: 0, incorrect: 0 };
+                  const sanitizedTopic = sanitizeTopicName(topic);
+                  initialTodayProgress.G4[sanitizedTopic] = {
+                    correct: 0,
+                    incorrect: 0,
+                  };
                 });
 
                 if (!data.progressByGrade) {
@@ -1609,10 +1629,18 @@ const App = () => {
 
               // Initialize topic-specific progress
               quizTopicsByGrade.G3.forEach((topic) => {
-                progressByGrade[today].G3[topic] = { correct: 0, incorrect: 0 };
+                const sanitizedTopic = sanitizeTopicName(topic);
+                progressByGrade[today].G3[sanitizedTopic] = {
+                  correct: 0,
+                  incorrect: 0,
+                };
               });
               quizTopicsByGrade.G4.forEach((topic) => {
-                progressByGrade[today].G4[topic] = { correct: 0, incorrect: 0 };
+                const sanitizedTopic = sanitizeTopicName(topic);
+                progressByGrade[today].G4[sanitizedTopic] = {
+                  correct: 0,
+                  incorrect: 0,
+                };
               });
 
               const initialData = {
@@ -1807,11 +1835,14 @@ const App = () => {
 
     const updates = {};
 
+    // Sanitize topic name for Firestore field paths
+    const sanitizedTopic = sanitizeTopicName(currentTopic);
+
     // Update both legacy and new progress structures
     const allProgress_path = `progress.${today}.all`;
-    const topicProgress_path = `progress.${today}.${currentTopic}`;
+    const topicProgress_path = `progress.${today}.${sanitizedTopic}`;
     const gradeAllProgress_path = `progressByGrade.${today}.${selectedGrade}.all`;
-    const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${currentTopic}`;
+    const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}`;
 
     // Create question record for tracking with grade information
     const questionRecord = {
@@ -1867,7 +1898,8 @@ const App = () => {
         userData?.progressByGrade?.[today]?.[selectedGrade] ||
         userData?.progress?.[today] ||
         {};
-      const currentTopicProgress = progressForGrade[currentTopic] || {
+      const sanitizedCurrentTopic = sanitizeTopicName(currentTopic);
+      const currentTopicProgress = progressForGrade[sanitizedCurrentTopic] || {
         correct: 0,
         incorrect: 0,
       };
@@ -1880,7 +1912,8 @@ const App = () => {
             if (topic === currentTopic) {
               return true; // Current topic will be completed with this answer
             }
-            const topicProgress = progressForGrade[topic] || {
+            const sanitizedTopic = sanitizeTopicName(topic);
+            const topicProgress = progressForGrade[sanitizedTopic] || {
               correct: 0,
               incorrect: 0,
             };
@@ -1917,36 +1950,38 @@ const App = () => {
 
       // Reset all topic progress counters for this grade
       currentTopicsForGrade.forEach((topic) => {
+        const sanitizedTopic = sanitizeTopicName(topic);
+
         // Update new progress structure
         updates[
-          `progressByGrade.${today}.${selectedGrade}.${topic}.correct`
+          `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.correct`
         ] = 0;
         updates[
-          `progressByGrade.${today}.${selectedGrade}.${topic}.incorrect`
+          `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.incorrect`
         ] = 0;
         updates[
-          `progressByGrade.${today}.${selectedGrade}.${topic}.timeSpent`
+          `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.timeSpent`
         ] = 0;
 
         // Update legacy structure if selected grade is G3
         if (selectedGrade === "G3") {
-          updates[`progress.${today}.${topic}.correct`] = 0;
-          updates[`progress.${today}.${topic}.incorrect`] = 0;
-          updates[`progress.${today}.${topic}.timeSpent`] = 0;
+          updates[`progress.${today}.${sanitizedTopic}.correct`] = 0;
+          updates[`progress.${today}.${sanitizedTopic}.incorrect`] = 0;
+          updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = 0;
         }
       });
 
       // Set the current topic to 1 since we just answered correctly
       updates[
-        `progressByGrade.${today}.${selectedGrade}.${currentTopic}.correct`
+        `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.correct`
       ] = 1;
       updates[
-        `progressByGrade.${today}.${selectedGrade}.${currentTopic}.timeSpent`
+        `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.timeSpent`
       ] = timeTaken;
 
       if (selectedGrade === "G3") {
-        updates[`progress.${today}.${currentTopic}.correct`] = 1;
-        updates[`progress.${today}.${currentTopic}.timeSpent`] = timeTaken;
+        updates[`progress.${today}.${sanitizedTopic}.correct`] = 1;
+        updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = timeTaken;
       }
 
       // Update all progress (these don't get reset, they continue accumulating)
@@ -2040,6 +2075,7 @@ const App = () => {
     }
 
     setFeedback({ message: feedbackMessage, type: feedbackType });
+
     await updateDoc(userDocRef, updates);
   };
 
@@ -2093,18 +2129,39 @@ const App = () => {
     const today = getTodayDateString();
     const updates = {};
 
-    // Reset all topic progress counters
-    quizTopics.forEach((topic) => {
-      updates[`progress.${today}.${topic}.correct`] = 0;
-      updates[`progress.${today}.${topic}.incorrect`] = 0;
-      updates[`progress.${today}.${topic}.timeSpent`] = 0;
+    // Get topics for the current grade
+    const currentTopics =
+      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+
+    // Reset all topic progress counters for the current grade
+    currentTopics.forEach((topic) => {
+      const sanitizedTopic = sanitizeTopicName(topic);
+
+      // Update new progress structure
+      updates[
+        `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.correct`
+      ] = 0;
+      updates[
+        `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.incorrect`
+      ] = 0;
+      updates[
+        `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.timeSpent`
+      ] = 0;
+
+      // Update legacy structure only for G3
+      if (selectedGrade === "G3") {
+        updates[`progress.${today}.${sanitizedTopic}.correct`] = 0;
+        updates[`progress.${today}.${sanitizedTopic}.incorrect`] = 0;
+        updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = 0;
+      }
     });
 
     await updateDoc(userDocRef, updates);
 
     setFeedback({
-      message:
-        "🎉 Progress reset! All topics are now available for a fresh start!",
+      message: `🎉 ${
+        selectedGrade === "G3" ? "3rd" : "4th"
+      } Grade progress reset! All topics are now available for a fresh start!`,
       type: "success",
     });
     setTimeout(() => setFeedback(null), 3000);
