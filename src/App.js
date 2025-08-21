@@ -928,55 +928,151 @@ const generateQuizQuestions = (
         break;
 
       case "Measurement & Data (4.MD)":
-        const md4Type = getRandomInt(1, 2);
+        const md4Type = getRandomInt(1, 4); // Extended to 4 types
         switch (md4Type) {
-          case 1: // Unit conversions (4.MD.1)
-            const conversions = [
+          case 1: // Length conversions (4.MD.1)
+            const lengthConversions = [
+              { from: "feet", to: "inches", factor: 12, abbrev: ["ft", "in"] },
+              { from: "yards", to: "feet", factor: 3, abbrev: ["yd", "ft"] },
+              { from: "miles", to: "feet", factor: 5280, abbrev: ["mi", "ft"] },
               {
-                from: "feet",
-                to: "inches",
-                factor: 12,
-                question: "feet",
-                answer: "inches",
+                from: "meters",
+                to: "centimeters",
+                factor: 100,
+                abbrev: ["m", "cm"],
               },
               {
-                from: "yards",
-                to: "feet",
-                factor: 3,
-                question: "yards",
-                answer: "feet",
+                from: "kilometers",
+                to: "meters",
+                factor: 1000,
+                abbrev: ["km", "m"],
               },
+              { from: "yards", to: "inches", factor: 36, abbrev: ["yd", "in"] },
+            ];
+            const lengthConv =
+              lengthConversions[getRandomInt(0, lengthConversions.length - 1)];
+            const lengthAmount =
+              lengthConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
+            const lengthConverted = lengthAmount * lengthConv.factor;
+
+            question = {
+              question: `How many ${lengthConv.to} are in ${lengthAmount} ${lengthConv.from}?`,
+              correctAnswer: `${lengthConverted} ${lengthConv.to}`,
+              options: shuffleArray([
+                `${lengthConverted} ${lengthConv.to}`,
+                `${lengthAmount} ${lengthConv.to}`,
+                `${lengthConverted + (lengthConv.factor < 100 ? 5 : 100)} ${
+                  lengthConv.to
+                }`,
+                `${Math.floor(lengthConverted / 2)} ${lengthConv.to}`,
+              ]),
+              hint: `Remember: 1 ${lengthConv.from.slice(0, -1)} = ${
+                lengthConv.factor
+              } ${lengthConv.to}.`,
+              standard: "4.MD.A.1",
+              concept: "Measurement & Data (4.MD)",
+              grade: "G4",
+              subtopic: "length conversion",
+            };
+            break;
+          case 2: // Weight/Mass and Capacity conversions (4.MD.1)
+            const weightCapacityConversions = [
               {
                 from: "pounds",
                 to: "ounces",
                 factor: 16,
-                question: "pounds",
-                answer: "ounces",
+                abbrev: ["lb", "oz"],
+              },
+              { from: "tons", to: "pounds", factor: 2000, abbrev: ["T", "lb"] },
+              {
+                from: "gallons",
+                to: "quarts",
+                factor: 4,
+                abbrev: ["gal", "qt"],
+              },
+              { from: "quarts", to: "pints", factor: 2, abbrev: ["qt", "pt"] },
+              { from: "pints", to: "cups", factor: 2, abbrev: ["pt", "c"] },
+              {
+                from: "kilograms",
+                to: "grams",
+                factor: 1000,
+                abbrev: ["kg", "g"],
+              },
+              {
+                from: "liters",
+                to: "milliliters",
+                factor: 1000,
+                abbrev: ["L", "mL"],
               },
             ];
-            const conv = conversions[getRandomInt(0, conversions.length - 1)];
-            const amount = getRandomInt(2, 8);
-            const converted = amount * conv.factor;
+            const wcConv =
+              weightCapacityConversions[
+                getRandomInt(0, weightCapacityConversions.length - 1)
+              ];
+            const wcAmount =
+              wcConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
+            const wcConverted = wcAmount * wcConv.factor;
 
             question = {
-              question: `How many ${conv.to} are in ${amount} ${conv.from}?`,
-              correctAnswer: `${converted} ${conv.to}`,
+              question: `How many ${wcConv.to} are in ${wcAmount} ${wcConv.from}?`,
+              correctAnswer: `${wcConverted} ${wcConv.to}`,
               options: shuffleArray([
-                `${converted} ${conv.to}`,
-                `${amount} ${conv.to}`,
-                `${converted + 5} ${conv.to}`,
-                `${Math.floor(converted / 2)} ${conv.to}`,
+                `${wcConverted} ${wcConv.to}`,
+                `${wcAmount} ${wcConv.to}`,
+                `${wcConverted + (wcConv.factor < 100 ? 5 : 100)} ${wcConv.to}`,
+                `${Math.floor(wcConverted / 2)} ${wcConv.to}`,
               ]),
-              hint: `Remember: 1 ${conv.from.slice(0, -1)} = ${conv.factor} ${
-                conv.to
-              }.`,
+              hint: `Remember: 1 ${wcConv.from.slice(0, -1)} = ${
+                wcConv.factor
+              } ${wcConv.to}.`,
               standard: "4.MD.A.1",
               concept: "Measurement & Data (4.MD)",
               grade: "G4",
-              subtopic: "unit conversion",
+              subtopic: "weight and capacity conversion",
             };
             break;
-          case 2: // Area and perimeter (4.MD.3)
+          case 3: // Time conversions (4.MD.1)
+            const timeConversions = [
+              {
+                from: "hours",
+                to: "minutes",
+                factor: 60,
+                abbrev: ["hr", "min"],
+              },
+              {
+                from: "minutes",
+                to: "seconds",
+                factor: 60,
+                abbrev: ["min", "sec"],
+              },
+              { from: "days", to: "hours", factor: 24, abbrev: ["d", "hr"] },
+              { from: "weeks", to: "days", factor: 7, abbrev: ["wk", "d"] },
+              { from: "years", to: "months", factor: 12, abbrev: ["yr", "mo"] },
+            ];
+            const timeConv =
+              timeConversions[getRandomInt(0, timeConversions.length - 1)];
+            const timeAmount = getRandomInt(2, 8);
+            const timeConverted = timeAmount * timeConv.factor;
+
+            question = {
+              question: `How many ${timeConv.to} are in ${timeAmount} ${timeConv.from}?`,
+              correctAnswer: `${timeConverted} ${timeConv.to}`,
+              options: shuffleArray([
+                `${timeConverted} ${timeConv.to}`,
+                `${timeAmount} ${timeConv.to}`,
+                `${timeConverted + 10} ${timeConv.to}`,
+                `${Math.floor(timeConverted / 2)} ${timeConv.to}`,
+              ]),
+              hint: `Remember: 1 ${timeConv.from.slice(0, -1)} = ${
+                timeConv.factor
+              } ${timeConv.to}.`,
+              standard: "4.MD.A.1",
+              concept: "Measurement & Data (4.MD)",
+              grade: "G4",
+              subtopic: "time conversion",
+            };
+            break;
+          case 4: // Area and perimeter (4.MD.3)
             const rectLength = getRandomInt(4, 12);
             const rectWidth = getRandomInt(3, 8);
             const isAreaQuestion = Math.random() < 0.5;
@@ -2058,6 +2154,7 @@ const App = () => {
       const requestBody = {
         prompt: prompt,
         topic: currentTopic,
+        grade: selectedGrade, // Add grade parameter
       };
       console.log("📤 Request body:", requestBody);
 
@@ -2182,19 +2279,22 @@ const App = () => {
     }
 
     const today = getTodayDateString();
-    const todaysStories = userData?.dailyStories?.[today] || {};
+    const todaysStories =
+      userData?.dailyStories?.[today]?.[selectedGrade] || {};
 
-    // Check if user has already created a story for this topic today
+    // Check if user has already created a story for this topic today for this grade
     if (todaysStories[currentTopic]) {
+      const gradeLabel = selectedGrade === "G3" ? "3rd" : "4th";
       setFeedback({
-        message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`,
+        message: `You've already created a story problem for ${currentTopic} in ${gradeLabel} grade today! Come back tomorrow for more stories.`,
         type: "error",
       });
       setTimeout(() => setFeedback(null), 3000);
       return;
     }
 
-    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
+    const gradeLabel = selectedGrade === "G3" ? "3rd" : "4th";
+    const prompt = `Create a fun and short math story problem for a ${gradeLabel} grader based on the topic of "${currentTopic}". Make it one paragraph long.
 
 Then, on a new line, state the question clearly, starting with "Question:".
 
@@ -3039,9 +3139,10 @@ Answer: [The answer]`;
       emoji = "🧠";
     }
 
-    // Check if user can create a story for this topic today
+    // Check if user can create a story for this topic today (grade-aware)
     const today = getTodayDateString();
-    const todaysStories = userData?.dailyStories?.[today] || {};
+    const todaysStories =
+      userData?.dailyStories?.[today]?.[selectedGrade] || {};
     const canCreateStory =
       !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
