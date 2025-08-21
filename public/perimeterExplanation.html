@@ -393,6 +393,100 @@
                 <strong>Remember:</strong> Perimeter is always measured in regular units like meters, centimeters, or feet - whatever unit you're using for the sides!
             </div>
         </div>
+        
+        <div class="step">
+            <h2>Step 6: Perimeter of Different Shapes! 🔺🔵🟦</h2>
+            <div class="explanation">
+                Let's explore perimeter with various geometric shapes:
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div id="rectangle-perimeter-demo"></div>
+                    <div class="park-label">Rectangle<br>Perimeter = 2 × (6 + 4) = 20 units</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div id="square-perimeter-demo"></div>
+                    <div class="park-label">Square<br>Perimeter = 4 × 5 = 20 units</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div id="triangle-perimeter-demo"></div>
+                    <div class="park-label">Triangle<br>Perimeter = add all 3 sides</div>
+                </div>
+            </div>
+            
+            <div class="park-container">
+                <div class="park-wrapper">
+                    <div id="circle-perimeter-demo"></div>
+                    <div class="park-label">Circle<br>Circumference = 2 × π × radius</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div id="pentagon-perimeter-demo"></div>
+                    <div class="park-label">Pentagon<br>Perimeter = 5 × side length</div>
+                </div>
+                
+                <div class="park-wrapper">
+                    <div id="hexagon-perimeter-demo"></div>
+                    <div class="park-label">Hexagon<br>Perimeter = 6 × side length</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Fun Fact:</strong> Every shape has a perimeter - it's the distance around the outside edge, no matter what shape it is!
+            </div>
+        </div>
     </div>
+
+    <script src="geometricShapes.js"></script>
+    <script>
+        // Initialize geometric shape demonstrations when page loads
+        window.onload = function() {
+            if (window.geometricShapes) {
+                // Create various shapes for perimeter demonstration
+                window.geometricShapes.createRectangleSVG('rectangle-perimeter-demo', 120, 80, {
+                    showDimensions: true,
+                    fill: '#4caf50',
+                    stroke: '#2e7d32',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createSquareSVG('square-perimeter-demo', 100, {
+                    showDimensions: true,
+                    fill: '#ff9800',
+                    stroke: '#f57c00',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createTriangleSVG('triangle-perimeter-demo', 120, 100, {
+                    showDimensions: true,
+                    fill: '#9c27b0',
+                    stroke: '#7b1fa2',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createCircleSVG('circle-perimeter-demo', 60, {
+                    showRadius: true,
+                    fill: '#e91e63',
+                    stroke: '#c2185b',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createPentagonSVG('pentagon-perimeter-demo', 60, {
+                    fill: '#00bcd4',
+                    stroke: '#0097a7',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createHexagonSVG('hexagon-perimeter-demo', 60, {
+                    fill: '#795548',
+                    stroke: '#5d4037',
+                    strokeWidth: '3'
+                });
+            }
+        };
+    </script>
 </body>
 </html>

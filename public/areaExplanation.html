@@ -383,6 +383,65 @@
                 <strong>Remember:</strong> Area is always measured in "square units" because we're counting squares! It could be square centimeters, square meters, or just "squares" like our chocolate!
             </div>
         </div>
+        
+        <div class="step">
+            <h2>Step 6: Area of Different Shapes! 🔺🔵🟦</h2>
+            <div class="explanation">
+                Let's see how area works with different geometric shapes:
+            </div>
+            
+            <div class="chocolate-container">
+                <div class="bar-wrapper">
+                    <div id="rectangle-area-demo"></div>
+                    <div class="bar-label">Rectangle: 6 × 4 = 24 square units</div>
+                </div>
+                
+                <div class="bar-wrapper">
+                    <div id="square-area-demo"></div>
+                    <div class="bar-label">Square: 5 × 5 = 25 square units</div>
+                </div>
+                
+                <div class="bar-wrapper">
+                    <div id="triangle-area-demo"></div>
+                    <div class="bar-label">Triangle: ½ × base × height = ½ × 8 × 6 = 24 square units</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Fun Fact:</strong> Different shapes have different area formulas, but they all measure the space inside the shape!
+            </div>
+        </div>
     </div>
+
+    <script src="geometricShapes.js"></script>
+    <script>
+        // Initialize geometric shape demonstrations when page loads
+        window.onload = function() {
+            if (window.geometricShapes) {
+                // Create rectangle with grid
+                window.geometricShapes.createRectangleSVG('rectangle-area-demo', 120, 80, {
+                    showGrid: true,
+                    showDimensions: true,
+                    fill: '#4ecdc4',
+                    stroke: '#26a69a'
+                });
+                
+                // Create square with grid
+                window.geometricShapes.createSquareSVG('square-area-demo', 100, {
+                    showGrid: true,
+                    showDimensions: true,
+                    fill: '#ff9800',
+                    stroke: '#f57c00'
+                });
+                
+                // Create triangle with dimensions
+                window.geometricShapes.createTriangleSVG('triangle-area-demo', 160, 120, {
+                    showDimensions: true,
+                    fill: '#9c27b0',
+                    stroke: '#7b1fa2'
+                });
+            }
+        };
+    </script>
 </body>
 </html>

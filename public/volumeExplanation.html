@@ -427,6 +427,56 @@
                 <strong>Remember:</strong> Volume is always measured in "cubic units" because we're counting 3D blocks! It could be cubic centimeters, cubic meters, or just "blocks" like our building blocks!
             </div>
         </div>
+        
+        <div class="step">
+            <h2>Step 6: 3D Shape Visualization! 📦</h2>
+            <div class="explanation">
+                Let's see how 3D shapes look and understand their volume:
+            </div>
+            
+            <div class="block-container">
+                <div class="structure-wrapper">
+                    <div id="cube-demo"></div>
+                    <div class="structure-label">Cube<br>Volume = side³ = 4³ = 64 cubic units</div>
+                </div>
+                
+                <div class="structure-wrapper">
+                    <div id="rectangular-prism-demo"></div>
+                    <div class="structure-label">Rectangular Prism<br>Volume = l × w × h</div>
+                </div>
+            </div>
+            
+            <div class="thinking-bubble">
+                <strong>Cool Fact:</strong> A cube is a special rectangular prism where all sides are equal! It's like a 3D square.
+            </div>
+        </div>
     </div>
+
+    <script src="geometricShapes.js"></script>
+    <script>
+        // Initialize 3D shape demonstrations when page loads
+        window.onload = function() {
+            if (window.geometricShapes) {
+                // Create 3D cube visualization
+                window.geometricShapes.createCubeSVG('cube-demo', 120, {
+                    frontFill: '#2196f3',
+                    topFill: '#64b5f6',
+                    rightFill: '#1976d2',
+                    stroke: '#1565c0',
+                    strokeWidth: '3'
+                });
+                
+                // For the rectangular prism, we'll use a modified cube with different proportions
+                // This is a simplified representation - in a real app you might want a more sophisticated 3D library
+                window.geometricShapes.createCubeSVG('rectangular-prism-demo', 100, {
+                    frontFill: '#4caf50',
+                    topFill: '#81c784',
+                    rightFill: '#388e3c',
+                    stroke: '#2e7d32',
+                    strokeWidth: '3'
+                });
+            }
+        };
+    </script>
 </body>
 </html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Shapes Gallery 🔺🔵🟦</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #5e72e4;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .shape-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .shape-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #5e72e4;
+        }
+        
+        .shape-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #343a40;
+            margin: 15px 0 10px 0;
+        }
+        
+        .shape-properties {
+            font-size: 0.9em;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: #5e72e4;
+            text-align: center;
+            margin: 40px 0 20px 0;
+            border-bottom: 3px solid #5e72e4;
+            padding-bottom: 10px;
+        }
+        
+        .demo-controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .demo-button {
+            background: #5e72e4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .demo-button:hover {
+            background: #4c63d2;
+        }
+        
+        .animated-demo {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            border: 3px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Geometric Shapes Gallery</h1>
+        <div class="subtitle">Explore the wonderful world of geometry with interactive SVG shapes!</div>
+        
+        <div class="section-title">📐 Basic Shapes</div>
+        <div class="shapes-grid">
+            <div class="shape-card">
+                <div id="square-gallery"></div>
+                <div class="shape-name">Square</div>
+                <div class="shape-properties">
+                    • 4 equal sides<br>
+                    • 4 right angles (90°)<br>
+                    • All sides parallel
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="rectangle-gallery"></div>
+                <div class="shape-name">Rectangle</div>
+                <div class="shape-properties">
+                    • Opposite sides equal<br>
+                    • 4 right angles (90°)<br>
+                    • Opposite sides parallel
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="circle-gallery"></div>
+                <div class="shape-name">Circle</div>
+                <div class="shape-properties">
+                    • All points equidistant from center<br>
+                    • Circumference = 2πr<br>
+                    • Area = πr²
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="triangle-gallery"></div>
+                <div class="shape-name">Triangle</div>
+                <div class="shape-properties">
+                    • 3 sides and 3 angles<br>
+                    • Sum of angles = 180°<br>
+                    • Area = ½ × base × height
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-title">🔷 Quadrilaterals</div>
+        <div class="shapes-grid">
+            <div class="shape-card">
+                <div id="rhombus-gallery"></div>
+                <div class="shape-name">Rhombus</div>
+                <div class="shape-properties">
+                    • All sides equal<br>
+                    • Opposite angles equal<br>
+                    • Opposite sides parallel
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="parallelogram-gallery"></div>
+                <div class="shape-name">Parallelogram</div>
+                <div class="shape-properties">
+                    • Opposite sides equal & parallel<br>
+                    • Opposite angles equal<br>
+                    • Area = base × height
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="trapezoid-gallery"></div>
+                <div class="shape-name">Trapezoid</div>
+                <div class="shape-properties">
+                    • One pair of parallel sides<br>
+                    • Called a trapezium in some countries<br>
+                    • Area = ½(a + b) × height
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-title">⭐ Polygons</div>
+        <div class="shapes-grid">
+            <div class="shape-card">
+                <div id="pentagon-gallery"></div>
+                <div class="shape-name">Pentagon</div>
+                <div class="shape-properties">
+                    • 5 sides and 5 angles<br>
+                    • Regular pentagon has equal sides<br>
+                    • Each angle = 108°
+                </div>
+            </div>
+            
+            <div class="shape-card">
+                <div id="hexagon-gallery"></div>
+                <div class="shape-name">Hexagon</div>
+                <div class="shape-properties">
+                    • 6 sides and 6 angles<br>
+                    • Found in honeycombs!<br>
+                    • Each angle = 120°
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-title">📦 3D Shapes</div>
+        <div class="shapes-grid">
+            <div class="shape-card">
+                <div id="cube-gallery"></div>
+                <div class="shape-name">Cube</div>
+                <div class="shape-properties">
+                    • 6 square faces<br>
+                    • 12 edges, 8 vertices<br>
+                    • Volume = side³
+                </div>
+            </div>
+        </div>
+        
+        <div class="animated-demo">
+            <h3>🎯 Interactive Area Demo</h3>
+            <div class="demo-controls">
+                <button class="demo-button" onclick="showAreaDemo(4, 3)">4×3 Rectangle</button>
+                <button class="demo-button" onclick="showAreaDemo(5, 5)">5×5 Square</button>
+                <button class="demo-button" onclick="showAreaDemo(6, 2)">6×2 Rectangle</button>
+            </div>
+            <div id="area-demo-container"></div>
+        </div>
+    </div>
+
+    <script src="geometricShapes.js"></script>
+    <script>
+        // Initialize all shape demonstrations when page loads
+        window.onload = function() {
+            if (window.geometricShapes) {
+                // Basic shapes
+                window.geometricShapes.createSquareSVG('square-gallery', 100, {
+                    fill: '#ff9800',
+                    stroke: '#f57c00',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createRectangleSVG('rectangle-gallery', 120, 80, {
+                    fill: '#4ecdc4',
+                    stroke: '#26a69a',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createCircleSVG('circle-gallery', 60, {
+                    fill: '#e91e63',
+                    stroke: '#c2185b',
+                    strokeWidth: '3',
+                    showRadius: true
+                });
+                
+                window.geometricShapes.createTriangleSVG('triangle-gallery', 120, 100, {
+                    fill: '#9c27b0',
+                    stroke: '#7b1fa2',
+                    strokeWidth: '3'
+                });
+                
+                // Quadrilaterals
+                window.geometricShapes.createRhombusSVG('rhombus-gallery', 100, 120, {
+                    fill: '#8bc34a',
+                    stroke: '#689f38',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createParallelogramSVG('parallelogram-gallery', 120, 80, 30, {
+                    fill: '#607d8b',
+                    stroke: '#455a64',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createTrapezoidSVG('trapezoid-gallery', 80, 140, 90, {
+                    fill: '#ff5722',
+                    stroke: '#d84315',
+                    strokeWidth: '3'
+                });
+                
+                // Polygons
+                window.geometricShapes.createPentagonSVG('pentagon-gallery', 70, {
+                    fill: '#00bcd4',
+                    stroke: '#0097a7',
+                    strokeWidth: '3'
+                });
+                
+                window.geometricShapes.createHexagonSVG('hexagon-gallery', 70, {
+                    fill: '#795548',
+                    stroke: '#5d4037',
+                    strokeWidth: '3'
+                });
+                
+                // 3D shapes
+                window.geometricShapes.createCubeSVG('cube-gallery', 100, {
+                    frontFill: '#2196f3',
+                    topFill: '#64b5f6',
+                    rightFill: '#1976d2',
+                    stroke: '#1565c0',
+                    strokeWidth: '3'
+                });
+                
+                // Initial area demo
+                showAreaDemo(4, 3);
+            }
+        };
+        
+        // Function to show animated area demonstration
+        function showAreaDemo(width, height) {
+            if (window.geometricShapes) {
+                window.geometricShapes.createAnimatedAreaDemo('area-demo-container', width, height, {
+                    animate: true,
+                    fill: '#4caf50'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
