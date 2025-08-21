@@ -1,19 +1,51 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
-import React, { useState, useEffect, useRef } from 'react';
-import 'katex/dist/katex.min.css';
-import renderMathInElement from 'katex/contrib/auto-render';
-import { ChevronsRight, HelpCircle, Sparkles, X, BarChart2, Award, Coins, Pause, Play, Store, CheckCircle, Home } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot, updateDoc, increment, arrayUnion, deleteField, getDoc } from 'firebase/firestore';
-import { adaptAnsweredHistory, nextTargetComplexity, computePerTopicComplexity, rankQuestionsByComplexity } from './utils/complexityEngine';
+import React, { useState, useEffect, useRef } from "react";
+import "katex/dist/katex.min.css";
+import renderMathInElement from "katex/contrib/auto-render";
+import {
+  ChevronsRight,
+  HelpCircle,
+  Sparkles,
+  X,
+  BarChart2,
+  Award,
+  Coins,
+  Pause,
+  Play,
+  Store,
+  CheckCircle,
+  Home,
+} from "lucide-react";
+import { initializeApp } from "firebase/app";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  signInWithCustomToken,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  onSnapshot,
+  updateDoc,
+  increment,
+  arrayUnion,
+  getDoc,
+} from "firebase/firestore";
+import {
+  adaptAnsweredHistory,
+  nextTargetComplexity,
+  computePerTopicComplexity,
+  rankQuestionsByComplexity,
+} from "./utils/complexityEngine";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
 let firebaseConfig = {};
 
-if (typeof __firebase_config !== 'undefined') {
-  console.log('Using __firebase_config');
+if (typeof __firebase_config !== "undefined") {
+  console.log("Using __firebase_config");
   firebaseConfig = JSON.parse(__firebase_config);
 } else {
   // Use individual environment variables (these are safe to expose)
@@ -23,13 +55,15 @@ if (typeof __firebase_config !== 'undefined') {
     projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
     storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
   };
-  console.log('Using environment variables');
+  console.log("Using environment variables");
 
   // Check if we have the minimum required config
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.warn('Firebase configuration incomplete. Some features may not work.');
+    console.warn(
+      "Firebase configuration incomplete. Some features may not work."
+    );
   }
 }
 
@@ -47,16 +81,23 @@ const GOAL_RANGE_STEP = 1;
 // --- Helper Functions ---
 const getTodayDateString = () => {
   const today = new Date();
-  return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  return today.toISOString().split("T")[0]; // YYYY-MM-DD format
 };
 
 const getUserDocRef = (userId) => {
-  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  const appId = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
   if (!userId) return null;
   // Using the required path structure for user-specific data
-  return doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile');
+  return doc(
+    db,
+    "artifacts",
+    appId,
+    "users",
+    userId,
+    "math_whiz_data",
+    "profile"
+  );
 };
-
 
 // --- Helper Functions for Randomization ---
 const getRandomInt = (min, max) => {
@@ -66,11 +107,15 @@ const getRandomInt = (min, max) => {
 };
 
 const shuffleArray = (array) => {
-  let currentIndex = array.length, randomIndex;
+  let currentIndex = array.length,
+    randomIndex;
   while (currentIndex !== 0) {
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
   }
   return array;
 };
@@ -97,47 +142,140 @@ const getSimplifiedFraction = (numerator, denominator) => {
 
 // --- Concept Explanation HTML Files Mapping ---
 const conceptExplanationFiles = {
-  'Multiplication': '/multiplicationExplanation.html',
-  'Division': '/divisionExplanation.html',
+  // 3rd Grade Topics
+  Multiplication: "/multiplicationExplanation.html",
+  Division: "/divisionExplanation.html",
   // Fraction subtopics
-  'Fractions: Addition': '/fractionAdditionExplanation.html',
-  'Fractions: Simplification': '/fractionSimplificationExplanation.html',
-  'Fractions: Equivalency': '/fractionEquivalencyExplanation.html',
-  'Fractions: Comparison': '/fractionComparisonExplanation.html',
+  "Fractions: Addition": "/fractionAdditionExplanation.html",
+  "Fractions: Simplification": "/fractionSimplificationExplanation.html",
+  "Fractions: Equivalency": "/fractionEquivalencyExplanation.html",
+  "Fractions: Comparison": "/fractionComparisonExplanation.html",
   // Fallback for any generic fractions (kept for backward compatibility)
-  'Fractions': '/fractionAdditionExplanation.html',
-  'Area': '/areaExplanation.html',
-  'Perimeter': '/perimeterExplanation.html',
-  'Volume': '/volumeExplanation.html'
+  Fractions: "/fractionAdditionExplanation.html",
+  Area: "/areaExplanation.html",
+  Perimeter: "/perimeterExplanation.html",
+  Volume: "/volumeExplanation.html",
+
+  // 4th Grade Topics (to be implemented in Phase 3)
+  "Operations & Algebraic Thinking (4.OA)": "/oa4Explanation.html",
+  "Base Ten (4.NBT)": "/nbt4Explanation.html",
+  "Fractions (4.NF)": "/nf4Explanation.html",
+  "Measurement & Data (4.MD)": "/md4Explanation.html",
+  "Geometry (4.G)": "/g4Explanation.html",
 };
 
 // --- Store Items ---
 const storeItems = [
-  { id: 'bg1', name: 'Silly Giraffe', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_funny_cute_plastic_toy_gira-3.jpg' },
-  { id: 'bg2', name: 'Cool Lion', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_cool_felt-stitched_toy_lion_w-1.jpg' },
-  { id: 'bg3', name: 'Playful Monkey', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/A_playful_claymation-style_toy-0.jpg' },
-  { id: 'bg4', name: 'Happy Hippo', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Happy_Hippo_A_cheerful_round_h-0.jpg' },
-  { id: 'bg5', name: 'Zebra Stripes', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/zebra.jpeg' },
-  { id: 'bg6', name: 'Funky Frog', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/frog.jpeg' },
-  { id: 'bg7', name: 'Dapper Dog', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/puppy_hat_and_a_monocle.jpg' },
-  { id: 'bg8', name: 'Cuddly Cat', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/kitten.jpeg' },
-  { id: 'bg9', name: 'Penguin Party', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/penguins.jpeg' },
-  { id: 'bg10', name: 'Bear Hugs', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/polar_bear_cub_with_glasses.jpg' },
-  { id: 'bg11', name: 'Wacky Walrus', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/walrus.jpeg' },
-  { id: 'bg12', name: 'Jumping Kangaroo', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/kangaroo.jpeg' },
-  { id: 'bg13', name: 'Sleepy Sloth', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/sloth.jpeg' },
-  { id: 'bg14', name: 'Clever Fox', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/fox.jpeg' },
-  { id: 'bg15', name: 'Wise Owl', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/owl.jpeg' },
-  { id: 'bg16', name: 'Busy Beaver', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/beaver.jpeg' },
-  { id: 'bg17', name: 'Panda Peace', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/panda.jpeg' },
-  { id: 'bg18', name: 'Koala Cuddles', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/Koala2.jpg' },
-  { id: 'bg19', name: 'Raccoon Rascal', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/racoon.jpeg' },
-  { id: 'bg20', name: 'Elephant Smiles', url: 'https://images4whizkids.s3.us-east-2.amazonaws.com/elephant.jpeg' },
+  {
+    id: "bg1",
+    name: "Silly Giraffe",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_funny_cute_plastic_toy_gira-3.jpg",
+  },
+  {
+    id: "bg2",
+    name: "Cool Lion",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_cool_felt-stitched_toy_lion_w-1.jpg",
+  },
+  {
+    id: "bg3",
+    name: "Playful Monkey",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_playful_claymation-style_toy-0.jpg",
+  },
+  {
+    id: "bg4",
+    name: "Happy Hippo",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/Happy_Hippo_A_cheerful_round_h-0.jpg",
+  },
+  {
+    id: "bg5",
+    name: "Zebra Stripes",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/zebra.jpeg",
+  },
+  {
+    id: "bg6",
+    name: "Funky Frog",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/frog.jpeg",
+  },
+  {
+    id: "bg7",
+    name: "Dapper Dog",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/puppy_hat_and_a_monocle.jpg",
+  },
+  {
+    id: "bg8",
+    name: "Cuddly Cat",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kitten.jpeg",
+  },
+  {
+    id: "bg9",
+    name: "Penguin Party",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/penguins.jpeg",
+  },
+  {
+    id: "bg10",
+    name: "Bear Hugs",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/polar_bear_cub_with_glasses.jpg",
+  },
+  {
+    id: "bg11",
+    name: "Wacky Walrus",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/walrus.jpeg",
+  },
+  {
+    id: "bg12",
+    name: "Jumping Kangaroo",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kangaroo.jpeg",
+  },
+  {
+    id: "bg13",
+    name: "Sleepy Sloth",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/sloth.jpeg",
+  },
+  {
+    id: "bg14",
+    name: "Clever Fox",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/fox.jpeg",
+  },
+  {
+    id: "bg15",
+    name: "Wise Owl",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/owl.jpeg",
+  },
+  {
+    id: "bg16",
+    name: "Busy Beaver",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/beaver.jpeg",
+  },
+  {
+    id: "bg17",
+    name: "Panda Peace",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/panda.jpeg",
+  },
+  {
+    id: "bg18",
+    name: "Koala Cuddles",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/Koala2.jpg",
+  },
+  {
+    id: "bg19",
+    name: "Raccoon Rascal",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/racoon.jpeg",
+  },
+  {
+    id: "bg20",
+    name: "Elephant Smiles",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/elephant.jpeg",
+  },
 ];
 
-
 // --- Dynamic Quiz Generation ---
-const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) => {
+const generateQuizQuestions = (
+  topic,
+  dailyGoals,
+  questionHistory,
+  difficulty,
+  grade = "G3"
+) => {
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);
@@ -145,7 +283,7 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
   const questionMastery = new Map();
 
-  ranked.forEach(r => {
+  ranked.forEach((r) => {
     if (!questionMastery.has(r.question)) {
       questionMastery.set(r.question, { totalComplexity: 0, count: 0 });
     }
@@ -166,22 +304,49 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
     let question = {};
 
     switch (topic) {
-      case 'Multiplication':
+      case "Multiplication":
         const m1 = getRandomInt(2, 2 + Math.floor(10 * difficulty));
         const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const mAnswer = m1 * m2;
 
-        question = { question: `What is ${m1} x ${m2}?`, correctAnswer: mAnswer.toString(), options: shuffleArray([mAnswer.toString(), (mAnswer + getRandomInt(1, 5)).toString(), (m1 * (m2 + 1)).toString(), ((m1 - 1) * m2).toString()]), hint: `Try skip-counting by ${m2}, ${m1} times!`, standard: "3.OA.C.7", concept: "Multiplication" };
+        question = {
+          question: `What is ${m1} x ${m2}?`,
+          correctAnswer: mAnswer.toString(),
+          options: shuffleArray([
+            mAnswer.toString(),
+            (mAnswer + getRandomInt(1, 5)).toString(),
+            (m1 * (m2 + 1)).toString(),
+            ((m1 - 1) * m2).toString(),
+          ]),
+          hint: `Try skip-counting by ${m2}, ${m1} times!`,
+          standard: "3.OA.C.7",
+          concept: "Multiplication",
+        };
         break;
-      case 'Division':
+      case "Division":
         const d_quotient = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_divisor = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_dividend = d_quotient * d_divisor;
 
-        question = { question: `What is ${d_dividend} ÷ ${d_divisor}?`, correctAnswer: d_quotient.toString(), options: shuffleArray([d_quotient.toString(), (d_quotient + 1).toString(), (d_quotient - 1).toString(), (d_quotient + getRandomInt(2, 4)).toString()]), hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`, standard: "3.OA.C.7", concept: "Division" };
+        question = {
+          question: `What is ${d_dividend} ÷ ${d_divisor}?`,
+          correctAnswer: d_quotient.toString(),
+          options: shuffleArray([
+            d_quotient.toString(),
+            (d_quotient + 1).toString(),
+            (d_quotient - 1).toString(),
+            (d_quotient + getRandomInt(2, 4)).toString(),
+          ]),
+          hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`,
+          standard: "3.OA.C.7",
+          concept: "Division",
+        };
         break;
-      case 'Fractions':
-        const fractionQuestionType = getRandomInt(1, 1 + Math.floor(4 * difficulty));
+      case "Fractions":
+        const fractionQuestionType = getRandomInt(
+          1,
+          1 + Math.floor(4 * difficulty)
+        );
 
         switch (fractionQuestionType) {
           case 1: // Equivalent Fractions
@@ -194,21 +359,37 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `Which fraction is equivalent to ${f_num_eq}/${f_den_eq}?`,
               correctAnswer: `${eq_num}/${eq_den}`,
-              options: shuffleArray([`${eq_num}/${eq_den}`, `${f_num_eq + 1}/${f_den_eq}`, `${f_num_eq}/${f_den_eq + 1}`, `${eq_num}/${eq_den + multiplier}`]),
+              options: shuffleArray([
+                `${eq_num}/${eq_den}`,
+                `${f_num_eq + 1}/${f_den_eq}`,
+                `${f_num_eq}/${f_den_eq + 1}`,
+                `${eq_num}/${eq_den + multiplier}`,
+              ]),
               hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
               standard: "3.NF.A.3.b",
-              concept: "Fractions: Equivalency"
+              concept: "Fractions: Equivalency",
             };
             break;
           case 2: // Fraction Addition with unlike denominators
             const add_den1 = getRandomInt(2, 5);
             let add_den2 = getRandomInt(2, 6);
-            while (add_den1 === add_den2) { add_den2 = getRandomInt(2, 6); }
-            const add_num1 = getRandomInt(1, add_den1 - 1 > 0 ? add_den1 - 1 : 1);
-            const add_num2 = getRandomInt(1, add_den2 - 1 > 0 ? add_den2 - 1 : 1);
+            while (add_den1 === add_den2) {
+              add_den2 = getRandomInt(2, 6);
+            }
+            const add_num1 = getRandomInt(
+              1,
+              add_den1 - 1 > 0 ? add_den1 - 1 : 1
+            );
+            const add_num2 = getRandomInt(
+              1,
+              add_den2 - 1 > 0 ? add_den2 - 1 : 1
+            );
             const common_add_den = add_den1 * add_den2;
-            const add_sum_num = (add_num1 * add_den2) + (add_num2 * add_den1);
-            const add_answer = getSimplifiedFraction(add_sum_num, common_add_den);
+            const add_sum_num = add_num1 * add_den2 + add_num2 * add_den1;
+            const add_answer = getSimplifiedFraction(
+              add_sum_num,
+              common_add_den
+            );
 
             question = {
               question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
@@ -217,11 +398,11 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 add_answer,
                 getSimplifiedFraction(add_num1 + add_num2, add_den1 + add_den2), // Common mistake
                 getSimplifiedFraction(add_sum_num + 1, common_add_den),
-                getSimplifiedFraction(add_sum_num, common_add_den + 1)
+                getSimplifiedFraction(add_sum_num, common_add_den + 1),
               ]),
               hint: "To add fractions with different denominators, you first need to find a common denominator!",
               standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: "Fractions: Addition"
+              concept: "Fractions: Addition",
             };
             break;
           case 3: // Fraction Subtraction with unlike denominators
@@ -231,7 +412,10 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             let sub_num2 = getRandomInt(1, sub_den2 - 1 > 0 ? sub_den2 - 1 : 1);
 
             // Ensure the first fraction is larger and denominators are different
-            while ((sub_num1 * sub_den2) <= (sub_num2 * sub_den1) || sub_den1 === sub_den2) {
+            while (
+              sub_num1 * sub_den2 <= sub_num2 * sub_den1 ||
+              sub_den1 === sub_den2
+            ) {
               sub_den1 = getRandomInt(2, 6);
               sub_den2 = getRandomInt(2, 6);
               sub_num1 = getRandomInt(1, sub_den1 - 1 > 0 ? sub_den1 - 1 : 1);
@@ -239,52 +423,64 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             }
 
             const common_sub_den = sub_den1 * sub_den2;
-            const sub_diff_num = (sub_num1 * sub_den2) - (sub_num2 * sub_den1);
-            const sub_answer = getSimplifiedFraction(sub_diff_num, common_sub_den);
+            const sub_diff_num = sub_num1 * sub_den2 - sub_num2 * sub_den1;
+            const sub_answer = getSimplifiedFraction(
+              sub_diff_num,
+              common_sub_den
+            );
 
             question = {
               question: `What is ${sub_num1}/${sub_den1} - ${sub_num2}/${sub_den2}?`,
               correctAnswer: sub_answer,
               options: shuffleArray([
                 sub_answer,
-                getSimplifiedFraction(Math.abs(sub_num1 - sub_num2), Math.abs(sub_den1 - sub_den2)), // Common mistake
+                getSimplifiedFraction(
+                  Math.abs(sub_num1 - sub_num2),
+                  Math.abs(sub_den1 - sub_den2)
+                ), // Common mistake
                 getSimplifiedFraction(sub_diff_num + 1, common_sub_den),
-                getSimplifiedFraction(sub_diff_num, common_sub_den + 1)
+                getSimplifiedFraction(sub_diff_num, common_sub_den + 1),
               ]),
               hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
               standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: "Fractions: Addition"
+              concept: "Fractions: Addition",
             };
             break;
           case 4: // Fraction Comparison
             const comp_type = getRandomInt(1, 2);
-            if (comp_type === 1) { // Same denominator
+            if (comp_type === 1) {
+              // Same denominator
               const comp_den = getRandomInt(3, 12);
               let comp_num1 = getRandomInt(1, comp_den - 1);
               let comp_num2 = getRandomInt(1, comp_den - 1);
-              while (comp_num1 === comp_num2) { comp_num2 = getRandomInt(1, comp_den - 1); }
+              while (comp_num1 === comp_num2) {
+                comp_num2 = getRandomInt(1, comp_den - 1);
+              }
 
               question = {
                 question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
-                correctAnswer: comp_num1 > comp_num2 ? '>' : '<',
-                options: shuffleArray(['<', '>', '=']),
+                correctAnswer: comp_num1 > comp_num2 ? ">" : "<",
+                options: shuffleArray(["<", ">", "="]),
                 hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
                 standard: "3.NF.A.3.d",
-                concept: "Fractions: Comparison"
+                concept: "Fractions: Comparison",
               };
-            } else { // Same numerator
+            } else {
+              // Same numerator
               const comp_num = getRandomInt(1, 10);
               let comp_den1 = getRandomInt(comp_num + 1, 15);
               let comp_den2 = getRandomInt(comp_num + 1, 15);
-              while (comp_den1 === comp_den2) { comp_den2 = getRandomInt(comp_num + 1, 15); }
+              while (comp_den1 === comp_den2) {
+                comp_den2 = getRandomInt(comp_num + 1, 15);
+              }
 
               question = {
                 question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
-                correctAnswer: comp_den1 < comp_den2 ? '>' : '<',
-                options: shuffleArray(['<', '>', '=']),
+                correctAnswer: comp_den1 < comp_den2 ? ">" : "<",
+                options: shuffleArray(["<", ">", "="]),
                 hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
                 standard: "3.NF.A.3.d",
-                concept: "Fractions: Comparison"
+                concept: "Fractions: Comparison",
               };
             }
             break;
@@ -294,8 +490,10 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             const simp_den = getRandomInt(simp_num + 1, 11);
             const starting_num = simp_num * simp_multiplier;
             const starting_den = simp_den * simp_multiplier;
-            const simplified_fraction = getSimplifiedFraction(starting_num, starting_den);
-
+            const simplified_fraction = getSimplifiedFraction(
+              starting_num,
+              starting_den
+            );
 
             question = {
               question: `Simplify the fraction ${starting_num}/${starting_den}`,
@@ -304,11 +502,13 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
                 simplified_fraction,
                 `${simp_num}/${simp_den + getRandomInt(1, 3)}`,
                 `${Math.abs(simp_num - getRandomInt(1, 3))}/${simp_den}`,
-                `${Math.floor(starting_num / 2)}/${Math.floor(starting_den / 2)}` // Common mistake if not fully simplified
+                `${Math.floor(starting_num / 2)}/${Math.floor(
+                  starting_den / 2
+                )}`, // Common mistake if not fully simplified
               ]),
               hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
               standard: "4.NF.A.1",
-              concept: "Fractions: Simplification"
+              concept: "Fractions: Simplification",
             };
             break;
           default:
@@ -322,16 +522,24 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `Which fraction is equivalent to ${def_f_num_eq}/${def_f_den_eq}?`,
               correctAnswer: `${def_eq_num}/${def_eq_den}`,
-              options: shuffleArray([`${def_eq_num}/${def_eq_den}`, `${def_f_num_eq + 1}/${def_f_den_eq}`, `${def_f_num_eq}/${def_f_den_eq + 1}`, `${def_eq_num}/${def_eq_den + def_multiplier}`]),
+              options: shuffleArray([
+                `${def_eq_num}/${def_eq_den}`,
+                `${def_f_num_eq + 1}/${def_f_den_eq}`,
+                `${def_f_num_eq}/${def_f_den_eq + 1}`,
+                `${def_eq_num}/${def_eq_den + def_multiplier}`,
+              ]),
               hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
               standard: "3.NF.A.3.b",
-              concept: "Fractions: Equivalency"
+              concept: "Fractions: Equivalency",
             };
             break;
         }
         break;
-      case 'Measurement & Data':
-        const md_question_type = getRandomInt(1, 1 + Math.floor(2 * difficulty));
+      case "Measurement & Data":
+        const md_question_type = getRandomInt(
+          1,
+          1 + Math.floor(2 * difficulty)
+        );
 
         switch (md_question_type) {
           case 1: // Area
@@ -341,10 +549,15 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `A rectangle has a length of ${md_length} cm and a width of ${md_width} cm. What is its area?`,
               correctAnswer: `${md_length * md_width} cm²`,
-              options: shuffleArray([`${md_length * md_width} cm²`, `${(md_length + md_width) * 2} cm²`, `${md_length + md_width} cm²`, `${md_length * md_width + 10} cm²`]),
+              options: shuffleArray([
+                `${md_length * md_width} cm²`,
+                `${(md_length + md_width) * 2} cm²`,
+                `${md_length + md_width} cm²`,
+                `${md_length * md_width + 10} cm²`,
+              ]),
               hint: "Area of a rectangle is found by multiplying its length and width.",
               standard: "3.MD.C.7.b",
-              concept: "Area"
+              concept: "Area",
             };
             break;
           case 2: // Perimeter
@@ -354,10 +567,15 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `What is the perimeter of a rectangle with sides of length ${md_side1} inches and ${md_side2} inches?`,
               correctAnswer: `${2 * (md_side1 + md_side2)} inches`,
-              options: shuffleArray([`${2 * (md_side1 + md_side2)} inches`, `${md_side1 * md_side2} inches`, `${md_side1 + md_side2} inches`, `${2 * (md_side1 + md_side2) + 10} inches`]),
+              options: shuffleArray([
+                `${2 * (md_side1 + md_side2)} inches`,
+                `${md_side1 * md_side2} inches`,
+                `${md_side1 + md_side2} inches`,
+                `${2 * (md_side1 + md_side2) + 10} inches`,
+              ]),
               hint: "Perimeter is the distance all the way around a shape. Add up all four sides!",
               standard: "3.MD.D.8",
-              concept: "Perimeter"
+              concept: "Perimeter",
             };
             break;
           case 3: // Volume by counting cubes
@@ -369,10 +587,15 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
               correctAnswer: `${volume} cubes`,
-              options: shuffleArray([`${volume} cubes`, `${vol_l + vol_w + vol_h} cubes`, `${volume + 5} cubes`, `${volume - 2} cubes`]),
+              options: shuffleArray([
+                `${volume} cubes`,
+                `${vol_l + vol_w + vol_h} cubes`,
+                `${volume + 5} cubes`,
+                `${volume - 2} cubes`,
+              ]),
               hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
               standard: "3.MD.C.5",
-              concept: "Volume"
+              concept: "Volume",
             };
             break;
           default:
@@ -383,17 +606,534 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
             question = {
               question: `A rectangle has a length of ${def_length} cm and a width of ${def_width} cm. What is its area?`,
               correctAnswer: `${def_length * def_width} cm²`,
-              options: shuffleArray([`${def_length * def_width} cm²`, `${(def_length + def_width) * 2} cm²`, `${def_length + def_width} cm²`, `${def_length * def_width + 10} cm²`]),
+              options: shuffleArray([
+                `${def_length * def_width} cm²`,
+                `${(def_length + def_width) * 2} cm²`,
+                `${def_length + def_width} cm²`,
+                `${def_length * def_width + 10} cm²`,
+              ]),
               hint: "Area of a rectangle is found by multiplying its length and width.",
               standard: "3.MD.C.7.b",
-              concept: "Area"
+              concept: "Area",
             };
             break;
         }
         break;
-      default:
 
-        question = { question: 'No question generated', options: [], correctAnswer: '', concept: 'Math' };
+      // 4th Grade Topics
+      case "Operations & Algebraic Thinking (4.OA)":
+        const oaType = getRandomInt(1, 3);
+        switch (oaType) {
+          case 1: // Multiplicative comparisons (4.OA.1)
+            const base = getRandomInt(2, 8);
+            const multiplier_comp = getRandomInt(2, 6);
+            const result = base * multiplier_comp;
+
+            question = {
+              question: `Sarah has ${base} stickers. Tom has ${multiplier_comp} times as many stickers as Sarah. How many stickers does Tom have?`,
+              correctAnswer: result.toString(),
+              options: shuffleArray([
+                result.toString(),
+                (base + multiplier_comp).toString(),
+                (result + 5).toString(),
+                (result - 3).toString(),
+              ]),
+              hint: `"${multiplier_comp} times as many" means multiply ${base} by ${multiplier_comp}.`,
+              standard: "4.OA.A.1",
+              concept: "Operations & Algebraic Thinking (4.OA)",
+              grade: "G4",
+              subtopic: "multiplicative comparison",
+            };
+            break;
+          case 2: // Prime vs composite (4.OA.4)
+            const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+            const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 22];
+            const isPrime = Math.random() < 0.5;
+            const testNumber = isPrime
+              ? primes[getRandomInt(0, primes.length - 1)]
+              : composites[getRandomInt(0, composites.length - 1)];
+
+            question = {
+              question: `Is ${testNumber} a prime number or a composite number?`,
+              correctAnswer: isPrime ? "Prime" : "Composite",
+              options: shuffleArray(["Prime", "Composite"]),
+              hint: isPrime
+                ? "A prime number has exactly two factors: 1 and itself."
+                : "A composite number has more than two factors.",
+              standard: "4.OA.B.4",
+              concept: "Operations & Algebraic Thinking (4.OA)",
+              grade: "G4",
+              subtopic: "prime vs composite",
+            };
+            break;
+          case 3: // Factors and multiples
+            const factorBase = getRandomInt(6, 20);
+            const factors = [];
+            for (let i = 1; i <= factorBase; i++) {
+              if (factorBase % i === 0) factors.push(i);
+            }
+            const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
+
+            question = {
+              question: `Which of these is a factor of ${factorBase}?`,
+              correctAnswer: correctFactor.toString(),
+              options: shuffleArray([
+                correctFactor.toString(),
+                (correctFactor + 1).toString(),
+                (factorBase + 1).toString(),
+                (correctFactor + 3).toString(),
+              ]),
+              hint: `A factor of ${factorBase} divides evenly into ${factorBase} with no remainder.`,
+              standard: "4.OA.B.4",
+              concept: "Operations & Algebraic Thinking (4.OA)",
+              grade: "G4",
+              subtopic: "factors",
+            };
+            break;
+          default:
+            // Fallback to multiplicative comparison
+            const defBase = getRandomInt(2, 8);
+            const defMultiplier = getRandomInt(2, 6);
+            const defResult = defBase * defMultiplier;
+
+            question = {
+              question: `Sarah has ${defBase} stickers. Tom has ${defMultiplier} times as many stickers as Sarah. How many stickers does Tom have?`,
+              correctAnswer: defResult.toString(),
+              options: shuffleArray([
+                defResult.toString(),
+                (defBase + defMultiplier).toString(),
+                (defResult + 5).toString(),
+                (defResult - 3).toString(),
+              ]),
+              hint: `"${defMultiplier} times as many" means multiply ${defBase} by ${defMultiplier}.`,
+              standard: "4.OA.A.1",
+              concept: "Operations & Algebraic Thinking (4.OA)",
+              grade: "G4",
+              subtopic: "multiplicative comparison",
+            };
+            break;
+        }
+        break;
+
+      case "Base Ten (4.NBT)":
+        const nbtType = getRandomInt(1, 3);
+        switch (nbtType) {
+          case 1: // Place value (4.NBT.1)
+            const placeValue = getRandomInt(1000, 9999);
+            const digit = placeValue.toString()[getRandomInt(0, 3)];
+            const positions = ["thousands", "hundreds", "tens", "ones"];
+            const digitPos = placeValue.toString().indexOf(digit);
+
+            question = {
+              question: `In the number ${placeValue}, what is the place value of the digit ${digit}?`,
+              correctAnswer: positions[digitPos],
+              options: shuffleArray([
+                positions[digitPos],
+                ...positions
+                  .filter((p) => p !== positions[digitPos])
+                  .slice(0, 3),
+              ]),
+              hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
+              standard: "4.NBT.A.1",
+              concept: "Base Ten (4.NBT)",
+              grade: "G4",
+              subtopic: "place value",
+            };
+            break;
+          case 2: // Rounding (4.NBT.3)
+            const roundNum = getRandomInt(1234, 8765);
+            const roundToNearest = ["tens", "hundreds", "thousands"][
+              getRandomInt(0, 2)
+            ];
+            let rounded;
+
+            if (roundToNearest === "tens") {
+              rounded = Math.round(roundNum / 10) * 10;
+            } else if (roundToNearest === "hundreds") {
+              rounded = Math.round(roundNum / 100) * 100;
+            } else {
+              rounded = Math.round(roundNum / 1000) * 1000;
+            }
+
+            question = {
+              question: `Round ${roundNum} to the nearest ${roundToNearest}.`,
+              correctAnswer: rounded.toString(),
+              options: shuffleArray([
+                rounded.toString(),
+                (rounded + 10).toString(),
+                (rounded - 10).toString(),
+                (rounded + 100).toString(),
+              ]),
+              hint: `Look at the digit to the right of the ${roundToNearest} place to decide whether to round up or down.`,
+              standard: "4.NBT.A.3",
+              concept: "Base Ten (4.NBT)",
+              grade: "G4",
+              subtopic: "rounding",
+            };
+            break;
+          case 3: // Multi-digit addition/subtraction (4.NBT.4)
+            const addend1 = getRandomInt(1000, 5000);
+            const addend2 = getRandomInt(1000, 4000);
+            const isAddition = Math.random() < 0.5;
+            const answer = isAddition
+              ? addend1 + addend2
+              : Math.max(addend1, addend2) - Math.min(addend1, addend2);
+
+            question = {
+              question: isAddition
+                ? `What is ${addend1} + ${addend2}?`
+                : `What is ${Math.max(addend1, addend2)} - ${Math.min(
+                    addend1,
+                    addend2
+                  )}?`,
+              correctAnswer: answer.toString(),
+              options: shuffleArray([
+                answer.toString(),
+                (answer + 100).toString(),
+                (answer - 100).toString(),
+                (answer + 1000).toString(),
+              ]),
+              hint: isAddition
+                ? "Add place by place, starting from the ones."
+                : "Subtract place by place, borrowing when needed.",
+              standard: "4.NBT.B.4",
+              concept: "Base Ten (4.NBT)",
+              grade: "G4",
+              subtopic: isAddition ? "addition" : "subtraction",
+            };
+            break;
+          default:
+            // Fallback to place value
+            const defPlaceValue = getRandomInt(1000, 9999);
+            const defDigit = defPlaceValue.toString()[getRandomInt(0, 3)];
+            const defPositions = ["thousands", "hundreds", "tens", "ones"];
+            const defDigitPos = defPlaceValue.toString().indexOf(defDigit);
+
+            question = {
+              question: `In the number ${defPlaceValue}, what is the place value of the digit ${defDigit}?`,
+              correctAnswer: defPositions[defDigitPos],
+              options: shuffleArray([
+                defPositions[defDigitPos],
+                ...defPositions
+                  .filter((p) => p !== defPositions[defDigitPos])
+                  .slice(0, 3),
+              ]),
+              hint: `Look at the position of the digit ${defDigit} in ${defPlaceValue}.`,
+              standard: "4.NBT.A.1",
+              concept: "Base Ten (4.NBT)",
+              grade: "G4",
+              subtopic: "place value",
+            };
+            break;
+        }
+        break;
+
+      case "Fractions (4.NF)":
+        const nfType = getRandomInt(1, 3);
+        switch (nfType) {
+          case 1: // Equivalent fractions with different denominators (4.NF.1)
+            const baseNum = getRandomInt(1, 4);
+            const baseDen = getRandomInt(baseNum + 1, 8);
+            const scale = getRandomInt(2, 5);
+            const equivNum = baseNum * scale;
+            const equivDen = baseDen * scale;
+
+            question = {
+              question: `Which fraction is equivalent to ${baseNum}/${baseDen}?`,
+              correctAnswer: `${equivNum}/${equivDen}`,
+              options: shuffleArray([
+                `${equivNum}/${equivDen}`,
+                `${baseNum + 1}/${baseDen}`,
+                `${baseNum}/${baseDen + 1}`,
+                `${equivNum + 1}/${equivDen}`,
+              ]),
+              hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
+              standard: "4.NF.A.1",
+              concept: "Fractions (4.NF)",
+              grade: "G4",
+              subtopic: "equivalent fractions",
+            };
+            break;
+          case 2: // Add fractions with like denominators (4.NF.3a)
+            const likeDen = getRandomInt(3, 8);
+            const num1 = getRandomInt(1, likeDen - 2);
+            const num2 = getRandomInt(1, likeDen - num1 - 1);
+            const sum = num1 + num2;
+            const simplifiedSum = getSimplifiedFraction(sum, likeDen);
+
+            question = {
+              question: `What is ${num1}/${likeDen} + ${num2}/${likeDen}?`,
+              correctAnswer: simplifiedSum,
+              options: shuffleArray([
+                simplifiedSum,
+                `${sum}/${likeDen + 1}`,
+                `${sum + 1}/${likeDen}`,
+                `${num1 + num2}/${likeDen + likeDen}`,
+              ]),
+              hint: "When denominators are the same, add the numerators and keep the denominator.",
+              standard: "4.NF.B.3.a",
+              concept: "Fractions (4.NF)",
+              grade: "G4",
+              subtopic: "addition like denominators",
+            };
+            break;
+          case 3: // Compare fractions (4.NF.2)
+            const frac1Num = getRandomInt(1, 5);
+            const frac1Den = getRandomInt(frac1Num + 1, 8);
+            const frac2Num = getRandomInt(1, 5);
+            const frac2Den = getRandomInt(frac2Num + 1, 8);
+
+            // Convert to decimals for comparison
+            const decimal1 = frac1Num / frac1Den;
+            const decimal2 = frac2Num / frac2Den;
+            const comparison =
+              decimal1 > decimal2 ? ">" : decimal1 < decimal2 ? "<" : "=";
+
+            question = {
+              question: `Compare the fractions: ${frac1Num}/${frac1Den} ___ ${frac2Num}/${frac2Den}`,
+              correctAnswer: comparison,
+              options: shuffleArray(["<", ">", "="]),
+              hint: "Find a common denominator to compare fractions, or think about which is closer to 1/2 or 1.",
+              standard: "4.NF.A.2",
+              concept: "Fractions (4.NF)",
+              grade: "G4",
+              subtopic: "comparison",
+            };
+            break;
+          default:
+            // Fallback to equivalent fractions
+            const defBaseNum = getRandomInt(1, 4);
+            const defBaseDen = getRandomInt(defBaseNum + 1, 8);
+            const defScale = getRandomInt(2, 5);
+            const defEquivNum = defBaseNum * defScale;
+            const defEquivDen = defBaseDen * defScale;
+
+            question = {
+              question: `Which fraction is equivalent to ${defBaseNum}/${defBaseDen}?`,
+              correctAnswer: `${defEquivNum}/${defEquivDen}`,
+              options: shuffleArray([
+                `${defEquivNum}/${defEquivDen}`,
+                `${defBaseNum + 1}/${defBaseDen}`,
+                `${defBaseNum}/${defBaseDen + 1}`,
+                `${defEquivNum + 1}/${defEquivDen}`,
+              ]),
+              hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
+              standard: "4.NF.A.1",
+              concept: "Fractions (4.NF)",
+              grade: "G4",
+              subtopic: "equivalent fractions",
+            };
+            break;
+        }
+        break;
+
+      case "Measurement & Data (4.MD)":
+        const md4Type = getRandomInt(1, 2);
+        switch (md4Type) {
+          case 1: // Unit conversions (4.MD.1)
+            const conversions = [
+              {
+                from: "feet",
+                to: "inches",
+                factor: 12,
+                question: "feet",
+                answer: "inches",
+              },
+              {
+                from: "yards",
+                to: "feet",
+                factor: 3,
+                question: "yards",
+                answer: "feet",
+              },
+              {
+                from: "pounds",
+                to: "ounces",
+                factor: 16,
+                question: "pounds",
+                answer: "ounces",
+              },
+            ];
+            const conv = conversions[getRandomInt(0, conversions.length - 1)];
+            const amount = getRandomInt(2, 8);
+            const converted = amount * conv.factor;
+
+            question = {
+              question: `How many ${conv.to} are in ${amount} ${conv.from}?`,
+              correctAnswer: `${converted} ${conv.to}`,
+              options: shuffleArray([
+                `${converted} ${conv.to}`,
+                `${amount} ${conv.to}`,
+                `${converted + 5} ${conv.to}`,
+                `${Math.floor(converted / 2)} ${conv.to}`,
+              ]),
+              hint: `Remember: 1 ${conv.from.slice(0, -1)} = ${conv.factor} ${
+                conv.to
+              }.`,
+              standard: "4.MD.A.1",
+              concept: "Measurement & Data (4.MD)",
+              grade: "G4",
+              subtopic: "unit conversion",
+            };
+            break;
+          case 2: // Area and perimeter (4.MD.3)
+            const rectLength = getRandomInt(4, 12);
+            const rectWidth = getRandomInt(3, 8);
+            const isAreaQuestion = Math.random() < 0.5;
+            const correctAnswer = isAreaQuestion
+              ? rectLength * rectWidth
+              : 2 * (rectLength + rectWidth);
+            const unit = isAreaQuestion ? "square units" : "units";
+
+            question = {
+              question: `A rectangle has a length of ${rectLength} units and a width of ${rectWidth} units. What is its ${
+                isAreaQuestion ? "area" : "perimeter"
+              }?`,
+              correctAnswer: `${correctAnswer} ${unit}`,
+              options: shuffleArray([
+                `${correctAnswer} ${unit}`,
+                `${
+                  isAreaQuestion
+                    ? 2 * (rectLength + rectWidth)
+                    : rectLength * rectWidth
+                } ${unit}`,
+                `${correctAnswer + 5} ${unit}`,
+                `${correctAnswer - 3} ${unit}`,
+              ]),
+              hint: isAreaQuestion
+                ? "Area = length × width"
+                : "Perimeter = 2 × (length + width)",
+              standard: "4.MD.A.3",
+              concept: "Measurement & Data (4.MD)",
+              grade: "G4",
+              subtopic: isAreaQuestion ? "area" : "perimeter",
+            };
+            break;
+          default:
+            // Fallback to unit conversion
+            const defConversions = [
+              {
+                from: "feet",
+                to: "inches",
+                factor: 12,
+                question: "feet",
+                answer: "inches",
+              },
+              {
+                from: "yards",
+                to: "feet",
+                factor: 3,
+                question: "yards",
+                answer: "feet",
+              },
+            ];
+            const defConv =
+              defConversions[getRandomInt(0, defConversions.length - 1)];
+            const defAmount = getRandomInt(2, 8);
+            const defConverted = defAmount * defConv.factor;
+
+            question = {
+              question: `How many ${defConv.to} are in ${defAmount} ${defConv.from}?`,
+              correctAnswer: `${defConverted} ${defConv.to}`,
+              options: shuffleArray([
+                `${defConverted} ${defConv.to}`,
+                `${defAmount} ${defConv.to}`,
+                `${defConverted + 5} ${defConv.to}`,
+                `${Math.floor(defConverted / 2)} ${defConv.to}`,
+              ]),
+              hint: `Remember: 1 ${defConv.from.slice(0, -1)} = ${
+                defConv.factor
+              } ${defConv.to}.`,
+              standard: "4.MD.A.1",
+              concept: "Measurement & Data (4.MD)",
+              grade: "G4",
+              subtopic: "unit conversion",
+            };
+            break;
+        }
+        break;
+
+      case "Geometry (4.G)":
+        const geoType = getRandomInt(1, 2);
+        switch (geoType) {
+          case 1: // Lines and angles (4.G.1)
+            question = {
+              question: `Two lines that never meet and are always the same distance apart are called:`,
+              correctAnswer: "parallel",
+              options: shuffleArray([
+                "parallel",
+                "perpendicular",
+                "intersecting",
+                "curved",
+              ]),
+              hint: "Think about train tracks - they run alongside each other but never meet.",
+              standard: "4.G.A.1",
+              concept: "Geometry (4.G)",
+              grade: "G4",
+              subtopic: "lines and angles",
+            };
+            break;
+          case 2: // Classify triangles and quadrilaterals (4.G.2)
+            const shapes = [
+              {
+                name: "square",
+                description: "has 4 equal sides and 4 right angles",
+              },
+              {
+                name: "rectangle",
+                description:
+                  "has 4 sides with opposite sides equal and 4 right angles",
+              },
+              { name: "triangle", description: "has 3 sides and 3 angles" },
+            ];
+            const shape = shapes[getRandomInt(0, shapes.length - 1)];
+
+            question = {
+              question: `What shape ${shape.description}?`,
+              correctAnswer: shape.name,
+              options: shuffleArray([
+                shape.name,
+                ...shapes
+                  .filter((s) => s.name !== shape.name)
+                  .map((s) => s.name)
+                  .slice(0, 2),
+                "circle",
+              ]),
+              hint: "Think about the properties of each shape.",
+              standard: "4.G.A.2",
+              concept: "Geometry (4.G)",
+              grade: "G4",
+              subtopic: "classify shapes",
+            };
+            break;
+          default:
+            // Fallback to lines and angles
+            question = {
+              question: `Two lines that never meet and are always the same distance apart are called:`,
+              correctAnswer: "parallel",
+              options: shuffleArray([
+                "parallel",
+                "perpendicular",
+                "intersecting",
+                "curved",
+              ]),
+              hint: "Think about train tracks - they run alongside each other but never meet.",
+              standard: "4.G.A.1",
+              concept: "Geometry (4.G)",
+              grade: "G4",
+              subtopic: "lines and angles",
+            };
+            break;
+        }
+        break;
+
+      default:
+        question = {
+          question: "No question generated",
+          options: [],
+          correctAnswer: "",
+          concept: "Math",
+        };
     }
     // Use complexity-based mastery to bias selection toward struggled/unseen items
     const masteryEntry = questionMastery.get(question.question);
@@ -404,8 +1144,10 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
       const avgComplexity = masteryEntry.totalComplexity / masteryEntry.count;
       const need = Math.min(1, avgComplexity); // complexity [0,1] → need [0,1] capped at 1
       acceptProb = 0.1 + 0.9 * need; // struggled items get up to 1.0, mastered get 0.1
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Question: ${question.question}, avgComplexity: ${avgComplexity}, totalComplexity: ${masteryEntry.totalComplexity}, need: ${need}, acceptProb: ${acceptProb}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `Question: ${question.question}, avgComplexity: ${avgComplexity}, totalComplexity: ${masteryEntry.totalComplexity}, need: ${need}, acceptProb: ${acceptProb}`
+        );
       }
     }
 
@@ -418,65 +1160,95 @@ const generateQuizQuestions = (topic, dailyGoals, questionHistory, difficulty) =
 
   // If we couldn't generate enough unique questions, log a warning
   if (questions.length < numQuestions) {
-    console.warn(`Could only generate ${questions.length} unique questions out of ${numQuestions} requested for ${topic}`);
+    console.warn(
+      `Could only generate ${questions.length} unique questions out of ${numQuestions} requested for ${topic}`
+    );
   }
 
   return questions;
 };
 
-const quizTopics = ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'];
+// Grade-specific topics
+const quizTopicsByGrade = {
+  G3: ["Multiplication", "Division", "Fractions", "Measurement & Data"],
+  G4: [
+    "Operations & Algebraic Thinking (4.OA)",
+    "Base Ten (4.NBT)",
+    "Fractions (4.NF)",
+    "Measurement & Data (4.MD)",
+    "Geometry (4.G)",
+  ],
+};
+
+// Legacy support - will be updated to use grade-specific topics
+const quizTopics = quizTopicsByGrade.G3;
 
 // --- Helper function to check topic availability ---
-const getTopicAvailability = (userData) => {
-  if (!userData || !userData.dailyGoals) return { availableTopics: [], unavailableTopics: [], allCompleted: false, topicStats: [] };
+const getTopicAvailability = (userData, selectedGrade = "G3") => {
+  if (!userData)
+    return {
+      availableTopics: [],
+      unavailableTopics: [],
+      allCompleted: false,
+      topicStats: [],
+    };
 
   const today = getTodayDateString();
-  const todaysProgress = userData?.progress?.[today] || {};
+  const currentTopics =
+    quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
 
-  const topicStats = quizTopics.map(topic => {
-    const goalForTopic = userData.dailyGoals[topic] || DEFAULT_DAILY_GOAL;
-    const stats = todaysProgress[topic] || { correct: 0, incorrect: 0 };
+  // Get goals and progress for the selected grade
+  const dailyGoalsForGrade =
+    userData?.dailyGoalsByGrade?.[selectedGrade] || userData?.dailyGoals || {};
+  const progressForGrade =
+    userData?.progressByGrade?.[today]?.[selectedGrade] ||
+    userData?.progress?.[today] ||
+    {};
+
+  const topicStats = currentTopics.map((topic) => {
+    const goalForTopic = dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL;
+    const stats = progressForGrade[topic] || { correct: 0, incorrect: 0 };
     return {
       topic,
       correctAnswers: stats.correct,
       completed: stats.correct >= goalForTopic,
-      goal: goalForTopic
+      goal: goalForTopic,
     };
   });
 
-  const completedTopics = topicStats.filter(t => t.completed);
-  const incompleteTopics = topicStats.filter(t => !t.completed);
+  const completedTopics = topicStats.filter((t) => t.completed);
+  const incompleteTopics = topicStats.filter((t) => !t.completed);
 
   // If all topics are completed, make all available again
   // This handles the case where reset didn't happen properly or user came back after all topics were done
-  if (completedTopics.length === quizTopics.length) {
+  if (completedTopics.length === currentTopics.length) {
     return {
-      availableTopics: quizTopics,
+      availableTopics: currentTopics,
       unavailableTopics: [],
       allCompleted: true,
-      topicStats
+      topicStats,
     };
   }
 
   // If no topics are completed, all are available
   if (completedTopics.length === 0) {
     return {
-      availableTopics: quizTopics,
+      availableTopics: currentTopics,
       unavailableTopics: [],
       allCompleted: false,
-      topicStats
+      topicStats,
     };
   }
 
   // Some topics are completed - those become unavailable until others catch up
-  const availableTopics = incompleteTopics.map(t => t.topic);
-  const unavailableTopics = completedTopics.map(t => t.topic);
+  const availableTopics = incompleteTopics.map((t) => t.topic);
+  const unavailableTopics = completedTopics.map((t) => t.topic);
 
   return {
     availableTopics,
     unavailableTopics,
     allCompleted: false,
-    topicStats
+    topicStats,
   };
 };
 
@@ -493,6 +1265,7 @@ const getQuestionHistory = async (userId) => {
 const App = () => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
   const [currentTopic, setCurrentTopic] = useState(null);
   const [currentQuiz, setCurrentQuiz] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -501,17 +1274,18 @@ const App = () => {
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState(null); // Changed to null, will hold an object {message, type}
   const [isAnswered, setIsAnswered] = useState(false);
-  const [quizState, setQuizState] = useState('topicSelection'); // 'topicSelection', 'inProgress', 'results', 'dashboard', 'store'
+  const [quizState, setQuizState] = useState("topicSelection"); // 'topicSelection', 'inProgress', 'results', 'dashboard', 'store'
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState('');
+  const [generatedContent, setGeneratedContent] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
+  const [modalTitle, setModalTitle] = useState("");
 
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [topicToResume, setTopicToResume] = useState(null);
-  const [purchaseFeedback, setPurchaseFeedback] = useState('');
-  const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] = useState(false);
+  const [purchaseFeedback, setPurchaseFeedback] = useState("");
+  const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
+    useState(false);
 
   // New state variables for story problem functionality
   const [showStoryHint, setShowStoryHint] = useState(false);
@@ -519,46 +1293,54 @@ const App = () => {
   const [storyData, setStoryData] = useState(null);
 
   const [difficulty, setDifficulty] = useState(0.5);
-  const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState({});
+  const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState(
+    {}
+  );
 
   const questionStartTime = useRef(null);
   const quizContainerRef = useRef(null);
 
   // Utility: convert simple a/b patterns to TeX fractions for display
   const formatMathText = (text) => {
-    if (typeof text !== 'string') return text;
+    if (typeof text !== "string") return text;
     // Replace bare fractions with TeX inline form \(\frac{a}{b}\)
-    return text.replace(/(?<![\\\d])\b(\d+)\s*\/\s*(\d+)\b/g, (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`);
+    return text.replace(
+      /(?<![\\\d])\b(\d+)\s*\/\s*(\d+)\b/g,
+      (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`
+    );
   };
 
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
-    if (quizState === 'inProgress' && quizContainerRef.current) {
+    if (quizState === "inProgress" && quizContainerRef.current) {
       try {
         renderMathInElement(quizContainerRef.current, {
           delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true },
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "\\[", right: "\\]", display: true },
           ],
           throwOnError: false,
         });
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.warn('KaTeX render error:', e);
+        console.warn("KaTeX render error:", e);
       }
     }
   }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered]);
 
   const updateDifficulty = (score, numQuestions) => {
-    const newDifficulty = Math.min(1, Math.max(0, difficulty + (score / numQuestions - 0.75) / 10));
+    const newDifficulty = Math.min(
+      1,
+      Math.max(0, difficulty + (score / numQuestions - 0.75) / 10)
+    );
     setDifficulty(newDifficulty);
   };
 
   // --- Firebase Auth and Data Loading ---
   useEffect(() => {
-    let unsubscribeSnapshot = () => { };
+    let unsubscribeSnapshot = () => {};
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       unsubscribeSnapshot(); // Clean up previous listener if user changes
@@ -568,87 +1350,209 @@ const App = () => {
 
         // Temporary: Expose auth objects globally for testing
         // Remove this in production
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           window.firebaseAuth = auth;
           window.currentUser = currentUser;
-          console.log('🧪 Firebase auth exposed for testing:', currentUser.uid);
+          console.log("🧪 Firebase auth exposed for testing:", currentUser.uid);
         }
 
         const userDocRef = getUserDocRef(currentUser.uid);
 
-        unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            const today = getTodayDateString();
-            const updatePayload = {};
-            let needsUpdate = false;
+        unsubscribeSnapshot = onSnapshot(
+          userDocRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              const today = getTodayDateString();
+              const updatePayload = {};
+              let needsUpdate = false;
 
-            // Migration from single goal to per-topic goals
-            if (data.dailyGoal && !data.dailyGoals) {
-              const newGoals = {};
-              quizTopics.forEach(topic => {
-                newGoals[topic] = data.dailyGoal;
-              });
-              data.dailyGoals = newGoals;
-              updatePayload.dailyGoals = newGoals;
-              updatePayload.dailyGoal = deleteField();
-              delete data.dailyGoal; // for local state
-              needsUpdate = true;
-            }
-
-            // If user logs in on a new day, create a progress entry for today
-            if (!data.progress?.[today]) {
-              const initialTodayProgress = { all: { correct: 0, incorrect: 0, timeSpent: 0 } };
-              if (!data.progress) {
-                data.progress = {};
+              // Migration: Set selectedGrade if missing (default to G3 for existing users)
+              if (!data.selectedGrade) {
+                data.selectedGrade = "G3";
+                updatePayload.selectedGrade = "G3";
+                needsUpdate = true;
               }
-              data.progress[today] = initialTodayProgress;
-              updatePayload[`progress.${today}`] = initialTodayProgress;
-              needsUpdate = true;
-            }
 
-            // Ensure we have a stored lastAskedComplexityByTopic map
-            if (!data.lastAskedComplexityByTopic) {
-              data.lastAskedComplexityByTopic = {};
-              updatePayload.lastAskedComplexityByTopic = {};
-              needsUpdate = true;
-            }
+              // Migration: dailyGoals → dailyGoalsByGrade
+              if (data.dailyGoals && !data.dailyGoalsByGrade) {
+                const dailyGoalsByGrade = {
+                  G3: { ...data.dailyGoals }, // Copy existing goals to G3
+                  G4: {}, // Initialize G4 goals
+                };
 
-            setUserData({ ...data });
-            // keep local state in sync
-            setLastAskedComplexityByTopic(data.lastAskedComplexityByTopic || {});
+                // Initialize G4 goals with defaults
+                quizTopicsByGrade.G4.forEach((topic) => {
+                  dailyGoalsByGrade.G4[topic] = DEFAULT_DAILY_GOAL;
+                });
 
-            if (needsUpdate) {
-              updateDoc(userDocRef, updatePayload);
+                data.dailyGoalsByGrade = dailyGoalsByGrade;
+                updatePayload.dailyGoalsByGrade = dailyGoalsByGrade;
+                needsUpdate = true;
+              }
+
+              // Migration: progress → progressByGrade
+              if (data.progress && !data.progressByGrade) {
+                const progressByGrade = {};
+
+                // Migrate existing progress data to G3 for each date
+                Object.keys(data.progress).forEach((date) => {
+                  progressByGrade[date] = {
+                    G3: { ...data.progress[date] },
+                    G4: {}, // Initialize empty G4 progress for this date
+                  };
+
+                  // Initialize G4 progress for this date
+                  quizTopicsByGrade.G4.forEach((topic) => {
+                    progressByGrade[date].G4[topic] = {
+                      correct: 0,
+                      incorrect: 0,
+                    };
+                  });
+
+                  // Ensure 'all' exists for both grades
+                  if (!progressByGrade[date].G3.all) {
+                    progressByGrade[date].G3.all = {
+                      correct: 0,
+                      incorrect: 0,
+                      timeSpent: 0,
+                    };
+                  }
+                  progressByGrade[date].G4.all = {
+                    correct: 0,
+                    incorrect: 0,
+                    timeSpent: 0,
+                  };
+                });
+
+                data.progressByGrade = progressByGrade;
+                updatePayload.progressByGrade = progressByGrade;
+                needsUpdate = true;
+              }
+
+              // Ensure today exists in progressByGrade for both grades
+              if (!data.progressByGrade?.[today]) {
+                const initialTodayProgress = {
+                  G3: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
+                  G4: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
+                };
+
+                // Initialize topic-specific progress for both grades
+                quizTopicsByGrade.G3.forEach((topic) => {
+                  initialTodayProgress.G3[topic] = { correct: 0, incorrect: 0 };
+                });
+                quizTopicsByGrade.G4.forEach((topic) => {
+                  initialTodayProgress.G4[topic] = { correct: 0, incorrect: 0 };
+                });
+
+                if (!data.progressByGrade) {
+                  data.progressByGrade = {};
+                }
+                data.progressByGrade[today] = initialTodayProgress;
+                updatePayload[`progressByGrade.${today}`] =
+                  initialTodayProgress;
+                needsUpdate = true;
+              }
+
+              // Legacy compatibility: ensure old progress field exists for today if needed
+              if (!data.progress?.[today]) {
+                const initialTodayProgress = {
+                  all: { correct: 0, incorrect: 0, timeSpent: 0 },
+                };
+                if (!data.progress) {
+                  data.progress = {};
+                }
+                data.progress[today] = initialTodayProgress;
+                updatePayload[`progress.${today}`] = initialTodayProgress;
+                needsUpdate = true;
+              }
+
+              // Ensure we have a stored lastAskedComplexityByTopic map
+              if (!data.lastAskedComplexityByTopic) {
+                data.lastAskedComplexityByTopic = {};
+                updatePayload.lastAskedComplexityByTopic = {};
+                needsUpdate = true;
+              }
+
+              // Set selectedGrade state from userData
+              if (data.selectedGrade) {
+                setSelectedGrade(data.selectedGrade);
+              }
+
+              setUserData({ ...data });
+              // keep local state in sync
+              setLastAskedComplexityByTopic(
+                data.lastAskedComplexityByTopic || {}
+              );
+
+              if (needsUpdate) {
+                updateDoc(userDocRef, updatePayload);
+              }
+            } else {
+              const today = getTodayDateString();
+
+              // Initialize goals for both grades
+              const dailyGoalsByGrade = {
+                G3: {},
+                G4: {},
+              };
+              quizTopicsByGrade.G3.forEach((topic) => {
+                dailyGoalsByGrade.G3[topic] = DEFAULT_DAILY_GOAL;
+              });
+              quizTopicsByGrade.G4.forEach((topic) => {
+                dailyGoalsByGrade.G4[topic] = DEFAULT_DAILY_GOAL;
+              });
+
+              // Initialize progress for both grades
+              const progressByGrade = {
+                [today]: {
+                  G3: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
+                  G4: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
+                },
+              };
+
+              // Initialize topic-specific progress
+              quizTopicsByGrade.G3.forEach((topic) => {
+                progressByGrade[today].G3[topic] = { correct: 0, incorrect: 0 };
+              });
+              quizTopicsByGrade.G4.forEach((topic) => {
+                progressByGrade[today].G4[topic] = { correct: 0, incorrect: 0 };
+              });
+
+              const initialData = {
+                coins: 0,
+                selectedGrade: "G3", // Default to 3rd grade for new users
+                dailyGoalsByGrade,
+                progressByGrade,
+                // Legacy fields for backward compatibility
+                dailyGoals: dailyGoalsByGrade.G3,
+                progress: { [today]: progressByGrade[today].G3 },
+                pausedQuizzes: {},
+                ownedBackgrounds: ["default"],
+                activeBackground: "default",
+                dailyStories: { [today]: {} },
+                answeredQuestions: [],
+                lastAskedComplexityByTopic: {},
+              };
+              setDoc(userDocRef, initialData).then(() => {
+                setUserData(initialData);
+                setSelectedGrade("G3");
+              });
+              setLastAskedComplexityByTopic({});
             }
-          } else {
-            const today = getTodayDateString();
-            const initialDailyGoals = {};
-            quizTopics.forEach(topic => {
-              initialDailyGoals[topic] = DEFAULT_DAILY_GOAL;
-            });
-            const initialData = {
-              coins: 0,
-              dailyGoals: initialDailyGoals,
-              progress: { [today]: { all: { correct: 0, incorrect: 0, timeSpent: 0 } } },
-              pausedQuizzes: {},
-              ownedBackgrounds: ['default'],
-              activeBackground: 'default',
-              dailyStories: { [today]: {} },
-              answeredQuestions: [], // field to track all answered questions
-              lastAskedComplexityByTopic: {}
-            };
-            setDoc(userDocRef, initialData).then(() => setUserData(initialData));
-            setLastAskedComplexityByTopic({});
+          },
+          (error) => {
+            console.error("Firestore snapshot error:", error);
           }
-        }, (error) => {
-          console.error("Firestore snapshot error:", error);
-        });
+        );
       } else {
         setUser(null);
         setUserData(null);
         try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          if (
+            typeof __initial_auth_token !== "undefined" &&
+            __initial_auth_token
+          ) {
             await signInWithCustomToken(auth, __initial_auth_token);
           } else {
             await signInAnonymously(auth);
@@ -667,12 +1571,12 @@ const App = () => {
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
-    const { availableTopics } = getTopicAvailability(userData);
+    const { availableTopics } = getTopicAvailability(userData, selectedGrade);
 
     if (!availableTopics.includes(topic)) {
       setFeedback({
         message: `Complete other topics first before returning to ${topic}!`,
-        type: 'error'
+        type: "error",
       });
       setTimeout(() => setFeedback(null), 3000);
       return;
@@ -692,10 +1596,15 @@ const App = () => {
     // Adapt and compute per-topic target complexity
     const adapted = adaptAnsweredHistory(answered, user?.uid);
     const lastAsked = lastAskedComplexityByTopic[topic];
-    const target = nextTargetComplexity({ history: adapted, topic, mode: 'progressive', lastAskedComplexity: lastAsked });
+    const target = nextTargetComplexity({
+      history: adapted,
+      topic,
+      mode: "progressive",
+      lastAskedComplexity: lastAsked,
+    });
 
     // Optional: expose diagnostics in dev
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       try {
         window.__complexityDiagnostics = {
           target,
@@ -703,26 +1612,40 @@ const App = () => {
           ranked: rankQuestionsByComplexity(adapted).slice(0, 20),
         };
         // eslint-disable-next-line no-console
-        console.log('💡 Complexity target for', topic, '=>', target);
-      } catch (e) { }
+        console.log("💡 Complexity target for", topic, "=>", target);
+      } catch (e) {}
     }
 
     // Remember last asked per topic, set difficulty, and persist to Firestore
-    setLastAskedComplexityByTopic(prev => ({ ...prev, [topic]: target }));
+    setLastAskedComplexityByTopic((prev) => ({ ...prev, [topic]: target }));
     try {
       const userDocRef = getUserDocRef(user.uid);
       if (userDocRef) {
-        await updateDoc(userDocRef, { [`lastAskedComplexityByTopic.${topic}`]: target });
+        await updateDoc(userDocRef, {
+          [`lastAskedComplexityByTopic.${topic}`]: target,
+        });
       }
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.warn('Could not persist lastAskedComplexityByTopic:', e);
+      console.warn("Could not persist lastAskedComplexityByTopic:", e);
     }
     setDifficulty(target);
 
-    const newQuestions = generateQuizQuestions(topic, userData.dailyGoals, answered, target);
+    // Get goals for the selected grade
+    const dailyGoalsForGrade =
+      userData?.dailyGoalsByGrade?.[selectedGrade] ||
+      userData?.dailyGoals ||
+      {};
+
+    const newQuestions = generateQuizQuestions(
+      topic,
+      dailyGoalsForGrade,
+      answered,
+      target,
+      selectedGrade
+    );
     setCurrentQuiz(newQuestions);
-    setQuizState('inProgress');
+    setQuizState("inProgress");
     questionStartTime.current = Date.now();
     resetQuiz();
     setShowResumeModal(false);
@@ -739,7 +1662,7 @@ const App = () => {
     setCurrentQuiz(pausedData.questions);
     setCurrentQuestionIndex(pausedData.index);
     setScore(pausedData.score);
-    setQuizState('inProgress');
+    setQuizState("inProgress");
     questionStartTime.current = Date.now();
     setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
@@ -758,9 +1681,9 @@ const App = () => {
       score: score,
     };
     await updateDoc(userDocRef, {
-      [`pausedQuizzes.${currentTopic}`]: pausedQuizData
+      [`pausedQuizzes.${currentTopic}`]: pausedQuizData,
     });
-    setQuizState('topicSelection');
+    setQuizState("topicSelection");
     // Reset story UI state
     setStoryData(null);
     setShowStoryHint(false);
@@ -780,21 +1703,27 @@ const App = () => {
 
     setIsAnswered(true);
     const timeTaken = (Date.now() - questionStartTime.current) / 1000; // in seconds
-    const isCorrect = userAnswer === currentQuiz[currentQuestionIndex].correctAnswer;
+    const isCorrect =
+      userAnswer === currentQuiz[currentQuestionIndex].correctAnswer;
     const today = getTodayDateString();
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
     const updates = {};
+
+    // Update both legacy and new progress structures
     const allProgress_path = `progress.${today}.all`;
     const topicProgress_path = `progress.${today}.${currentTopic}`;
+    const gradeAllProgress_path = `progressByGrade.${today}.${selectedGrade}.all`;
+    const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${currentTopic}`;
 
-    // Create question record for tracking
+    // Create question record for tracking with grade information
     const questionRecord = {
       id: `${Date.now()}_${currentQuestionIndex}`, // Unique ID
       timestamp: new Date().toISOString(),
       date: today,
       topic: currentTopic,
+      grade: selectedGrade, // Add grade field for new questions
       question: currentQuiz[currentQuestionIndex].question,
       correctAnswer: currentQuiz[currentQuestionIndex].correctAnswer,
       userAnswer: userAnswer,
@@ -803,18 +1732,23 @@ const App = () => {
       options: currentQuiz[currentQuestionIndex].options,
       hint: currentQuiz[currentQuestionIndex].hint,
       standard: currentQuiz[currentQuestionIndex].standard,
-      concept: currentQuiz[currentQuestionIndex].concept
+      concept: currentQuiz[currentQuestionIndex].concept,
     };
+
+    // Add grade-specific subtopic if available (for 4th grade questions)
+    if (currentQuiz[currentQuestionIndex].subtopic) {
+      questionRecord.subtopic = currentQuiz[currentQuestionIndex].subtopic;
+    }
 
     // Add question to answered questions array
     updates[`answeredQuestions`] = arrayUnion(questionRecord);
 
     let feedbackMessage;
-    let feedbackType = 'error';
+    let feedbackType = "error";
     let shouldResetProgress = false;
 
     if (isCorrect) {
-      feedbackType = 'success';
+      feedbackType = "success";
       setScore(score + 1);
       feedbackMessage = (
         <span className="flex items-center justify-center gap-2">
@@ -823,21 +1757,42 @@ const App = () => {
       );
       updates.coins = increment(1);
 
-      // Check if all topics will be completed after this answer
-      const goalForTopic = userData.dailyGoals?.[currentTopic] || DEFAULT_DAILY_GOAL;
-      const currentTopicProgress = userData?.progress?.[today]?.[currentTopic] || { correct: 0, incorrect: 0 };
+      // Check if all topics will be completed after this answer (grade-aware)
+      const dailyGoalsForGrade =
+        userData?.dailyGoalsByGrade?.[selectedGrade] ||
+        userData?.dailyGoals ||
+        {};
+      const currentTopicsForGrade =
+        quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+      const goalForTopic =
+        dailyGoalsForGrade[currentTopic] || DEFAULT_DAILY_GOAL;
+
+      const progressForGrade =
+        userData?.progressByGrade?.[today]?.[selectedGrade] ||
+        userData?.progress?.[today] ||
+        {};
+      const currentTopicProgress = progressForGrade[currentTopic] || {
+        correct: 0,
+        incorrect: 0,
+      };
       const newCorrectCount = currentTopicProgress.correct + 1;
 
       // Check if this makes the current topic completed and if all other topics are already completed
       if (newCorrectCount >= goalForTopic) {
-        const allTopicsWillBeCompleted = quizTopics.every(topic => {
-          if (topic === currentTopic) {
-            return true; // Current topic will be completed with this answer
+        const allTopicsWillBeCompleted = currentTopicsForGrade.every(
+          (topic) => {
+            if (topic === currentTopic) {
+              return true; // Current topic will be completed with this answer
+            }
+            const topicProgress = progressForGrade[topic] || {
+              correct: 0,
+              incorrect: 0,
+            };
+            const goalForOtherTopic =
+              dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL;
+            return topicProgress.correct >= goalForOtherTopic;
           }
-          const topicProgress = userData?.progress?.[today]?.[topic] || { correct: 0, incorrect: 0 };
-          const goalForOtherTopic = userData.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL;
-          return topicProgress.correct >= goalForOtherTopic;
-        });
+        );
 
         // If all topics will be completed, we need to reset
         if (allTopicsWillBeCompleted) {
@@ -848,7 +1803,8 @@ const App = () => {
                 Correct! +1 Coin! <Coins className="text-yellow-500" />
               </span>
               <span className="flex items-center justify-center gap-2 font-bold text-purple-600">
-                🎉 All Topics Mastered! Progress Reset! <Award className="text-purple-500" />
+                🎉 All {selectedGrade === "G3" ? "3rd" : "4th"} Grade Topics
+                Mastered! Progress Reset! <Award className="text-purple-500" />
               </span>
             </span>
           );
@@ -860,46 +1816,117 @@ const App = () => {
 
     // Handle progress updates based on whether we're resetting or not
     if (shouldResetProgress) {
-      // Reset all topic progress counters
-      quizTopics.forEach(topic => {
-        updates[`progress.${today}.${topic}.correct`] = 0;
-        updates[`progress.${today}.${topic}.incorrect`] = 0;
-        updates[`progress.${today}.${topic}.timeSpent`] = 0;
+      const currentTopicsForGrade =
+        quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+
+      // Reset all topic progress counters for this grade
+      currentTopicsForGrade.forEach((topic) => {
+        // Update new progress structure
+        updates[
+          `progressByGrade.${today}.${selectedGrade}.${topic}.correct`
+        ] = 0;
+        updates[
+          `progressByGrade.${today}.${selectedGrade}.${topic}.incorrect`
+        ] = 0;
+        updates[
+          `progressByGrade.${today}.${selectedGrade}.${topic}.timeSpent`
+        ] = 0;
+
+        // Update legacy structure if selected grade is G3
+        if (selectedGrade === "G3") {
+          updates[`progress.${today}.${topic}.correct`] = 0;
+          updates[`progress.${today}.${topic}.incorrect`] = 0;
+          updates[`progress.${today}.${topic}.timeSpent`] = 0;
+        }
       });
 
       // Set the current topic to 1 since we just answered correctly
-      updates[`progress.${today}.${currentTopic}.correct`] = 1;
-      updates[`progress.${today}.${currentTopic}.timeSpent`] = timeTaken;
+      updates[
+        `progressByGrade.${today}.${selectedGrade}.${currentTopic}.correct`
+      ] = 1;
+      updates[
+        `progressByGrade.${today}.${selectedGrade}.${currentTopic}.timeSpent`
+      ] = timeTaken;
+
+      if (selectedGrade === "G3") {
+        updates[`progress.${today}.${currentTopic}.correct`] = 1;
+        updates[`progress.${today}.${currentTopic}.timeSpent`] = timeTaken;
+      }
 
       // Update all progress (these don't get reset, they continue accumulating)
-      updates[`${allProgress_path}.correct`] = increment(1);
-      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
-    } else {
-      // Normal increments
-      if (isCorrect) {
+      updates[`${gradeAllProgress_path}.correct`] = increment(1);
+      updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
+
+      if (selectedGrade === "G3") {
         updates[`${allProgress_path}.correct`] = increment(1);
-        updates[`${topicProgress_path}.correct`] = increment(1);
+        updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+      }
+    } else {
+      // Normal increments for both new and legacy structures
+      if (isCorrect) {
+        updates[`${gradeAllProgress_path}.correct`] = increment(1);
+        updates[`${gradeTopicProgress_path}.correct`] = increment(1);
+
+        if (selectedGrade === "G3") {
+          updates[`${allProgress_path}.correct`] = increment(1);
+          updates[`${topicProgress_path}.correct`] = increment(1);
+        }
       } else {
-        updates[`${allProgress_path}.incorrect`] = increment(1);
-        updates[`${topicProgress_path}.incorrect`] = increment(1);
+        updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
+        updates[`${gradeTopicProgress_path}.incorrect`] = increment(1);
+
+        if (selectedGrade === "G3") {
+          updates[`${allProgress_path}.incorrect`] = increment(1);
+          updates[`${topicProgress_path}.incorrect`] = increment(1);
+        }
       }
 
       // Always increment time
-      updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
-      updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
+      updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
+      updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken);
+
+      if (selectedGrade === "G3") {
+        updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+        updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
+      }
     }
 
-    const totalDailyGoal = quizTopics.reduce((sum, topic) => sum + (userData.dailyGoals[topic] || DEFAULT_DAILY_GOAL), 0);
-    const todaysAllProgress = userData?.progress?.[today]?.all || { correct: 0, incorrect: 0 };
-    const totalAnsweredToday = todaysAllProgress.correct + todaysAllProgress.incorrect;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Total answered today: ', totalAnsweredToday, ' , out of: ', totalDailyGoal);
+    // Calculate daily goal bonus based on selected grade
+    const currentTopicsForGrade =
+      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+    const dailyGoalsForGrade =
+      userData?.dailyGoalsByGrade?.[selectedGrade] ||
+      userData?.dailyGoals ||
+      {};
+    const totalDailyGoal = currentTopicsForGrade.reduce(
+      (sum, topic) => sum + (dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL),
+      0
+    );
+
+    const progressForGrade =
+      userData?.progressByGrade?.[today]?.[selectedGrade] ||
+      userData?.progress?.[today] ||
+      {};
+    const todaysAllProgress = progressForGrade.all || {
+      correct: 0,
+      incorrect: 0,
+    };
+    const totalAnsweredToday =
+      todaysAllProgress.correct + todaysAllProgress.incorrect;
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "Total answered today: ",
+        totalAnsweredToday,
+        " , out of: ",
+        totalDailyGoal
+      );
     }
-    if (totalDailyGoal > 0 && ((totalAnsweredToday + 1) % totalDailyGoal === 0)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎉 Daily goal met! Awarding bonus coins!');
+    if (totalDailyGoal > 0 && (totalAnsweredToday + 1) % totalDailyGoal === 0) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("🎉 Daily goal met! Awarding bonus coins!");
       }
-      feedbackType = 'success';
+      feedbackType = "success";
       feedbackMessage = (
         <span className="flex flex-col items-center justify-center gap-1">
           {isCorrect && (
@@ -908,7 +1935,8 @@ const App = () => {
             </span>
           )}
           <span className="flex items-center justify-center gap-2 font-bold">
-            Daily Goal Met! +{DAILY_GOAL_BONUS} Bonus Coins! <Award className="text-orange-500" />
+            Daily Goal Met! +{DAILY_GOAL_BONUS} Bonus Coins!{" "}
+            <Award className="text-orange-500" />
           </span>
         </span>
       );
@@ -934,31 +1962,31 @@ const App = () => {
     const userDocRef = getUserDocRef(user.uid);
     // Clear the paused quiz for this topic by setting it to null
     await updateDoc(userDocRef, {
-      [`pausedQuizzes.${currentTopic}`]: null
+      [`pausedQuizzes.${currentTopic}`]: null,
     });
     updateDifficulty(score, currentQuiz.length);
-    setQuizState('results');
+    setQuizState("results");
   };
 
-  const resetQuestionState = () => { setUserAnswer(null); setShowHint(false); setFeedback(null); setIsAnswered(false); };
-  const resetQuiz = () => { setCurrentQuestionIndex(0); setScore(0); resetQuestionState(); };
+  const resetQuestionState = () => {
+    setUserAnswer(null);
+    setShowHint(false);
+    setFeedback(null);
+    setIsAnswered(false);
+  };
+  const resetQuiz = () => {
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    resetQuestionState();
+  };
   const returnToTopics = () => {
-    setQuizState('topicSelection');
+    setQuizState("topicSelection");
     setCurrentTopic(null);
     setCurrentQuiz([]);
     // Reset story state
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
-  };
-
-  const handleGoalChange = async (e, topic) => {
-    const newGoal = parseInt(e.target.value, 10);
-    if (user && userData.dailyGoals && !isNaN(newGoal) && newGoal > 0) {
-      const userDocRef = getUserDocRef(user.uid);
-      if (!userDocRef) return;
-      await updateDoc(userDocRef, { [`dailyGoals.${topic}`]: newGoal });
-    }
   };
 
   const resetAllProgress = async () => {
@@ -970,7 +1998,7 @@ const App = () => {
     const updates = {};
 
     // Reset all topic progress counters
-    quizTopics.forEach(topic => {
+    quizTopics.forEach((topic) => {
       updates[`progress.${today}.${topic}.correct`] = 0;
       updates[`progress.${today}.${topic}.incorrect`] = 0;
       updates[`progress.${today}.${topic}.timeSpent`] = 0;
@@ -979,8 +2007,9 @@ const App = () => {
     await updateDoc(userDocRef, updates);
 
     setFeedback({
-      message: '🎉 Progress reset! All topics are now available for a fresh start!',
-      type: 'success'
+      message:
+        "🎉 Progress reset! All topics are now available for a fresh start!",
+      type: "success",
     });
     setTimeout(() => setFeedback(null), 3000);
   };
@@ -991,13 +2020,16 @@ const App = () => {
       const userDocRef = getUserDocRef(user.uid);
       await updateDoc(userDocRef, {
         coins: increment(-STORE_BACKGROUND_COST),
-        ownedBackgrounds: arrayUnion(item.id)
+        ownedBackgrounds: arrayUnion(item.id),
       });
-      setPurchaseFeedback({ type: 'success', message: `Successfully purchased ${item.name}!` });
+      setPurchaseFeedback({
+        type: "success",
+        message: `Successfully purchased ${item.name}!`,
+      });
     } else {
-      setPurchaseFeedback({ type: 'error', message: "Not enough coins!" });
+      setPurchaseFeedback({ type: "error", message: "Not enough coins!" });
     }
-    setTimeout(() => setPurchaseFeedback(''), 3000);
+    setTimeout(() => setPurchaseFeedback(""), 3000);
   };
 
   const handleSetBackground = async (itemId) => {
@@ -1007,66 +2039,67 @@ const App = () => {
     }
   };
 
-
   // --- Gemini API Call via Netlify Function ---
-const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
-  setIsGenerating(true);
-  setGeneratedContent('Generating story problem...');
+  const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
+    setIsGenerating(true);
+    setGeneratedContent("Generating story problem...");
 
-  try {
-    // Get the current user's auth token
-    if (!user) {
-      console.error('❌ No user found during API call');
-      throw new Error('User not authenticated');
+    try {
+      // Get the current user's auth token
+      if (!user) {
+        console.error("❌ No user found during API call");
+        throw new Error("User not authenticated");
+      }
+
+      console.log("🔐 Getting auth token for user:", user.uid);
+      const token = await user.getIdToken();
+      console.log("✅ Got auth token, making API call...");
+
+      const requestBody = {
+        prompt: prompt,
+        topic: currentTopic,
+      };
+      console.log("📤 Request body:", requestBody);
+
+      const response = await fetch("/.netlify/functions/gemini-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("📥 Response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ API Error:", errorData);
+        throw new Error(
+          errorData.error || `API call failed with status: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ API Success! Content length:", result.content?.length);
+      setGeneratedContent(result.content);
+
+      // Parse story content if requested (avoid relying on modalTitle state timing)
+      if (parseAsStory) {
+        parseStoryContent(result.content);
+      }
+    } catch (error) {
+      console.error("Gemini API error:", error);
+      setGeneratedContent(`There was an error: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
     }
-
-    console.log('🔐 Getting auth token for user:', user.uid);
-    const token = await user.getIdToken();
-    console.log('✅ Got auth token, making API call...');
-
-    const requestBody = {
-      prompt: prompt,
-      topic: currentTopic
-    };
-    console.log('📤 Request body:', requestBody);
-
-    const response = await fetch('/.netlify/functions/gemini-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    console.log('📥 Response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ API Error:', errorData);
-      throw new Error(errorData.error || `API call failed with status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('✅ API Success! Content length:', result.content?.length);
-    setGeneratedContent(result.content);
-
-    // Parse story content if requested (avoid relying on modalTitle state timing)
-    if (parseAsStory) {
-      parseStoryContent(result.content);
-    }
-  } catch (error) {
-    console.error("Gemini API error:", error);
-    setGeneratedContent(`There was an error: ${error.message}`);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
 
   // Function to parse story content and extract components
   const parseStoryContent = (content) => {
     try {
-      console.log('🔍 Parsing story content:', content);
+      console.log("🔍 Parsing story content:", content);
 
       // Use regex to handle variations in newlines from the API
       const questionRegex = /Question:(.*?)(?=Hint:|Answer:|$)/s;
@@ -1077,33 +2110,41 @@ const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
       const hintMatch = content.match(hintRegex);
       const answerMatch = content.match(answerRegex);
 
-      const question = questionMatch ? questionMatch[1].trim() : '';
-      const hint = hintMatch ? hintMatch[1].trim() : '';
-      const answer = answerMatch ? answerMatch[1].trim() : '';
+      const question = questionMatch ? questionMatch[1].trim() : "";
+      const hint = hintMatch ? hintMatch[1].trim() : "";
+      const answer = answerMatch ? answerMatch[1].trim() : "";
 
       // The story is whatever is before "Question:"
       const storyEndIndex = content.indexOf("Question:");
-      const story = storyEndIndex !== -1 ? content.substring(0, storyEndIndex).trim() : 'Story could not be parsed.';
+      const story =
+        storyEndIndex !== -1
+          ? content.substring(0, storyEndIndex).trim()
+          : "Story could not be parsed.";
 
-      console.log('✅ Final parsing results:', { story, question, hint, answer });
+      console.log("✅ Final parsing results:", {
+        story,
+        question,
+        hint,
+        answer,
+      });
 
       setStoryData({
         story: story,
-        question: question || 'Question could not be parsed.',
-        hint: hint || 'Hint could not be parsed.',
-        answer: answer || 'Answer could not be parsed.'
+        question: question || "Question could not be parsed.",
+        hint: hint || "Hint could not be parsed.",
+        answer: answer || "Answer could not be parsed.",
       });
 
       // Reset story UI state
       setShowStoryHint(false);
       setShowStoryAnswer(false);
     } catch (error) {
-      console.error('Error parsing story content:', error);
+      console.error("Error parsing story content:", error);
       setStoryData({
-        story: 'Error parsing story content',
-        question: 'Error parsing question',
-        hint: 'Error parsing hint',
-        answer: 'Error parsing answer'
+        story: "Error parsing story content",
+        question: "Error parsing question",
+        hint: "Error parsing hint",
+        answer: "Error parsing answer",
       });
     }
   };
@@ -1117,33 +2158,43 @@ const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
       setShowModal(true);
       setIsGenerating(false);
       // Set the iframe source instead of HTML content
-      setGeneratedContent(`<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`);
+      setGeneratedContent(
+        `<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`
+      );
     } else {
       // Fallback: show modal with basic explanation
       setModalTitle(`✨ What is ${concept}?`);
-      setGeneratedContent("<p>Sorry, no detailed explanation is available for this concept yet!</p>");
+      setGeneratedContent(
+        "<p>Sorry, no detailed explanation is available for this concept yet!</p>"
+      );
       setShowModal(true);
       setIsGenerating(false);
     }
   };
-const handleCreateStoryProblem = async () => {
-  if (storyCreatedForCurrentQuiz) {
-    setFeedback({ message: "You've already created a story problem for this quiz!", type: 'error' });
-    setTimeout(() => setFeedback(null), 3000);
-    return;
-  }
+  const handleCreateStoryProblem = async () => {
+    if (storyCreatedForCurrentQuiz) {
+      setFeedback({
+        message: "You've already created a story problem for this quiz!",
+        type: "error",
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
 
-  const today = getTodayDateString();
-  const todaysStories = userData?.dailyStories?.[today] || {};
+    const today = getTodayDateString();
+    const todaysStories = userData?.dailyStories?.[today] || {};
 
-  // Check if user has already created a story for this topic today
-  if (todaysStories[currentTopic]) {
-    setFeedback({ message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`, type: 'error' });
-    setTimeout(() => setFeedback(null), 3000);
-    return;
-  }
+    // Check if user has already created a story for this topic today
+    if (todaysStories[currentTopic]) {
+      setFeedback({
+        message: `You've already created a story problem for ${currentTopic} today! Come back tomorrow for more stories.`,
+        type: "error",
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
 
-  const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
+    const prompt = `Create a fun and short math story problem for a 3rd grader based on the topic of "${currentTopic}". Make it one paragraph long.
 
 Then, on a new line, state the question clearly, starting with "Question:".
 
@@ -1156,16 +2207,16 @@ Please structure it exactly like this:
 Question: [The question]
 Hint: [The hint]
 Answer: [The answer]`;
-  setModalTitle(`✨ A Fun Story Problem!`);
-  setShowModal(true);
-  setShowStoryHint(false);
-  setShowStoryAnswer(false);
-  setStoryData(null);
+    setModalTitle(`✨ A Fun Story Problem!`);
+    setShowModal(true);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
+    setStoryData(null);
 
-  // Pass explicit flag to avoid modalTitle timing issues
-  await callGeminiAPI(prompt, { parseAsStory: true });
-  setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
-};
+    // Pass explicit flag to avoid modalTitle timing issues
+    await callGeminiAPI(prompt, { parseAsStory: true });
+    setStoryCreatedForCurrentQuiz(true); // Mark that a story has been created for this quiz
+  };
 
   // --- UI Rendering ---
   const renderHeader = () => (
@@ -1174,13 +2225,22 @@ Answer: [The answer]`;
         <Coins size={24} />
         <span>{userData?.coins || 0}</span>
       </div>
-      <button onClick={() => setQuizState('store')} className="p-2 rounded-full hover:bg-gray-200 transition">
+      <button
+        onClick={() => setQuizState("store")}
+        className="p-2 rounded-full hover:bg-gray-200 transition"
+      >
         <Store size={24} className="text-purple-600" />
       </button>
-      <button onClick={() => setQuizState('dashboard')} className="p-2 rounded-full hover:bg-gray-200 transition">
+      <button
+        onClick={() => setQuizState("dashboard")}
+        className="p-2 rounded-full hover:bg-gray-200 transition"
+      >
         <BarChart2 size={24} className="text-blue-600" />
       </button>
-      <button onClick={returnToTopics} className="p-2 rounded-full hover:bg-gray-200 transition">
+      <button
+        onClick={returnToTopics}
+        className="p-2 rounded-full hover:bg-gray-200 transition"
+      >
         <Home size={24} className="text-green-600" />
       </button>
     </div>
@@ -1188,22 +2248,39 @@ Answer: [The answer]`;
 
   const renderDashboard = () => {
     const today = getTodayDateString();
+    const currentTopics =
+      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
 
-    // Get today's answered questions for accurate calculations
-    const todaysQuestions = userData?.answeredQuestions?.filter(q => q.date === today) || [];
-    const totalQuestionsAnswered = userData?.answeredQuestions?.length || 0;
+    // Get today's answered questions for the selected grade
+    const todaysQuestions =
+      userData?.answeredQuestions?.filter(
+        (q) =>
+          q.date === today &&
+          (q.grade === selectedGrade || (!q.grade && selectedGrade === "G3"))
+      ) || [];
+    const totalQuestionsAnswered =
+      userData?.answeredQuestions?.filter(
+        (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
+      ).length || 0;
 
     // Calculate overall stats from actual answered questions
-    const correctAnswers = todaysQuestions.filter(q => q.isCorrect).length;
+    const correctAnswers = todaysQuestions.filter((q) => q.isCorrect).length;
     const totalAnswered = todaysQuestions.length;
-    const totalTimeSpent = todaysQuestions.reduce((sum, q) => sum + q.timeTaken, 0);
+    const totalTimeSpent = todaysQuestions.reduce(
+      (sum, q) => sum + q.timeTaken,
+      0
+    );
 
-    const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    const avgTime = totalAnswered > 0 ? (totalTimeSpent / totalAnswered).toFixed(1) : 0;
+    const accuracy =
+      totalAnswered > 0
+        ? Math.round((correctAnswers / totalAnswered) * 100)
+        : 0;
+    const avgTime =
+      totalAnswered > 0 ? (totalTimeSpent / totalAnswered).toFixed(1) : 0;
 
     // Calculate topic breakdown from actual answered questions
     const topicStats = {};
-    todaysQuestions.forEach(q => {
+    todaysQuestions.forEach((q) => {
       if (!topicStats[q.topic]) {
         topicStats[q.topic] = { correct: 0, incorrect: 0, total: 0 };
       }
@@ -1217,56 +2294,144 @@ Answer: [The answer]`;
 
     const topicsPracticed = Object.keys(topicStats);
 
-    // Complexity insights across all history
-    const adaptedAllHistory = adaptAnsweredHistory(userData?.answeredQuestions || [], user?.uid);
-    const perTopicComplexity = computePerTopicComplexity(adaptedAllHistory);
-    const rankedAll = rankQuestionsByComplexity(adaptedAllHistory);
+    // Complexity insights for the selected grade only
+    const gradeFilteredHistory =
+      userData?.answeredQuestions?.filter(
+        (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
+      ) || [];
+    const adaptedGradeHistory = adaptAnsweredHistory(
+      gradeFilteredHistory,
+      user?.uid
+    );
+    const perTopicComplexity = computePerTopicComplexity(adaptedGradeHistory);
+    const rankedGrade = rankQuestionsByComplexity(adaptedGradeHistory);
+
     // Deduplicate by topic: keep the highest-complexity (and most recent tie-breaker) per topic
     const seenTopicsSet = new Set();
     const topRankedUniqueByTopic = [];
-    for (const r of rankedAll) {
+    for (const r of rankedGrade) {
       if (!seenTopicsSet.has(r.topic)) {
         seenTopicsSet.add(r.topic);
         topRankedUniqueByTopic.push(r);
       }
-      if (topRankedUniqueByTopic.length >= quizTopics.length) break;
+      if (topRankedUniqueByTopic.length >= currentTopics.length) break;
     }
+
+    // Get goals for the selected grade
+    const dailyGoalsForGrade =
+      userData?.dailyGoalsByGrade?.[selectedGrade] ||
+      userData?.dailyGoals ||
+      {};
+
+    const handleGradeGoalChange = async (e, topic) => {
+      const newGoal = parseInt(e.target.value, 10);
+      if (user && !isNaN(newGoal) && newGoal > 0) {
+        const userDocRef = getUserDocRef(user.uid);
+        if (!userDocRef) return;
+
+        const updates = {};
+        updates[`dailyGoalsByGrade.${selectedGrade}.${topic}`] = newGoal;
+
+        // Also update legacy dailyGoals if this is G3
+        if (selectedGrade === "G3") {
+          updates[`dailyGoals.${topic}`] = newGoal;
+        }
+
+        await updateDoc(userDocRef, updates);
+      }
+    };
 
     return (
       <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Daily Goals & Progress</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          {selectedGrade === "G3" ? "3rd" : "4th"} Grade Daily Goals & Progress
+        </h2>
+
+        {/* Grade Selector */}
+        <div className="mb-6 flex justify-center">
+          <div className="bg-white/70 backdrop-blur-sm p-3 rounded-xl shadow-md">
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSelectedGrade("G3")}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  selectedGrade === "G3"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-white text-gray-700 hover:bg-blue-50 border border-gray-300"
+                }`}
+              >
+                3rd Grade
+              </button>
+              <button
+                onClick={() => setSelectedGrade("G4")}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  selectedGrade === "G4"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-white text-gray-700 hover:bg-blue-50 border border-gray-300"
+                }`}
+              >
+                4th Grade
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-          {quizTopics.map(topic => (
+          {currentTopics.map((topic) => (
             <div key={topic}>
-              <label htmlFor={`goal-${topic}`} className="block text-lg font-bold text-gray-700 mb-1">{topic}</label>
+              <label
+                htmlFor={`goal-${topic}`}
+                className="block text-lg font-bold text-gray-700 mb-1"
+              >
+                {topic}
+              </label>
               <div className="flex items-center gap-4">
                 <input
                   type="range"
                   id={`goal-${topic}`}
-                  min={GOAL_RANGE_MIN} max={GOAL_RANGE_MAX} step={GOAL_RANGE_STEP}
-                  value={userData?.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL}
-                  onChange={(e) => handleGoalChange(e, topic)}
+                  min={GOAL_RANGE_MIN}
+                  max={GOAL_RANGE_MAX}
+                  step={GOAL_RANGE_STEP}
+                  value={dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL}
+                  onChange={(e) => handleGradeGoalChange(e, topic)}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
                 <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
-                  {userData?.dailyGoals?.[topic] || DEFAULT_DAILY_GOAL} Qs
+                  {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
                 </span>
               </div>
             </div>
           ))}
         </div>
 
-        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">Today's Performance</h3>
+        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">
+          Today's Performance
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8">
-          <div className="bg-blue-100 p-4 rounded-lg"><p className="text-lg text-blue-800">Total Answered</p><p className="text-3xl font-bold text-blue-600">{totalAnswered}</p></div>
-          <div className="bg-green-100 p-4 rounded-lg"><p className="text-lg text-green-800">Overall Accuracy</p><p className="text-3xl font-bold text-green-600">{accuracy}%</p></div>
-          <div className="bg-yellow-100 p-4 rounded-lg"><p className="text-lg text-yellow-800">Avg. Time</p><p className="text-3xl font-bold text-yellow-600">{avgTime}s</p></div>
-          <div className="bg-purple-100 p-4 rounded-lg"><p className="text-lg text-purple-800">All Time Total</p><p className="text-3xl font-bold text-purple-600">{totalQuestionsAnswered}</p></div>
+          <div className="bg-blue-100 p-4 rounded-lg">
+            <p className="text-lg text-blue-800">Total Answered</p>
+            <p className="text-3xl font-bold text-blue-600">{totalAnswered}</p>
+          </div>
+          <div className="bg-green-100 p-4 rounded-lg">
+            <p className="text-lg text-green-800">Overall Accuracy</p>
+            <p className="text-3xl font-bold text-green-600">{accuracy}%</p>
+          </div>
+          <div className="bg-yellow-100 p-4 rounded-lg">
+            <p className="text-lg text-yellow-800">Avg. Time</p>
+            <p className="text-3xl font-bold text-yellow-600">{avgTime}s</p>
+          </div>
+          <div className="bg-purple-100 p-4 rounded-lg">
+            <p className="text-lg text-purple-800">All Time Total</p>
+            <p className="text-3xl font-bold text-purple-600">
+              {totalQuestionsAnswered}
+            </p>
+          </div>
         </div>
 
         {topicsPracticed.length > 0 && (
           <div className="mt-8">
-            <h4 className="text-xl font-bold text-gray-700 mb-4">Topic Breakdown:</h4>
+            <h4 className="text-xl font-bold text-gray-700 mb-4">
+              Topic Breakdown:
+            </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left rounded-lg overflow-hidden">
                 <thead className="bg-gray-200">
@@ -1278,15 +2443,27 @@ Answer: [The answer]`;
                   </tr>
                 </thead>
                 <tbody>
-                  {topicsPracticed.map(topic => {
+                  {topicsPracticed.map((topic) => {
                     const stats = topicStats[topic];
-                    const topicAccuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                    const topicAccuracy =
+                      stats.total > 0
+                        ? Math.round((stats.correct / stats.total) * 100)
+                        : 0;
                     return (
-                      <tr key={topic} className="border-b bg-white hover:bg-gray-50">
+                      <tr
+                        key={topic}
+                        className="border-b bg-white hover:bg-gray-50"
+                      >
                         <td className="p-3 font-semibold">{topic}</td>
-                        <td className="p-3 text-center text-green-600 font-semibold">{stats.correct}</td>
-                        <td className="p-3 text-center text-red-600 font-semibold">{stats.incorrect}</td>
-                        <td className="p-3 text-center font-semibold">{topicAccuracy}%</td>
+                        <td className="p-3 text-center text-green-600 font-semibold">
+                          {stats.correct}
+                        </td>
+                        <td className="p-3 text-center text-red-600 font-semibold">
+                          {stats.incorrect}
+                        </td>
+                        <td className="p-3 text-center font-semibold">
+                          {topicAccuracy}%
+                        </td>
                       </tr>
                     );
                   })}
@@ -1299,30 +2476,50 @@ Answer: [The answer]`;
         {/* Complexity Insights */}
         {perTopicComplexity.length > 0 && (
           <div className="mt-8">
-            <h4 className="text-xl font-bold text-gray-700 mb-4">Complexity Insights</h4>
+            <h4 className="text-xl font-bold text-gray-700 mb-4">
+              Complexity Insights
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-lg shadow p-4">
-                <h5 className="font-semibold text-gray-800 mb-2">Per-Topic Average Complexity</h5>
+                <h5 className="font-semibold text-gray-800 mb-2">
+                  Per-Topic Average Complexity
+                </h5>
                 <ul className="space-y-1">
-                  {perTopicComplexity.map(t => (
+                  {perTopicComplexity.map((t) => (
                     <li key={t.topic} className="flex justify-between text-sm">
                       <span className="font-medium">{t.topic}</span>
-                      <span className="text-gray-600">{Math.round((t.avg || 0) * 100) / 100}</span>
+                      <span className="text-gray-600">
+                        {Math.round((t.avg || 0) * 100) / 100}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
               {topRankedUniqueByTopic.length > 0 && (
                 <div className="bg-white rounded-lg shadow p-4">
-                  <h5 className="font-semibold text-gray-800 mb-2">Most Complex Recent Topics</h5>
+                  <h5 className="font-semibold text-gray-800 mb-2">
+                    Most Complex Recent Topics
+                  </h5>
                   <ul className="space-y-2 max-h-40 overflow-y-auto">
-                    {topRankedUniqueByTopic.map(r => (
-                      <li key={r.questionId + String(r.createdAt)} className="text-sm">
+                    {topRankedUniqueByTopic.map((r) => (
+                      <li
+                        key={r.questionId + String(r.createdAt)}
+                        className="text-sm"
+                      >
                         <div className="flex justify-between">
-                          <span className="font-medium text-gray-700">{r.topic}</span>
-                          <span className="text-purple-700 font-semibold">{Math.round((r.complexityScore || 0) * 100) / 100}</span>
+                          <span className="font-medium text-gray-700">
+                            {r.topic}
+                          </span>
+                          <span className="text-purple-700 font-semibold">
+                            {Math.round((r.complexityScore || 0) * 100) / 100}
+                          </span>
                         </div>
-                        <div className="text-gray-600 truncate" title={r.question || ''}>{r.question || ''}</div>
+                        <div
+                          className="text-gray-600 truncate"
+                          title={r.question || ""}
+                        >
+                          {r.question || ""}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -1334,22 +2531,45 @@ Answer: [The answer]`;
 
         {todaysQuestions.length > 0 && (
           <div className="mt-8">
-            <h4 className="text-xl font-bold text-gray-700 mb-4">Today's Questions:</h4>
+            <h4 className="text-xl font-bold text-gray-700 mb-4">
+              Today's Questions:
+            </h4>
             <div className="max-h-60 overflow-y-auto">
               {todaysQuestions.map((q, index) => (
-                <div key={q.id} className={`p-3 mb-2 rounded-lg border-l-4 ${q.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                <div
+                  key={q.id}
+                  className={`p-3 mb-2 rounded-lg border-l-4 ${
+                    q.isCorrect
+                      ? "bg-green-50 border-green-500"
+                      : "bg-red-50 border-red-500"
+                  }`}
+                >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-semibold text-sm text-gray-600">{q.topic}</span>
-                    <span className="text-xs text-gray-500">{q.timeTaken.toFixed(1)}s</span>
+                    <span className="font-semibold text-sm text-gray-600">
+                      {q.topic}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {q.timeTaken.toFixed(1)}s
+                    </span>
                   </div>
                   <p className="text-sm text-gray-800 mb-1">{q.question}</p>
                   <div className="text-xs">
                     <span className="text-gray-600">Your answer: </span>
-                    <span className={q.isCorrect ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{q.userAnswer}</span>
+                    <span
+                      className={
+                        q.isCorrect
+                          ? "text-green-600 font-semibold"
+                          : "text-red-600 font-semibold"
+                      }
+                    >
+                      {q.userAnswer}
+                    </span>
                     {!q.isCorrect && (
                       <>
                         <span className="text-gray-600 ml-2">Correct: </span>
-                        <span className="text-green-600 font-semibold">{q.correctAnswer}</span>
+                        <span className="text-green-600 font-semibold">
+                          {q.correctAnswer}
+                        </span>
                       </>
                     )}
                   </div>
@@ -1360,7 +2580,12 @@ Answer: [The answer]`;
         )}
 
         <div className="text-center mt-8">
-          <button onClick={returnToTopics} className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition">Back to Topics</button>
+          <button
+            onClick={returnToTopics}
+            className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition"
+          >
+            Back to Topics
+          </button>
         </div>
       </div>
     );
@@ -1369,22 +2594,35 @@ Answer: [The answer]`;
   const renderStore = () => {
     return (
       <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
-        <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">Rewards Store</h2>
-        <p className="text-lg text-gray-600 mb-8 text-center">Use your coins to buy new backgrounds!</p>
+        <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">
+          Rewards Store
+        </h2>
+        <p className="text-lg text-gray-600 mb-8 text-center">
+          Use your coins to buy new backgrounds!
+        </p>
 
         {purchaseFeedback && (
-          <div className={`p-3 rounded-lg mb-6 text-center font-semibold ${purchaseFeedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <div
+            className={`p-3 rounded-lg mb-6 text-center font-semibold ${
+              purchaseFeedback.type === "success"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {purchaseFeedback.message}
           </div>
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {storeItems.map(item => {
+          {storeItems.map((item) => {
             const isOwned = userData.ownedBackgrounds.includes(item.id);
             const isActive = userData.activeBackground === item.id;
 
             return (
-              <div key={item.id} className="border rounded-lg p-4 flex flex-col items-center justify-between bg-gray-50 shadow-md">
+              <div
+                key={item.id}
+                className="border rounded-lg p-4 flex flex-col items-center justify-between bg-gray-50 shadow-md"
+              >
                 <img
                   src={item.url}
                   alt={item.name}
@@ -1393,27 +2631,68 @@ Answer: [The answer]`;
                 />
                 <h4 className="font-bold text-lg mb-2">{item.name}</h4>
                 {isOwned ? (
-                  <button onClick={() => handleSetBackground(item.id)} disabled={isActive} className={`w-full font-bold py-2 px-4 rounded-lg transition ${isActive ? 'bg-green-500 text-white' : 'bg-blue-200 text-blue-800 hover:bg-blue-300'}`}>
-                    {isActive ? <span className="flex items-center justify-center gap-2"><CheckCircle size={20} /> Active</span> : 'Set Active'}
+                  <button
+                    onClick={() => handleSetBackground(item.id)}
+                    disabled={isActive}
+                    className={`w-full font-bold py-2 px-4 rounded-lg transition ${
+                      isActive
+                        ? "bg-green-500 text-white"
+                        : "bg-blue-200 text-blue-800 hover:bg-blue-300"
+                    }`}
+                  >
+                    {isActive ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <CheckCircle size={20} /> Active
+                      </span>
+                    ) : (
+                      "Set Active"
+                    )}
                   </button>
                 ) : (
-                  <button onClick={() => handlePurchase(item)} className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => handlePurchase(item)}
+                    className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                  >
                     <Coins size={16} /> {STORE_BACKGROUND_COST}
                   </button>
                 )}
               </div>
-            )
+            );
           })}
         </div>
         <div className="text-center mt-8">
-          <button onClick={returnToTopics} className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition">Back to Topics</button>
+          <button
+            onClick={returnToTopics}
+            className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition"
+          >
+            Back to Topics
+          </button>
         </div>
       </div>
     );
   };
 
   const renderTopicSelection = () => {
-    const { availableTopics, unavailableTopics, allCompleted, topicStats } = getTopicAvailability(userData);
+    const { availableTopics, unavailableTopics, allCompleted, topicStats } =
+      getTopicAvailability(userData, selectedGrade);
+    const currentTopics =
+      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+
+    const handleGradeChange = async (newGrade) => {
+      setSelectedGrade(newGrade);
+
+      // Update selectedGrade in Firestore
+      if (user) {
+        const userDocRef = getUserDocRef(user.uid);
+        if (userDocRef) {
+          try {
+            await updateDoc(userDocRef, { selectedGrade: newGrade });
+          } catch (e) {
+            console.warn("Could not persist selectedGrade:", e);
+          }
+        }
+      }
+    };
 
     return (
       <div className="text-center mt-20">
@@ -1423,54 +2702,120 @@ Answer: [The answer]`;
             src="/math-whiz-title.gif"
             alt="Math Whiz!"
             className="h-16 md:h-20 w-auto mb-4"
-            style={{ imageRendering: 'auto' }}
+            style={{ imageRendering: "auto" }}
           />
         </div>
-        <p className="text-2xl font-bold text-blue-600 mb-4 text-center pt-6">Choose a topic to start your 3rd Grade math adventure!</p>
+
+        {/* Grade Selector */}
+        <div className="mb-6 flex justify-center">
+          <div className="bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md">
+            <label className="block text-lg font-bold text-gray-700 mb-2">
+              Choose your grade level:
+            </label>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => handleGradeChange("G3")}
+                className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                  selectedGrade === "G3"
+                    ? "bg-blue-600 text-white shadow-lg transform scale-105"
+                    : "bg-white text-gray-700 hover:bg-blue-50 border-2 border-gray-300"
+                }`}
+              >
+                3rd Grade
+              </button>
+              <button
+                onClick={() => handleGradeChange("G4")}
+                className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                  selectedGrade === "G4"
+                    ? "bg-blue-600 text-white shadow-lg transform scale-105"
+                    : "bg-white text-gray-700 hover:bg-blue-50 border-2 border-gray-300"
+                }`}
+              >
+                4th Grade
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-2xl font-bold text-blue-600 mb-4 text-center pt-6">
+          Choose a topic to start your {selectedGrade === "G3" ? "3rd" : "4th"}{" "}
+          Grade math adventure!
+        </p>
 
         {/* Feedback message */}
         {feedback && (
-          <div className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
+          <div
+            className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
+              feedback.type === "success"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {feedback.message}
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {quizTopics.map(topic => {
+          {currentTopics.map((topic) => {
             const isAvailable = availableTopics.includes(topic);
-            const isCompleted = topicStats?.find(t => t.topic === topic)?.completed || false;
+            const isCompleted =
+              topicStats?.find((t) => t.topic === topic)?.completed || false;
 
             return (
               <button
                 key={topic}
                 onClick={() => handleTopicSelection(topic)}
                 disabled={!isAvailable}
-                className={`w-full p-6 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group ${isAvailable
-                    ? 'bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer'
-                    : 'bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60'
-                  }`}
+                className={`w-full p-6 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group ${
+                  isAvailable
+                    ? "bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer"
+                    : "bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60"
+                }`}
               >
-                <div className={`p-4 rounded-full mb-4 transition-colors duration-300 ${isAvailable
-                    ? 'bg-blue-100 group-hover:bg-blue-500'
-                    : 'bg-gray-200'
-                  }`}>
+                <div
+                  className={`p-4 rounded-full mb-4 transition-colors duration-300 ${
+                    isAvailable
+                      ? "bg-blue-100 group-hover:bg-blue-500"
+                      : "bg-gray-200"
+                  }`}
+                >
                   {isCompleted ? (
-                    <Award className={`${isAvailable ? 'text-green-500' : 'text-gray-400'} transition-colors duration-300`} />
+                    <Award
+                      className={`${
+                        isAvailable ? "text-green-500" : "text-gray-400"
+                      } transition-colors duration-300`}
+                    />
                   ) : (
-                    <Sparkles className={`${isAvailable ? 'text-blue-500 group-hover:text-white' : 'text-gray-400'} transition-colors duration-300`} />
+                    <Sparkles
+                      className={`${
+                        isAvailable
+                          ? "text-blue-500 group-hover:text-white"
+                          : "text-gray-400"
+                      } transition-colors duration-300`}
+                    />
                   )}
                 </div>
-                <h3 className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${isAvailable
-                    ? 'text-gray-800 group-hover:text-blue-600'
-                    : 'text-gray-500'
-                  }`}>
+                <h3
+                  className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
+                    isAvailable
+                      ? "text-gray-800 group-hover:text-blue-600"
+                      : "text-gray-500"
+                  }`}
+                >
                   {topic}
                 </h3>
-                <p className={`mt-2 ${isAvailable ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {isCompleted && !isAvailable ? '✅ Waiting for others...' :
-                    isCompleted && isAvailable ? '✅ Ready to practice!' :
-                      isAvailable ? 'Practice your skills!' : 'Complete other topics first'}
+                <p
+                  className={`mt-2 ${
+                    isAvailable ? "text-gray-500" : "text-gray-400"
+                  }`}
+                >
+                  {isCompleted && !isAvailable
+                    ? "✅ Waiting for others..."
+                    : isCompleted && isAvailable
+                    ? "✅ Ready to practice!"
+                    : isAvailable
+                    ? "Practice your skills!"
+                    : "Complete other topics first"}
                 </p>
               </button>
             );
@@ -1480,19 +2825,36 @@ Answer: [The answer]`;
         <div className="mt-8 mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
           <p className="text-sm text-gray-700 font-medium">
             {allCompleted ? (
-              <span className="text-green-600">🎉 All topics completed! Ready for a fresh start?</span>
+              <span className="text-green-600">
+                🎉 All {selectedGrade === "G3" ? "3rd" : "4th"} grade topics
+                completed! Ready for a fresh start?
+              </span>
             ) : unavailableTopics.length > 0 ? (
-              <span>Complete the goal for each available topic to unlock the others!</span>
+              <span>
+                Complete the goal for each available topic to unlock the others!
+              </span>
             ) : (
-              <span>Answer the required questions correctly per topic. Topics will become unavailable once completed until others catch up.</span>
+              <span>
+                Answer the required questions correctly per topic. Topics will
+                become unavailable once completed until others catch up.
+              </span>
             )}
           </p>
           {topicStats && (
             <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              {topicStats.map(stat => (
-                <div key={stat.topic} className={`p-2 rounded ${stat.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+              {topicStats.map((stat) => (
+                <div
+                  key={stat.topic}
+                  className={`p-2 rounded ${
+                    stat.completed
+                      ? "bg-green-100 text-green-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   <div className="font-semibold">{stat.topic}</div>
-                  <div>{stat.correctAnswers}/{stat.goal} ✓</div>
+                  <div>
+                    {stat.correctAnswers}/{stat.goal} ✓
+                  </div>
                 </div>
               ))}
             </div>
@@ -1517,73 +2879,143 @@ Answer: [The answer]`;
   const renderQuiz = () => {
     if (currentQuiz.length === 0) return null;
     const currentQuestion = currentQuiz[currentQuestionIndex];
-    const progressPercentage = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+    const progressPercentage =
+      ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
     return (
       <>
-        <div ref={quizContainerRef} className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col" style={{ minHeight: 600, height: 600 }}>
+        <div
+          ref={quizContainerRef}
+          className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col"
+          style={{ minHeight: 600, height: 600 }}
+        >
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-blue-600">{currentTopic}</h2>
-            <button onClick={pauseQuiz} className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"><Pause size={20} /> Pause</button>
+            <h2 className="text-2xl md:text-3xl font-bold text-blue-600">
+              {currentTopic}
+            </h2>
+            <button
+              onClick={pauseQuiz}
+              className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"
+            >
+              <Pause size={20} /> Pause
+            </button>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6"><div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div>
-          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">{formatMathText(currentQuestion.question)}</p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+            <div
+              className="bg-green-500 h-2.5 rounded-full"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">
+            {formatMathText(currentQuestion.question)}
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {currentQuestion.options.map((option, index) => {
               const isSelected = userAnswer === option;
               const isCorrect = option === currentQuestion.correctAnswer;
-              let buttonClass = 'bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400';
+              let buttonClass =
+                "bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400";
               if (isAnswered) {
-                if (isCorrect) buttonClass = 'bg-green-100 border-2 border-green-500 text-green-800';
-                else if (isSelected && !isCorrect) buttonClass = 'bg-red-100 border-2 border-red-500 text-red-800';
-                else buttonClass = 'bg-gray-100 border-2 border-gray-300 text-gray-500';
+                if (isCorrect)
+                  buttonClass =
+                    "bg-green-100 border-2 border-green-500 text-green-800";
+                else if (isSelected && !isCorrect)
+                  buttonClass =
+                    "bg-red-100 border-2 border-red-500 text-red-800";
+                else
+                  buttonClass =
+                    "bg-gray-100 border-2 border-gray-300 text-gray-500";
               } else if (isSelected) {
-                buttonClass = 'bg-blue-100 border-2 border-blue-500';
+                buttonClass = "bg-blue-100 border-2 border-blue-500";
               }
               return (
-                <button key={index} onClick={() => handleAnswer(option)} disabled={isAnswered} className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}>
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(option)}
+                  disabled={isAnswered}
+                  className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}
+                >
                   {formatMathText(option)}
                 </button>
               );
             })}
           </div>
-          {showHint && !isAnswered && (<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg"><p><span className="font-bold">Hint:</span> {currentQuestion.hint}</p></div>)}
+          {showHint && !isAnswered && (
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg">
+              <p>
+                <span className="font-bold">Hint:</span> {currentQuestion.hint}
+              </p>
+            </div>
+          )}
 
           {/* Bottom layout: two rows, responsive */}
           <div className="mt-auto w-full">
             {/* First row: Explain Concept | Show/Hide Hint */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <button onClick={handleExplainConcept} className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition">
+              <button
+                onClick={handleExplainConcept}
+                className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition"
+              >
                 <Sparkles size={20} /> Learn About This
               </button>
-              <button onClick={() => setShowHint(!showHint)} disabled={isAnswered} className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                <HelpCircle size={20} />{showHint ? 'Hide Hint' : 'Show Hint'}
+              <button
+                onClick={() => setShowHint(!showHint)}
+                disabled={isAnswered}
+                className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <HelpCircle size={20} />
+                {showHint ? "Hide Hint" : "Show Hint"}
               </button>
             </div>
             {/* Second row: Response Field | Check/Next Button */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Response Field: show feedback, selected answer, or prompt to select */}
-              <div className={`flex items-center justify-center w-full min-h-[48px] rounded-lg border px-4 text-lg font-medium ${feedback
-                  ? feedback.type === 'success'
-                    ? 'bg-green-100 border-green-500 text-green-800'
-                    : 'bg-red-100 border-red-500 text-red-800'
-                  : 'bg-gray-50 border-gray-200 text-gray-700'
-                }`}>
-                {feedback
-                  ? feedback.message
-                  : userAnswer !== null
-                    ? <span>Selected: <span className="font-bold">{formatMathText(userAnswer)}</span></span>
-                    : <span className="italic text-gray-400">Select an answer</span>
-                }
+              <div
+                className={`flex items-center justify-center w-full min-h-[48px] rounded-lg border px-4 text-lg font-medium ${
+                  feedback
+                    ? feedback.type === "success"
+                      ? "bg-green-100 border-green-500 text-green-800"
+                      : "bg-red-100 border-red-500 text-red-800"
+                    : "bg-gray-50 border-gray-200 text-gray-700"
+                }`}
+              >
+                {feedback ? (
+                  feedback.message
+                ) : userAnswer !== null ? (
+                  <span>
+                    Selected:{" "}
+                    <span className="font-bold">
+                      {formatMathText(userAnswer)}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="italic text-gray-400">Select an answer</span>
+                )}
               </div>
               <div className="flex items-center justify-center w-full">
-                {isAnswered
-                  ? <button onClick={nextQuestion} className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">Next Question <ChevronsRight size={20} /></button>
-                  : <button onClick={checkAnswer} disabled={userAnswer === null} className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed">Check Answer</button>
-                }
+                {isAnswered ? (
+                  <button
+                    onClick={nextQuestion}
+                    className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2"
+                  >
+                    Next Question <ChevronsRight size={20} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={checkAnswer}
+                    disabled={userAnswer === null}
+                    className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    Check Answer
+                  </button>
+                )}
               </div>
             </div>
           </div>
-          <div className="text-center mt-4"><p className="text-xs text-gray-400">CA Standard: {currentQuestion.standard}</p></div>
+          <div className="text-center mt-4">
+            <p className="text-xs text-gray-400">
+              CA Standard: {currentQuestion.standard}
+            </p>
+          </div>
         </div>
       </>
     );
@@ -1591,38 +3023,63 @@ Answer: [The answer]`;
 
   const renderResults = () => {
     const percentage = Math.round((score / currentQuiz.length) * 100);
-    let message = ''; let emoji = '';
-    if (percentage === 100) { message = "Perfect Score! You're a Math Genius!"; emoji = '🏆'; }
-    else if (percentage >= 80) { message = "Excellent Work! You really know your stuff!"; emoji = '🎉'; }
-    else if (percentage >= 60) { message = "Good Job! Keep practicing!"; emoji = '👍'; }
-    else { message = "Nice try! Don't give up, practice makes perfect!"; emoji = '🧠'; }
+    let message = "";
+    let emoji = "";
+    if (percentage === 100) {
+      message = "Perfect Score! You're a Math Genius!";
+      emoji = "🏆";
+    } else if (percentage >= 80) {
+      message = "Excellent Work! You really know your stuff!";
+      emoji = "🎉";
+    } else if (percentage >= 60) {
+      message = "Good Job! Keep practicing!";
+      emoji = "👍";
+    } else {
+      message = "Nice try! Don't give up, practice makes perfect!";
+      emoji = "🧠";
+    }
 
     // Check if user can create a story for this topic today
     const today = getTodayDateString();
     const todaysStories = userData?.dailyStories?.[today] || {};
-    const canCreateStory = !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
+    const canCreateStory =
+      !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
     // Check if current topic has reached daily goal and some topics are still not complete
     const { availableTopics, topicStats } = getTopicAvailability(userData);
-    const currentTopicStats = topicStats?.find(t => t.topic === currentTopic);
+    const currentTopicStats = topicStats?.find((t) => t.topic === currentTopic);
     const isCurrentTopicCompleted = currentTopicStats?.completed || false;
     const hasIncompleteTopics = availableTopics.length > 0;
-    const shouldGreyOutTryAgain = isCurrentTopicCompleted && hasIncompleteTopics;
+    const shouldGreyOutTryAgain =
+      isCurrentTopicCompleted && hasIncompleteTopics;
 
     return (
       <div className="text-center bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-4">
+          Quiz Complete!
+        </h2>
         <div className="text-6xl mb-4">{emoji}</div>
         <p className="text-xl text-gray-600 mb-2">{message}</p>
-        <p className="text-2xl font-bold text-blue-600 mb-6">You scored {score} out of {currentQuiz.length} ({percentage}%)</p>
+        <p className="text-2xl font-bold text-blue-600 mb-6">
+          You scored {score} out of {currentQuiz.length} ({percentage}%)
+        </p>
         {feedback && (
-          <div className={`p-4 rounded-lg mb-4 text-center font-semibold ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <div
+            className={`p-4 rounded-lg mb-4 text-center font-semibold ${
+              feedback.type === "success"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {feedback.message}
           </div>
         )}
         <div className="flex flex-col gap-4 justify-center">
           {canCreateStory ? (
-            <button onClick={handleCreateStoryProblem} className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+            <button
+              onClick={handleCreateStoryProblem}
+              className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2"
+            >
               <Sparkles size={20} /> Create a Story Problem
             </button>
           ) : (
@@ -1643,9 +3100,21 @@ Answer: [The answer]`;
               <span className="text-xs">(Complete other topics first)</span>
             </div>
           ) : (
-            <button onClick={() => { startNewQuiz(currentTopic); }} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105">Try Again</button>
+            <button
+              onClick={() => {
+                startNewQuiz(currentTopic);
+              }}
+              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+            >
+              Try Again
+            </button>
           )}
-          <button onClick={returnToTopics} className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105">Choose New Topic</button>
+          <button
+            onClick={returnToTopics}
+            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105"
+          >
+            Choose New Topic
+          </button>
         </div>
       </div>
     );
@@ -1656,21 +3125,27 @@ Answer: [The answer]`;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
-          <div className='flex-shrink-0'>
-            <button onClick={() => {
-              setShowModal(false);
-              // Reset story state when modal is closed
-              if (modalTitle === '✨ A Fun Story Problem!') {
-                setShowStoryHint(false);
-                setShowStoryAnswer(false);
-              }
-            }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+          <div className="flex-shrink-0">
+            <button
+              onClick={() => {
+                setShowModal(false);
+                // Reset story state when modal is closed
+                if (modalTitle === "✨ A Fun Story Problem!") {
+                  setShowStoryHint(false);
+                  setShowStoryAnswer(false);
+                }
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+            >
               <X size={24} />
             </button>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">{modalTitle}</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              {modalTitle}
+            </h3>
           </div>
           <div className="flex-grow overflow-hidden">
-            {isGenerating && (!storyData || modalTitle !== '✨ A Fun Story Problem!') ? (
+            {isGenerating &&
+            (!storyData || modalTitle !== "✨ A Fun Story Problem!") ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               </div>
@@ -1684,7 +3159,9 @@ Answer: [The answer]`;
 
                 {/* Question Section */}
                 <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                  <h4 className="font-bold text-green-800 mb-2">❓ The Question</h4>
+                  <h4 className="font-bold text-green-800 mb-2">
+                    ❓ The Question
+                  </h4>
                   <p className="text-gray-700">{storyData.question}</p>
                 </div>
 
@@ -1696,7 +3173,7 @@ Answer: [The answer]`;
                       onClick={() => setShowStoryHint(!showStoryHint)}
                       className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 transition"
                     >
-                      {showStoryHint ? 'Hide Hint' : 'Show Hint'}
+                      {showStoryHint ? "Hide Hint" : "Show Hint"}
                     </button>
                   </div>
                   {showStoryHint && (
@@ -1712,11 +3189,13 @@ Answer: [The answer]`;
                       onClick={() => setShowStoryAnswer(!showStoryAnswer)}
                       className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600 transition"
                     >
-                      {showStoryAnswer ? 'Hide Answer' : 'Check Answer'}
+                      {showStoryAnswer ? "Hide Answer" : "Check Answer"}
                     </button>
                   </div>
                   {showStoryAnswer && (
-                    <p className="text-gray-700 font-semibold">{storyData.answer}</p>
+                    <p className="text-gray-700 font-semibold">
+                      {storyData.answer}
+                    </p>
                   )}
                 </div>
               </div>
@@ -1730,18 +3209,33 @@ Answer: [The answer]`;
         </div>
       </div>
     );
-  }
+  };
 
   const renderResumeModal = () => {
     if (!showResumeModal) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Paused Quiz Found!</h3>
-          <p className="text-gray-600 mb-8">Do you want to continue your quiz on "{topicToResume}" or start a new one?</p>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">
+            Paused Quiz Found!
+          </h3>
+          <p className="text-gray-600 mb-8">
+            Do you want to continue your quiz on "{topicToResume}" or start a
+            new one?
+          </p>
           <div className="flex flex-col gap-4">
-            <button onClick={resumePausedQuiz} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"><Play size={20} /> Resume Paused Quiz</button>
-            <button onClick={() => startNewQuiz(topicToResume)} className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition">Start New Quiz</button>
+            <button
+              onClick={resumePausedQuiz}
+              className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            >
+              <Play size={20} /> Resume Paused Quiz
+            </button>
+            <button
+              onClick={() => startNewQuiz(topicToResume)}
+              className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
+            >
+              Start New Quiz
+            </button>
           </div>
         </div>
       </div>
@@ -1750,18 +3244,25 @@ Answer: [The answer]`;
 
   const renderContent = () => {
     switch (quizState) {
-      case 'topicSelection': return renderTopicSelection();
-      case 'inProgress': return renderQuiz();
-      case 'results': return renderResults();
-      case 'dashboard': return renderDashboard();
-      case 'store': return renderStore();
-      default: return renderTopicSelection();
+      case "topicSelection":
+        return renderTopicSelection();
+      case "inProgress":
+        return renderQuiz();
+      case "results":
+        return renderResults();
+      case "dashboard":
+        return renderDashboard();
+      case "store":
+        return renderStore();
+      default:
+        return renderTopicSelection();
     }
-  }
+  };
 
-  const activeBgUrl = userData?.activeBackground && userData.activeBackground !== 'default'
-    ? storeItems.find(item => item.id === userData.activeBackground)?.url
-    : null;
+  const activeBgUrl =
+    userData?.activeBackground && userData.activeBackground !== "default"
+      ? storeItems.find((item) => item.id === userData.activeBackground)?.url
+      : null;
 
   if (!user || !userData) {
     return (
@@ -1776,9 +3277,9 @@ Answer: [The answer]`;
     <div
       className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans relative transition-all duration-500"
       style={{
-        backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
       <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-0"></div>
