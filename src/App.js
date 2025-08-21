@@ -3088,6 +3088,13 @@ Answer: [The answer]`;
                 <button
                   key={index}
                   onClick={() => handleAnswer(option)}
+                  onDoubleClick={() => {
+                    if (!isAnswered) {
+                      handleAnswer(option);
+                      // Use setTimeout to ensure the answer is set before checking
+                      setTimeout(() => checkAnswer(), 0);
+                    }
+                  }}
                   disabled={isAnswered}
                   className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}
                 >
