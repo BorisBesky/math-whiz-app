@@ -1321,6 +1321,495 @@ function createSymmetryDemoSVG(
   container.appendChild(svg);
 }
 
+/**
+ * Creates an SVG quadrilateral with classification features and property annotations
+ * @param {string} containerId - The ID of the container element
+ * @param {string} type - Quadrilateral type: 'square', 'rectangle', 'rhombus', 'parallelogram', 'trapezoid', 'quadrilateral'
+ * @param {object} options - Styling options
+ */
+function createClassifiedQuadrilateralSVG(
+  containerId,
+  type = "square",
+  options = {}
+) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 180;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+
+  let points = "";
+  let shape = null;
+
+  switch (type) {
+    case "square":
+      // Square - all sides equal, all angles 90°
+      const squareSize = 70;
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      shape.setAttribute("x", centerX - squareSize / 2);
+      shape.setAttribute("y", centerY - squareSize / 2);
+      shape.setAttribute("width", squareSize);
+      shape.setAttribute("height", squareSize);
+      shape.setAttribute("fill", options.fill || "#ff9800");
+      shape.setAttribute("stroke", options.stroke || "#f57c00");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+
+      // Add right angle markers for square
+      if (options.showProperties) {
+        const corners = [
+          { x: centerX - squareSize / 2, y: centerY - squareSize / 2 }, // top-left
+          { x: centerX + squareSize / 2, y: centerY - squareSize / 2 }, // top-right
+          { x: centerX + squareSize / 2, y: centerY + squareSize / 2 }, // bottom-right
+          { x: centerX - squareSize / 2, y: centerY + squareSize / 2 }, // bottom-left
+        ];
+
+        corners.forEach((corner) => {
+          const rightAngle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          const size = 8;
+          let d = "";
+
+          if (corner.x < centerX && corner.y < centerY) {
+            // top-left
+            d = `M ${corner.x} ${corner.y + size} L ${corner.x + size} ${
+              corner.y + size
+            } L ${corner.x + size} ${corner.y}`;
+          } else if (corner.x > centerX && corner.y < centerY) {
+            // top-right
+            d = `M ${corner.x - size} ${corner.y} L ${corner.x - size} ${
+              corner.y + size
+            } L ${corner.x} ${corner.y + size}`;
+          } else if (corner.x > centerX && corner.y > centerY) {
+            // bottom-right
+            d = `M ${corner.x} ${corner.y - size} L ${corner.x - size} ${
+              corner.y - size
+            } L ${corner.x - size} ${corner.y}`;
+          } else {
+            // bottom-left
+            d = `M ${corner.x + size} ${corner.y} L ${corner.x + size} ${
+              corner.y - size
+            } L ${corner.x} ${corner.y - size}`;
+          }
+
+          rightAngle.setAttribute("d", d);
+          rightAngle.setAttribute("fill", "none");
+          rightAngle.setAttribute("stroke", "#e91e63");
+          rightAngle.setAttribute("stroke-width", "2");
+          svg.appendChild(rightAngle);
+        });
+
+        // Add equal side markers
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX - squareSize / 2,
+              y1: centerY - squareSize / 2,
+              x2: centerX + squareSize / 2,
+              y2: centerY - squareSize / 2,
+            }, // top
+            {
+              x1: centerX + squareSize / 2,
+              y1: centerY - squareSize / 2,
+              x2: centerX + squareSize / 2,
+              y2: centerY + squareSize / 2,
+            }, // right
+            {
+              x1: centerX + squareSize / 2,
+              y1: centerY + squareSize / 2,
+              x2: centerX - squareSize / 2,
+              y2: centerY + squareSize / 2,
+            }, // bottom
+            {
+              x1: centerX - squareSize / 2,
+              y1: centerY + squareSize / 2,
+              x2: centerX - squareSize / 2,
+              y2: centerY - squareSize / 2,
+            }, // left
+          ],
+          1
+        ); // All sides equal
+      }
+      break;
+
+    case "rectangle":
+      // Rectangle - opposite sides equal, all angles 90°
+      const rectWidth = 90;
+      const rectHeight = 60;
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      shape.setAttribute("x", centerX - rectWidth / 2);
+      shape.setAttribute("y", centerY - rectHeight / 2);
+      shape.setAttribute("width", rectWidth);
+      shape.setAttribute("height", rectHeight);
+      shape.setAttribute("fill", options.fill || "#4ecdc4");
+      shape.setAttribute("stroke", options.stroke || "#26a69a");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+
+      if (options.showProperties) {
+        // Add right angle markers at corners
+        const corners = [
+          { x: centerX - rectWidth / 2, y: centerY - rectHeight / 2 },
+          { x: centerX + rectWidth / 2, y: centerY - rectHeight / 2 },
+          { x: centerX + rectWidth / 2, y: centerY + rectHeight / 2 },
+          { x: centerX - rectWidth / 2, y: centerY + rectHeight / 2 },
+        ];
+
+        corners.forEach((corner) => {
+          const rightAngle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          const size = 6;
+          let d = "";
+
+          if (corner.x < centerX && corner.y < centerY) {
+            d = `M ${corner.x} ${corner.y + size} L ${corner.x + size} ${
+              corner.y + size
+            } L ${corner.x + size} ${corner.y}`;
+          } else if (corner.x > centerX && corner.y < centerY) {
+            d = `M ${corner.x - size} ${corner.y} L ${corner.x - size} ${
+              corner.y + size
+            } L ${corner.x} ${corner.y + size}`;
+          } else if (corner.x > centerX && corner.y > centerY) {
+            d = `M ${corner.x} ${corner.y - size} L ${corner.x - size} ${
+              corner.y - size
+            } L ${corner.x - size} ${corner.y}`;
+          } else {
+            d = `M ${corner.x + size} ${corner.y} L ${corner.x + size} ${
+              corner.y - size
+            } L ${corner.x} ${corner.y - size}`;
+          }
+
+          rightAngle.setAttribute("d", d);
+          rightAngle.setAttribute("fill", "none");
+          rightAngle.setAttribute("stroke", "#e91e63");
+          rightAngle.setAttribute("stroke-width", "1.5");
+          svg.appendChild(rightAngle);
+        });
+
+        // Add equal side markers for opposite sides
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX - rectWidth / 2,
+              y1: centerY - rectHeight / 2,
+              x2: centerX + rectWidth / 2,
+              y2: centerY - rectHeight / 2,
+            }, // top
+            {
+              x1: centerX + rectWidth / 2,
+              y1: centerY + rectHeight / 2,
+              x2: centerX - rectWidth / 2,
+              y2: centerY + rectHeight / 2,
+            }, // bottom
+          ],
+          1
+        );
+
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX + rectWidth / 2,
+              y1: centerY - rectHeight / 2,
+              x2: centerX + rectWidth / 2,
+              y2: centerY + rectHeight / 2,
+            }, // right
+            {
+              x1: centerX - rectWidth / 2,
+              y1: centerY + rectHeight / 2,
+              x2: centerX - rectWidth / 2,
+              y2: centerY - rectHeight / 2,
+            }, // left
+          ],
+          2
+        );
+      }
+      break;
+
+    case "rhombus":
+      // Rhombus - all sides equal, opposite angles equal
+      const rhombusWidth = 80;
+      const rhombusHeight = 100;
+      points = `${centerX},${centerY - rhombusHeight / 2} ${
+        centerX + rhombusWidth / 2
+      },${centerY} ${centerX},${centerY + rhombusHeight / 2} ${
+        centerX - rhombusWidth / 2
+      },${centerY}`;
+
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      shape.setAttribute("points", points);
+      shape.setAttribute("fill", options.fill || "#8bc34a");
+      shape.setAttribute("stroke", options.stroke || "#689f38");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+
+      if (options.showProperties) {
+        // Add equal side markers for all sides
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX,
+              y1: centerY - rhombusHeight / 2,
+              x2: centerX + rhombusWidth / 2,
+              y2: centerY,
+            }, // top-right
+            {
+              x1: centerX + rhombusWidth / 2,
+              y1: centerY,
+              x2: centerX,
+              y2: centerY + rhombusHeight / 2,
+            }, // bottom-right
+            {
+              x1: centerX,
+              y1: centerY + rhombusHeight / 2,
+              x2: centerX - rhombusWidth / 2,
+              y2: centerY,
+            }, // bottom-left
+            {
+              x1: centerX - rhombusWidth / 2,
+              y1: centerY,
+              x2: centerX,
+              y2: centerY - rhombusHeight / 2,
+            }, // top-left
+          ],
+          1
+        );
+      }
+      break;
+
+    case "parallelogram":
+      // Parallelogram - opposite sides equal and parallel
+      const paraWidth = 90;
+      const paraHeight = 60;
+      const skew = 25;
+      points = `${centerX - paraWidth / 2 + skew / 2},${
+        centerY - paraHeight / 2
+      } ${centerX + paraWidth / 2 + skew / 2},${centerY - paraHeight / 2} ${
+        centerX + paraWidth / 2 - skew / 2
+      },${centerY + paraHeight / 2} ${centerX - paraWidth / 2 - skew / 2},${
+        centerY + paraHeight / 2
+      }`;
+
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      shape.setAttribute("points", points);
+      shape.setAttribute("fill", options.fill || "#607d8b");
+      shape.setAttribute("stroke", options.stroke || "#455a64");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+
+      if (options.showProperties) {
+        // Add equal side markers for opposite sides
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX - paraWidth / 2 + skew / 2,
+              y1: centerY - paraHeight / 2,
+              x2: centerX + paraWidth / 2 + skew / 2,
+              y2: centerY - paraHeight / 2,
+            }, // top
+            {
+              x1: centerX + paraWidth / 2 - skew / 2,
+              y1: centerY + paraHeight / 2,
+              x2: centerX - paraWidth / 2 - skew / 2,
+              y2: centerY + paraHeight / 2,
+            }, // bottom
+          ],
+          1
+        );
+
+        addEqualSideMarkers(
+          svg,
+          [
+            {
+              x1: centerX + paraWidth / 2 + skew / 2,
+              y1: centerY - paraHeight / 2,
+              x2: centerX + paraWidth / 2 - skew / 2,
+              y2: centerY + paraHeight / 2,
+            }, // right
+            {
+              x1: centerX - paraWidth / 2 - skew / 2,
+              y1: centerY + paraHeight / 2,
+              x2: centerX - paraWidth / 2 + skew / 2,
+              y2: centerY - paraHeight / 2,
+            }, // left
+          ],
+          2
+        );
+
+        // Add parallel markers
+        addParallelMarkers(svg, [
+          {
+            x1: centerX - paraWidth / 2 + skew / 2,
+            y1: centerY - paraHeight / 2,
+            x2: centerX + paraWidth / 2 + skew / 2,
+            y2: centerY - paraHeight / 2,
+          },
+          {
+            x1: centerX - paraWidth / 2 - skew / 2,
+            y1: centerY + paraHeight / 2,
+            x2: centerX + paraWidth / 2 - skew / 2,
+            y2: centerY + paraHeight / 2,
+          },
+        ]);
+      }
+      break;
+
+    case "trapezoid":
+      // Trapezoid - exactly one pair of parallel sides
+      const topBase = 60;
+      const bottomBase = 100;
+      const trapHeight = 70;
+      points = `${centerX - topBase / 2},${centerY - trapHeight / 2} ${
+        centerX + topBase / 2
+      },${centerY - trapHeight / 2} ${centerX + bottomBase / 2},${
+        centerY + trapHeight / 2
+      } ${centerX - bottomBase / 2},${centerY + trapHeight / 2}`;
+
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      shape.setAttribute("points", points);
+      shape.setAttribute("fill", options.fill || "#ff5722");
+      shape.setAttribute("stroke", options.stroke || "#d84315");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+
+      if (options.showProperties) {
+        // Add parallel markers only for the parallel sides (top and bottom)
+        addParallelMarkers(svg, [
+          {
+            x1: centerX - topBase / 2,
+            y1: centerY - trapHeight / 2,
+            x2: centerX + topBase / 2,
+            y2: centerY - trapHeight / 2,
+          },
+          {
+            x1: centerX - bottomBase / 2,
+            y1: centerY + trapHeight / 2,
+            x2: centerX + bottomBase / 2,
+            y2: centerY + trapHeight / 2,
+          },
+        ]);
+      }
+      break;
+
+    case "quadrilateral":
+    default:
+      // General quadrilateral - any four-sided shape
+      points = `${centerX - 40},${centerY - 35} ${centerX + 50},${
+        centerY - 25
+      } ${centerX + 35},${centerY + 40} ${centerX - 45},${centerY + 30}`;
+
+      shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      shape.setAttribute("points", points);
+      shape.setAttribute("fill", options.fill || "#9c27b0");
+      shape.setAttribute("stroke", options.stroke || "#7b1fa2");
+      shape.setAttribute("stroke-width", options.strokeWidth || "3");
+      svg.appendChild(shape);
+      break;
+  }
+
+  container.appendChild(svg);
+}
+
+/**
+ * Helper function to add equal side markers to indicate equal lengths
+ * @param {SVGElement} svg - The SVG element
+ * @param {Array} sides - Array of side objects with x1, y1, x2, y2 coordinates
+ * @param {number} markType - Type of mark (1 for single tick, 2 for double tick, etc.)
+ */
+function addEqualSideMarkers(svg, sides, markType = 1) {
+  sides.forEach((side) => {
+    const midX = (side.x1 + side.x2) / 2;
+    const midY = (side.y1 + side.y2) / 2;
+    const angle = Math.atan2(side.y2 - side.y1, side.x2 - side.x1);
+    const perpAngle = angle + Math.PI / 2;
+    const markLength = 6;
+    const markSpacing = 3;
+
+    for (let i = 0; i < markType; i++) {
+      const offset = (i - (markType - 1) / 2) * markSpacing;
+      const startX =
+        midX +
+        offset * Math.cos(angle) -
+        (markLength / 2) * Math.cos(perpAngle);
+      const startY =
+        midY +
+        offset * Math.sin(angle) -
+        (markLength / 2) * Math.sin(perpAngle);
+      const endX =
+        midX +
+        offset * Math.cos(angle) +
+        (markLength / 2) * Math.cos(perpAngle);
+      const endY =
+        midY +
+        offset * Math.sin(angle) +
+        (markLength / 2) * Math.sin(perpAngle);
+
+      const tick = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line"
+      );
+      tick.setAttribute("x1", startX);
+      tick.setAttribute("y1", startY);
+      tick.setAttribute("x2", endX);
+      tick.setAttribute("y2", endY);
+      tick.setAttribute("stroke", "#333");
+      tick.setAttribute("stroke-width", "2");
+      svg.appendChild(tick);
+    }
+  });
+}
+
+/**
+ * Helper function to add parallel markers to indicate parallel sides
+ * @param {SVGElement} svg - The SVG element
+ * @param {Array} sides - Array of parallel side pairs
+ */
+function addParallelMarkers(svg, sides) {
+  sides.forEach((side, index) => {
+    const midX = (side.x1 + side.x2) / 2;
+    const midY = (side.y1 + side.y2) / 2;
+    const angle = Math.atan2(side.y2 - side.y1, side.x2 - side.x1);
+    const perpAngle = angle + Math.PI / 2;
+    const arrowSize = 8;
+
+    // Create small arrow markers to indicate parallel lines
+    const arrow = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polygon"
+    );
+    const arrowPoints = [
+      midX - (arrowSize / 2) * Math.cos(perpAngle),
+      midY - (arrowSize / 2) * Math.sin(perpAngle),
+      midX + (arrowSize / 2) * Math.cos(perpAngle),
+      midY + (arrowSize / 2) * Math.sin(perpAngle),
+      midX + (arrowSize / 4) * Math.cos(angle),
+      midY + (arrowSize / 4) * Math.sin(angle),
+    ].join(",");
+
+    arrow.setAttribute("points", arrowPoints);
+    arrow.setAttribute("fill", "#2196f3");
+    arrow.setAttribute("stroke", "#1976d2");
+    arrow.setAttribute("stroke-width", "1");
+    svg.appendChild(arrow);
+  });
+}
+
 // Export functions for use in HTML files
 window.geometricShapes = {
   createRectangleSVG,
@@ -1340,4 +1829,5 @@ window.geometricShapes = {
   createAngleSVG,
   createClassifiedTriangleSVG,
   createSymmetryDemoSVG,
+  createClassifiedQuadrilateralSVG,
 };

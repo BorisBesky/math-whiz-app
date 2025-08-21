@@ -745,7 +745,7 @@ function createAnimatedAreaDemo(containerId, width, height, options = {}) {
   border.setAttribute("stroke-width", "3");
   svg.appendChild(border);
 
-    container.appendChild(svg);
+  container.appendChild(svg);
 }
 
 /**
@@ -754,43 +754,49 @@ function createAnimatedAreaDemo(containerId, width, height, options = {}) {
  * @param {object} options - Styling options
  */
 function createPointSVG(containerId, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const svgSize = 150;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgSize);
-    svg.setAttribute('height', svgSize);
-    svg.setAttribute('viewBox', `0 0 ${svgSize} ${svgSize}`);
-    
-    const centerX = svgSize / 2;
-    const centerY = svgSize / 2;
-    
-    // Create point
-    const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    point.setAttribute('cx', centerX);
-    point.setAttribute('cy', centerY);
-    point.setAttribute('r', options.radius || '6');
-    point.setAttribute('fill', options.fill || '#333');
-    
-    svg.appendChild(point);
-    
-    // Add label if requested
-    if (options.showLabel) {
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', centerX + 15);
-        label.setAttribute('y', centerY - 10);
-        label.setAttribute('font-family', 'Comic Sans MS, sans-serif');
-        label.setAttribute('font-size', '14');
-        label.setAttribute('font-weight', 'bold');
-        label.setAttribute('fill', '#333');
-        label.textContent = options.label || 'P';
-        svg.appendChild(label);
-    }
-    
-    container.appendChild(svg);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 150;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+
+  // Create point
+  const point = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle"
+  );
+  point.setAttribute("cx", centerX);
+  point.setAttribute("cy", centerY);
+  point.setAttribute("r", options.radius || "6");
+  point.setAttribute("fill", options.fill || "#333");
+
+  svg.appendChild(point);
+
+  // Add label if requested
+  if (options.showLabel) {
+    const label = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    label.setAttribute("x", centerX + 15);
+    label.setAttribute("y", centerY - 10);
+    label.setAttribute("font-family", "Comic Sans MS, sans-serif");
+    label.setAttribute("font-size", "14");
+    label.setAttribute("font-weight", "bold");
+    label.setAttribute("fill", "#333");
+    label.textContent = options.label || "P";
+    svg.appendChild(label);
+  }
+
+  container.appendChild(svg);
 }
 
 /**
@@ -799,61 +805,83 @@ function createPointSVG(containerId, options = {}) {
  * @param {object} options - Styling options
  */
 function createLineSVG(containerId, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const svgSize = 200;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgSize);
-    svg.setAttribute('height', svgSize);
-    svg.setAttribute('viewBox', `0 0 ${svgSize} ${svgSize}`);
-    
-    const centerX = svgSize / 2;
-    const centerY = svgSize / 2;
-    const lineLength = 140;
-    
-    // Create line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', centerX - lineLength / 2);
-    line.setAttribute('y1', centerY);
-    line.setAttribute('x2', centerX + lineLength / 2);
-    line.setAttribute('y2', centerY);
-    line.setAttribute('stroke', options.stroke || '#2196f3');
-    line.setAttribute('stroke-width', options.strokeWidth || '3');
-    
-    svg.appendChild(line);
-    
-    // Add arrows at both ends to show infinite extension
-    const leftArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    leftArrow.setAttribute('points', `${centerX - lineLength / 2},${centerY} ${centerX - lineLength / 2 + 10},${centerY - 5} ${centerX - lineLength / 2 + 10},${centerY + 5}`);
-    leftArrow.setAttribute('fill', options.stroke || '#2196f3');
-    svg.appendChild(leftArrow);
-    
-    const rightArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    rightArrow.setAttribute('points', `${centerX + lineLength / 2},${centerY} ${centerX + lineLength / 2 - 10},${centerY - 5} ${centerX + lineLength / 2 - 10},${centerY + 5}`);
-    rightArrow.setAttribute('fill', options.stroke || '#2196f3');
-    svg.appendChild(rightArrow);
-    
-    // Add points on the line if requested
-    if (options.showPoints) {
-        const point1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        point1.setAttribute('cx', centerX - 30);
-        point1.setAttribute('cy', centerY);
-        point1.setAttribute('r', '4');
-        point1.setAttribute('fill', '#333');
-        svg.appendChild(point1);
-        
-        const point2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        point2.setAttribute('cx', centerX + 30);
-        point2.setAttribute('cy', centerY);
-        point2.setAttribute('r', '4');
-        point2.setAttribute('fill', '#333');
-        svg.appendChild(point2);
-    }
-    
-    container.appendChild(svg);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 200;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+  const lineLength = 140;
+
+  // Create line
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", centerX - lineLength / 2);
+  line.setAttribute("y1", centerY);
+  line.setAttribute("x2", centerX + lineLength / 2);
+  line.setAttribute("y2", centerY);
+  line.setAttribute("stroke", options.stroke || "#2196f3");
+  line.setAttribute("stroke-width", options.strokeWidth || "3");
+
+  svg.appendChild(line);
+
+  // Add arrows at both ends to show infinite extension
+  const leftArrow = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "polygon"
+  );
+  leftArrow.setAttribute(
+    "points",
+    `${centerX - lineLength / 2},${centerY} ${centerX - lineLength / 2 + 10},${
+      centerY - 5
+    } ${centerX - lineLength / 2 + 10},${centerY + 5}`
+  );
+  leftArrow.setAttribute("fill", options.stroke || "#2196f3");
+  svg.appendChild(leftArrow);
+
+  const rightArrow = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "polygon"
+  );
+  rightArrow.setAttribute(
+    "points",
+    `${centerX + lineLength / 2},${centerY} ${centerX + lineLength / 2 - 10},${
+      centerY - 5
+    } ${centerX + lineLength / 2 - 10},${centerY + 5}`
+  );
+  rightArrow.setAttribute("fill", options.stroke || "#2196f3");
+  svg.appendChild(rightArrow);
+
+  // Add points on the line if requested
+  if (options.showPoints) {
+    const point1 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle"
+    );
+    point1.setAttribute("cx", centerX - 30);
+    point1.setAttribute("cy", centerY);
+    point1.setAttribute("r", "4");
+    point1.setAttribute("fill", "#333");
+    svg.appendChild(point1);
+
+    const point2 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle"
+    );
+    point2.setAttribute("cx", centerX + 30);
+    point2.setAttribute("cy", centerY);
+    point2.setAttribute("r", "4");
+    point2.setAttribute("fill", "#333");
+    svg.appendChild(point2);
+  }
+
+  container.appendChild(svg);
 }
 
 /**
@@ -862,60 +890,74 @@ function createLineSVG(containerId, options = {}) {
  * @param {object} options - Styling options
  */
 function createRaySVG(containerId, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const svgSize = 200;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgSize);
-    svg.setAttribute('height', svgSize);
-    svg.setAttribute('viewBox', `0 0 ${svgSize} ${svgSize}`);
-    
-    const centerX = svgSize / 2;
-    const centerY = svgSize / 2;
-    const rayLength = 120;
-    
-    // Create ray
-    const ray = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    ray.setAttribute('x1', centerX - 40);
-    ray.setAttribute('y1', centerY);
-    ray.setAttribute('x2', centerX + rayLength);
-    ray.setAttribute('y2', centerY);
-    ray.setAttribute('stroke', options.stroke || '#ff9800');
-    ray.setAttribute('stroke-width', options.strokeWidth || '3');
-    
-    svg.appendChild(ray);
-    
-    // Add starting point
-    const startPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    startPoint.setAttribute('cx', centerX - 40);
-    startPoint.setAttribute('cy', centerY);
-    startPoint.setAttribute('r', '5');
-    startPoint.setAttribute('fill', '#333');
-    svg.appendChild(startPoint);
-    
-    // Add arrow at the end to show infinite extension
-    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    arrow.setAttribute('points', `${centerX + rayLength},${centerY} ${centerX + rayLength - 10},${centerY - 5} ${centerX + rayLength - 10},${centerY + 5}`);
-    arrow.setAttribute('fill', options.stroke || '#ff9800');
-    svg.appendChild(arrow);
-    
-    // Add label if requested
-    if (options.showLabel) {
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', centerX - 50);
-        label.setAttribute('y', centerY - 10);
-        label.setAttribute('font-family', 'Comic Sans MS, sans-serif');
-        label.setAttribute('font-size', '12');
-        label.setAttribute('font-weight', 'bold');
-        label.setAttribute('fill', '#333');
-        label.textContent = options.label || 'A';
-        svg.appendChild(label);
-    }
-    
-    container.appendChild(svg);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 200;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+  const rayLength = 120;
+
+  // Create ray
+  const ray = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  ray.setAttribute("x1", centerX - 40);
+  ray.setAttribute("y1", centerY);
+  ray.setAttribute("x2", centerX + rayLength);
+  ray.setAttribute("y2", centerY);
+  ray.setAttribute("stroke", options.stroke || "#ff9800");
+  ray.setAttribute("stroke-width", options.strokeWidth || "3");
+
+  svg.appendChild(ray);
+
+  // Add starting point
+  const startPoint = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle"
+  );
+  startPoint.setAttribute("cx", centerX - 40);
+  startPoint.setAttribute("cy", centerY);
+  startPoint.setAttribute("r", "5");
+  startPoint.setAttribute("fill", "#333");
+  svg.appendChild(startPoint);
+
+  // Add arrow at the end to show infinite extension
+  const arrow = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "polygon"
+  );
+  arrow.setAttribute(
+    "points",
+    `${centerX + rayLength},${centerY} ${centerX + rayLength - 10},${
+      centerY - 5
+    } ${centerX + rayLength - 10},${centerY + 5}`
+  );
+  arrow.setAttribute("fill", options.stroke || "#ff9800");
+  svg.appendChild(arrow);
+
+  // Add label if requested
+  if (options.showLabel) {
+    const label = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    label.setAttribute("x", centerX - 50);
+    label.setAttribute("y", centerY - 10);
+    label.setAttribute("font-family", "Comic Sans MS, sans-serif");
+    label.setAttribute("font-size", "12");
+    label.setAttribute("font-weight", "bold");
+    label.setAttribute("fill", "#333");
+    label.textContent = options.label || "A";
+    svg.appendChild(label);
+  }
+
+  container.appendChild(svg);
 }
 
 /**
@@ -925,88 +967,96 @@ function createRaySVG(containerId, options = {}) {
  * @param {object} options - Styling options
  */
 function createAngleSVG(containerId, angle = 45, options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const svgSize = 200;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgSize);
-    svg.setAttribute('height', svgSize);
-    svg.setAttribute('viewBox', `0 0 ${svgSize} ${svgSize}`);
-    
-    const centerX = svgSize / 2;
-    const centerY = svgSize / 2;
-    const rayLength = 80;
-    
-    // Create vertex point
-    const vertex = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    vertex.setAttribute('cx', centerX);
-    vertex.setAttribute('cy', centerY);
-    vertex.setAttribute('r', '4');
-    vertex.setAttribute('fill', '#333');
-    svg.appendChild(vertex);
-    
-    // Create first ray (horizontal)
-    const ray1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    ray1.setAttribute('x1', centerX);
-    ray1.setAttribute('y1', centerY);
-    ray1.setAttribute('x2', centerX + rayLength);
-    ray1.setAttribute('y2', centerY);
-    ray1.setAttribute('stroke', options.stroke || '#9c27b0');
-    ray1.setAttribute('stroke-width', options.strokeWidth || '3');
-    svg.appendChild(ray1);
-    
-    // Create second ray at specified angle
-    const angleRad = (angle * Math.PI) / 180;
-    const ray2X = centerX + rayLength * Math.cos(angleRad);
-    const ray2Y = centerY - rayLength * Math.sin(angleRad); // Negative because SVG Y increases downward
-    
-    const ray2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    ray2.setAttribute('x1', centerX);
-    ray2.setAttribute('y1', centerY);
-    ray2.setAttribute('x2', ray2X);
-    ray2.setAttribute('y2', ray2Y);
-    ray2.setAttribute('stroke', options.stroke || '#9c27b0');
-    ray2.setAttribute('stroke-width', options.strokeWidth || '3');
-    svg.appendChild(ray2);
-    
-    // Create angle arc
-    const arcRadius = 30;
-    const arcEndX = centerX + arcRadius * Math.cos(angleRad);
-    const arcEndY = centerY - arcRadius * Math.sin(angleRad);
-    
-    const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const largeArcFlag = angle > 180 ? 1 : 0;
-    const pathData = `M ${centerX + arcRadius} ${centerY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} 0 ${arcEndX} ${arcEndY}`;
-    arc.setAttribute('d', pathData);
-    arc.setAttribute('fill', 'none');
-    arc.setAttribute('stroke', options.arcStroke || '#e91e63');
-    arc.setAttribute('stroke-width', '2');
-    svg.appendChild(arc);
-    
-    // Add angle label if requested
-    if (options.showLabel) {
-        const labelRadius = arcRadius + 15;
-        const labelAngle = angle / 2;
-        const labelAngleRad = (labelAngle * Math.PI) / 180;
-        const labelX = centerX + labelRadius * Math.cos(labelAngleRad);
-        const labelY = centerY - labelRadius * Math.sin(labelAngleRad);
-        
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', labelX);
-        label.setAttribute('y', labelY + 4);
-        label.setAttribute('text-anchor', 'middle');
-        label.setAttribute('font-family', 'Comic Sans MS, sans-serif');
-        label.setAttribute('font-size', '12');
-        label.setAttribute('font-weight', 'bold');
-        label.setAttribute('fill', '#333');
-        label.textContent = `${angle}°`;
-        svg.appendChild(label);
-    }
-    
-    container.appendChild(svg);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 200;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+  const rayLength = 80;
+
+  // Create vertex point
+  const vertex = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle"
+  );
+  vertex.setAttribute("cx", centerX);
+  vertex.setAttribute("cy", centerY);
+  vertex.setAttribute("r", "4");
+  vertex.setAttribute("fill", "#333");
+  svg.appendChild(vertex);
+
+  // Create first ray (horizontal)
+  const ray1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  ray1.setAttribute("x1", centerX);
+  ray1.setAttribute("y1", centerY);
+  ray1.setAttribute("x2", centerX + rayLength);
+  ray1.setAttribute("y2", centerY);
+  ray1.setAttribute("stroke", options.stroke || "#9c27b0");
+  ray1.setAttribute("stroke-width", options.strokeWidth || "3");
+  svg.appendChild(ray1);
+
+  // Create second ray at specified angle
+  const angleRad = (angle * Math.PI) / 180;
+  const ray2X = centerX + rayLength * Math.cos(angleRad);
+  const ray2Y = centerY - rayLength * Math.sin(angleRad); // Negative because SVG Y increases downward
+
+  const ray2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  ray2.setAttribute("x1", centerX);
+  ray2.setAttribute("y1", centerY);
+  ray2.setAttribute("x2", ray2X);
+  ray2.setAttribute("y2", ray2Y);
+  ray2.setAttribute("stroke", options.stroke || "#9c27b0");
+  ray2.setAttribute("stroke-width", options.strokeWidth || "3");
+  svg.appendChild(ray2);
+
+  // Create angle arc
+  const arcRadius = 30;
+  const arcEndX = centerX + arcRadius * Math.cos(angleRad);
+  const arcEndY = centerY - arcRadius * Math.sin(angleRad);
+
+  const arc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  const largeArcFlag = angle > 180 ? 1 : 0;
+  const pathData = `M ${
+    centerX + arcRadius
+  } ${centerY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} 0 ${arcEndX} ${arcEndY}`;
+  arc.setAttribute("d", pathData);
+  arc.setAttribute("fill", "none");
+  arc.setAttribute("stroke", options.arcStroke || "#e91e63");
+  arc.setAttribute("stroke-width", "2");
+  svg.appendChild(arc);
+
+  // Add angle label if requested
+  if (options.showLabel) {
+    const labelRadius = arcRadius + 15;
+    const labelAngle = angle / 2;
+    const labelAngleRad = (labelAngle * Math.PI) / 180;
+    const labelX = centerX + labelRadius * Math.cos(labelAngleRad);
+    const labelY = centerY - labelRadius * Math.sin(labelAngleRad);
+
+    const label = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+    label.setAttribute("x", labelX);
+    label.setAttribute("y", labelY + 4);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-family", "Comic Sans MS, sans-serif");
+    label.setAttribute("font-size", "12");
+    label.setAttribute("font-weight", "bold");
+    label.setAttribute("fill", "#333");
+    label.textContent = `${angle}°`;
+    svg.appendChild(label);
+  }
+
+  container.appendChild(svg);
 }
 
 /**
@@ -1015,7 +1065,269 @@ function createAngleSVG(containerId, angle = 45, options = {}) {
  * @param {string} type - Triangle type: 'equilateral', 'isosceles', 'scalene', 'right', 'acute', 'obtuse'
  * @param {object} options - Styling options
  */
-function createClassifiedTriangleSVG(containerId, type = 'equilateral', options = {}) {
+function createClassifiedTriangleSVG(
+  containerId,
+  type = "equilateral",
+  options = {}
+) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 180;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+
+  let points = "";
+
+  switch (type) {
+    case "equilateral":
+      // Equilateral triangle
+      const size = 60;
+      const height = (size * Math.sqrt(3)) / 2;
+      points = `${centerX},${centerY - (height * 2) / 3} ${
+        centerX - size / 2
+      },${centerY + height / 3} ${centerX + size / 2},${centerY + height / 3}`;
+      break;
+    case "isosceles":
+      // Isosceles triangle
+      points = `${centerX},${centerY - 50} ${centerX - 40},${centerY + 30} ${
+        centerX + 40
+      },${centerY + 30}`;
+      break;
+    case "scalene":
+      // Scalene triangle (all sides different)
+      points = `${centerX - 10},${centerY - 40} ${centerX - 50},${
+        centerY + 30
+      } ${centerX + 45},${centerY + 25}`;
+      break;
+    case "right":
+      // Right triangle
+      points = `${centerX - 40},${centerY - 40} ${centerX - 40},${
+        centerY + 30
+      } ${centerX + 30},${centerY + 30}`;
+      break;
+    case "acute":
+      // Acute triangle (all angles < 90°)
+      points = `${centerX},${centerY - 35} ${centerX - 35},${centerY + 25} ${
+        centerX + 35
+      },${centerY + 25}`;
+      break;
+    case "obtuse":
+      // Obtuse triangle (one angle > 90°)
+      points = `${centerX - 10},${centerY - 20} ${centerX - 55},${
+        centerY + 35
+      } ${centerX + 45},${centerY + 35}`;
+      break;
+    default:
+      points = `${centerX},${centerY - 40} ${centerX - 35},${centerY + 25} ${
+        centerX + 35
+      },${centerY + 25}`;
+  }
+
+  // Create triangle
+  const triangle = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "polygon"
+  );
+  triangle.setAttribute("points", points);
+  triangle.setAttribute("fill", options.fill || "#9c27b0");
+  triangle.setAttribute("stroke", options.stroke || "#7b1fa2");
+  triangle.setAttribute("stroke-width", options.strokeWidth || "3");
+
+  svg.appendChild(triangle);
+
+  // Add right angle marker for right triangles
+  if (type === "right") {
+    const rightAngleMarker = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    rightAngleMarker.setAttribute(
+      "d",
+      `M ${centerX - 40} ${centerY + 20} L ${centerX - 30} ${centerY + 20} L ${
+        centerX - 30
+      } ${centerY + 30}`
+    );
+    rightAngleMarker.setAttribute("fill", "none");
+    rightAngleMarker.setAttribute("stroke", "#ff0000");
+    rightAngleMarker.setAttribute("stroke-width", "2");
+    svg.appendChild(rightAngleMarker);
+  }
+
+  // Add equal side markers for equilateral and isosceles
+  if (type === "equilateral" || type === "isosceles") {
+    // Add tick marks to show equal sides
+    // This is a simplified representation - in a full implementation you'd calculate the actual midpoints
+    const tickLength = 5;
+
+    if (type === "equilateral") {
+      // Add three tick marks for three equal sides
+      for (let i = 0; i < 3; i++) {
+        const tick = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        // Simplified positioning for demonstration
+        svg.appendChild(tick);
+      }
+    }
+  }
+
+  container.appendChild(svg);
+}
+
+/**
+ * Creates symmetry line demonstration for shapes
+ * @param {string} containerId - The ID of the container element
+ * @param {string} shapeType - Type of shape: 'square', 'circle', 'butterfly', 'triangle'
+ * @param {object} options - Styling options
+ */
+function createSymmetryDemoSVG(
+  containerId,
+  shapeType = "square",
+  options = {}
+) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 180;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+
+  // Create the shape first
+  switch (shapeType) {
+    case "square":
+      const square = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect"
+      );
+      square.setAttribute("x", centerX - 40);
+      square.setAttribute("y", centerY - 40);
+      square.setAttribute("width", 80);
+      square.setAttribute("height", 80);
+      square.setAttribute("fill", options.fill || "#ff9800");
+      square.setAttribute("stroke", options.stroke || "#f57c00");
+      square.setAttribute("stroke-width", "2");
+      svg.appendChild(square);
+
+      // Add symmetry lines for square (4 lines)
+      const lines = [
+        `M ${centerX} ${centerY - 50} L ${centerX} ${centerY + 50}`, // Vertical
+        `M ${centerX - 50} ${centerY} L ${centerX + 50} ${centerY}`, // Horizontal
+        `M ${centerX - 45} ${centerY - 45} L ${centerX + 45} ${centerY + 45}`, // Diagonal 1
+        `M ${centerX - 45} ${centerY + 45} L ${centerX + 45} ${centerY - 45}`, // Diagonal 2
+      ];
+
+      lines.forEach((pathData) => {
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        line.setAttribute("d", pathData);
+        line.setAttribute("stroke", "#e91e63");
+        line.setAttribute("stroke-width", "2");
+        line.setAttribute("stroke-dasharray", "5,5");
+        svg.appendChild(line);
+      });
+      break;
+
+    case "circle":
+      const circle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+      circle.setAttribute("cx", centerX);
+      circle.setAttribute("cy", centerY);
+      circle.setAttribute("r", 45);
+      circle.setAttribute("fill", options.fill || "#4caf50");
+      circle.setAttribute("stroke", options.stroke || "#388e3c");
+      circle.setAttribute("stroke-width", "2");
+      svg.appendChild(circle);
+
+      // Add a few symmetry lines for circle (representing infinite lines)
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * 30 * Math.PI) / 180;
+        const x1 = centerX - 50 * Math.cos(angle);
+        const y1 = centerY - 50 * Math.sin(angle);
+        const x2 = centerX + 50 * Math.cos(angle);
+        const y2 = centerY + 50 * Math.sin(angle);
+
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", "#e91e63");
+        line.setAttribute("stroke-width", "1");
+        line.setAttribute("stroke-dasharray", "3,3");
+        svg.appendChild(line);
+      }
+      break;
+
+    case "butterfly":
+      // Simple butterfly shape using paths
+      const butterfly = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
+      butterfly.setAttribute(
+        "d",
+        `M ${centerX} ${centerY - 30} Q ${centerX - 25} ${centerY - 10} ${
+          centerX - 15
+        } ${centerY + 10} Q ${centerX - 30} ${centerY + 20} ${centerX} ${
+          centerY + 30
+        } Q ${centerX + 30} ${centerY + 20} ${centerX + 15} ${centerY + 10} Q ${
+          centerX + 25
+        } ${centerY - 10} ${centerX} ${centerY - 30}`
+      );
+      butterfly.setAttribute("fill", options.fill || "#9c27b0");
+      butterfly.setAttribute("stroke", options.stroke || "#7b1fa2");
+      butterfly.setAttribute("stroke-width", "2");
+      svg.appendChild(butterfly);
+
+      // Add vertical symmetry line
+      const butterflyLine = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line"
+      );
+      butterflyLine.setAttribute("x1", centerX);
+      butterflyLine.setAttribute("y1", centerY - 40);
+      butterflyLine.setAttribute("x2", centerX);
+      butterflyLine.setAttribute("y2", centerY + 40);
+      butterflyLine.setAttribute("stroke", "#e91e63");
+      butterflyLine.setAttribute("stroke-width", "2");
+      butterflyLine.setAttribute("stroke-dasharray", "5,5");
+      svg.appendChild(butterflyLine);
+      break;
+  }
+
+  container.appendChild(svg);
+}
+
+/**
+ * Creates an SVG quadrilateral with classification features and property annotations
+ * @param {string} containerId - The ID of the container element
+ * @param {string} type - Quadrilateral type: 'square', 'rectangle', 'rhombus', 'parallelogram', 'trapezoid', 'quadrilateral'
+ * @param {object} options - Styling options
+ */
+function createClassifiedQuadrilateralSVG(containerId, type = 'square', options = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
@@ -1031,181 +1343,283 @@ function createClassifiedTriangleSVG(containerId, type = 'equilateral', options 
     const centerY = svgSize / 2;
     
     let points = '';
+    let shape = null;
     
     switch (type) {
-        case 'equilateral':
-            // Equilateral triangle
-            const size = 60;
-            const height = size * Math.sqrt(3) / 2;
-            points = `${centerX},${centerY - height * 2/3} ${centerX - size/2},${centerY + height/3} ${centerX + size/2},${centerY + height/3}`;
-            break;
-        case 'isosceles':
-            // Isosceles triangle
-            points = `${centerX},${centerY - 50} ${centerX - 40},${centerY + 30} ${centerX + 40},${centerY + 30}`;
-            break;
-        case 'scalene':
-            // Scalene triangle (all sides different)
-            points = `${centerX - 10},${centerY - 40} ${centerX - 50},${centerY + 30} ${centerX + 45},${centerY + 25}`;
-            break;
-        case 'right':
-            // Right triangle
-            points = `${centerX - 40},${centerY - 40} ${centerX - 40},${centerY + 30} ${centerX + 30},${centerY + 30}`;
-            break;
-        case 'acute':
-            // Acute triangle (all angles < 90°)
-            points = `${centerX},${centerY - 35} ${centerX - 35},${centerY + 25} ${centerX + 35},${centerY + 25}`;
-            break;
-        case 'obtuse':
-            // Obtuse triangle (one angle > 90°)
-            points = `${centerX - 10},${centerY - 20} ${centerX - 55},${centerY + 35} ${centerX + 45},${centerY + 35}`;
-            break;
-        default:
-            points = `${centerX},${centerY - 40} ${centerX - 35},${centerY + 25} ${centerX + 35},${centerY + 25}`;
-    }
-    
-    // Create triangle
-    const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    triangle.setAttribute('points', points);
-    triangle.setAttribute('fill', options.fill || '#9c27b0');
-    triangle.setAttribute('stroke', options.stroke || '#7b1fa2');
-    triangle.setAttribute('stroke-width', options.strokeWidth || '3');
-    
-    svg.appendChild(triangle);
-    
-    // Add right angle marker for right triangles
-    if (type === 'right') {
-        const rightAngleMarker = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        rightAngleMarker.setAttribute('d', `M ${centerX - 40} ${centerY + 20} L ${centerX - 30} ${centerY + 20} L ${centerX - 30} ${centerY + 30}`);
-        rightAngleMarker.setAttribute('fill', 'none');
-        rightAngleMarker.setAttribute('stroke', '#ff0000');
-        rightAngleMarker.setAttribute('stroke-width', '2');
-        svg.appendChild(rightAngleMarker);
-    }
-    
-    // Add equal side markers for equilateral and isosceles
-    if (type === 'equilateral' || type === 'isosceles') {
-        // Add tick marks to show equal sides
-        // This is a simplified representation - in a full implementation you'd calculate the actual midpoints
-        const tickLength = 5;
-        
-        if (type === 'equilateral') {
-            // Add three tick marks for three equal sides
-            for (let i = 0; i < 3; i++) {
-                const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                // Simplified positioning for demonstration
-                svg.appendChild(tick);
+        case 'square':
+            // Square - all sides equal, all angles 90°
+            const squareSize = 70;
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            shape.setAttribute('x', centerX - squareSize / 2);
+            shape.setAttribute('y', centerY - squareSize / 2);
+            shape.setAttribute('width', squareSize);
+            shape.setAttribute('height', squareSize);
+            shape.setAttribute('fill', options.fill || '#ff9800');
+            shape.setAttribute('stroke', options.stroke || '#f57c00');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            
+            // Add right angle markers for square
+            if (options.showProperties) {
+                const corners = [
+                    {x: centerX - squareSize / 2, y: centerY - squareSize / 2}, // top-left
+                    {x: centerX + squareSize / 2, y: centerY - squareSize / 2}, // top-right
+                    {x: centerX + squareSize / 2, y: centerY + squareSize / 2}, // bottom-right
+                    {x: centerX - squareSize / 2, y: centerY + squareSize / 2}  // bottom-left
+                ];
+                
+                corners.forEach(corner => {
+                    const rightAngle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const size = 8;
+                    let d = '';
+                    
+                    if (corner.x < centerX && corner.y < centerY) { // top-left
+                        d = `M ${corner.x} ${corner.y + size} L ${corner.x + size} ${corner.y + size} L ${corner.x + size} ${corner.y}`;
+                    } else if (corner.x > centerX && corner.y < centerY) { // top-right
+                        d = `M ${corner.x - size} ${corner.y} L ${corner.x - size} ${corner.y + size} L ${corner.x} ${corner.y + size}`;
+                    } else if (corner.x > centerX && corner.y > centerY) { // bottom-right
+                        d = `M ${corner.x} ${corner.y - size} L ${corner.x - size} ${corner.y - size} L ${corner.x - size} ${corner.y}`;
+                    } else { // bottom-left
+                        d = `M ${corner.x + size} ${corner.y} L ${corner.x + size} ${corner.y - size} L ${corner.x} ${corner.y - size}`;
+                    }
+                    
+                    rightAngle.setAttribute('d', d);
+                    rightAngle.setAttribute('fill', 'none');
+                    rightAngle.setAttribute('stroke', '#e91e63');
+                    rightAngle.setAttribute('stroke-width', '2');
+                    svg.appendChild(rightAngle);
+                });
+                
+                // Add equal side markers
+                addEqualSideMarkers(svg, [
+                    {x1: centerX - squareSize / 2, y1: centerY - squareSize / 2, x2: centerX + squareSize / 2, y2: centerY - squareSize / 2}, // top
+                    {x1: centerX + squareSize / 2, y1: centerY - squareSize / 2, x2: centerX + squareSize / 2, y2: centerY + squareSize / 2}, // right
+                    {x1: centerX + squareSize / 2, y1: centerY + squareSize / 2, x2: centerX - squareSize / 2, y2: centerY + squareSize / 2}, // bottom
+                    {x1: centerX - squareSize / 2, y1: centerY + squareSize / 2, x2: centerX - squareSize / 2, y2: centerY - squareSize / 2}  // left
+                ], 1); // All sides equal
             }
-        }
+            break;
+            
+        case 'rectangle':
+            // Rectangle - opposite sides equal, all angles 90°
+            const rectWidth = 90;
+            const rectHeight = 60;
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            shape.setAttribute('x', centerX - rectWidth / 2);
+            shape.setAttribute('y', centerY - rectHeight / 2);
+            shape.setAttribute('width', rectWidth);
+            shape.setAttribute('height', rectHeight);
+            shape.setAttribute('fill', options.fill || '#4ecdc4');
+            shape.setAttribute('stroke', options.stroke || '#26a69a');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            
+            if (options.showProperties) {
+                // Add right angle markers at corners
+                const corners = [
+                    {x: centerX - rectWidth / 2, y: centerY - rectHeight / 2},
+                    {x: centerX + rectWidth / 2, y: centerY - rectHeight / 2},
+                    {x: centerX + rectWidth / 2, y: centerY + rectHeight / 2},
+                    {x: centerX - rectWidth / 2, y: centerY + rectHeight / 2}
+                ];
+                
+                corners.forEach(corner => {
+                    const rightAngle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const size = 6;
+                    let d = '';
+                    
+                    if (corner.x < centerX && corner.y < centerY) {
+                        d = `M ${corner.x} ${corner.y + size} L ${corner.x + size} ${corner.y + size} L ${corner.x + size} ${corner.y}`;
+                    } else if (corner.x > centerX && corner.y < centerY) {
+                        d = `M ${corner.x - size} ${corner.y} L ${corner.x - size} ${corner.y + size} L ${corner.x} ${corner.y + size}`;
+                    } else if (corner.x > centerX && corner.y > centerY) {
+                        d = `M ${corner.x} ${corner.y - size} L ${corner.x - size} ${corner.y - size} L ${corner.x - size} ${corner.y}`;
+                    } else {
+                        d = `M ${corner.x + size} ${corner.y} L ${corner.x + size} ${corner.y - size} L ${corner.x} ${corner.y - size}`;
+                    }
+                    
+                    rightAngle.setAttribute('d', d);
+                    rightAngle.setAttribute('fill', 'none');
+                    rightAngle.setAttribute('stroke', '#e91e63');
+                    rightAngle.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(rightAngle);
+                });
+                
+                // Add equal side markers for opposite sides
+                addEqualSideMarkers(svg, [
+                    {x1: centerX - rectWidth / 2, y1: centerY - rectHeight / 2, x2: centerX + rectWidth / 2, y2: centerY - rectHeight / 2}, // top
+                    {x1: centerX + rectWidth / 2, y1: centerY + rectHeight / 2, x2: centerX - rectWidth / 2, y2: centerY + rectHeight / 2}  // bottom
+                ], 1);
+                
+                addEqualSideMarkers(svg, [
+                    {x1: centerX + rectWidth / 2, y1: centerY - rectHeight / 2, x2: centerX + rectWidth / 2, y2: centerY + rectHeight / 2}, // right
+                    {x1: centerX - rectWidth / 2, y1: centerY + rectHeight / 2, x2: centerX - rectWidth / 2, y2: centerY - rectHeight / 2}  // left
+                ], 2);
+            }
+            break;
+            
+        case 'rhombus':
+            // Rhombus - all sides equal, opposite angles equal
+            const rhombusWidth = 80;
+            const rhombusHeight = 100;
+            points = `${centerX},${centerY - rhombusHeight / 2} ${centerX + rhombusWidth / 2},${centerY} ${centerX},${centerY + rhombusHeight / 2} ${centerX - rhombusWidth / 2},${centerY}`;
+            
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            shape.setAttribute('points', points);
+            shape.setAttribute('fill', options.fill || '#8bc34a');
+            shape.setAttribute('stroke', options.stroke || '#689f38');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            
+            if (options.showProperties) {
+                // Add equal side markers for all sides
+                addEqualSideMarkers(svg, [
+                    {x1: centerX, y1: centerY - rhombusHeight / 2, x2: centerX + rhombusWidth / 2, y2: centerY}, // top-right
+                    {x1: centerX + rhombusWidth / 2, y1: centerY, x2: centerX, y2: centerY + rhombusHeight / 2}, // bottom-right
+                    {x1: centerX, y1: centerY + rhombusHeight / 2, x2: centerX - rhombusWidth / 2, y2: centerY}, // bottom-left
+                    {x1: centerX - rhombusWidth / 2, y1: centerY, x2: centerX, y2: centerY - rhombusHeight / 2}  // top-left
+                ], 1);
+            }
+            break;
+            
+        case 'parallelogram':
+            // Parallelogram - opposite sides equal and parallel
+            const paraWidth = 90;
+            const paraHeight = 60;
+            const skew = 25;
+            points = `${centerX - paraWidth / 2 + skew / 2},${centerY - paraHeight / 2} ${centerX + paraWidth / 2 + skew / 2},${centerY - paraHeight / 2} ${centerX + paraWidth / 2 - skew / 2},${centerY + paraHeight / 2} ${centerX - paraWidth / 2 - skew / 2},${centerY + paraHeight / 2}`;
+            
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            shape.setAttribute('points', points);
+            shape.setAttribute('fill', options.fill || '#607d8b');
+            shape.setAttribute('stroke', options.stroke || '#455a64');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            
+            if (options.showProperties) {
+                // Add equal side markers for opposite sides
+                addEqualSideMarkers(svg, [
+                    {x1: centerX - paraWidth / 2 + skew / 2, y1: centerY - paraHeight / 2, x2: centerX + paraWidth / 2 + skew / 2, y2: centerY - paraHeight / 2}, // top
+                    {x1: centerX + paraWidth / 2 - skew / 2, y1: centerY + paraHeight / 2, x2: centerX - paraWidth / 2 - skew / 2, y2: centerY + paraHeight / 2}  // bottom
+                ], 1);
+                
+                addEqualSideMarkers(svg, [
+                    {x1: centerX + paraWidth / 2 + skew / 2, y1: centerY - paraHeight / 2, x2: centerX + paraWidth / 2 - skew / 2, y2: centerY + paraHeight / 2}, // right
+                    {x1: centerX - paraWidth / 2 - skew / 2, y1: centerY + paraHeight / 2, x2: centerX - paraWidth / 2 + skew / 2, y2: centerY - paraHeight / 2}  // left
+                ], 2);
+                
+                // Add parallel markers
+                addParallelMarkers(svg, [
+                    {x1: centerX - paraWidth / 2 + skew / 2, y1: centerY - paraHeight / 2, x2: centerX + paraWidth / 2 + skew / 2, y2: centerY - paraHeight / 2},
+                    {x1: centerX - paraWidth / 2 - skew / 2, y1: centerY + paraHeight / 2, x2: centerX + paraWidth / 2 - skew / 2, y2: centerY + paraHeight / 2}
+                ]);
+            }
+            break;
+            
+        case 'trapezoid':
+            // Trapezoid - exactly one pair of parallel sides
+            const topBase = 60;
+            const bottomBase = 100;
+            const trapHeight = 70;
+            points = `${centerX - topBase / 2},${centerY - trapHeight / 2} ${centerX + topBase / 2},${centerY - trapHeight / 2} ${centerX + bottomBase / 2},${centerY + trapHeight / 2} ${centerX - bottomBase / 2},${centerY + trapHeight / 2}`;
+            
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            shape.setAttribute('points', points);
+            shape.setAttribute('fill', options.fill || '#ff5722');
+            shape.setAttribute('stroke', options.stroke || '#d84315');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            
+            if (options.showProperties) {
+                // Add parallel markers only for the parallel sides (top and bottom)
+                addParallelMarkers(svg, [
+                    {x1: centerX - topBase / 2, y1: centerY - trapHeight / 2, x2: centerX + topBase / 2, y2: centerY - trapHeight / 2},
+                    {x1: centerX - bottomBase / 2, y1: centerY + trapHeight / 2, x2: centerX + bottomBase / 2, y2: centerY + trapHeight / 2}
+                ]);
+            }
+            break;
+            
+        case 'quadrilateral':
+        default:
+            // General quadrilateral - any four-sided shape
+            points = `${centerX - 40},${centerY - 35} ${centerX + 50},${centerY - 25} ${centerX + 35},${centerY + 40} ${centerX - 45},${centerY + 30}`;
+            
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            shape.setAttribute('points', points);
+            shape.setAttribute('fill', options.fill || '#9c27b0');
+            shape.setAttribute('stroke', options.stroke || '#7b1fa2');
+            shape.setAttribute('stroke-width', options.strokeWidth || '3');
+            svg.appendChild(shape);
+            break;
     }
     
     container.appendChild(svg);
 }
 
 /**
- * Creates symmetry line demonstration for shapes
- * @param {string} containerId - The ID of the container element
- * @param {string} shapeType - Type of shape: 'square', 'circle', 'butterfly', 'triangle'
- * @param {object} options - Styling options
+ * Helper function to add equal side markers to indicate equal lengths
+ * @param {SVGElement} svg - The SVG element
+ * @param {Array} sides - Array of side objects with x1, y1, x2, y2 coordinates
+ * @param {number} markType - Type of mark (1 for single tick, 2 for double tick, etc.)
  */
-function createSymmetryDemoSVG(containerId, shapeType = 'square', options = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const svgSize = 180;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgSize);
-    svg.setAttribute('height', svgSize);
-    svg.setAttribute('viewBox', `0 0 ${svgSize} ${svgSize}`);
-    
-    const centerX = svgSize / 2;
-    const centerY = svgSize / 2;
-    
-    // Create the shape first
-    switch (shapeType) {
-        case 'square':
-            const square = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            square.setAttribute('x', centerX - 40);
-            square.setAttribute('y', centerY - 40);
-            square.setAttribute('width', 80);
-            square.setAttribute('height', 80);
-            square.setAttribute('fill', options.fill || '#ff9800');
-            square.setAttribute('stroke', options.stroke || '#f57c00');
-            square.setAttribute('stroke-width', '2');
-            svg.appendChild(square);
+function addEqualSideMarkers(svg, sides, markType = 1) {
+    sides.forEach(side => {
+        const midX = (side.x1 + side.x2) / 2;
+        const midY = (side.y1 + side.y2) / 2;
+        const angle = Math.atan2(side.y2 - side.y1, side.x2 - side.x1);
+        const perpAngle = angle + Math.PI / 2;
+        const markLength = 6;
+        const markSpacing = 3;
+        
+        for (let i = 0; i < markType; i++) {
+            const offset = (i - (markType - 1) / 2) * markSpacing;
+            const startX = midX + offset * Math.cos(angle) - markLength / 2 * Math.cos(perpAngle);
+            const startY = midY + offset * Math.sin(angle) - markLength / 2 * Math.sin(perpAngle);
+            const endX = midX + offset * Math.cos(angle) + markLength / 2 * Math.cos(perpAngle);
+            const endY = midY + offset * Math.sin(angle) + markLength / 2 * Math.sin(perpAngle);
             
-            // Add symmetry lines for square (4 lines)
-            const lines = [
-                `M ${centerX} ${centerY - 50} L ${centerX} ${centerY + 50}`, // Vertical
-                `M ${centerX - 50} ${centerY} L ${centerX + 50} ${centerY}`, // Horizontal
-                `M ${centerX - 45} ${centerY - 45} L ${centerX + 45} ${centerY + 45}`, // Diagonal 1
-                `M ${centerX - 45} ${centerY + 45} L ${centerX + 45} ${centerY - 45}`  // Diagonal 2
-            ];
-            
-            lines.forEach(pathData => {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                line.setAttribute('d', pathData);
-                line.setAttribute('stroke', '#e91e63');
-                line.setAttribute('stroke-width', '2');
-                line.setAttribute('stroke-dasharray', '5,5');
-                svg.appendChild(line);
-            });
-            break;
-            
-        case 'circle':
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', centerX);
-            circle.setAttribute('cy', centerY);
-            circle.setAttribute('r', 45);
-            circle.setAttribute('fill', options.fill || '#4caf50');
-            circle.setAttribute('stroke', options.stroke || '#388e3c');
-            circle.setAttribute('stroke-width', '2');
-            svg.appendChild(circle);
-            
-            // Add a few symmetry lines for circle (representing infinite lines)
-            for (let i = 0; i < 6; i++) {
-                const angle = (i * 30) * Math.PI / 180;
-                const x1 = centerX - 50 * Math.cos(angle);
-                const y1 = centerY - 50 * Math.sin(angle);
-                const x2 = centerX + 50 * Math.cos(angle);
-                const y2 = centerY + 50 * Math.sin(angle);
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', x1);
-                line.setAttribute('y1', y1);
-                line.setAttribute('x2', x2);
-                line.setAttribute('y2', y2);
-                line.setAttribute('stroke', '#e91e63');
-                line.setAttribute('stroke-width', '1');
-                line.setAttribute('stroke-dasharray', '3,3');
-                svg.appendChild(line);
-            }
-            break;
-            
-        case 'butterfly':
-            // Simple butterfly shape using paths
-            const butterfly = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            butterfly.setAttribute('d', `M ${centerX} ${centerY - 30} Q ${centerX - 25} ${centerY - 10} ${centerX - 15} ${centerY + 10} Q ${centerX - 30} ${centerY + 20} ${centerX} ${centerY + 30} Q ${centerX + 30} ${centerY + 20} ${centerX + 15} ${centerY + 10} Q ${centerX + 25} ${centerY - 10} ${centerX} ${centerY - 30}`);
-            butterfly.setAttribute('fill', options.fill || '#9c27b0');
-            butterfly.setAttribute('stroke', options.stroke || '#7b1fa2');
-            butterfly.setAttribute('stroke-width', '2');
-            svg.appendChild(butterfly);
-            
-            // Add vertical symmetry line
-            const butterflyLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            butterflyLine.setAttribute('x1', centerX);
-            butterflyLine.setAttribute('y1', centerY - 40);
-            butterflyLine.setAttribute('x2', centerX);
-            butterflyLine.setAttribute('y2', centerY + 40);
-            butterflyLine.setAttribute('stroke', '#e91e63');
-            butterflyLine.setAttribute('stroke-width', '2');
-            butterflyLine.setAttribute('stroke-dasharray', '5,5');
-            svg.appendChild(butterflyLine);
-            break;
-    }
-    
-    container.appendChild(svg);
+            const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tick.setAttribute('x1', startX);
+            tick.setAttribute('y1', startY);
+            tick.setAttribute('x2', endX);
+            tick.setAttribute('y2', endY);
+            tick.setAttribute('stroke', '#333');
+            tick.setAttribute('stroke-width', '2');
+            svg.appendChild(tick);
+        }
+    });
+}
+
+/**
+ * Helper function to add parallel markers to indicate parallel sides
+ * @param {SVGElement} svg - The SVG element
+ * @param {Array} sides - Array of parallel side pairs
+ */
+function addParallelMarkers(svg, sides) {
+    sides.forEach((side, index) => {
+        const midX = (side.x1 + side.x2) / 2;
+        const midY = (side.y1 + side.y2) / 2;
+        const angle = Math.atan2(side.y2 - side.y1, side.x2 - side.x1);
+        const perpAngle = angle + Math.PI / 2;
+        const arrowSize = 8;
+        
+        // Create small arrow markers to indicate parallel lines
+        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        const arrowPoints = [
+            midX - arrowSize / 2 * Math.cos(perpAngle),
+            midY - arrowSize / 2 * Math.sin(perpAngle),
+            midX + arrowSize / 2 * Math.cos(perpAngle),
+            midY + arrowSize / 2 * Math.sin(perpAngle),
+            midX + arrowSize / 4 * Math.cos(angle),
+            midY + arrowSize / 4 * Math.sin(angle)
+        ].join(',');
+        
+        arrow.setAttribute('points', arrowPoints);
+        arrow.setAttribute('fill', '#2196f3');
+        arrow.setAttribute('stroke', '#1976d2');
+        arrow.setAttribute('stroke-width', '1');
+        svg.appendChild(arrow);
+    });
 }
 
 // Export functions for use in HTML files
@@ -1227,4 +1641,5 @@ window.geometricShapes = {
   createAngleSVG,
   createClassifiedTriangleSVG,
   createSymmetryDemoSVG,
+  createClassifiedQuadrilateralSVG,
 };
