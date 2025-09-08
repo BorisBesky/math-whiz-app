@@ -1,5 +1,6 @@
 // 4th Grade Topics Configuration
 import geometry from './geometry';
+import operationsAlgebraicThinking from './operations-algebraic-thinking';
 
 export const grade4 = {
   id: 'g4',
@@ -8,8 +9,8 @@ export const grade4 = {
   
   topics: [
     geometry,
+    operationsAlgebraicThinking,
     // Additional topics will be added here as they are migrated
-    // operationsAlgebraicThinking,
     // baseTen,
     // fractions4th,
     // measurementData4th,

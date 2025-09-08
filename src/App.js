@@ -638,96 +638,33 @@ const generateQuizQuestions = (
 
       // 4th Grade Topics
       case TOPICS.OPERATIONS_ALGEBRAIC_THINKING:
-        const oaType = getRandomInt(1, 3);
-        switch (oaType) {
-          case 1: // Multiplicative comparisons (4.OA.1)
-            const base = getRandomInt(2, 8);
-            const multiplier_comp = getRandomInt(2, 6);
-            const result = base * multiplier_comp;
+        // Use the new pluggable content system for Operations & Algebraic Thinking
+        const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
+        if (oaTopic) {
+          question = oaTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
+        } else {
+          // Fallback to old logic if the new system isn't available
+          const base = getRandomInt(2, 8);
+          const multiplier = getRandomInt(2, 6);
+          const result = base * multiplier;
 
-            question = {
-              question: `Sarah has ${base} stickers. Tom has ${multiplier_comp} times as many stickers as Sarah. How many stickers does Tom have?`,
-              correctAnswer: result.toString(),
-              options: shuffleArray([
-                result.toString(),
-                (base + multiplier_comp).toString(),
-                (result + 5).toString(),
-                (result - 3).toString(),
-              ]),
-              hint: `"${multiplier_comp} times as many" means multiply ${base} by ${multiplier_comp}.`,
-              standard: "4.OA.A.1",
-              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-              grade: "G4",
-              subtopic: "multiplicative comparison",
-            };
-            break;
-          case 2: // Prime vs composite (4.OA.4)
-            const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
-            const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 22];
-            const isPrime = Math.random() < 0.5;
-            const testNumber = isPrime
-              ? primes[getRandomInt(0, primes.length - 1)]
-              : composites[getRandomInt(0, composites.length - 1)];
-
-            question = {
-              question: `Is ${testNumber} a prime number or a composite number?`,
-              correctAnswer: isPrime ? "Prime" : "Composite",
-              options: shuffleArray(["Prime", "Composite"]),
-              hint: isPrime
-                ? "A prime number has exactly two factors: 1 and itself."
-                : "A composite number has more than two factors.",
-              standard: "4.OA.B.4",
-              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-              grade: "G4",
-              subtopic: "prime vs composite",
-            };
-            break;
-          case 3: // Factors and multiples
-            const factorBase = getRandomInt(6, 20);
-            const factors = [];
-            for (let i = 1; i <= factorBase; i++) {
-              if (factorBase % i === 0) factors.push(i);
-            }
-            const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
-
-            question = {
-              question: `Which of these is a factor of ${factorBase}?`,
-              correctAnswer: correctFactor.toString(),
-              options: shuffleArray([
-                correctFactor.toString(),
-                (correctFactor + 1).toString(),
-                (factorBase + 1).toString(),
-                (correctFactor + 3).toString(),
-              ]),
-              hint: `A factor of ${factorBase} divides evenly into ${factorBase} with no remainder.`,
-              standard: "4.OA.B.4",
-              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-              grade: "G4",
-              subtopic: "factors",
-            };
-            break;
-          default:
-            // Fallback to multiplicative comparison
-            const defBase = getRandomInt(2, 8);
-            const defMultiplier = getRandomInt(2, 6);
-            const defResult = defBase * defMultiplier;
-
-            question = {
-              question: `Sarah has ${defBase} stickers. Tom has ${defMultiplier} times as many stickers as Sarah. How many stickers does Tom have?`,
-              correctAnswer: defResult.toString(),
-              options: shuffleArray([
-                defResult.toString(),
-                (defBase + defMultiplier).toString(),
-                (defResult + 5).toString(),
-                (defResult - 3).toString(),
-              ]),
-              hint: `"${defMultiplier} times as many" means multiply ${defBase} by ${defMultiplier}.`,
-              standard: "4.OA.A.1",
-              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-              grade: "G4",
-              subtopic: "multiplicative comparison",
-            };
-            break;
+          question = {
+            question: `Sarah has ${base} stickers. Tom has ${multiplier} times as many stickers as Sarah. How many stickers does Tom have?`,
+            correctAnswer: result.toString(),
+            options: shuffleArray([
+              result.toString(),
+              (base + multiplier).toString(),
+              (result + 5).toString(),
+              (result - 3).toString(),
+            ]),
+            hint: `"${multiplier} times as many" means multiply ${base} by ${multiplier}.`,
+            standard: "4.OA.A.1",
+            concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
+            grade: "G4",
+            subtopic: "multiplicative comparison",
+          };
         }
         break;
 
@@ -2287,6 +2224,12 @@ const App = () => {
       if (geometryTopic && geometryTopic.ExplanationComponent) {
         hasReactComponent = true;
         ReactComponent = geometryTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.OPERATIONS_ALGEBRAIC_THINKING) {
+      const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
+      if (oaTopic && oaTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = oaTopic.ExplanationComponent;
       }
     }
     
