@@ -19,104 +19,20 @@ function shuffleArray(array) {
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
 export function generateQuestion() {
-  const oaType = getRandomInt(1, 3);
-  let question;
+  // Array of all available question generators
+  const questionTypes = [
+    generateMultiplicativeComparisonQuestion,
+    generatePrimeCompositeQuestion,
+    generateFactorsQuestion,
+    generateNumberPatternQuestion,
+    generateSequenceCompletionQuestion,
+    generatePatternRuleQuestion,
+    generateTwoStepPatternQuestion,
+  ];
   
-  switch (oaType) {
-    case 1: // Multiplicative comparisons (4.OA.1)
-      const base = getRandomInt(2, 8);
-      const multiplier_comp = getRandomInt(2, 6);
-      const result = base * multiplier_comp;
-
-      question = {
-        question: `Sarah has ${base} stickers. Tom has ${multiplier_comp} times as many stickers as Sarah. How many stickers does Tom have?`,
-        correctAnswer: result.toString(),
-        options: shuffleArray([
-          result.toString(),
-          (base + multiplier_comp).toString(),
-          (result + 5).toString(),
-          (result - 3).toString(),
-        ]),
-        hint: `"${multiplier_comp} times as many" means multiply ${base} by ${multiplier_comp}.`,
-        standard: "4.OA.A.1",
-        concept: "Operations & Algebraic Thinking",
-        grade: "G4",
-        subtopic: "multiplicative comparison",
-      };
-      break;
-      
-    case 2: // Prime vs composite (4.OA.4)
-      const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
-      const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 22];
-      const isPrime = Math.random() < 0.5;
-      const testNumber = isPrime
-        ? primes[getRandomInt(0, primes.length - 1)]
-        : composites[getRandomInt(0, composites.length - 1)];
-
-      question = {
-        question: `Is ${testNumber} a prime number or a composite number?`,
-        correctAnswer: isPrime ? "Prime" : "Composite",
-        options: shuffleArray(["Prime", "Composite"]),
-        hint: isPrime
-          ? "A prime number has exactly two factors: 1 and itself."
-          : "A composite number has more than two factors.",
-        standard: "4.OA.B.4",
-        concept: "Operations & Algebraic Thinking",
-        grade: "G4",
-        subtopic: "prime vs composite",
-      };
-      break;
-      
-    case 3: // Factors and multiples
-      const factorBase = getRandomInt(6, 20);
-      const factors = [];
-      for (let i = 1; i <= factorBase; i++) {
-        if (factorBase % i === 0) factors.push(i);
-      }
-      const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
-
-      question = {
-        question: `Which of these is a factor of ${factorBase}?`,
-        correctAnswer: correctFactor.toString(),
-        options: shuffleArray([
-          correctFactor.toString(),
-          (correctFactor + 1).toString(),
-          (factorBase + 1).toString(),
-          (correctFactor + 3).toString(),
-        ]),
-        hint: `A factor of ${factorBase} divides evenly into ${factorBase} with no remainder.`,
-        standard: "4.OA.B.4",
-        concept: "Operations & Algebraic Thinking",
-        grade: "G4",
-        subtopic: "factors",
-      };
-      break;
-      
-    default:
-      // Fallback to multiplicative comparison
-      const defBase = getRandomInt(2, 8);
-      const defMultiplier = getRandomInt(2, 6);
-      const defResult = defBase * defMultiplier;
-
-      question = {
-        question: `Sarah has ${defBase} stickers. Tom has ${defMultiplier} times as many stickers as Sarah. How many stickers does Tom have?`,
-        correctAnswer: defResult.toString(),
-        options: shuffleArray([
-          defResult.toString(),
-          (defBase + defMultiplier).toString(),
-          (defResult + 5).toString(),
-          (defResult - 3).toString(),
-        ]),
-        hint: `"${defMultiplier} times as many" means multiply ${defBase} by ${defMultiplier}.`,
-        standard: "4.OA.A.1",
-        concept: "Operations & Algebraic Thinking",
-        grade: "G4",
-        subtopic: "multiplicative comparison",
-      };
-      break;
-  }
-  
-  return question;
+  // Randomly select a question type
+  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
+  return selectedGenerator();
 }
 
 // Additional specialized question generators
@@ -212,11 +128,165 @@ export function generateFactorsQuestion() {
   };
 }
 
+/**
+ * Generates a number pattern recognition question
+ */
+export function generateNumberPatternQuestion() {
+  const step = getRandomInt(2, 12);
+  const startNum = getRandomInt(1, 20);
+  const length = getRandomInt(4, 6);
+  
+  const sequence = [];
+  for (let i = 0; i < length; i++) {
+    sequence.push(startNum + (step * i));
+  }
+  
+  const nextValue = startNum + (step * length);
+  
+  return {
+    question: `Look at this number pattern: ${sequence.join(', ')}, ___. What number comes next?`,
+    correctAnswer: nextValue.toString(),
+    options: shuffleArray([
+      nextValue.toString(),
+      (nextValue + step).toString(),
+      (nextValue - step).toString(),
+      (nextValue + getRandomInt(1, 5)).toString(),
+    ]),
+    hint: `Look at the difference between each number. The pattern adds ${step} each time.`,
+    standard: "4.OA.C.5",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "number patterns",
+  };
+}
+
+/**
+ * Generates a number sequence completion question with missing number
+ */
+export function generateSequenceCompletionQuestion() {
+  const step = getRandomInt(3, 15);
+  const startNum = getRandomInt(5, 25);
+  const length = getRandomInt(5, 7);
+  
+  const sequence = [];
+  for (let i = 0; i < length; i++) {
+    sequence.push(startNum + (step * i));
+  }
+  
+  // Remove one number from the middle for the question
+  const missingIndex = getRandomInt(2, length - 2);
+  const missingValue = sequence[missingIndex];
+  const questionSequence = [...sequence];
+  questionSequence[missingIndex] = "___";
+  
+  return {
+    question: `Find the missing number in this pattern: ${questionSequence.join(', ')}`,
+    correctAnswer: missingValue.toString(),
+    options: shuffleArray([
+      missingValue.toString(),
+      (missingValue + step).toString(),
+      (missingValue - step).toString(),
+      (missingValue + getRandomInt(2, 8)).toString(),
+    ]),
+    hint: `The pattern increases by ${step} each time. What number is missing?`,
+    standard: "4.OA.C.5",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "number patterns",
+  };
+}
+
+/**
+ * Generates a pattern rule identification question
+ */
+export function generatePatternRuleQuestion() {
+  const step = getRandomInt(3, 10);
+  const startNum = getRandomInt(2, 15);
+  const sequence = [];
+  
+  for (let i = 0; i < 5; i++) {
+    sequence.push(startNum + (step * i));
+  }
+  
+  const rules = [
+    { text: `Start at ${startNum}, add ${step} each time`, correct: true },
+    { text: `Start at ${startNum}, add ${step + 1} each time`, correct: false },
+    { text: `Start at ${startNum}, multiply by ${step} each time`, correct: false },
+    { text: `Start at ${startNum}, add ${step - 1} each time`, correct: false },
+  ];
+  
+  const correctRule = rules.find(r => r.correct).text;
+  const allRules = shuffleArray(rules.map(r => r.text));
+  
+  return {
+    question: `Look at this pattern: ${sequence.join(', ')}. What is the rule?`,
+    correctAnswer: correctRule,
+    options: allRules,
+    hint: `Look at how much each number increases from the previous one.`,
+    standard: "4.OA.C.5",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "number patterns",
+  };
+}
+
+/**
+ * Generates a two-step number pattern question
+ */
+export function generateTwoStepPatternQuestion() {
+  // More complex patterns for 4th grade
+  const operations = [
+    { name: "add then multiply", func: (n, i) => (n + 2) * (i + 1) },
+    { name: "multiply then add", func: (n, i) => (n * 2) + i },
+    { name: "square pattern", func: (n, i) => (i + 1) * (i + 1) },
+  ];
+  
+  const operation = operations[getRandomInt(0, operations.length - 1)];
+  const sequence = [];
+  
+  for (let i = 0; i < 4; i++) {
+    if (operation.name === "square pattern") {
+      sequence.push((i + 1) * (i + 1));
+    } else {
+      sequence.push(operation.func(i + 2, i));
+    }
+  }
+  
+  let nextValue;
+  if (operation.name === "square pattern") {
+    nextValue = 5 * 5; // Next square number
+  } else {
+    nextValue = operation.func(6, 4);
+  }
+  
+  return {
+    question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
+    correctAnswer: nextValue.toString(),
+    options: shuffleArray([
+      nextValue.toString(),
+      (nextValue + 1).toString(),
+      (nextValue - 1).toString(),
+      (nextValue + getRandomInt(2, 5)).toString(),
+    ]),
+    hint: operation.name === "square pattern" 
+      ? "These are square numbers: 1×1, 2×2, 3×3, 4×4..." 
+      : "Look carefully at how each number relates to its position in the sequence.",
+    standard: "4.OA.C.5",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "number patterns",
+  };
+}
+
 const operationsAlgebraicThinkingQuestions = {
   generateQuestion,
   generateMultiplicativeComparisonQuestion,
   generatePrimeCompositeQuestion,
   generateFactorsQuestion,
+  generateNumberPatternQuestion,
+  generateSequenceCompletionQuestion,
+  generatePatternRuleQuestion,
+  generateTwoStepPatternQuestion,
 };
 
 export default operationsAlgebraicThinkingQuestions;
