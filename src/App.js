@@ -669,115 +669,34 @@ const generateQuizQuestions = (
         break;
 
       case TOPICS.BASE_TEN:
-        const nbtType = getRandomInt(1, 3);
-        switch (nbtType) {
-          case 1: // Place value (4.NBT.1)
-            const placeValue = getRandomInt(1000, 9999);
-            const digit = placeValue.toString()[getRandomInt(0, 3)];
-            const positions = ["thousands", "hundreds", "tens", "ones"];
-            const digitPos = placeValue.toString().indexOf(digit);
+        // Use the new pluggable content system for Base Ten
+        const baseTenTopic = content.getTopic('g4', 'base-ten');
+        if (baseTenTopic) {
+          question = baseTenTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.BASE_TEN;
+        } else {
+          // Fallback to old logic if the new system isn't available
+          const placeValue = getRandomInt(1000, 9999);
+          const digit = placeValue.toString()[getRandomInt(0, 3)];
+          const positions = ["thousands", "hundreds", "tens", "ones"];
+          const digitPos = placeValue.toString().indexOf(digit);
 
-            question = {
-              question: `In the number ${placeValue}, what is the place value of the digit ${digit}?`,
-              correctAnswer: positions[digitPos],
-              options: shuffleArray([
-                positions[digitPos],
-                ...positions
-                  .filter((p) => p !== positions[digitPos])
-                  .slice(0, 3),
-              ]),
-              hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
-              standard: "4.NBT.A.1",
-              concept: TOPICS.BASE_TEN,
-              grade: "G4",
-              subtopic: "place value",
-            };
-            break;
-          case 2: // Rounding (4.NBT.3)
-            const roundNum = getRandomInt(1234, 8765);
-            const roundToNearest = ["tens", "hundreds", "thousands"][
-              getRandomInt(0, 2)
-            ];
-            let rounded;
-
-            if (roundToNearest === "tens") {
-              rounded = Math.round(roundNum / 10) * 10;
-            } else if (roundToNearest === "hundreds") {
-              rounded = Math.round(roundNum / 100) * 100;
-            } else {
-              rounded = Math.round(roundNum / 1000) * 1000;
-            }
-
-            question = {
-              question: `Round ${roundNum} to the nearest ${roundToNearest}.`,
-              correctAnswer: rounded.toString(),
-              options: shuffleArray([
-                rounded.toString(),
-                (rounded + 10).toString(),
-                (rounded - 10).toString(),
-                (rounded + 100).toString(),
-              ]),
-              hint: `Look at the digit to the right of the ${roundToNearest} place to decide whether to round up or down.`,
-              standard: "4.NBT.A.3",
-              concept: TOPICS.BASE_TEN,
-              grade: "G4",
-              subtopic: "rounding",
-            };
-            break;
-          case 3: // Multi-digit addition/subtraction (4.NBT.4)
-            const addend1 = getRandomInt(1000, 5000);
-            const addend2 = getRandomInt(1000, 4000);
-            const isAddition = Math.random() < 0.5;
-            const answer = isAddition
-              ? addend1 + addend2
-              : Math.max(addend1, addend2) - Math.min(addend1, addend2);
-
-            question = {
-              question: isAddition
-                ? `What is ${addend1} + ${addend2}?`
-                : `What is ${Math.max(addend1, addend2)} - ${Math.min(
-                    addend1,
-                    addend2
-                  )}?`,
-              correctAnswer: answer.toString(),
-              options: shuffleArray([
-                answer.toString(),
-                (answer + 100).toString(),
-                (answer - 100).toString(),
-                (answer + 1000).toString(),
-              ]),
-              hint: isAddition
-                ? "Add place by place, starting from the ones."
-                : "Subtract place by place, borrowing when needed.",
-              standard: "4.NBT.B.4",
-              concept: TOPICS.BASE_TEN,
-              grade: "G4",
-              subtopic: isAddition ? "addition" : "subtraction",
-            };
-            break;
-          default:
-            // Fallback to place value
-            const defPlaceValue = getRandomInt(1000, 9999);
-            const defDigit = defPlaceValue.toString()[getRandomInt(0, 3)];
-            const defPositions = ["thousands", "hundreds", "tens", "ones"];
-            const defDigitPos = defPlaceValue.toString().indexOf(defDigit);
-
-            question = {
-              question: `In the number ${defPlaceValue}, what is the place value of the digit ${defDigit}?`,
-              correctAnswer: defPositions[defDigitPos],
-              options: shuffleArray([
-                defPositions[defDigitPos],
-                ...defPositions
-                  .filter((p) => p !== defPositions[defDigitPos])
-                  .slice(0, 3),
-              ]),
-              hint: `Look at the position of the digit ${defDigit} in ${defPlaceValue}.`,
-              standard: "4.NBT.A.1",
-              concept: TOPICS.BASE_TEN,
-              grade: "G4",
-              subtopic: "place value",
-            };
-            break;
+          question = {
+            question: `In the number ${placeValue}, what is the place value of the digit ${digit}?`,
+            correctAnswer: positions[digitPos],
+            options: shuffleArray([
+              positions[digitPos],
+              ...positions
+                .filter((p) => p !== positions[digitPos])
+                .slice(0, 3),
+            ]),
+            hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
+            standard: "4.NBT.A.1",
+            concept: TOPICS.BASE_TEN,
+            grade: "G4",
+            subtopic: "place value",
+          };
         }
         break;
 
@@ -2230,6 +2149,12 @@ const App = () => {
       if (oaTopic && oaTopic.ExplanationComponent) {
         hasReactComponent = true;
         ReactComponent = oaTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.BASE_TEN) {
+      const baseTenTopic = content.getTopic('g4', 'base-ten');
+      if (baseTenTopic && baseTenTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = baseTenTopic.ExplanationComponent;
       }
     }
     
