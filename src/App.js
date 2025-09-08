@@ -644,28 +644,7 @@ const generateQuizQuestions = (
           question = oaTopic.generateQuestion();
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
-        } else {
-          // Fallback to old logic if the new system isn't available
-          const base = getRandomInt(2, 8);
-          const multiplier = getRandomInt(2, 6);
-          const result = base * multiplier;
-
-          question = {
-            question: `Sarah has ${base} stickers. Tom has ${multiplier} times as many stickers as Sarah. How many stickers does Tom have?`,
-            correctAnswer: result.toString(),
-            options: shuffleArray([
-              result.toString(),
-              (base + multiplier).toString(),
-              (result + 5).toString(),
-              (result - 3).toString(),
-            ]),
-            hint: `"${multiplier} times as many" means multiply ${base} by ${multiplier}.`,
-            standard: "4.OA.A.1",
-            concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-            grade: "G4",
-            subtopic: "multiplicative comparison",
-          };
-        }
+        } 
         break;
 
       case TOPICS.BASE_TEN:
@@ -675,28 +654,6 @@ const generateQuizQuestions = (
           question = baseTenTopic.generateQuestion();
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.BASE_TEN;
-        } else {
-          // Fallback to old logic if the new system isn't available
-          const placeValue = getRandomInt(1000, 9999);
-          const digit = placeValue.toString()[getRandomInt(0, 3)];
-          const positions = ["thousands", "hundreds", "tens", "ones"];
-          const digitPos = placeValue.toString().indexOf(digit);
-
-          question = {
-            question: `In the number ${placeValue}, what is the place value of the digit ${digit}?`,
-            correctAnswer: positions[digitPos],
-            options: shuffleArray([
-              positions[digitPos],
-              ...positions
-                .filter((p) => p !== positions[digitPos])
-                .slice(0, 3),
-            ]),
-            hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
-            standard: "4.NBT.A.1",
-            concept: TOPICS.BASE_TEN,
-            grade: "G4",
-            subtopic: "place value",
-          };
         }
         break;
 
@@ -707,29 +664,6 @@ const generateQuizQuestions = (
           question = fractionsTopic.generateQuestion();
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.FRACTIONS_4TH;
-        } else {
-          // Fallback to old logic if the new system isn't available
-          const baseNum = getRandomInt(1, 4);
-          const baseDen = getRandomInt(baseNum + 1, 8);
-          const scale = getRandomInt(2, 5);
-          const equivNum = baseNum * scale;
-          const equivDen = baseDen * scale;
-
-          question = {
-            question: `Which fraction is equivalent to ${baseNum}/${baseDen}?`,
-            correctAnswer: `${equivNum}/${equivDen}`,
-            options: shuffleArray([
-              `${equivNum}/${equivDen}`,
-              `${baseNum + 1}/${baseDen}`,
-              `${baseNum}/${baseDen + 1}`,
-              `${equivNum + 1}/${equivDen}`,
-            ]),
-            hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
-            standard: "4.NF.A.1",
-            concept: TOPICS.FRACTIONS_4TH,
-            grade: "G4",
-            subtopic: "equivalent fractions",
-          };
         }
         break;
 
@@ -740,45 +674,7 @@ const generateQuizQuestions = (
           question = measurementDataTopic.generateQuestion();
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.MEASUREMENT_DATA_4TH;
-        } else {
-          // Fallback to old logic if the new system isn't available
-          const defConversions = [
-            {
-              from: "feet",
-              to: "inches",
-              factor: 12,
-              question: "feet",
-              answer: "inches",
-            },
-            {
-              from: "yards",
-              to: "feet",
-              factor: 3,
-              question: "yards",
-              answer: "feet",
-            },
-          ];
-          const defConv = defConversions[getRandomInt(0, defConversions.length - 1)];
-          const defAmount = getRandomInt(2, 8);
-          const defConverted = defAmount * defConv.factor;
-
-          question = {
-            question: `How many ${defConv.to} are in ${defAmount} ${defConv.from}?`,
-            correctAnswer: `${defConverted} ${defConv.to}`,
-            options: shuffleArray([
-              `${defConverted} ${defConv.to}`,
-              `${defAmount} ${defConv.to}`,
-              `${defConverted + 5} ${defConv.to}`,
-              `${Math.floor(defConverted / 2)} ${defConv.to}`,
-            ]),
-            hint: `Remember: 1 ${defConv.from.slice(0, -1)} = ${defConv.factor} ${defConv.to}.`,
-            standard: "4.MD.A.1",
-            concept: TOPICS.MEASUREMENT_DATA_4TH,
-            grade: "G4",
-            subtopic: "unit conversion",
-          };
         }
-        break;
 
       case TOPICS.GEOMETRY:
         // Use the new pluggable content system for Geometry
@@ -787,23 +683,6 @@ const generateQuizQuestions = (
           question = geometryTopic.generateQuestion();
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.GEOMETRY;
-        } else {
-          // Fallback to old logic if the new system isn't available
-          question = {
-            question: `Two lines that never meet and are always the same distance apart are called:`,
-            correctAnswer: "parallel",
-            options: shuffleArray([
-              "parallel",
-              "perpendicular",
-              "intersecting",
-              "curved",
-            ]),
-            hint: "Think about train tracks - they run alongside each other but never meet.",
-            standard: "4.G.A.1",
-            concept: TOPICS.GEOMETRY,
-            grade: "G4",
-            subtopic: "lines and angles",
-          };
         }
         break;
 
