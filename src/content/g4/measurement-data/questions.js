@@ -20,7 +20,6 @@ function shuffleArray(array) {
  */
 export function generateQuestion() {
   const md4Type = getRandomInt(1, 4);
-  let question;
   
   switch (md4Type) {
     case 1: // Length conversions (4.MD.1)

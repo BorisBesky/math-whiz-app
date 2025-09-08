@@ -1,11 +1,12 @@
 // Main Content Configuration - All Grades and Topics
+import grade3 from './g3';
 import grade4 from './g4';
 
 export const content = {
   grades: [
+    grade3,
     grade4,
     // Additional grades will be added here as they are created
-    // grade3,
     // grade5,
   ],
   
@@ -51,6 +52,6 @@ export const content = {
 };
 
 // Export individual grades for direct import
-export { grade4 };
+export { grade3, grade4 };
 
 export default content;

@@ -101,27 +101,6 @@ const getUserDocRef = (userId) => {
   );
 };
 
-// --- Helper Functions for Randomization ---
-const getRandomInt = (min, max) => {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-const shuffleArray = (array) => {
-  let currentIndex = array.length,
-    randomIndex;
-  while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ];
-  }
-  return array;
-};
-
 // --- Helper function to sanitize topic names for Firestore field paths ---
 const sanitizeTopicName = (topicName) => {
   // Add error handling for undefined/null values
@@ -134,26 +113,6 @@ const sanitizeTopicName = (topicName) => {
     .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
     .replace(/_+/g, "_") // Replace multiple underscores with single
     .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
-};
-
-// --- Helper function to find the greatest common divisor ---
-const gcd = (a, b) => {
-  if (b === 0) {
-    return a;
-  }
-  return gcd(b, a % b);
-};
-
-// --- Helper function to simplify a fraction ---
-const getSimplifiedFraction = (numerator, denominator) => {
-  if (numerator === 0) return "0";
-  const commonDivisor = gcd(numerator, denominator);
-  const simplifiedNumerator = numerator / commonDivisor;
-  const simplifiedDenominator = denominator / commonDivisor;
-  if (simplifiedDenominator === 1) {
-    return simplifiedNumerator.toString(); // It's a whole number
-  }
-  return `${simplifiedNumerator}/${simplifiedDenominator}`;
 };
 
 // --- Concept Explanation HTML Files Mapping ---
@@ -321,318 +280,35 @@ const generateQuizQuestions = (
 
     switch (topic) {
       case TOPICS.MULTIPLICATION:
-        const m1 = getRandomInt(2, 2 + Math.floor(10 * difficulty));
-        const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
-        const mAnswer = m1 * m2;
-
-        question = {
-          question: `What is ${m1} x ${m2}?`,
-          correctAnswer: mAnswer.toString(),
-          options: shuffleArray([
-            mAnswer.toString(),
-            (mAnswer + getRandomInt(1, 5)).toString(),
-            (m1 * (m2 + 1)).toString(),
-            ((m1 - 1) * m2).toString(),
-          ]),
-          hint: `Try skip-counting by ${m2}, ${m1} times!`,
-          standard: "3.OA.C.7",
-          concept: TOPICS.MULTIPLICATION,
-        };
+        // Use the new pluggable content system for Multiplication
+        const multiplicationTopic = content.getTopic('g3', 'multiplication');
+        if (multiplicationTopic) {
+          question = multiplicationTopic.generateQuestion(difficulty);
+          question.concept = TOPICS.MULTIPLICATION;
+        }
         break;
       case TOPICS.DIVISION:
-        const d_quotient = getRandomInt(2, 2 + Math.floor(7 * difficulty));
-        const d_divisor = getRandomInt(2, 2 + Math.floor(7 * difficulty));
-        const d_dividend = d_quotient * d_divisor;
-
-        question = {
-          question: `What is ${d_dividend} ÷ ${d_divisor}?`,
-          correctAnswer: d_quotient.toString(),
-          options: shuffleArray([
-            d_quotient.toString(),
-            (d_quotient + 1).toString(),
-            (d_quotient - 1).toString(),
-            (d_quotient + getRandomInt(2, 4)).toString(),
-          ]),
-          hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`,
-          standard: "3.OA.C.7",
-          concept: TOPICS.DIVISION,
-        };
+        // Use the new pluggable content system for Division
+        const divisionTopic = content.getTopic('g3', 'division');
+        if (divisionTopic) {
+          question = divisionTopic.generateQuestion(difficulty);
+          question.concept = TOPICS.DIVISION;
+        }
         break;
       case TOPICS.FRACTIONS:
-        const fractionQuestionType = getRandomInt(
-          1,
-          1 + Math.floor(4 * difficulty)
-        );
-
-        switch (fractionQuestionType) {
-          case 1: // Equivalent Fractions
-            const f_num_eq = getRandomInt(1, 8);
-            const f_den_eq = getRandomInt(f_num_eq + 1, 9);
-            const multiplier = getRandomInt(2, 4);
-            const eq_num = f_num_eq * multiplier;
-            const eq_den = f_den_eq * multiplier;
-
-            question = {
-              question: `Which fraction is equivalent to ${f_num_eq}/${f_den_eq}?`,
-              correctAnswer: `${eq_num}/${eq_den}`,
-              options: shuffleArray([
-                `${eq_num}/${eq_den}`,
-                `${f_num_eq + 1}/${f_den_eq}`,
-                `${f_num_eq}/${f_den_eq + 1}`,
-                `${eq_num}/${eq_den + multiplier}`,
-              ]),
-              hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
-              standard: "3.NF.A.3.b",
-              concept: TOPICS.FRACTIONS_EQUIVALENCY,
-            };
-            break;
-          case 2: // Fraction Addition with unlike denominators
-            const add_den1 = getRandomInt(2, 5);
-            let add_den2 = getRandomInt(2, 6);
-            while (add_den1 === add_den2) {
-              add_den2 = getRandomInt(2, 6);
-            }
-            const add_num1 = getRandomInt(
-              1,
-              add_den1 - 1 > 0 ? add_den1 - 1 : 1
-            );
-            const add_num2 = getRandomInt(
-              1,
-              add_den2 - 1 > 0 ? add_den2 - 1 : 1
-            );
-            const common_add_den = add_den1 * add_den2;
-            const add_sum_num = add_num1 * add_den2 + add_num2 * add_den1;
-            const add_answer = getSimplifiedFraction(
-              add_sum_num,
-              common_add_den
-            );
-
-            question = {
-              question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
-              correctAnswer: add_answer,
-              options: shuffleArray([
-                add_answer,
-                getSimplifiedFraction(add_num1 + add_num2, add_den1 + add_den2), // Common mistake
-                getSimplifiedFraction(add_sum_num + 1, common_add_den),
-                getSimplifiedFraction(add_sum_num, common_add_den + 1),
-              ]),
-              hint: "To add fractions with different denominators, you first need to find a common denominator!",
-              standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: TOPICS.FRACTIONS_ADDITION,
-            };
-            break;
-          case 3: // Fraction Subtraction with unlike denominators
-            let sub_den1 = getRandomInt(2, 6);
-            let sub_den2 = getRandomInt(2, 6);
-            let sub_num1 = getRandomInt(1, sub_den1 - 1 > 0 ? sub_den1 - 1 : 1);
-            let sub_num2 = getRandomInt(1, sub_den2 - 1 > 0 ? sub_den2 - 1 : 1);
-
-            // Ensure the first fraction is larger and denominators are different
-            while (
-              sub_num1 * sub_den2 <= sub_num2 * sub_den1 ||
-              sub_den1 === sub_den2
-            ) {
-              sub_den1 = getRandomInt(2, 6);
-              sub_den2 = getRandomInt(2, 6);
-              sub_num1 = getRandomInt(1, sub_den1 - 1 > 0 ? sub_den1 - 1 : 1);
-              sub_num2 = getRandomInt(1, sub_den2 - 1 > 0 ? sub_den2 - 1 : 1);
-            }
-
-            const common_sub_den = sub_den1 * sub_den2;
-            const sub_diff_num = sub_num1 * sub_den2 - sub_num2 * sub_den1;
-            const sub_answer = getSimplifiedFraction(
-              sub_diff_num,
-              common_sub_den
-            );
-
-            question = {
-              question: `What is ${sub_num1}/${sub_den1} - ${sub_num2}/${sub_den2}?`,
-              correctAnswer: sub_answer,
-              options: shuffleArray([
-                sub_answer,
-                getSimplifiedFraction(
-                  Math.abs(sub_num1 - sub_num2),
-                  Math.abs(sub_den1 - sub_den2)
-                ), // Common mistake
-                getSimplifiedFraction(sub_diff_num + 1, common_sub_den),
-                getSimplifiedFraction(sub_diff_num, common_sub_den + 1),
-              ]),
-              hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
-              standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: TOPICS.FRACTIONS_ADDITION,
-            };
-            break;
-          case 4: // Fraction Comparison
-            const comp_type = getRandomInt(1, 2);
-            if (comp_type === 1) {
-              // Same denominator
-              const comp_den = getRandomInt(3, 12);
-              let comp_num1 = getRandomInt(1, comp_den - 1);
-              let comp_num2 = getRandomInt(1, comp_den - 1);
-              while (comp_num1 === comp_num2) {
-                comp_num2 = getRandomInt(1, comp_den - 1);
-              }
-
-              question = {
-                question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
-                correctAnswer: comp_num1 > comp_num2 ? ">" : "<",
-                options: shuffleArray(["<", ">", "="]),
-                hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
-                standard: "3.NF.A.3.d",
-                concept: TOPICS.FRACTIONS_COMPARISON,
-              };
-            } else {
-              // Same numerator
-              const comp_num = getRandomInt(1, 10);
-              let comp_den1 = getRandomInt(comp_num + 1, 15);
-              let comp_den2 = getRandomInt(comp_num + 1, 15);
-              while (comp_den1 === comp_den2) {
-                comp_den2 = getRandomInt(comp_num + 1, 15);
-              }
-
-              question = {
-                question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
-                correctAnswer: comp_den1 < comp_den2 ? ">" : "<",
-                options: shuffleArray(["<", ">", "="]),
-                hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
-                standard: "3.NF.A.3.d",
-                concept: TOPICS.FRACTIONS_COMPARISON,
-              };
-            }
-            break;
-          case 5: // Fraction Simplification
-            const simp_multiplier = getRandomInt(3, 9);
-            const simp_num = getRandomInt(1, 5);
-            const simp_den = getRandomInt(simp_num + 1, 11);
-            const starting_num = simp_num * simp_multiplier;
-            const starting_den = simp_den * simp_multiplier;
-            const simplified_fraction = getSimplifiedFraction(
-              starting_num,
-              starting_den
-            );
-
-            question = {
-              question: `Simplify the fraction ${starting_num}/${starting_den}`,
-              correctAnswer: simplified_fraction,
-              options: shuffleArray([
-                simplified_fraction,
-                `${simp_num}/${simp_den + getRandomInt(1, 3)}`,
-                `${Math.abs(simp_num - getRandomInt(1, 3))}/${simp_den}`,
-                `${Math.floor(starting_num / 2)}/${Math.floor(
-                  starting_den / 2
-                )}`, // Common mistake if not fully simplified
-              ]),
-              hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
-              standard: "4.NF.A.1",
-              concept: TOPICS.FRACTIONS_SIMPLIFICATION,
-            };
-            break;
-          default:
-            // Fallback to equivalent fractions if unexpected value
-            const def_f_num_eq = getRandomInt(1, 8);
-            const def_f_den_eq = getRandomInt(def_f_num_eq + 1, 9);
-            const def_multiplier = getRandomInt(2, 4);
-            const def_eq_num = def_f_num_eq * def_multiplier;
-            const def_eq_den = def_f_den_eq * def_multiplier;
-
-            question = {
-              question: `Which fraction is equivalent to ${def_f_num_eq}/${def_f_den_eq}?`,
-              correctAnswer: `${def_eq_num}/${def_eq_den}`,
-              options: shuffleArray([
-                `${def_eq_num}/${def_eq_den}`,
-                `${def_f_num_eq + 1}/${def_f_den_eq}`,
-                `${def_f_num_eq}/${def_f_den_eq + 1}`,
-                `${def_eq_num}/${def_eq_den + def_multiplier}`,
-              ]),
-              hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
-              standard: "3.NF.A.3.b",
-              concept: TOPICS.FRACTIONS_EQUIVALENCY,
-            };
-            break;
+        // Use the new pluggable content system for G3 Fractions
+        const g3FractionsTopic = content.getTopic('g3', 'fractions');
+        if (g3FractionsTopic) {
+          question = g3FractionsTopic.generateQuestion(difficulty);
+          question.concept = TOPICS.FRACTIONS;
         }
         break;
       case TOPICS.MEASUREMENT_DATA:
-        const md_question_type = getRandomInt(
-          1,
-          1 + Math.floor(2 * difficulty)
-        );
-
-        switch (md_question_type) {
-          case 1: // Area
-            const md_length = getRandomInt(3, 15);
-            const md_width = getRandomInt(3, 10);
-
-            question = {
-              question: `A rectangle has a length of ${md_length} cm and a width of ${md_width} cm. What is its area?`,
-              correctAnswer: `${md_length * md_width} cm²`,
-              options: shuffleArray([
-                `${md_length * md_width} cm²`,
-                `${(md_length + md_width) * 2} cm²`,
-                `${md_length + md_width} cm²`,
-                `${md_length * md_width + 10} cm²`,
-              ]),
-              hint: "Area of a rectangle is found by multiplying its length and width.",
-              standard: "3.MD.C.7.b",
-              concept: TOPICS.AREA,
-            };
-            break;
-          case 2: // Perimeter
-            const md_side1 = getRandomInt(5, 20);
-            const md_side2 = getRandomInt(5, 20);
-
-            question = {
-              question: `What is the perimeter of a rectangle with sides of length ${md_side1} inches and ${md_side2} inches?`,
-              correctAnswer: `${2 * (md_side1 + md_side2)} inches`,
-              options: shuffleArray([
-                `${2 * (md_side1 + md_side2)} inches`,
-                `${md_side1 * md_side2} inches`,
-                `${md_side1 + md_side2} inches`,
-                `${2 * (md_side1 + md_side2) + 10} inches`,
-              ]),
-              hint: "Perimeter is the distance all the way around a shape. Add up all four sides!",
-              standard: "3.MD.D.8",
-              concept: TOPICS.PERIMETER,
-            };
-            break;
-          case 3: // Volume by counting cubes
-            const vol_l = getRandomInt(2, 4);
-            const vol_w = getRandomInt(2, 4);
-            const vol_h = getRandomInt(1, 3);
-            const volume = vol_l * vol_w * vol_h;
-
-            question = {
-              question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
-              correctAnswer: `${volume} cubes`,
-              options: shuffleArray([
-                `${volume} cubes`,
-                `${vol_l + vol_w + vol_h} cubes`,
-                `${volume + 5} cubes`,
-                `${volume - 2} cubes`,
-              ]),
-              hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
-              standard: "3.MD.C.5",
-              concept: TOPICS.VOLUME,
-            };
-            break;
-          default:
-            // Fallback to area question if unexpected value
-            const def_length = getRandomInt(3, 15);
-            const def_width = getRandomInt(3, 10);
-
-            question = {
-              question: `A rectangle has a length of ${def_length} cm and a width of ${def_width} cm. What is its area?`,
-              correctAnswer: `${def_length * def_width} cm²`,
-              options: shuffleArray([
-                `${def_length * def_width} cm²`,
-                `${(def_length + def_width) * 2} cm²`,
-                `${def_length + def_width} cm²`,
-                `${def_length * def_width + 10} cm²`,
-              ]),
-              hint: "Area of a rectangle is found by multiplying its length and width.",
-              standard: "3.MD.C.7.b",
-              concept: TOPICS.AREA,
-            };
-            break;
+        // Use the new pluggable content system for G3 Measurement & Data
+        const g3MeasurementDataTopic = content.getTopic('g3', 'measurement-data');
+        if (g3MeasurementDataTopic) {
+          question = g3MeasurementDataTopic.generateQuestion(difficulty);
+          question.concept = TOPICS.MEASUREMENT_DATA;
         }
         break;
 
@@ -675,6 +351,7 @@ const generateQuizQuestions = (
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.MEASUREMENT_DATA_4TH;
         }
+        break;
 
       case TOPICS.GEOMETRY:
         // Use the new pluggable content system for Geometry
@@ -1805,6 +1482,30 @@ const App = () => {
       if (measurementDataTopic && measurementDataTopic.ExplanationComponent) {
         hasReactComponent = true;
         ReactComponent = measurementDataTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.MULTIPLICATION) {
+      const multiplicationTopic = content.getTopic('g3', 'multiplication');
+      if (multiplicationTopic && multiplicationTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = multiplicationTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.DIVISION) {
+      const divisionTopic = content.getTopic('g3', 'division');
+      if (divisionTopic && divisionTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = divisionTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.FRACTIONS) {
+      const g3FractionsTopic = content.getTopic('g3', 'fractions');
+      if (g3FractionsTopic && g3FractionsTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = g3FractionsTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.MEASUREMENT_DATA) {
+      const g3MeasurementDataTopic = content.getTopic('g3', 'measurement-data');
+      if (g3MeasurementDataTopic && g3MeasurementDataTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = g3MeasurementDataTopic.ExplanationComponent;
       }
     }
     
