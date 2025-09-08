@@ -39,6 +39,7 @@ import {
   computePerTopicComplexity,
   rankQuestionsByComplexity,
 } from "./utils/complexityEngine";
+import { TOPICS, APP_STATES } from "./constants/topics";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -122,6 +123,11 @@ const shuffleArray = (array) => {
 
 // --- Helper function to sanitize topic names for Firestore field paths ---
 const sanitizeTopicName = (topicName) => {
+  // Add error handling for undefined/null values
+  if (!topicName || typeof topicName !== 'string') {
+    return 'unknown_topic';
+  }
+  
   // Replace problematic characters with underscores
   return topicName
     .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
@@ -152,25 +158,25 @@ const getSimplifiedFraction = (numerator, denominator) => {
 // --- Concept Explanation HTML Files Mapping ---
 const conceptExplanationFiles = {
   // 3rd Grade Topics
-  Multiplication: "/multiplicationExplanation.html",
-  Division: "/divisionExplanation.html",
+  [TOPICS.MULTIPLICATION]: "/multiplicationExplanation.html",
+  [TOPICS.DIVISION]: "/divisionExplanation.html",
   // Fraction subtopics
-  "Fractions: Addition": "/fractionAdditionExplanation.html",
-  "Fractions: Simplification": "/fractionSimplificationExplanation.html",
-  "Fractions: Equivalency": "/fractionEquivalencyExplanation.html",
-  "Fractions: Comparison": "/fractionComparisonExplanation.html",
+  [TOPICS.FRACTIONS_ADDITION]: "/fractionAdditionExplanation.html",
+  [TOPICS.FRACTIONS_SIMPLIFICATION]: "/fractionSimplificationExplanation.html",
+  [TOPICS.FRACTIONS_EQUIVALENCY]: "/fractionEquivalencyExplanation.html",
+  [TOPICS.FRACTIONS_COMPARISON]: "/fractionComparisonExplanation.html",
   // Fallback for any generic fractions (kept for backward compatibility)
-  Fractions: "/fractionAdditionExplanation.html",
-  Area: "/areaExplanation.html",
-  Perimeter: "/perimeterExplanation.html",
-  Volume: "/volumeExplanation.html",
+  [TOPICS.FRACTIONS]: "/fractionAdditionExplanation.html",
+  [TOPICS.AREA]: "/areaExplanation.html",
+  [TOPICS.PERIMETER]: "/perimeterExplanation.html",
+  [TOPICS.VOLUME]: "/volumeExplanation.html",
 
   // 4th Grade Topics (to be implemented in Phase 3)
-  "Operations & Algebraic Thinking (4.OA)": "/oa4Explanation.html",
-  "Base Ten (4.NBT)": "/nbt4Explanation.html",
-  "Fractions (4.NF)": "/nf4Explanation.html",
-  "Measurement & Data (4.MD)": "/md4Explanation.html",
-  "Geometry (4.G)": "/g4Explanation.html",
+  [TOPICS.OPERATIONS_ALGEBRAIC_THINKING]: "/oa4Explanation.html",
+  [TOPICS.BASE_TEN]: "/nbt4Explanation.html",
+  [TOPICS.FRACTIONS_4TH]: "/nf4Explanation.html",
+  [TOPICS.MEASUREMENT_DATA_4TH]: "/md4Explanation.html",
+  [TOPICS.GEOMETRY]: "/g4Explanation.html",
 };
 
 // --- Store Items ---
@@ -313,7 +319,7 @@ const generateQuizQuestions = (
     let question = {};
 
     switch (topic) {
-      case "Multiplication":
+      case TOPICS.MULTIPLICATION:
         const m1 = getRandomInt(2, 2 + Math.floor(10 * difficulty));
         const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const mAnswer = m1 * m2;
@@ -329,10 +335,10 @@ const generateQuizQuestions = (
           ]),
           hint: `Try skip-counting by ${m2}, ${m1} times!`,
           standard: "3.OA.C.7",
-          concept: "Multiplication",
+          concept: TOPICS.MULTIPLICATION,
         };
         break;
-      case "Division":
+      case TOPICS.DIVISION:
         const d_quotient = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_divisor = getRandomInt(2, 2 + Math.floor(7 * difficulty));
         const d_dividend = d_quotient * d_divisor;
@@ -348,10 +354,10 @@ const generateQuizQuestions = (
           ]),
           hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`,
           standard: "3.OA.C.7",
-          concept: "Division",
+          concept: TOPICS.DIVISION,
         };
         break;
-      case "Fractions":
+      case TOPICS.FRACTIONS:
         const fractionQuestionType = getRandomInt(
           1,
           1 + Math.floor(4 * difficulty)
@@ -376,7 +382,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
               standard: "3.NF.A.3.b",
-              concept: "Fractions: Equivalency",
+              concept: TOPICS.FRACTIONS_EQUIVALENCY,
             };
             break;
           case 2: // Fraction Addition with unlike denominators
@@ -411,7 +417,7 @@ const generateQuizQuestions = (
               ]),
               hint: "To add fractions with different denominators, you first need to find a common denominator!",
               standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: "Fractions: Addition",
+              concept: TOPICS.FRACTIONS_ADDITION,
             };
             break;
           case 3: // Fraction Subtraction with unlike denominators
@@ -452,7 +458,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
               standard: "4.NF.B.3", // Note: This is a 4th grade standard
-              concept: "Fractions: Addition",
+              concept: TOPICS.FRACTIONS_ADDITION,
             };
             break;
           case 4: // Fraction Comparison
@@ -472,7 +478,7 @@ const generateQuizQuestions = (
                 options: shuffleArray(["<", ">", "="]),
                 hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
                 standard: "3.NF.A.3.d",
-                concept: "Fractions: Comparison",
+                concept: TOPICS.FRACTIONS_COMPARISON,
               };
             } else {
               // Same numerator
@@ -489,7 +495,7 @@ const generateQuizQuestions = (
                 options: shuffleArray(["<", ">", "="]),
                 hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
                 standard: "3.NF.A.3.d",
-                concept: "Fractions: Comparison",
+                concept: TOPICS.FRACTIONS_COMPARISON,
               };
             }
             break;
@@ -517,7 +523,7 @@ const generateQuizQuestions = (
               ]),
               hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
               standard: "4.NF.A.1",
-              concept: "Fractions: Simplification",
+              concept: TOPICS.FRACTIONS_SIMPLIFICATION,
             };
             break;
           default:
@@ -539,12 +545,12 @@ const generateQuizQuestions = (
               ]),
               hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
               standard: "3.NF.A.3.b",
-              concept: "Fractions: Equivalency",
+              concept: TOPICS.FRACTIONS_EQUIVALENCY,
             };
             break;
         }
         break;
-      case "Measurement & Data":
+      case TOPICS.MEASUREMENT_DATA:
         const md_question_type = getRandomInt(
           1,
           1 + Math.floor(2 * difficulty)
@@ -566,7 +572,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Area of a rectangle is found by multiplying its length and width.",
               standard: "3.MD.C.7.b",
-              concept: "Area",
+              concept: TOPICS.AREA,
             };
             break;
           case 2: // Perimeter
@@ -584,7 +590,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Perimeter is the distance all the way around a shape. Add up all four sides!",
               standard: "3.MD.D.8",
-              concept: "Perimeter",
+              concept: TOPICS.PERIMETER,
             };
             break;
           case 3: // Volume by counting cubes
@@ -604,7 +610,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
               standard: "3.MD.C.5",
-              concept: "Volume",
+              concept: TOPICS.VOLUME,
             };
             break;
           default:
@@ -623,14 +629,14 @@ const generateQuizQuestions = (
               ]),
               hint: "Area of a rectangle is found by multiplying its length and width.",
               standard: "3.MD.C.7.b",
-              concept: "Area",
+              concept: TOPICS.AREA,
             };
             break;
         }
         break;
 
       // 4th Grade Topics
-      case "Operations & Algebraic Thinking (4.OA)":
+      case TOPICS.OPERATIONS_ALGEBRAIC_THINKING:
         const oaType = getRandomInt(1, 3);
         switch (oaType) {
           case 1: // Multiplicative comparisons (4.OA.1)
@@ -649,7 +655,7 @@ const generateQuizQuestions = (
               ]),
               hint: `"${multiplier_comp} times as many" means multiply ${base} by ${multiplier_comp}.`,
               standard: "4.OA.A.1",
-              concept: "Operations & Algebraic Thinking (4.OA)",
+              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
               grade: "G4",
               subtopic: "multiplicative comparison",
             };
@@ -670,7 +676,7 @@ const generateQuizQuestions = (
                 ? "A prime number has exactly two factors: 1 and itself."
                 : "A composite number has more than two factors.",
               standard: "4.OA.B.4",
-              concept: "Operations & Algebraic Thinking (4.OA)",
+              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
               grade: "G4",
               subtopic: "prime vs composite",
             };
@@ -694,7 +700,7 @@ const generateQuizQuestions = (
               ]),
               hint: `A factor of ${factorBase} divides evenly into ${factorBase} with no remainder.`,
               standard: "4.OA.B.4",
-              concept: "Operations & Algebraic Thinking (4.OA)",
+              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
               grade: "G4",
               subtopic: "factors",
             };
@@ -716,7 +722,7 @@ const generateQuizQuestions = (
               ]),
               hint: `"${defMultiplier} times as many" means multiply ${defBase} by ${defMultiplier}.`,
               standard: "4.OA.A.1",
-              concept: "Operations & Algebraic Thinking (4.OA)",
+              concept: TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
               grade: "G4",
               subtopic: "multiplicative comparison",
             };
@@ -724,7 +730,7 @@ const generateQuizQuestions = (
         }
         break;
 
-      case "Base Ten (4.NBT)":
+      case TOPICS.BASE_TEN:
         const nbtType = getRandomInt(1, 3);
         switch (nbtType) {
           case 1: // Place value (4.NBT.1)
@@ -744,7 +750,7 @@ const generateQuizQuestions = (
               ]),
               hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
               standard: "4.NBT.A.1",
-              concept: "Base Ten (4.NBT)",
+              concept: TOPICS.BASE_TEN,
               grade: "G4",
               subtopic: "place value",
             };
@@ -775,7 +781,7 @@ const generateQuizQuestions = (
               ]),
               hint: `Look at the digit to the right of the ${roundToNearest} place to decide whether to round up or down.`,
               standard: "4.NBT.A.3",
-              concept: "Base Ten (4.NBT)",
+              concept: TOPICS.BASE_TEN,
               grade: "G4",
               subtopic: "rounding",
             };
@@ -806,7 +812,7 @@ const generateQuizQuestions = (
                 ? "Add place by place, starting from the ones."
                 : "Subtract place by place, borrowing when needed.",
               standard: "4.NBT.B.4",
-              concept: "Base Ten (4.NBT)",
+              concept: TOPICS.BASE_TEN,
               grade: "G4",
               subtopic: isAddition ? "addition" : "subtraction",
             };
@@ -829,7 +835,7 @@ const generateQuizQuestions = (
               ]),
               hint: `Look at the position of the digit ${defDigit} in ${defPlaceValue}.`,
               standard: "4.NBT.A.1",
-              concept: "Base Ten (4.NBT)",
+              concept: TOPICS.BASE_TEN,
               grade: "G4",
               subtopic: "place value",
             };
@@ -837,7 +843,7 @@ const generateQuizQuestions = (
         }
         break;
 
-      case "Fractions (4.NF)":
+      case TOPICS.FRACTIONS_4TH:
         const nfType = getRandomInt(1, 3);
         switch (nfType) {
           case 1: // Equivalent fractions with different denominators (4.NF.1)
@@ -858,7 +864,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
               standard: "4.NF.A.1",
-              concept: "Fractions (4.NF)",
+              concept: TOPICS.FRACTIONS_4TH,
               grade: "G4",
               subtopic: "equivalent fractions",
             };
@@ -881,7 +887,7 @@ const generateQuizQuestions = (
               ]),
               hint: "When denominators are the same, add the numerators and keep the denominator.",
               standard: "4.NF.B.3.a",
-              concept: "Fractions (4.NF)",
+              concept: TOPICS.FRACTIONS_4TH,
               grade: "G4",
               subtopic: "addition like denominators",
             };
@@ -904,7 +910,7 @@ const generateQuizQuestions = (
               options: shuffleArray(["<", ">", "="]),
               hint: "Find a common denominator to compare fractions, or think about which is closer to 1/2 or 1.",
               standard: "4.NF.A.2",
-              concept: "Fractions (4.NF)",
+              concept: TOPICS.FRACTIONS_4TH,
               grade: "G4",
               subtopic: "comparison",
             };
@@ -928,7 +934,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
               standard: "4.NF.A.1",
-              concept: "Fractions (4.NF)",
+              concept: TOPICS.FRACTIONS_4TH,
               grade: "G4",
               subtopic: "equivalent fractions",
             };
@@ -936,7 +942,7 @@ const generateQuizQuestions = (
         }
         break;
 
-      case "Measurement & Data (4.MD)":
+      case TOPICS.MEASUREMENT_DATA_4TH:
         const md4Type = getRandomInt(1, 4); // Extended to 4 types
         switch (md4Type) {
           case 1: // Length conversions (4.MD.1)
@@ -979,7 +985,7 @@ const generateQuizQuestions = (
                 lengthConv.factor
               } ${lengthConv.to}.`,
               standard: "4.MD.A.1",
-              concept: "Measurement & Data (4.MD)",
+              concept: TOPICS.MEASUREMENT_DATA_4TH,
               grade: "G4",
               subtopic: "length conversion",
             };
@@ -1035,7 +1041,7 @@ const generateQuizQuestions = (
                 wcConv.factor
               } ${wcConv.to}.`,
               standard: "4.MD.A.1",
-              concept: "Measurement & Data (4.MD)",
+              concept: TOPICS.MEASUREMENT_DATA_4TH,
               grade: "G4",
               subtopic: "weight and capacity conversion",
             };
@@ -1076,7 +1082,7 @@ const generateQuizQuestions = (
                 timeConv.factor
               } ${timeConv.to}.`,
               standard: "4.MD.A.1",
-              concept: "Measurement & Data (4.MD)",
+              concept: TOPICS.MEASUREMENT_DATA_4TH,
               grade: "G4",
               subtopic: "time conversion",
             };
@@ -1109,7 +1115,7 @@ const generateQuizQuestions = (
                 ? "Area = length × width"
                 : "Perimeter = 2 × (length + width)",
               standard: "4.MD.A.3",
-              concept: "Measurement & Data (4.MD)",
+              concept: TOPICS.MEASUREMENT_DATA_4TH,
               grade: "G4",
               subtopic: isAreaQuestion ? "area" : "perimeter",
             };
@@ -1150,7 +1156,7 @@ const generateQuizQuestions = (
                 defConv.factor
               } ${defConv.to}.`,
               standard: "4.MD.A.1",
-              concept: "Measurement & Data (4.MD)",
+              concept: TOPICS.MEASUREMENT_DATA_4TH,
               grade: "G4",
               subtopic: "unit conversion",
             };
@@ -1158,7 +1164,7 @@ const generateQuizQuestions = (
         }
         break;
 
-      case "Geometry (4.G)":
+      case TOPICS.GEOMETRY:
         const geoType = getRandomInt(1, 2);
         switch (geoType) {
           case 1: // Lines and angles (4.G.1)
@@ -1173,7 +1179,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Think about train tracks - they run alongside each other but never meet.",
               standard: "4.G.A.1",
-              concept: "Geometry (4.G)",
+              concept: TOPICS.GEOMETRY,
               grade: "G4",
               subtopic: "lines and angles",
             };
@@ -1206,7 +1212,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Think about the properties of each shape.",
               standard: "4.G.A.2",
-              concept: "Geometry (4.G)",
+              concept: TOPICS.GEOMETRY,
               grade: "G4",
               subtopic: "classify shapes",
             };
@@ -1224,7 +1230,7 @@ const generateQuizQuestions = (
               ]),
               hint: "Think about train tracks - they run alongside each other but never meet.",
               standard: "4.G.A.1",
-              concept: "Geometry (4.G)",
+              concept: TOPICS.GEOMETRY,
               grade: "G4",
               subtopic: "lines and angles",
             };
@@ -1275,13 +1281,13 @@ const generateQuizQuestions = (
 
 // Grade-specific topics
 const quizTopicsByGrade = {
-  G3: ["Multiplication", "Division", "Fractions", "Measurement & Data"],
+  G3: [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA],
   G4: [
-    "Operations & Algebraic Thinking (4.OA)",
-    "Base Ten (4.NBT)",
-    "Fractions (4.NF)",
-    "Measurement & Data (4.MD)",
-    "Geometry (4.G)",
+    TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
+    TOPICS.BASE_TEN,
+    TOPICS.FRACTIONS_4TH,
+    TOPICS.MEASUREMENT_DATA_4TH,
+    TOPICS.GEOMETRY,
   ],
 };
 
@@ -1298,6 +1304,7 @@ const getTopicAvailability = (userData, selectedGrade = "G3") => {
   const today = getTodayDateString();
   const currentTopics =
     quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+  
 
   // Get goals and progress for the selected grade
   const dailyGoalsForGrade =
@@ -1308,6 +1315,16 @@ const getTopicAvailability = (userData, selectedGrade = "G3") => {
     {};
 
   const topicStats = currentTopics.map((topic) => {
+    // Handle undefined topics gracefully
+    if (!topic) {
+      return {
+        topic: 'undefined',
+        correctAnswers: 0,
+        completed: false,
+        goal: DEFAULT_DAILY_GOAL,
+      };
+    }
+    
     const goalForTopic = dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL;
     const sanitizedTopic = sanitizeTopicName(topic);
     const stats = progressForGrade[sanitizedTopic] || {
@@ -1381,7 +1398,7 @@ const App = () => {
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState(null); // Changed to null, will hold an object {message, type}
   const [isAnswered, setIsAnswered] = useState(false);
-  const [quizState, setQuizState] = useState("topicSelection"); // 'topicSelection', 'inProgress', 'results', 'dashboard', 'store'
+  const [quizState, setQuizState] = useState(APP_STATES.TOPIC_SELECTION); // App states managed via constants
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
@@ -1769,7 +1786,7 @@ const App = () => {
       selectedGrade
     );
     setCurrentQuiz(newQuestions);
-    setQuizState("inProgress");
+    setQuizState(APP_STATES.IN_PROGRESS);
     questionStartTime.current = Date.now();
     resetQuiz();
     setShowResumeModal(false);
@@ -1786,7 +1803,7 @@ const App = () => {
     setCurrentQuiz(pausedData.questions);
     setCurrentQuestionIndex(pausedData.index);
     setScore(pausedData.score);
-    setQuizState("inProgress");
+    setQuizState(APP_STATES.IN_PROGRESS);
     questionStartTime.current = Date.now();
     setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
@@ -1807,7 +1824,7 @@ const App = () => {
     await updateDoc(userDocRef, {
       [`pausedQuizzes.${currentTopic}`]: pausedQuizData,
     });
-    setQuizState("topicSelection");
+    setQuizState(APP_STATES.TOPIC_SELECTION);
     // Reset story UI state
     setStoryData(null);
     setShowStoryHint(false);
@@ -2097,7 +2114,7 @@ const App = () => {
       [`pausedQuizzes.${currentTopic}`]: null,
     });
     updateDifficulty(score, currentQuiz.length);
-    setQuizState("results");
+    setQuizState(APP_STATES.RESULTS);
   };
 
   const resetQuestionState = () => {
@@ -2112,7 +2129,7 @@ const App = () => {
     resetQuestionState();
   };
   const returnToTopics = () => {
-    setQuizState("topicSelection");
+    setQuizState(APP_STATES.TOPIC_SELECTION);
     setCurrentTopic(null);
     setCurrentQuiz([]);
     // Reset story state
@@ -2383,7 +2400,7 @@ Answer: [The answer]`;
         <span>{userData?.coins || 0}</span>
       </div>
       <button
-        onClick={() => setQuizState("store")}
+        onClick={() => setQuizState(APP_STATES.STORE)}
         className="p-2 rounded-full hover:bg-gray-200 transition"
       >
         <Store size={24} className="text-purple-600" />
@@ -2838,14 +2855,51 @@ Answer: [The answer]`;
     const handleGradeChange = async (newGrade) => {
       setSelectedGrade(newGrade);
 
-      // Update selectedGrade in Firestore
-      if (user) {
+      // Update selectedGrade in Firestore and ensure grade-specific data exists
+      if (user && userData) {
         const userDocRef = getUserDocRef(user.uid);
         if (userDocRef) {
           try {
-            await updateDoc(userDocRef, { selectedGrade: newGrade });
+            const today = getTodayDateString();
+            const updatePayload = { selectedGrade: newGrade };
+            
+            // Ensure grade-specific daily goals exist
+            if (!userData.dailyGoalsByGrade?.[newGrade]) {
+              if (!userData.dailyGoalsByGrade) userData.dailyGoalsByGrade = {};
+              userData.dailyGoalsByGrade[newGrade] = {};
+              
+              // Initialize goals for the new grade
+              quizTopicsByGrade[newGrade].forEach((topic) => {
+                userData.dailyGoalsByGrade[newGrade][topic] = DEFAULT_DAILY_GOAL;
+              });
+              
+              updatePayload.dailyGoalsByGrade = userData.dailyGoalsByGrade;
+            }
+            
+            // Ensure grade-specific progress exists for today
+            if (!userData.progressByGrade?.[today]?.[newGrade]) {
+              if (!userData.progressByGrade) userData.progressByGrade = {};
+              if (!userData.progressByGrade[today]) userData.progressByGrade[today] = {};
+              userData.progressByGrade[today][newGrade] = { 
+                all: { correct: 0, incorrect: 0, timeSpent: 0 } 
+              };
+              
+              // Initialize topic-specific progress for the new grade
+              quizTopicsByGrade[newGrade].forEach((topic) => {
+                const sanitizedTopic = sanitizeTopicName(topic);
+                userData.progressByGrade[today][newGrade][sanitizedTopic] = {
+                  correct: 0,
+                  incorrect: 0,
+                };
+              });
+              
+              updatePayload.progressByGrade = userData.progressByGrade;
+            }
+            
+            await updateDoc(userDocRef, updatePayload);
+            setUserData({...userData});
           } catch (e) {
-            console.warn("Could not persist selectedGrade:", e);
+            console.warn("Could not persist grade change:", e);
           }
         }
       }
@@ -3409,15 +3463,15 @@ Answer: [The answer]`;
 
   const renderContent = () => {
     switch (quizState) {
-      case "topicSelection":
+      case APP_STATES.TOPIC_SELECTION:
         return renderTopicSelection();
-      case "inProgress":
+      case APP_STATES.IN_PROGRESS:
         return renderQuiz();
-      case "results":
+      case APP_STATES.RESULTS:
         return renderResults();
-      case "dashboard":
+      case APP_STATES.DASHBOARD:
         return renderDashboard();
-      case "store":
+      case APP_STATES.STORE:
         return renderStore();
       default:
         return renderTopicSelection();
