@@ -701,323 +701,82 @@ const generateQuizQuestions = (
         break;
 
       case TOPICS.FRACTIONS_4TH:
-        const nfType = getRandomInt(1, 3);
-        switch (nfType) {
-          case 1: // Equivalent fractions with different denominators (4.NF.1)
-            const baseNum = getRandomInt(1, 4);
-            const baseDen = getRandomInt(baseNum + 1, 8);
-            const scale = getRandomInt(2, 5);
-            const equivNum = baseNum * scale;
-            const equivDen = baseDen * scale;
+        // Use the new pluggable content system for Fractions
+        const fractionsTopic = content.getTopic('g4', 'fractions');
+        if (fractionsTopic) {
+          question = fractionsTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.FRACTIONS_4TH;
+        } else {
+          // Fallback to old logic if the new system isn't available
+          const baseNum = getRandomInt(1, 4);
+          const baseDen = getRandomInt(baseNum + 1, 8);
+          const scale = getRandomInt(2, 5);
+          const equivNum = baseNum * scale;
+          const equivDen = baseDen * scale;
 
-            question = {
-              question: `Which fraction is equivalent to ${baseNum}/${baseDen}?`,
-              correctAnswer: `${equivNum}/${equivDen}`,
-              options: shuffleArray([
-                `${equivNum}/${equivDen}`,
-                `${baseNum + 1}/${baseDen}`,
-                `${baseNum}/${baseDen + 1}`,
-                `${equivNum + 1}/${equivDen}`,
-              ]),
-              hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
-              standard: "4.NF.A.1",
-              concept: TOPICS.FRACTIONS_4TH,
-              grade: "G4",
-              subtopic: "equivalent fractions",
-            };
-            break;
-          case 2: // Add fractions with like denominators (4.NF.3a)
-            const likeDen = getRandomInt(3, 8);
-            const num1 = getRandomInt(1, likeDen - 2);
-            const num2 = getRandomInt(1, likeDen - num1 - 1);
-            const sum = num1 + num2;
-            const simplifiedSum = getSimplifiedFraction(sum, likeDen);
-
-            question = {
-              question: `What is ${num1}/${likeDen} + ${num2}/${likeDen}?`,
-              correctAnswer: simplifiedSum,
-              options: shuffleArray([
-                simplifiedSum,
-                `${sum}/${likeDen + 1}`,
-                `${sum + 1}/${likeDen}`,
-                `${num1 + num2}/${likeDen + likeDen}`,
-              ]),
-              hint: "When denominators are the same, add the numerators and keep the denominator.",
-              standard: "4.NF.B.3.a",
-              concept: TOPICS.FRACTIONS_4TH,
-              grade: "G4",
-              subtopic: "addition like denominators",
-            };
-            break;
-          case 3: // Compare fractions (4.NF.2)
-            const frac1Num = getRandomInt(1, 5);
-            const frac1Den = getRandomInt(frac1Num + 1, 8);
-            const frac2Num = getRandomInt(1, 5);
-            const frac2Den = getRandomInt(frac2Num + 1, 8);
-
-            // Convert to decimals for comparison
-            const decimal1 = frac1Num / frac1Den;
-            const decimal2 = frac2Num / frac2Den;
-            const comparison =
-              decimal1 > decimal2 ? ">" : decimal1 < decimal2 ? "<" : "=";
-
-            question = {
-              question: `Compare the fractions: ${frac1Num}/${frac1Den} ___ ${frac2Num}/${frac2Den}`,
-              correctAnswer: comparison,
-              options: shuffleArray(["<", ">", "="]),
-              hint: "Find a common denominator to compare fractions, or think about which is closer to 1/2 or 1.",
-              standard: "4.NF.A.2",
-              concept: TOPICS.FRACTIONS_4TH,
-              grade: "G4",
-              subtopic: "comparison",
-            };
-            break;
-          default:
-            // Fallback to equivalent fractions
-            const defBaseNum = getRandomInt(1, 4);
-            const defBaseDen = getRandomInt(defBaseNum + 1, 8);
-            const defScale = getRandomInt(2, 5);
-            const defEquivNum = defBaseNum * defScale;
-            const defEquivDen = defBaseDen * defScale;
-
-            question = {
-              question: `Which fraction is equivalent to ${defBaseNum}/${defBaseDen}?`,
-              correctAnswer: `${defEquivNum}/${defEquivDen}`,
-              options: shuffleArray([
-                `${defEquivNum}/${defEquivDen}`,
-                `${defBaseNum + 1}/${defBaseDen}`,
-                `${defBaseNum}/${defBaseDen + 1}`,
-                `${defEquivNum + 1}/${defEquivDen}`,
-              ]),
-              hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
-              standard: "4.NF.A.1",
-              concept: TOPICS.FRACTIONS_4TH,
-              grade: "G4",
-              subtopic: "equivalent fractions",
-            };
-            break;
+          question = {
+            question: `Which fraction is equivalent to ${baseNum}/${baseDen}?`,
+            correctAnswer: `${equivNum}/${equivDen}`,
+            options: shuffleArray([
+              `${equivNum}/${equivDen}`,
+              `${baseNum + 1}/${baseDen}`,
+              `${baseNum}/${baseDen + 1}`,
+              `${equivNum + 1}/${equivDen}`,
+            ]),
+            hint: "Multiply both the numerator and denominator by the same number to find equivalent fractions.",
+            standard: "4.NF.A.1",
+            concept: TOPICS.FRACTIONS_4TH,
+            grade: "G4",
+            subtopic: "equivalent fractions",
+          };
         }
         break;
 
       case TOPICS.MEASUREMENT_DATA_4TH:
-        const md4Type = getRandomInt(1, 4); // Extended to 4 types
-        switch (md4Type) {
-          case 1: // Length conversions (4.MD.1)
-            const lengthConversions = [
-              { from: "feet", to: "inches", factor: 12, abbrev: ["ft", "in"] },
-              { from: "yards", to: "feet", factor: 3, abbrev: ["yd", "ft"] },
-              { from: "miles", to: "feet", factor: 5280, abbrev: ["mi", "ft"] },
-              {
-                from: "meters",
-                to: "centimeters",
-                factor: 100,
-                abbrev: ["m", "cm"],
-              },
-              {
-                from: "kilometers",
-                to: "meters",
-                factor: 1000,
-                abbrev: ["km", "m"],
-              },
-              { from: "yards", to: "inches", factor: 36, abbrev: ["yd", "in"] },
-            ];
-            const lengthConv =
-              lengthConversions[getRandomInt(0, lengthConversions.length - 1)];
-            const lengthAmount =
-              lengthConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
-            const lengthConverted = lengthAmount * lengthConv.factor;
+        // Use the new pluggable content system for Measurement & Data
+        const measurementDataTopic = content.getTopic('g4', 'measurement-data');
+        if (measurementDataTopic) {
+          question = measurementDataTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.MEASUREMENT_DATA_4TH;
+        } else {
+          // Fallback to old logic if the new system isn't available
+          const defConversions = [
+            {
+              from: "feet",
+              to: "inches",
+              factor: 12,
+              question: "feet",
+              answer: "inches",
+            },
+            {
+              from: "yards",
+              to: "feet",
+              factor: 3,
+              question: "yards",
+              answer: "feet",
+            },
+          ];
+          const defConv = defConversions[getRandomInt(0, defConversions.length - 1)];
+          const defAmount = getRandomInt(2, 8);
+          const defConverted = defAmount * defConv.factor;
 
-            question = {
-              question: `How many ${lengthConv.to} are in ${lengthAmount} ${lengthConv.from}?`,
-              correctAnswer: `${lengthConverted} ${lengthConv.to}`,
-              options: shuffleArray([
-                `${lengthConverted} ${lengthConv.to}`,
-                `${lengthAmount} ${lengthConv.to}`,
-                `${lengthConverted + (lengthConv.factor < 100 ? 5 : 100)} ${
-                  lengthConv.to
-                }`,
-                `${Math.floor(lengthConverted / 2)} ${lengthConv.to}`,
-              ]),
-              hint: `Remember: 1 ${lengthConv.from.slice(0, -1)} = ${
-                lengthConv.factor
-              } ${lengthConv.to}.`,
-              standard: "4.MD.A.1",
-              concept: TOPICS.MEASUREMENT_DATA_4TH,
-              grade: "G4",
-              subtopic: "length conversion",
-            };
-            break;
-          case 2: // Weight/Mass and Capacity conversions (4.MD.1)
-            const weightCapacityConversions = [
-              {
-                from: "pounds",
-                to: "ounces",
-                factor: 16,
-                abbrev: ["lb", "oz"],
-              },
-              { from: "tons", to: "pounds", factor: 2000, abbrev: ["T", "lb"] },
-              {
-                from: "gallons",
-                to: "quarts",
-                factor: 4,
-                abbrev: ["gal", "qt"],
-              },
-              { from: "quarts", to: "pints", factor: 2, abbrev: ["qt", "pt"] },
-              { from: "pints", to: "cups", factor: 2, abbrev: ["pt", "c"] },
-              {
-                from: "kilograms",
-                to: "grams",
-                factor: 1000,
-                abbrev: ["kg", "g"],
-              },
-              {
-                from: "liters",
-                to: "milliliters",
-                factor: 1000,
-                abbrev: ["L", "mL"],
-              },
-            ];
-            const wcConv =
-              weightCapacityConversions[
-                getRandomInt(0, weightCapacityConversions.length - 1)
-              ];
-            const wcAmount =
-              wcConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
-            const wcConverted = wcAmount * wcConv.factor;
-
-            question = {
-              question: `How many ${wcConv.to} are in ${wcAmount} ${wcConv.from}?`,
-              correctAnswer: `${wcConverted} ${wcConv.to}`,
-              options: shuffleArray([
-                `${wcConverted} ${wcConv.to}`,
-                `${wcAmount} ${wcConv.to}`,
-                `${wcConverted + (wcConv.factor < 100 ? 5 : 100)} ${wcConv.to}`,
-                `${Math.floor(wcConverted / 2)} ${wcConv.to}`,
-              ]),
-              hint: `Remember: 1 ${wcConv.from.slice(0, -1)} = ${
-                wcConv.factor
-              } ${wcConv.to}.`,
-              standard: "4.MD.A.1",
-              concept: TOPICS.MEASUREMENT_DATA_4TH,
-              grade: "G4",
-              subtopic: "weight and capacity conversion",
-            };
-            break;
-          case 3: // Time conversions (4.MD.1)
-            const timeConversions = [
-              {
-                from: "hours",
-                to: "minutes",
-                factor: 60,
-                abbrev: ["hr", "min"],
-              },
-              {
-                from: "minutes",
-                to: "seconds",
-                factor: 60,
-                abbrev: ["min", "sec"],
-              },
-              { from: "days", to: "hours", factor: 24, abbrev: ["d", "hr"] },
-              { from: "weeks", to: "days", factor: 7, abbrev: ["wk", "d"] },
-              { from: "years", to: "months", factor: 12, abbrev: ["yr", "mo"] },
-            ];
-            const timeConv =
-              timeConversions[getRandomInt(0, timeConversions.length - 1)];
-            const timeAmount = getRandomInt(2, 8);
-            const timeConverted = timeAmount * timeConv.factor;
-
-            question = {
-              question: `How many ${timeConv.to} are in ${timeAmount} ${timeConv.from}?`,
-              correctAnswer: `${timeConverted} ${timeConv.to}`,
-              options: shuffleArray([
-                `${timeConverted} ${timeConv.to}`,
-                `${timeAmount} ${timeConv.to}`,
-                `${timeConverted + 10} ${timeConv.to}`,
-                `${Math.floor(timeConverted / 2)} ${timeConv.to}`,
-              ]),
-              hint: `Remember: 1 ${timeConv.from.slice(0, -1)} = ${
-                timeConv.factor
-              } ${timeConv.to}.`,
-              standard: "4.MD.A.1",
-              concept: TOPICS.MEASUREMENT_DATA_4TH,
-              grade: "G4",
-              subtopic: "time conversion",
-            };
-            break;
-          case 4: // Area and perimeter (4.MD.3)
-            const rectLength = getRandomInt(4, 12);
-            const rectWidth = getRandomInt(3, 8);
-            const isAreaQuestion = Math.random() < 0.5;
-            const correctAnswer = isAreaQuestion
-              ? rectLength * rectWidth
-              : 2 * (rectLength + rectWidth);
-            const unit = isAreaQuestion ? "square units" : "units";
-
-            question = {
-              question: `A rectangle has a length of ${rectLength} units and a width of ${rectWidth} units. What is its ${
-                isAreaQuestion ? "area" : "perimeter"
-              }?`,
-              correctAnswer: `${correctAnswer} ${unit}`,
-              options: shuffleArray([
-                `${correctAnswer} ${unit}`,
-                `${
-                  isAreaQuestion
-                    ? 2 * (rectLength + rectWidth)
-                    : rectLength * rectWidth
-                } ${unit}`,
-                `${correctAnswer + 5} ${unit}`,
-                `${correctAnswer - 3} ${unit}`,
-              ]),
-              hint: isAreaQuestion
-                ? "Area = length × width"
-                : "Perimeter = 2 × (length + width)",
-              standard: "4.MD.A.3",
-              concept: TOPICS.MEASUREMENT_DATA_4TH,
-              grade: "G4",
-              subtopic: isAreaQuestion ? "area" : "perimeter",
-            };
-            break;
-          default:
-            // Fallback to unit conversion
-            const defConversions = [
-              {
-                from: "feet",
-                to: "inches",
-                factor: 12,
-                question: "feet",
-                answer: "inches",
-              },
-              {
-                from: "yards",
-                to: "feet",
-                factor: 3,
-                question: "yards",
-                answer: "feet",
-              },
-            ];
-            const defConv =
-              defConversions[getRandomInt(0, defConversions.length - 1)];
-            const defAmount = getRandomInt(2, 8);
-            const defConverted = defAmount * defConv.factor;
-
-            question = {
-              question: `How many ${defConv.to} are in ${defAmount} ${defConv.from}?`,
-              correctAnswer: `${defConverted} ${defConv.to}`,
-              options: shuffleArray([
-                `${defConverted} ${defConv.to}`,
-                `${defAmount} ${defConv.to}`,
-                `${defConverted + 5} ${defConv.to}`,
-                `${Math.floor(defConverted / 2)} ${defConv.to}`,
-              ]),
-              hint: `Remember: 1 ${defConv.from.slice(0, -1)} = ${
-                defConv.factor
-              } ${defConv.to}.`,
-              standard: "4.MD.A.1",
-              concept: TOPICS.MEASUREMENT_DATA_4TH,
-              grade: "G4",
-              subtopic: "unit conversion",
-            };
-            break;
+          question = {
+            question: `How many ${defConv.to} are in ${defAmount} ${defConv.from}?`,
+            correctAnswer: `${defConverted} ${defConv.to}`,
+            options: shuffleArray([
+              `${defConverted} ${defConv.to}`,
+              `${defAmount} ${defConv.to}`,
+              `${defConverted + 5} ${defConv.to}`,
+              `${Math.floor(defConverted / 2)} ${defConv.to}`,
+            ]),
+            hint: `Remember: 1 ${defConv.from.slice(0, -1)} = ${defConv.factor} ${defConv.to}.`,
+            standard: "4.MD.A.1",
+            concept: TOPICS.MEASUREMENT_DATA_4TH,
+            grade: "G4",
+            subtopic: "unit conversion",
+          };
         }
         break;
 
@@ -2155,6 +1914,18 @@ const App = () => {
       if (baseTenTopic && baseTenTopic.ExplanationComponent) {
         hasReactComponent = true;
         ReactComponent = baseTenTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.FRACTIONS_4TH) {
+      const fractionsTopic = content.getTopic('g4', 'fractions');
+      if (fractionsTopic && fractionsTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = fractionsTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.MEASUREMENT_DATA_4TH) {
+      const measurementDataTopic = content.getTopic('g4', 'measurement-data');
+      if (measurementDataTopic && measurementDataTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = measurementDataTopic.ExplanationComponent;
       }
     }
     
