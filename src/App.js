@@ -40,6 +40,7 @@ import {
   rankQuestionsByComplexity,
 } from "./utils/complexityEngine";
 import { TOPICS, APP_STATES } from "./constants/topics";
+import content from "./content";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -1165,76 +1166,29 @@ const generateQuizQuestions = (
         break;
 
       case TOPICS.GEOMETRY:
-        const geoType = getRandomInt(1, 2);
-        switch (geoType) {
-          case 1: // Lines and angles (4.G.1)
-            question = {
-              question: `Two lines that never meet and are always the same distance apart are called:`,
-              correctAnswer: "parallel",
-              options: shuffleArray([
-                "parallel",
-                "perpendicular",
-                "intersecting",
-                "curved",
-              ]),
-              hint: "Think about train tracks - they run alongside each other but never meet.",
-              standard: "4.G.A.1",
-              concept: TOPICS.GEOMETRY,
-              grade: "G4",
-              subtopic: "lines and angles",
-            };
-            break;
-          case 2: // Classify triangles and quadrilaterals (4.G.2)
-            const shapes = [
-              {
-                name: "square",
-                description: "has 4 equal sides and 4 right angles",
-              },
-              {
-                name: "rectangle",
-                description:
-                  "has 4 sides with opposite sides equal and 4 right angles",
-              },
-              { name: "triangle", description: "has 3 sides and 3 angles" },
-            ];
-            const shape = shapes[getRandomInt(0, shapes.length - 1)];
-
-            question = {
-              question: `What shape ${shape.description}?`,
-              correctAnswer: shape.name,
-              options: shuffleArray([
-                shape.name,
-                ...shapes
-                  .filter((s) => s.name !== shape.name)
-                  .map((s) => s.name)
-                  .slice(0, 2),
-                "circle",
-              ]),
-              hint: "Think about the properties of each shape.",
-              standard: "4.G.A.2",
-              concept: TOPICS.GEOMETRY,
-              grade: "G4",
-              subtopic: "classify shapes",
-            };
-            break;
-          default:
-            // Fallback to lines and angles
-            question = {
-              question: `Two lines that never meet and are always the same distance apart are called:`,
-              correctAnswer: "parallel",
-              options: shuffleArray([
-                "parallel",
-                "perpendicular",
-                "intersecting",
-                "curved",
-              ]),
-              hint: "Think about train tracks - they run alongside each other but never meet.",
-              standard: "4.G.A.1",
-              concept: TOPICS.GEOMETRY,
-              grade: "G4",
-              subtopic: "lines and angles",
-            };
-            break;
+        // Use the new pluggable content system for Geometry
+        const geometryTopic = content.getTopic('g4', 'geometry');
+        if (geometryTopic) {
+          question = geometryTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.GEOMETRY;
+        } else {
+          // Fallback to old logic if the new system isn't available
+          question = {
+            question: `Two lines that never meet and are always the same distance apart are called:`,
+            correctAnswer: "parallel",
+            options: shuffleArray([
+              "parallel",
+              "perpendicular",
+              "intersecting",
+              "curved",
+            ]),
+            hint: "Think about train tracks - they run alongside each other but never meet.",
+            standard: "4.G.A.1",
+            concept: TOPICS.GEOMETRY,
+            grade: "G4",
+            subtopic: "lines and angles",
+          };
         }
         break;
 
@@ -1404,6 +1358,7 @@ const App = () => {
   const [generatedContent, setGeneratedContent] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
+  const [modalReactComponent, setModalReactComponent] = useState(null);
 
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [topicToResume, setTopicToResume] = useState(null);
@@ -2322,24 +2277,48 @@ const App = () => {
 
   const handleExplainConcept = () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
-    const explanationFile = conceptExplanationFiles[concept];
-
-    if (explanationFile) {
+    
+    // Check if this concept has a React component in the new content system
+    let hasReactComponent = false;
+    let ReactComponent = null;
+    
+    if (concept === TOPICS.GEOMETRY) {
+      const geometryTopic = content.getTopic('g4', 'geometry');
+      if (geometryTopic && geometryTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = geometryTopic.ExplanationComponent;
+      }
+    }
+    
+    if (hasReactComponent && ReactComponent) {
+      // Use the new React component system
       setModalTitle(`✨ Understanding ${concept}`);
+      setModalReactComponent(() => ReactComponent);
+      setGeneratedContent(null);
       setShowModal(true);
       setIsGenerating(false);
-      // Set the iframe source instead of HTML content
-      setGeneratedContent(
-        `<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`
-      );
     } else {
-      // Fallback: show modal with basic explanation
-      setModalTitle(`✨ What is ${concept}?`);
-      setGeneratedContent(
-        "<p>Sorry, no detailed explanation is available for this concept yet!</p>"
-      );
-      setShowModal(true);
-      setIsGenerating(false);
+      // Fall back to the legacy iframe system
+      const explanationFile = conceptExplanationFiles[concept];
+      
+      if (explanationFile) {
+        setModalTitle(`✨ Understanding ${concept}`);
+        setModalReactComponent(null);
+        setGeneratedContent(
+          `<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`
+        );
+        setShowModal(true);
+        setIsGenerating(false);
+      } else {
+        // Fallback: show modal with basic explanation
+        setModalTitle(`✨ What is ${concept}?`);
+        setModalReactComponent(null);
+        setGeneratedContent(
+          "<p>Sorry, no detailed explanation is available for this concept yet!</p>"
+        );
+        setShowModal(true);
+        setIsGenerating(false);
+      }
     }
   };
   const handleCreateStoryProblem = async () => {
@@ -3353,6 +3332,9 @@ Answer: [The answer]`;
                   setShowStoryHint(false);
                   setShowStoryAnswer(false);
                 }
+                // Reset React component state
+                setModalReactComponent(null);
+                setGeneratedContent("");
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
             >
@@ -3417,6 +3399,10 @@ Answer: [The answer]`;
                     </p>
                   )}
                 </div>
+              </div>
+            ) : modalReactComponent ? (
+              <div className="text-gray-700 leading-relaxed overflow-auto" style={{ maxHeight: '60vh' }}>
+                {React.createElement(modalReactComponent)}
               </div>
             ) : generatedContent ? (
               <div
