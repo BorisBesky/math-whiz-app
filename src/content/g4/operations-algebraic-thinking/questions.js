@@ -28,6 +28,11 @@ export function generateQuestion() {
     generateSequenceCompletionQuestion,
     generatePatternRuleQuestion,
     generateTwoStepPatternQuestion,
+    generateLongDivisionWithRemainderQuestion,
+    generateLongDivisionNoRemainderQuestion,
+    generateTwoDigitMultiplicationQuestion,
+    generateMultiplicationWordProblemQuestion,
+    generateDivisionWordProblemQuestion,
   ];
   
   // Randomly select a question type
@@ -278,6 +283,171 @@ export function generateTwoStepPatternQuestion() {
   };
 }
 
+/**
+ * Generates a long division question with remainder
+ */
+export function generateLongDivisionWithRemainderQuestion() {
+  const divisor = getRandomInt(2, 9);
+  const quotient = getRandomInt(3, 12);
+  const remainder = getRandomInt(1, divisor - 1);
+  const dividend = (quotient * divisor) + remainder;
+  
+  return {
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    correctAnswer: `${quotient} remainder ${remainder}`,
+    options: shuffleArray([
+      `${quotient} remainder ${remainder}`,
+      `${quotient + 1} remainder ${remainder}`,
+      `${quotient} remainder ${remainder + 1}`,
+      `${quotient - 1} remainder ${remainder}`,
+    ]),
+    hint: `How many times does ${divisor} go into ${dividend}? Don't forget the remainder!`,
+    standard: "4.NBT.B.6",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "long division with remainder",
+  };
+}
+
+/**
+ * Generates a long division question without remainder
+ */
+export function generateLongDivisionNoRemainderQuestion() {
+  const divisor = getRandomInt(2, 9);
+  const quotient = getRandomInt(4, 15);
+  const dividend = quotient * divisor;
+  
+  return {
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    correctAnswer: quotient.toString(),
+    options: shuffleArray([
+      quotient.toString(),
+      (quotient + 1).toString(),
+      (quotient - 1).toString(),
+      (quotient + getRandomInt(2, 4)).toString(),
+    ]),
+    hint: `Think: ${divisor} times what number equals ${dividend}?`,
+    standard: "4.NBT.B.6",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "long division",
+  };
+}
+
+/**
+ * Generates a two-digit by one-digit multiplication question
+ */
+export function generateTwoDigitMultiplicationQuestion() {
+  const twoDigit = getRandomInt(11, 99);
+  const oneDigit = getRandomInt(2, 9);
+  const result = twoDigit * oneDigit;
+  
+  return {
+    question: `What is ${twoDigit} × ${oneDigit}?`,
+    correctAnswer: result.toString(),
+    options: shuffleArray([
+      result.toString(),
+      (result + getRandomInt(10, 50)).toString(),
+      (result - getRandomInt(10, 30)).toString(),
+      (result + oneDigit).toString(),
+    ]),
+    hint: `Break it down: multiply the ones place first, then the tens place. Don't forget to carry over!`,
+    standard: "4.NBT.B.5",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "multi-digit multiplication",
+  };
+}
+
+/**
+ * Generates a word problem involving two-digit multiplication
+ */
+export function generateMultiplicationWordProblemQuestion() {
+  const groups = getRandomInt(12, 48);
+  const itemsPerGroup = getRandomInt(3, 8);
+  const total = groups * itemsPerGroup;
+  
+  const scenarios = [
+    {
+      question: `There are ${groups} boxes with ${itemsPerGroup} pencils in each box. How many pencils are there in total?`,
+      context: "pencils and boxes",
+    },
+    {
+      question: `A theater has ${groups} rows with ${itemsPerGroup} seats in each row. How many seats are there altogether?`,
+      context: "theater seats",
+    },
+    {
+      question: `Sarah collects ${groups} sticker sheets with ${itemsPerGroup} stickers on each sheet. How many stickers does she have?`,
+      context: "stickers",
+    },
+    {
+      question: `A library has ${groups} shelves with ${itemsPerGroup} books on each shelf. How many books are there in total?`,
+      context: "library books",
+    },
+  ];
+  
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  
+  return {
+    question: scenario.question,
+    correctAnswer: total.toString(),
+    options: shuffleArray([
+      total.toString(),
+      (groups + itemsPerGroup).toString(),
+      (total - groups).toString(),
+      (total + itemsPerGroup).toString(),
+    ]),
+    hint: `This is ${groups} groups of ${itemsPerGroup}. Multiply ${groups} × ${itemsPerGroup}.`,
+    standard: "4.OA.A.2",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "multiplication word problems",
+  };
+}
+
+/**
+ * Generates a division word problem with remainder
+ */
+export function generateDivisionWordProblemQuestion() {
+  const divisor = getRandomInt(3, 8);
+  const quotient = getRandomInt(4, 12);
+  const remainder = getRandomInt(1, divisor - 1);
+  const dividend = (quotient * divisor) + remainder;
+  
+  const scenarios = [
+    {
+      question: `${dividend} students are divided equally into ${divisor} groups. How many students are in each group, and how many students are left over?`,
+      unit: "students",
+    },
+    {
+      question: `There are ${dividend} cookies to be shared equally among ${divisor} children. How many cookies does each child get, and how many cookies are left over?`,
+      unit: "cookies",
+    },
+    {
+      question: `A teacher has ${dividend} stickers to give equally to ${divisor} students. How many stickers does each student get, and how many stickers are left over?`,
+      unit: "stickers",
+    },
+  ];
+  
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  
+  return {
+    question: scenario.question,
+    correctAnswer: `${quotient} with ${remainder} left over`,
+    options: shuffleArray([
+      `${quotient} with ${remainder} left over`,
+      `${quotient + 1} with ${remainder} left over`,
+      `${quotient} with ${remainder + 1} left over`,
+      `${quotient - 1} with ${remainder} left over`,
+    ]),
+    hint: `Divide ${dividend} by ${divisor}. How many complete groups can you make?`,
+    standard: "4.OA.A.3",
+    concept: "Operations & Algebraic Thinking",
+    grade: "G4",
+    subtopic: "division word problems",
+  };
+}
+
 const operationsAlgebraicThinkingQuestions = {
   generateQuestion,
   generateMultiplicativeComparisonQuestion,
@@ -287,6 +457,11 @@ const operationsAlgebraicThinkingQuestions = {
   generateSequenceCompletionQuestion,
   generatePatternRuleQuestion,
   generateTwoStepPatternQuestion,
+  generateLongDivisionWithRemainderQuestion,
+  generateLongDivisionNoRemainderQuestion,
+  generateTwoDigitMultiplicationQuestion,
+  generateMultiplicationWordProblemQuestion,
+  generateDivisionWordProblemQuestion,
 };
 
 export default operationsAlgebraicThinkingQuestions;

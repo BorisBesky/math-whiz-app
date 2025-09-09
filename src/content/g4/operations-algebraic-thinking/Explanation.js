@@ -106,6 +106,78 @@ const OperationsAlgebraicThinkingExplanation = () => {
         <span style={styles.emoji}>🕵️</span><strong>Pattern Detective:</strong> Look at the difference between numbers to find the rule!
       </div>
 
+      <h2 style={styles.h2}>✖️ Two-Digit × One-Digit Multiplication</h2>
+      <p>Learn to multiply bigger numbers step by step!</p>
+      
+      <div style={styles.example}>
+        <strong>Example: 64 × 8</strong>
+        <br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'    64'}
+          <br/>{'  ×  8'}
+          <br/>{'_____'}
+        </div>
+        <strong>Step 1:</strong> Multiply the ones: 4 × 8 = 32
+        <br/>Write down 2, carry the 3
+        <br/><br/>
+        <strong>Step 2:</strong> Multiply the tens: 6 × 8 = 48
+        <br/>Add the carried 3: 48 + 3 = 51
+        <br/><br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'    64'}
+          <br/>{'  ×  8'}
+          <br/>{'_____'}
+          <br/>{'   512'}
+        </div>
+        <strong>Answer: 64 × 8 = 512</strong>
+      </div>
+      
+      <div style={styles.tip}>
+        <span style={styles.emoji}>📝</span><strong>Multiplication Tip:</strong> Always start with the ones place and remember to carry over!
+      </div>
+
+      <h2 style={styles.h2}>➗ Long Division</h2>
+      <p>Break down big division problems into smaller steps!</p>
+      
+      <div style={styles.example}>
+        <strong>Example: 36 ÷ 5</strong>
+        <br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'     7 R1'}
+          <br/>{'5 ) 36'}
+          <br/>{'   -35'}
+          <br/>{'   ___'}
+          <br/>{'     1'}
+        </div>
+        <strong>Step 1:</strong> How many 5s go into 36?
+        <br/>5 × 7 = 35 (closest without going over)
+        <br/><br/>
+        <strong>Step 2:</strong> Subtract: 36 - 35 = 1
+        <br/>Since 1 is less than 5, it becomes our remainder
+        <br/><br/>
+        <strong>Answer: 36 ÷ 5 = 7 remainder 1</strong>
+      </div>
+      
+      <div style={styles.example}>
+        <strong>Division without remainder: 84 ÷ 4</strong>
+        <br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'    21'}
+          <br/>{'4 ) 84'}
+          <br/>{'   -8↓'}
+          <br/>{'   ___'}
+          <br/>{'    04'}
+          <br/>{'    -4'}
+          <br/>{'    __'}
+          <br/>{'     0'}
+        </div>
+        <strong>Answer: 84 ÷ 4 = 21</strong>
+      </div>
+      
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🎯</span><strong>Division Tip:</strong> Think "How many times does this number fit?" and always check your work by multiplying back!
+      </div>
+
       <div style={styles.funFact}>
         <span style={styles.emoji}>🌟</span><strong>You're Amazing!</strong> 4th grade math helps you think like a mathematician. Keep exploring patterns and relationships in numbers!
       </div>
