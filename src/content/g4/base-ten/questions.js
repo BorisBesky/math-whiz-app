@@ -359,7 +359,7 @@ export function generateMultiStepWordProblemQuestion() {
 
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
   const names = {
-    schools: ["Lincoln Elementary", "Washington Middle School", "Jefferson Academy"],
+    schools: ["Mariposa Upper Elementary", "Washington Middle School", "Jefferson Academy"],
     venues: ["City Theater", "Grand Auditorium", "Community Center"],
     organizations: ["Helping Hands Club", "Community Volunteers", "Youth Foundation"]
   };
