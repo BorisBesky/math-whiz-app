@@ -246,7 +246,6 @@ export function generateQuadrilateralPropertiesQuestion() {
         "opposite sides equal",
         "opposite angles equal",
         "opposite sides parallel",
-        "no lines of symmetry",
       ],
     },
     {
@@ -254,7 +253,7 @@ export function generateQuadrilateralPropertiesQuestion() {
       properties: [
         "exactly one pair of parallel sides",
         "can have different shapes",
-        "may have line symmetry",
+        "may have a line of symmetry",
       ],
     },
   ];

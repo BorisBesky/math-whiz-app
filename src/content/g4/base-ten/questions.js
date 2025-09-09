@@ -79,8 +79,8 @@ export function generateQuestion() {
       break;
       
     case 3: // Multi-digit addition/subtraction (4.NBT.4)
-      const addend1 = getRandomInt(1000, 5000);
-      const addend2 = getRandomInt(1000, 4000);
+      const addend1 = getRandomInt(1000, 100000);
+      const addend2 = getRandomInt(1000, 100000);
       const isAddition = Math.random() < 0.5;
       const answer = isAddition
         ? addend1 + addend2
@@ -140,9 +140,9 @@ export function generateQuestion() {
 
 // Additional specialized question generators
 export function generatePlaceValueQuestion() {
-  const number = getRandomInt(1000, 9999);
-  const positions = ["thousands", "hundreds", "tens", "ones"];
-  const digitIndex = getRandomInt(0, 3);
+  const number = getRandomInt(1000, 999999);
+  const positions = ["millions", "hundred thousands", "ten thousands", "thousands", "hundreds", "tens", "ones"];
+  const digitIndex = getRandomInt(0, 6);
   const digit = number.toString()[digitIndex];
   const correctPosition = positions[digitIndex];
 
@@ -153,7 +153,7 @@ export function generatePlaceValueQuestion() {
       correctPosition,
       ...positions.filter((p) => p !== correctPosition).slice(0, 3),
     ]),
-    hint: `Count the positions from right to left: ones, tens, hundreds, thousands.`,
+    hint: `Count the positions from right to left: ones, tens, hundreds, thousands, ten thousands, hundred thousands, millions.`,
     standard: "4.NBT.A.1",
     concept: "Base Ten",
     grade: "G4",
@@ -162,11 +162,14 @@ export function generatePlaceValueQuestion() {
 }
 
 export function generateRoundingQuestion() {
-  const number = getRandomInt(1234, 8765);
+  const number = getRandomInt(1234, 10000000);
   const roundingOptions = [
     { name: "tens", divisor: 10 },
     { name: "hundreds", divisor: 100 },
-    { name: "thousands", divisor: 1000 }
+    { name: "thousands", divisor: 1000 },
+    { name: "ten thousands", divisor: 10000 },
+    { name: "hundred thousands", divisor: 100000 },
+    { name: "millions", divisor: 1000000 }
   ];
   
   const roundTo = roundingOptions[getRandomInt(0, roundingOptions.length - 1)];
@@ -190,8 +193,8 @@ export function generateRoundingQuestion() {
 }
 
 export function generateMultiDigitArithmeticQuestion() {
-  const num1 = getRandomInt(1000, 5000);
-  const num2 = getRandomInt(1000, 4000);
+  const num1 = getRandomInt(1000, 1000000);
+  const num2 = getRandomInt(1000, 1000000);
   const isAddition = Math.random() < 0.5;
   
   let question, answer, hint;
@@ -217,7 +220,10 @@ export function generateMultiDigitArithmeticQuestion() {
       (answer + 100).toString(),
       (answer - 100).toString(),
       (answer + 1000).toString(),
-    ]),
+      (answer + 10000).toString(),
+      (answer + 100000).toString(),
+      (answer + 1000000).toString(),
+    ]).slice(0, 3),
     hint,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -227,8 +233,8 @@ export function generateMultiDigitArithmeticQuestion() {
 }
 
 export function generateComparisonQuestion() {
-  const num1 = getRandomInt(1000, 9999);
-  const num2 = getRandomInt(1000, 9999);
+  const num1 = getRandomInt(1000, 1000000);
+  const num2 = getRandomInt(1000, 1000000);
   
   // Ensure numbers are different
   if (num1 === num2) {

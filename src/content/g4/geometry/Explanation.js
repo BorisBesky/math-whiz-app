@@ -312,10 +312,9 @@ const GeometryExplanation = () => {
           properties: [
             '• Opposite sides equal',
             '• Opposite angles equal',
-            '• No right angles (usually)',
             '• Opposite sides parallel',
             '• Diagonals bisect each other',
-            '• No lines of symmetry (usually)'
+            '• Lines of symmetry only when it is a rectangle, square, or rhombus'
           ],
           funFact: 'Rectangles, squares, and rhombuses are all special types of parallelograms!'
         },
@@ -337,7 +336,8 @@ const GeometryExplanation = () => {
             '• 3 sides',
             '• 3 angles',
             '• Sum of angles = 180°',
-            '• Can be many types',
+            '• Can be many types (equilateral, isosceles, scalene)',
+            '• Can have lines of symmetry when opposite angles are equal',
             '• Simplest polygon',
             '• Very stable shape'
           ],
@@ -372,7 +372,7 @@ const GeometryExplanation = () => {
           properties: [
             '• 6 equal sides',
             '• 6 equal angles',
-            '• 6 lines of symmetry',
+            '• 12 lines of symmetry',
             '• Sum of angles = 720°',
             '• Each angle = 120°',
             '• Tessellates perfectly'
