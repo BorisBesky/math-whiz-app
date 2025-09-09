@@ -19,123 +19,20 @@ function shuffleArray(array) {
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
 export function generateQuestion() {
-  const nbtType = getRandomInt(1, 3);
-  let question;
+  // Array of all available question generators
+  const questionTypes = [
+    generatePlaceValueQuestion,
+    generateRoundingQuestion,
+    generateMultiDigitArithmeticQuestion,
+    generateComparisonQuestion,
+    generateSubtractionWordProblemQuestion,
+    generateAdditionWordProblemQuestion,
+    generateMultiStepWordProblemQuestion,
+  ];
   
-  switch (nbtType) {
-    case 1: // Place value (4.NBT.1)
-      const placeValue = getRandomInt(1000, 9999);
-      const digit = placeValue.toString()[getRandomInt(0, 3)];
-      const positions = ["thousands", "hundreds", "tens", "ones"];
-      const digitPos = placeValue.toString().indexOf(digit);
-
-      question = {
-        question: `In the number ${placeValue}, what is the place value of the digit ${digit}?`,
-        correctAnswer: positions[digitPos],
-        options: shuffleArray([
-          positions[digitPos],
-          ...positions
-            .filter((p) => p !== positions[digitPos])
-            .slice(0, 3),
-        ]),
-        hint: `Look at the position of the digit ${digit} in ${placeValue}.`,
-        standard: "4.NBT.A.1",
-        concept: "Base Ten",
-        grade: "G4",
-        subtopic: "place value",
-      };
-      break;
-      
-    case 2: // Rounding (4.NBT.3)
-      const roundNum = getRandomInt(1234, 8765);
-      const roundToNearest = ["tens", "hundreds", "thousands"][
-        getRandomInt(0, 2)
-      ];
-      let rounded;
-
-      if (roundToNearest === "tens") {
-        rounded = Math.round(roundNum / 10) * 10;
-      } else if (roundToNearest === "hundreds") {
-        rounded = Math.round(roundNum / 100) * 100;
-      } else {
-        rounded = Math.round(roundNum / 1000) * 1000;
-      }
-
-      question = {
-        question: `Round ${roundNum} to the nearest ${roundToNearest}.`,
-        correctAnswer: rounded.toString(),
-        options: shuffleArray([
-          rounded.toString(),
-          (rounded + 10).toString(),
-          (rounded - 10).toString(),
-          (rounded + 100).toString(),
-        ]),
-        hint: `Look at the digit to the right of the ${roundToNearest} place to decide whether to round up or down.`,
-        standard: "4.NBT.A.3",
-        concept: "Base Ten",
-        grade: "G4",
-        subtopic: "rounding",
-      };
-      break;
-      
-    case 3: // Multi-digit addition/subtraction (4.NBT.4)
-      const addend1 = getRandomInt(1000, 100000);
-      const addend2 = getRandomInt(1000, 100000);
-      const isAddition = Math.random() < 0.5;
-      const answer = isAddition
-        ? addend1 + addend2
-        : Math.max(addend1, addend2) - Math.min(addend1, addend2);
-
-      question = {
-        question: isAddition
-          ? `What is ${addend1} + ${addend2}?`
-          : `What is ${Math.max(addend1, addend2)} - ${Math.min(
-              addend1,
-              addend2
-            )}?`,
-        correctAnswer: answer.toString(),
-        options: shuffleArray([
-          answer.toString(),
-          (answer + 100).toString(),
-          (answer - 100).toString(),
-          (answer + 1000).toString(),
-        ]),
-        hint: isAddition
-          ? "Add place by place, starting from the ones."
-          : "Subtract place by place, borrowing when needed.",
-        standard: "4.NBT.B.4",
-        concept: "Base Ten",
-        grade: "G4",
-        subtopic: isAddition ? "addition" : "subtraction",
-      };
-      break;
-      
-    default:
-      // Fallback to place value
-      const defPlaceValue = getRandomInt(1000, 9999);
-      const defDigit = defPlaceValue.toString()[getRandomInt(0, 3)];
-      const defPositions = ["thousands", "hundreds", "tens", "ones"];
-      const defDigitPos = defPlaceValue.toString().indexOf(defDigit);
-
-      question = {
-        question: `In the number ${defPlaceValue}, what is the place value of the digit ${defDigit}?`,
-        correctAnswer: defPositions[defDigitPos],
-        options: shuffleArray([
-          defPositions[defDigitPos],
-          ...defPositions
-            .filter((p) => p !== defPositions[defDigitPos])
-            .slice(0, 3),
-        ]),
-        hint: `Look at the position of the digit ${defDigit} in ${defPlaceValue}.`,
-        standard: "4.NBT.A.1",
-        concept: "Base Ten",
-        grade: "G4",
-        subtopic: "place value",
-      };
-      break;
-  }
-  
-  return question;
+  // Randomly select a question type
+  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
+  return selectedGenerator();
 }
 
 // Additional specialized question generators
@@ -256,12 +153,293 @@ export function generateComparisonQuestion() {
   };
 }
 
+/**
+ * Generates multi-digit subtraction word problems (4.NBT.B.4)
+ */
+export function generateSubtractionWordProblemQuestion() {
+  const scenarios = [
+    {
+      context: "food drive",
+      item: "cans",
+      location: "school",
+      timeframes: ["last year", "this year"],
+      question: (name, smaller, larger, item) => 
+        `${name} collected ${addCommas(smaller)} ${item} for the food drive last year. This year they collected ${addCommas(larger)} ${item} of food. How many more ${item} did the students of ${name} collect this year than last year?`
+    },
+    {
+      context: "fundraising",
+      item: "dollars",
+      location: "school",
+      timeframes: ["last month", "this month"],
+      question: (name, smaller, larger, item) => 
+        `${name} raised $${addCommas(smaller)} for charity last month. This month they raised $${addCommas(larger)}. How much more money did ${name} raise this month than last month?`
+    },
+    {
+      context: "reading challenge", 
+      item: "books",
+      location: "library",
+      timeframes: ["last semester", "this semester"],
+      question: (name, smaller, larger, item) => 
+        `${name} students read ${addCommas(smaller)} ${item} last semester. This semester they read ${addCommas(larger)} ${item}. How many more ${item} did they read this semester than last semester?`
+    },
+    {
+      context: "recycling program",
+      item: "bottles",
+      location: "community center", 
+      timeframes: ["last quarter", "this quarter"],
+      question: (name, smaller, larger, item) => 
+        `The ${name} recycling program collected ${addCommas(smaller)} ${item} last quarter. This quarter they collected ${addCommas(larger)} ${item}. How many more ${item} were collected this quarter than last quarter?`
+    },
+    {
+      context: "ticket sales",
+      item: "tickets",
+      location: "theater",
+      timeframes: ["opening week", "second week"],
+      question: (name, smaller, larger, item) => 
+        `${name} Theater sold ${addCommas(smaller)} ${item} during opening week. During the second week they sold ${addCommas(larger)} ${item}. How many more ${item} were sold in the second week than the opening week?`
+    }
+  ];
+
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const schoolNames = ["Riverside Elementary", "Oak Hill School", "Maplewood Academy", "Sunrise Elementary", "Valley View School"];
+  const organizationNames = ["Green Valley", "Riverside", "Mountain View", "Sunset", "Hillcrest"];
+  
+  const isSchool = scenario.location === "school";
+  const locationName = isSchool 
+    ? schoolNames[getRandomInt(0, schoolNames.length - 1)]
+    : organizationNames[getRandomInt(0, organizationNames.length - 1)];
+
+  // Generate numbers ensuring the second is larger
+  const smaller = getRandomInt(10000, 85000);
+  const difference = getRandomInt(5000, 25000);
+  const larger = smaller + difference;
+
+  return {
+    question: scenario.question(locationName, smaller, larger, scenario.item),
+    correctAnswer: difference.toString(),
+    options: shuffleArray([
+      difference.toString(),
+      (larger).toString(), // Common wrong answer - using total instead of difference
+      (smaller).toString(), // Common wrong answer - using smaller number
+      (larger + smaller).toString(), // Common wrong answer - addition instead of subtraction
+    ]),
+    hint: `To find "how many more," subtract the smaller amount from the larger amount: ${addCommas(larger)} - ${addCommas(smaller)}.`,
+    standard: "4.NBT.B.4",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "subtraction word problems",
+  };
+}
+
+/**
+ * Generates multi-digit addition word problems (4.NBT.B.4)
+ */
+export function generateAdditionWordProblemQuestion() {
+  const scenarios = [
+    {
+      context: "attendance",
+      question: (event, day1, day2, total) =>
+        `During the ${event}, ${addCommas(day1)} people attended on Saturday and ${addCommas(day2)} people attended on Sunday. What was the total attendance for the weekend?`
+    },
+    {
+      context: "sales",
+      question: (store, product1, amount1, product2, amount2, total) =>
+        `${store} sold ${addCommas(amount1)} ${product1} and ${addCommas(amount2)} ${product2} during their sale. How many items did they sell in total?`
+    },
+    {
+      context: "population",
+      question: (city, district1, pop1, district2, pop2, total) =>
+        `${city} has ${addCommas(pop1)} people living in the ${district1} district and ${addCommas(pop2)} people in the ${district2} district. What is the total population of these two districts?`
+    },
+    {
+      context: "library collection",
+      question: (library, type1, count1, type2, count2, total) =>
+        `${library} Library has ${addCommas(count1)} ${type1} and ${addCommas(count2)} ${type2}. How many books and magazines do they have altogether?`
+    },
+    {
+      context: "votes",
+      question: (election, candidate1, votes1, candidate2, votes2, total) =>
+        `In the school election, ${candidate1} received ${addCommas(votes1)} votes and ${candidate2} received ${addCommas(votes2)} votes. How many total votes were cast for these two candidates?`
+    }
+  ];
+
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  
+  const names = {
+    events: ["Spring Festival", "Art Fair", "Science Expo", "Book Fair", "Music Concert"],
+    stores: ["Mega Store", "City Market", "Downtown Shop", "Valley Mall", "Riverside Store"],
+    cities: ["Springfield", "Riverside", "Oak Hill", "Maplewood", "Sunset Valley"],
+    districts: ["North", "South", "East", "West", "Central"],
+    libraries: ["Central", "Downtown", "Community", "Public", "Regional"],
+    types: [["fiction books", "magazines"], ["children's books", "adult books"], ["novels", "textbooks"]],
+    candidates: ["Sarah", "Mike", "Emma", "Alex", "Jordan"]
+  };
+
+  const num1 = getRandomInt(12000, 75000);
+  const num2 = getRandomInt(15000, 80000);
+  const total = num1 + num2;
+
+  let questionText;
+  switch (scenario.context) {
+    case "attendance":
+      questionText = scenario.question(
+        names.events[getRandomInt(0, names.events.length - 1)], 
+        num1, num2, total
+      );
+      break;
+    case "sales":
+      const bookTypes = names.types[getRandomInt(0, names.types.length - 1)];
+      questionText = scenario.question(
+        names.stores[getRandomInt(0, names.stores.length - 1)],
+        bookTypes[0], num1, bookTypes[1], num2, total
+      );
+      break;
+    case "population":
+      const districts = ["North", "South"];
+      questionText = scenario.question(
+        names.cities[getRandomInt(0, names.cities.length - 1)],
+        districts[0], num1, districts[1], num2, total
+      );
+      break;
+    case "library collection":
+      const collectionTypes = names.types[getRandomInt(0, names.types.length - 1)];
+      questionText = scenario.question(
+        names.libraries[getRandomInt(0, names.libraries.length - 1)],
+        collectionTypes[0], num1, collectionTypes[1], num2, total
+      );
+      break;
+    case "votes":
+      const candidateNames = [names.candidates[0], names.candidates[1]];
+      questionText = scenario.question(
+        "election", candidateNames[0], num1, candidateNames[1], num2, total
+      );
+      break;
+    default:
+      questionText = `What is ${addCommas(num1)} + ${addCommas(num2)}?`;
+  }
+
+  return {
+    question: questionText,
+    correctAnswer: total.toString(),
+    options: shuffleArray([
+      total.toString(),
+      (total - 1000).toString(),
+      (total + 1000).toString(),
+      (Math.abs(num1 - num2)).toString(), // Common wrong answer - subtraction instead of addition
+    ]),
+    hint: `Add the two numbers together: ${addCommas(num1)} + ${addCommas(num2)}.`,
+    standard: "4.NBT.B.4",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "addition word problems",
+  };
+}
+
+/**
+ * Generates multi-step word problems involving both addition and subtraction (4.NBT.B.4)
+ */
+export function generateMultiStepWordProblemQuestion() {
+  const scenarios = [
+    {
+      context: "school supplies",
+      question: (school, initial, bought, used) =>
+        `${school} started the year with ${addCommas(initial)} pencils. They bought ${addCommas(bought)} more pencils during the first semester and used ${addCommas(used)} pencils. How many pencils do they have left?`
+    },
+    {
+      context: "concert tickets", 
+      question: (venue, capacity, sold1, sold2) =>
+        `${venue} has ${addCommas(capacity)} seats. They sold ${addCommas(sold1)} tickets in advance and ${addCommas(sold2)} tickets at the door. How many seats are still empty?`
+    },
+    {
+      context: "charity drive",
+      question: (org, goal, week1, week2) =>
+        `${org} set a goal to raise $${addCommas(goal)} for charity. They raised $${addCommas(week1)} in the first week and $${addCommas(week2)} in the second week. How much more money do they need to reach their goal?`
+    }
+  ];
+
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const names = {
+    schools: ["Lincoln Elementary", "Washington Middle School", "Jefferson Academy"],
+    venues: ["City Theater", "Grand Auditorium", "Community Center"],
+    organizations: ["Helping Hands Club", "Community Volunteers", "Youth Foundation"]
+  };
+
+  let questionText, answer;
+  
+  switch (scenario.context) {
+    case "school supplies":
+      const initial = getRandomInt(25000, 75000);
+      const bought = getRandomInt(15000, 35000);
+      const used = getRandomInt(20000, 45000);
+      answer = initial + bought - used;
+      questionText = scenario.question(
+        names.schools[getRandomInt(0, names.schools.length - 1)],
+        initial, bought, used
+      );
+      break;
+    case "concert tickets":
+      const capacity = getRandomInt(35000, 85000);
+      const sold1 = getRandomInt(15000, 30000);
+      const sold2 = getRandomInt(10000, 25000);
+      answer = capacity - (sold1 + sold2);
+      questionText = scenario.question(
+        names.venues[getRandomInt(0, names.venues.length - 1)],
+        capacity, sold1, sold2
+      );
+      break;
+    case "charity drive":
+      const goal = getRandomInt(75000, 150000);
+      const week1 = getRandomInt(20000, 40000);
+      const week2 = getRandomInt(15000, 35000);
+      answer = goal - (week1 + week2);
+      questionText = scenario.question(
+        names.organizations[getRandomInt(0, names.organizations.length - 1)],
+        goal, week1, week2
+      );
+      break;
+    default:
+      answer = 0;
+      questionText = "Error in question generation";
+  }
+
+  // Ensure answer is positive
+  if (answer < 0) {
+    return generateMultiStepWordProblemQuestion();
+  }
+
+  return {
+    question: questionText,
+    correctAnswer: answer.toString(),
+    options: shuffleArray([
+      answer.toString(),
+      (answer + 5000).toString(),
+      (answer - 5000).toString(),
+      (answer + 10000).toString(),
+    ]),
+    hint: "Break this into steps: first do any addition, then do any subtraction.",
+    standard: "4.NBT.B.4",
+    concept: "Base Ten", 
+    grade: "G4",
+    subtopic: "multi-step word problems",
+  };
+}
+
+/**
+ * Helper function to add commas to large numbers for readability
+ */
+function addCommas(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 const baseTenQuestions = {
   generateQuestion,
   generatePlaceValueQuestion,
   generateRoundingQuestion,
   generateMultiDigitArithmeticQuestion,
   generateComparisonQuestion,
+  generateSubtractionWordProblemQuestion,
+  generateAdditionWordProblemQuestion,
+  generateMultiStepWordProblemQuestion,
 };
 
 export default baseTenQuestions;
