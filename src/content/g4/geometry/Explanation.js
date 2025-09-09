@@ -792,8 +792,8 @@ const GeometryExplanation = () => {
         <div style={styles.example}>
           <strong>Real Life Angles:</strong>
           <br/>• Corner of a book = 90° (right angle)
-          <br/>• Open scissors = acute angle
-          <br/>• Laptop half-open = obtuse angle
+          <br/>• Open scissors = obtuse angle
+          <br/>• Laptop half-open = acute angle
           <br/>• Flat table = 180° (straight angle)
         </div>
 
