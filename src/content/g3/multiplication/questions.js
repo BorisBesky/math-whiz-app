@@ -103,29 +103,29 @@ export function generateEqualGroupsQuestion() {
     {
       item: "stickers",
       container: "sheets",
-      question: `Sarah has ${groups} ${container} with ${itemsPerGroup} ${item} on each sheet. How many ${item} does she have altogether?`,
+      question: (groups, itemsPerGroup, item, container) => `Sarah has ${groups} ${container} with ${itemsPerGroup} ${item} on each sheet. How many ${item} does she have altogether?`,
     },
     {
       item: "cookies",
       container: "plates",
-      question: `There are ${groups} ${container} with ${itemsPerGroup} ${item} on each plate. How many ${item} are there in total?`,
+      question: (groups, itemsPerGroup, item, container) => `There are ${groups} ${container} with ${itemsPerGroup} ${item} on each plate. How many ${item} are there in total?`,
     },
     {
       item: "flowers",
       container: "vases",
-      question: `The florist has ${groups} ${container} with ${itemsPerGroup} ${item} in each vase. How many ${item} are there altogether?`,
+      question: (groups, itemsPerGroup, item, container) => `The florist has ${groups} ${container} with ${itemsPerGroup} ${item} in each vase. How many ${item} are there altogether?`,
     },
     {
       item: "books",
       container: "shelves",
-      question: `The library has ${groups} ${container} with ${itemsPerGroup} ${item} on each shelf. How many ${item} are there in total?`,
+      question: (groups, itemsPerGroup, item, container) => `The library has ${groups} ${container} with ${itemsPerGroup} ${item} on each shelf. How many ${item} are there in total?`,
     },
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
   
   return {
-    question: scenario.question,
+    question: scenario.question(groups, itemsPerGroup, scenario.item, scenario.container),
     correctAnswer: total.toString(),
     options: shuffleArray([
       total.toString(),

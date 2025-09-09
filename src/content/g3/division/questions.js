@@ -56,29 +56,29 @@ export function generateEqualSharingQuestion() {
     {
       item: "cookies",
       container: "friends",
-      question: `You have ${adjustedTotal} ${item} to share equally among ${numGroups} ${container}. How many ${item} will each friend get?`,
+      question: (total, groups, item, container) => `You have ${total} ${item} to share equally among ${groups} ${container}. How many ${item} will each friend get?`,
     },
     {
       item: "stickers",
       container: "children",
-      question: `There are ${adjustedTotal} ${item} to divide equally among ${numGroups} ${container}. How many ${item} will each child receive?`,
+      question: (total, groups, item, container) => `There are ${total} ${item} to divide equally among ${groups} ${container}. How many ${item} will each child receive?`,
     },
     {
       item: "apples",
       container: "baskets",
-      question: `A farmer has ${adjustedTotal} ${item} to put into ${numGroups} ${container} with the same number in each basket. How many ${item} go in each basket?`,
+      question: (total, groups, item, container) => `A farmer has ${total} ${item} to put into ${groups} ${container} with the same number in each basket. How many ${item} go in each basket?`,
     },
     {
       item: "books",
       container: "shelves",
-      question: `The librarian needs to put ${adjustedTotal} ${item} on ${numGroups} ${container} with the same number on each shelf. How many ${item} go on each shelf?`,
+      question: (total, groups, item, container) => `The librarian needs to put ${total} ${item} on ${groups} ${container} with the same number on each shelf. How many ${item} go on each shelf?`,
     },
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
   
   return {
-    question: scenario.question,
+    question: scenario.question(adjustedTotal, numGroups, scenario.item, scenario.container),
     correctAnswer: itemsPerGroup.toString(),
     options: shuffleArray([
       itemsPerGroup.toString(),
@@ -106,29 +106,29 @@ export function generateGroupingQuestion() {
     {
       item: "pencils",
       container: "boxes",
-      question: `You have ${totalItems} ${item}. If you put ${itemsPerGroup} ${item} in each box, how many ${container} will you need?`,
+      question: (total, perGroup, item, container) => `You have ${total} ${item}. If you put ${perGroup} ${item} in each box, how many ${container} will you need?`,
     },
     {
       item: "students",
       container: "teams",
-      question: `There are ${totalItems} ${item} in the class. If each team has ${itemsPerGroup} ${item}, how many ${container} can be made?`,
+      question: (total, perGroup, item, container) => `There are ${total} ${item} in the class. If each team has ${perGroup} ${item}, how many ${container} can be made?`,
     },
     {
       item: "flowers",
       container: "bouquets",
-      question: `A florist has ${totalItems} ${item}. If each bouquet contains ${itemsPerGroup} ${item}, how many ${container} can be made?`,
+      question: (total, perGroup, item, container) => `A florist has ${total} ${item}. If each bouquet contains ${perGroup} ${item}, how many ${container} can be made?`,
     },
     {
       item: "marbles",
       container: "bags",
-      question: `You have ${totalItems} ${item}. If you put ${itemsPerGroup} ${item} in each bag, how many ${container} will you fill?`,
+      question: (total, perGroup, item, container) => `You have ${total} ${item}. If you put ${perGroup} ${item} in each bag, how many ${container} will you fill?`,
     },
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
   
   return {
-    question: scenario.question,
+    question: scenario.question(totalItems, itemsPerGroup, scenario.item, scenario.container),
     correctAnswer: numGroups.toString(),
     options: shuffleArray([
       numGroups.toString(),
