@@ -1,6 +1,50 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 const OperationsAlgebraicThinkingExplanation = () => {
+  const divisionRef1 = useRef(null);
+  const divisionRef2 = useRef(null);
+
+  useEffect(() => {
+    const longDivisionWithRemainder = `
+      \\begin{array}{c|c}
+        & 7 \\text{ R } 1 \\\\
+        \\hline
+        5 & 36 \\\\
+        & \\underline{35} \\\\
+        & 1
+      \\end{array}
+    `;
+
+    const longDivisionNoRemainder = `
+      \\begin{array}{c|c}
+        & 21 \\\\
+        \\hline
+        4 & 84 \\\\
+        & \\underline{8}\\phantom{4} \\\\
+        & 04 \\\\
+        & \\underline{4} \\\\
+        & 0
+      \\end{array}
+    `;
+
+    if (divisionRef1.current && divisionRef2.current) {
+      try {
+        katex.render(longDivisionWithRemainder, divisionRef1.current, {
+          throwOnError: false,
+          displayMode: true
+        });
+        katex.render(longDivisionNoRemainder, divisionRef2.current, {
+          throwOnError: false,
+          displayMode: true
+        });
+      } catch (e) {
+        console.error("KaTeX rendering failed", e);
+      }
+    }
+  }, []);
+
   const styles = {
     container: {
       fontFamily: "'Comic Sans MS', cursive, sans-serif",
@@ -51,7 +95,7 @@ const OperationsAlgebraicThinkingExplanation = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className="operations-algebraic-container">
       <h1 style={styles.h1}>🧮 Operations & Algebraic Thinking (4.OA)</h1>
       
       <h2 style={styles.h2}>🔍 Multiplicative Comparisons</h2>
@@ -142,13 +186,7 @@ const OperationsAlgebraicThinkingExplanation = () => {
       <div style={styles.example}>
         <strong>Example: 36 ÷ 5</strong>
         <br/>
-        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
-          {'     7 R1'}
-          <br/>{'5 ) 36'}
-          <br/>{'   -35'}
-          <br/>{'   ___'}
-          <br/>{'     1'}
-        </div>
+        <div ref={divisionRef1} style={{textAlign: 'center', margin: '20px 0'}} />
         <strong>Step 1:</strong> How many 5s go into 36?
         <br/>5 × 7 = 35 (closest without going over)
         <br/><br/>
@@ -161,16 +199,7 @@ const OperationsAlgebraicThinkingExplanation = () => {
       <div style={styles.example}>
         <strong>Division without remainder: 84 ÷ 4</strong>
         <br/>
-        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
-          {'    21'}
-          <br/>{'4 ) 84'}
-          <br/>{'   -8↓'}
-          <br/>{'   ___'}
-          <br/>{'    04'}
-          <br/>{'    -4'}
-          <br/>{'    __'}
-          <br/>{'     0'}
-        </div>
+        <div ref={divisionRef2} style={{textAlign: 'center', margin: '20px 0'}} />
         <strong>Answer: 84 ÷ 4 = 21</strong>
       </div>
       

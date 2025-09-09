@@ -1,6 +1,7 @@
 import React from 'react';
 
 const BaseTenExplanation = () => {
+
   const styles = {
     container: {
       fontFamily: "'Comic Sans MS', cursive, sans-serif",

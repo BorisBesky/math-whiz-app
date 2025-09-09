@@ -3,6 +3,7 @@ import * as shapes from './shapes';
 
 const GeometryExplanation = () => {
   useEffect(() => {
+
     // Initialize interactive geometry demonstrations when component mounts
     // Add a small delay to ensure DOM elements are rendered
     const initializeShapes = () => {

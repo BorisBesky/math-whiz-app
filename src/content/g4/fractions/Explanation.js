@@ -1,6 +1,7 @@
 import React from 'react';
 
 const FractionsExplanation = () => {
+
   const styles = {
     container: {
       fontFamily: "'Comic Sans MS', cursive, sans-serif",
