@@ -1,77 +1,184 @@
-# Getting Started with Create React App
+# 🧙‍♂️ Math Whiz App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An intelligent, adaptive math education platform designed for 3rd and 4th grade students. Math Whiz combines gamification, AI-powered content generation, and personalized learning to make mathematics engaging and effective.
 
-## Available Scripts
+## ✨ Features
 
-In the project directory, you can run:
+### 🎯 Adaptive Learning Engine
+- **Intelligent Difficulty Adjustment**: Advanced complexity engine that adapts to each student's performance
+- **Personalized Progression**: Questions automatically adjust based on accuracy and response time
+- **Topic-Specific Analytics**: Detailed performance tracking across different mathematical concepts
 
-### `npm start`
+### 🧠 AI-Powered Content
+- **Dynamic Story Problems**: Google Gemini AI generates contextual, engaging word problems
+- **Interactive Explanations**: Comprehensive mathematical explanations with visual aids
+- **Real-time Feedback**: Instant feedback system with hints and step-by-step guidance
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 📊 Progress Tracking & Gamification
+- **Daily Goals**: Customizable learning objectives per topic
+- **Achievement System**: Coins, streaks, and milestone rewards
+- **Performance Dashboard**: Detailed analytics on strengths and areas for improvement
+- **Grade-Specific Content**: Separate progress tracking for 3rd and 4th grade topics
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 📚 Comprehensive Curriculum
 
-### `npm test`
+#### 3rd Grade Topics
+- **Multiplication & Division**: Multi-digit operations and problem-solving
+- **Fractions**: Addition, subtraction, equivalency, comparison, and simplification
+- **Measurement & Data**: Area, perimeter, volume, and data interpretation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### 4th Grade Topics (California Standards Aligned)
+- **Operations & Algebraic Thinking (4.OA)**: Factors, multiples, patterns, and multiplicative comparisons
+- **Number & Operations in Base Ten (4.NBT)**: Place value, rounding, and multi-digit arithmetic
+- **Number & Operations - Fractions (4.NF)**: Mixed numbers, decimal notation, and fraction operations
+- **Measurement & Data (4.MD)**: Unit conversions, line plots, angles, and geometric measurements
+- **Geometry (4.G)**: Lines, angles, triangles, quadrilaterals, and symmetry
 
-### `npm run build`
+## 🛠 Technical Stack
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Frontend
+- **React 19.1** - Modern UI framework with hooks and functional components
+- **Tailwind CSS** - Utility-first styling framework
+- **KaTeX** - Mathematical notation rendering
+- **Lucide React** - Modern icon library
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Backend & Services
+- **Firebase** - Authentication, Firestore database, and user management
+- **Netlify Functions** - Serverless backend for AI integration
+- **Google Gemini AI** - Dynamic content generation for story problems
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Development Tools
+- **Create React App** - React development environment
+- **Playwright** - End-to-end testing framework
+- **ESLint** - Code quality and consistency
 
-### `npm run eject`
+## 🚀 Quick Start
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Prerequisites
+- Node.js 16+ and npm
+- Firebase project with Firestore enabled
+- Google Gemini AI API key
+- Netlify account (for deployment)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Installation
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/math-whiz-app.git
+   cd math-whiz-app
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. **Environment Setup**
+   Create a `.env` file with your configuration:
+   ```env
+   REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   GOOGLE_GEMINI_API_KEY=your_gemini_api_key
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+4. **Start development server**
+   ```bash
+   npm start
+   ```
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The app is configured for Netlify deployment with serverless functions:
 
-### `npm run build` fails to minify
+```bash
+npm run build
+netlify deploy --prod
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🏗 Architecture
 
-## TODO
+### Adaptive Learning System
+The app features a sophisticated complexity engine that:
+- Analyzes student response patterns across time and accuracy
+- Uses Welford's algorithm for statistical analysis
+- Implements progressive difficulty scaling
+- Maintains topic-specific performance history
 
-~~1. Generate story should have a hint button with instructions on how to solve~~
-~~2. Generate story should have a check answer button that only shows answer after it is clicked.~~
-~~3. Adjust question complexity based on student's progress~~
-~~4. Allow setting areas of emphasis to address particular topic (currently daily goal is evenly devide for all topics)~~
+### Data Structure
+```javascript
+// User progress is organized by grade and topic
+{
+  selectedGrade: "G3" | "G4",
+  dailyGoalsByGrade: {
+    G3: { [topic]: goalCount },
+    G4: { [topic]: goalCount }
+  },
+  progressByGrade: {
+    [date]: {
+      G3: { [topic]: completedCount },
+      G4: { [topic]: completedCount }
+    }
+  },
+  answeredQuestions: [{
+    topic: string,
+    grade: "G3" | "G4",
+    correct: boolean,
+    timeSpent: number,
+    complexity: number,
+    timestamp: Date
+  }]
+}
+```
+
+### Content Management
+- Modular topic structure in `/src/content/`
+- Grade-specific question generators
+- Reusable explanation components
+- Mathematical rendering with KaTeX
+
+## 📈 Performance Features
+
+- **Intelligent Caching**: Optimized question generation and content loading
+- **Progressive Web App**: Offline-capable with service worker support
+- **Responsive Design**: Mobile-first approach with touch-friendly interactions
+- **Accessibility**: WCAG compliant with keyboard navigation and screen reader support
+
+## 🧪 Testing
+
+```bash
+# Run test suite
+npm test
+
+# Run browser integration tests
+npm run test:browser
+
+# Run comprehensive test suite
+npm run test:comprehensive
+```
+
+## 📝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- California Department of Education for curriculum standards alignment
+- Google Gemini team for AI capabilities
+- KaTeX team for mathematical rendering
+- Firebase team for backend infrastructure
+
+---
+
+**Math Whiz App** - Making mathematics magical, one problem at a time! ✨🔢

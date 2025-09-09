@@ -1,42 +1,20 @@
 // Topic name constants to ensure consistency across the application
 // These constants should be used instead of hard-coded strings
+// Note: Constants are imported from shared-constants.js to ensure consistency
 
-// Core math topics
-export const TOPICS = {
-  // 3rd Grade Topics
-  MULTIPLICATION: 'Multiplication',
-  DIVISION: 'Division',
-  FRACTIONS: 'Fractions',
-  MEASUREMENT_DATA: 'Measurement & Data',
-  AREA: 'Area',
-  PERIMETER: 'Perimeter',
-  VOLUME: 'Volume',
-  
-  // 4th Grade Topics
-  OPERATIONS_ALGEBRAIC_THINKING: 'Operations & Algebraic Thinking',
-  BASE_TEN: 'Base Ten',
-  FRACTIONS_4TH: 'Fractions 4th',  // Note: Same as 3rd grade fractions
-  MEASUREMENT_DATA_4TH: 'Measurement & Data 4th',
-  GEOMETRY: 'Geometry',
-  
-  // Fraction subtopics
-  FRACTIONS_ADDITION: 'Fractions: Addition',
-  FRACTIONS_SIMPLIFICATION: 'Fractions: Simplification',
-  FRACTIONS_EQUIVALENCY: 'Fractions: Equivalency',
-  FRACTIONS_COMPARISON: 'Fractions: Comparison',
-};
+import {
+  GRADES as _GRADES,
+  TOPICS as _TOPICS,
+  VALID_TOPICS_BY_GRADE as _VALID_TOPICS_BY_GRADE,
+  APP_STATES as _APP_STATES,
+  ALL_TOPICS as _ALL_TOPICS,
+  ALL_APP_STATES as _ALL_APP_STATES,
+} from './shared-constants.js';
 
-// Application state constants
-export const APP_STATES = {
-  TOPIC_SELECTION: 'topicSelection',
-  IN_PROGRESS: 'inProgress',
-  RESULTS: 'results',
-  DASHBOARD: 'dashboard',
-  STORE: 'store',
-};
-
-// Export all topic values as an array for validation/iteration
-export const ALL_TOPICS = Object.values(TOPICS);
-
-// Export all app states as an array for validation/iteration
-export const ALL_APP_STATES = Object.values(APP_STATES);
+// Re-export as ES modules
+export const GRADES = _GRADES;
+export const TOPICS = _TOPICS;
+export const VALID_TOPICS_BY_GRADE = _VALID_TOPICS_BY_GRADE;
+export const APP_STATES = _APP_STATES;
+export const ALL_TOPICS = _ALL_TOPICS;
+export const ALL_APP_STATES = _ALL_APP_STATES;
