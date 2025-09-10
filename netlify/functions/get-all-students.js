@@ -1,27 +1,5 @@
 /* eslint-disable no-undef */
-const admin = require("firebase-admin");
-
-// Initialize Firebase Admin SDK using the full service account from a Base64 env var
-if (!admin.apps.length) {
-  try {
-    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-    if (!serviceAccountBase64) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable is not set.");
-    }
-    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-    const serviceAccount = JSON.parse(serviceAccountJson);
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-  } catch (e) {
-    console.error("Error initializing Firebase Admin SDK from service account:", e);
-    // Return a 500 error but don't expose the raw error to the client
-    // The logs are the place to debug this.
-  }
-}
-
-const db = admin.firestore();
+const { admin, db } = require("./firebase-admin");
 
 exports.handler = async (event) => {
   const headers = {
