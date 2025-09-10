@@ -182,3 +182,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Math Whiz App** - Making mathematics magical, one problem at a time! ✨🔢
+
+### How to Set an Admin User
+
+To use the new admin functionality, you must designate a user as an admin. This is done by setting a "custom claim" on their Firebase account.
+
+1.  **Create an Admin User in Firebase:**
+    *   Go to your [Firebase Console](https://console.firebase.google.com/).
+    *   Navigate to **Authentication** -> **Users** tab.
+    *   Click **Add user** and create a user with an email and password. This will be your admin login.
+
+2.  **Set Environment Variables Locally:**
+    *   Create a file named `.env` in the root of your project if you don't already have one.
+    *   Add your Firebase Admin SDK credentials to this file. You can get these from your Firebase project settings (Service Accounts -> Generate new private key).
+    
+        ```.env
+        FIREBASE_PROJECT_ID="your-project-id"
+        FIREBASE_CLIENT_EMAIL="firebase-adminsdk-...@your-project-id.iam.gserviceaccount.com"
+        FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+        ```
+    *   **IMPORTANT:** The `FIREBASE_PRIVATE_KEY` must be enclosed in quotes and have `\n` at the end of each line, as shown.
+
+3.  **Run the `set-admin.js` Script:**
+    *   Open your terminal in the project root.
+    *   Run the script, passing the email of the user you just created as an argument:
+    
+        ```bash
+        node set-admin.js your-admin-email@example.com
+        ```
+
+    *   The script will confirm that the user has been granted admin privileges. The user will have these privileges the next time they sign in.

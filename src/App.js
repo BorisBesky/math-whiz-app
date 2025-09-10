@@ -15,6 +15,7 @@ import {
   Store,
   CheckCircle,
   Home,
+  Settings,
 } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import {
@@ -22,6 +23,7 @@ import {
   signInAnonymously,
   onAuthStateChanged,
   signInWithCustomToken,
+  signOut,
 } from "firebase/auth";
 import {
   getFirestore,
@@ -41,6 +43,8 @@ import {
 } from "./utils/complexityEngine";
 import { TOPICS, APP_STATES } from "./constants/topics";
 import content from "./content";
+import AdminPortal from "./components/AdminPortal";
+import AdminLogin from "./components/AdminLogin";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -515,6 +519,8 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
+  const [showAdminPortal, setShowAdminPortal] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(null);
   const [currentQuiz, setCurrentQuiz] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -1608,6 +1614,13 @@ Answer: [The answer]`;
         className="p-2 rounded-full hover:bg-gray-200 transition"
       >
         <BarChart2 size={24} className="text-blue-600" />
+      </button>
+      <button
+        onClick={() => setShowAdminPortal(true)}
+        className="p-2 rounded-full hover:bg-gray-200 transition"
+        title="Admin Portal"
+      >
+        <Settings size={24} className="text-red-600" />
       </button>
       <button
         onClick={returnToTopics}
@@ -2713,6 +2726,32 @@ Answer: [The answer]`;
         {renderResumeModal()}
         {renderContent()}
       </div>
+      
+      {/* Admin Portal */}
+      {showAdminPortal && !isAdminAuthenticated && (
+        <AdminLogin onLoginSuccess={() => {
+          setIsAdminAuthenticated(true);
+        }} />
+      )}
+      
+      {showAdminPortal && isAdminAuthenticated && (
+        <AdminPortal 
+          db={db} 
+          appId={typeof __app_id !== "undefined" ? __app_id : "default-app-id"}
+          currentUser={user}
+          onClose={() => {
+            // When closing the admin portal, we should sign out the admin
+            // and re-establish the anonymous user session for the main app.
+            const auth = getAuth();
+            signOut(auth).then(() => {
+              console.log("Admin user signed out.");
+              // signInAnonymously(auth); // The onAuthStateChanged in App.js should handle this automatically.
+            });
+            setShowAdminPortal(false);
+            setIsAdminAuthenticated(false);
+          }} 
+        />
+      )}
     </div>
   );
 };

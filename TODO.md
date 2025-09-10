@@ -2,8 +2,6 @@
 
 ### Math Topics & Content
 - **Add base-2 topic**: Start with binary addition.
-- **Geometry explanations**: Fix angle explanations (currently obtuse and acute are confused).
-- **Story problem generation**: Update to support changed topic names.
 - **3rd grade fractions**: Restore explanation with pizza example.
 - **Store images**: Add more pictures for the store.
 - **Graphical quiz problems**: Explore generating problems with shapes.

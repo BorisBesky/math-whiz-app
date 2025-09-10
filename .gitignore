@@ -26,3 +26,5 @@ yarn-error.log*
 .netlify
 
 .node-version
+.env
+math-whiz-1a337-firebase-adminsdk-fbsvc-34d55d222a.json
