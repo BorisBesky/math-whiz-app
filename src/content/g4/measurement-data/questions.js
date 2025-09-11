@@ -1,17 +1,9 @@
 // Question generation for 4th Grade Measurement & Data topic
+import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /**
@@ -62,16 +54,17 @@ export function generateLengthConversionQuestion() {
   const lengthConv = lengthConversions[getRandomInt(0, lengthConversions.length - 1)];
   const lengthAmount = lengthConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
   const lengthConverted = lengthAmount * lengthConv.factor;
-
-  return {
-    question: `How many ${lengthConv.to} are in ${lengthAmount} ${lengthConv.from}?`,
-    correctAnswer: `${lengthConverted} ${lengthConv.to}`,
-    options: shuffleArray([
-      `${lengthConverted} ${lengthConv.to}`,
+  const correctAnswer = `${lengthConverted} ${lengthConv.to}`;
+  const potentialDistractors = [
       `${lengthAmount} ${lengthConv.to}`,
       `${lengthConverted + (lengthConv.factor < 100 ? 5 : 100)} ${lengthConv.to}`,
       `${Math.floor(lengthConverted / 2)} ${lengthConv.to}`,
-    ]),
+  ];
+
+  return {
+    question: `How many ${lengthConv.to} are in ${lengthAmount} ${lengthConv.from}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Remember: 1 ${lengthConv.from.slice(0, -1)} = ${lengthConv.factor} ${lengthConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
@@ -114,16 +107,17 @@ export function generateWeightCapacityConversionQuestion() {
   const wcConv = weightCapacityConversions[getRandomInt(0, weightCapacityConversions.length - 1)];
   const wcAmount = wcConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
   const wcConverted = wcAmount * wcConv.factor;
+  const correctAnswer = `${wcConverted} ${wcConv.to}`;
+  const potentialDistractors = [
+    `${wcAmount} ${wcConv.to}`,
+    `${wcConverted + (wcConv.factor < 100 ? 5 : 100)} ${wcConv.to}`,
+    `${Math.floor(wcConverted / 2)} ${wcConv.to}`,
+  ];
 
   return {
     question: `How many ${wcConv.to} are in ${wcAmount} ${wcConv.from}?`,
-    correctAnswer: `${wcConverted} ${wcConv.to}`,
-    options: shuffleArray([
-      `${wcConverted} ${wcConv.to}`,
-      `${wcAmount} ${wcConv.to}`,
-      `${wcConverted + (wcConv.factor < 100 ? 5 : 100)} ${wcConv.to}`,
-      `${Math.floor(wcConverted / 2)} ${wcConv.to}`,
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Remember: 1 ${wcConv.from.slice(0, -1)} = ${wcConv.factor} ${wcConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
@@ -154,16 +148,17 @@ export function generateTimeConversionQuestion() {
   const timeConv = timeConversions[getRandomInt(0, timeConversions.length - 1)];
   const timeAmount = getRandomInt(2, 8);
   const timeConverted = timeAmount * timeConv.factor;
-
-  return {
-    question: `How many ${timeConv.to} are in ${timeAmount} ${timeConv.from}?`,
-    correctAnswer: `${timeConverted} ${timeConv.to}`,
-    options: shuffleArray([
-      `${timeConverted} ${timeConv.to}`,
+  const correctAnswer = `${timeConverted} ${timeConv.to}`;
+  const potentialDistractors = [
       `${timeAmount} ${timeConv.to}`,
       `${timeConverted + 10} ${timeConv.to}`,
       `${Math.floor(timeConverted / 2)} ${timeConv.to}`,
-    ]),
+  ];
+
+  return {
+    question: `How many ${timeConv.to} are in ${timeAmount} ${timeConv.from}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Remember: 1 ${timeConv.from.slice(0, -1)} = ${timeConv.factor} ${timeConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
@@ -176,26 +171,27 @@ export function generateAreaPerimeterQuestion() {
   const rectLength = getRandomInt(4, 12);
   const rectWidth = getRandomInt(3, 8);
   const isAreaQuestion = Math.random() < 0.5;
-  const correctAnswer = isAreaQuestion
+  const correctAnswerVal = isAreaQuestion
     ? rectLength * rectWidth
     : 2 * (rectLength + rectWidth);
   const unit = isAreaQuestion ? "square units" : "units";
+  const correctAnswer = `${correctAnswerVal} ${unit}`;
+  const potentialDistractors = [
+    `${
+      isAreaQuestion
+        ? 2 * (rectLength + rectWidth)
+        : rectLength * rectWidth
+    } ${unit}`,
+    `${correctAnswerVal + 5} ${unit}`,
+    `${correctAnswerVal - 3} ${unit}`,
+  ];
 
   return {
     question: `A rectangle has a length of ${rectLength} units and a width of ${rectWidth} units. What is its ${
       isAreaQuestion ? "area" : "perimeter"
     }?`,
-    correctAnswer: `${correctAnswer} ${unit}`,
-    options: shuffleArray([
-      `${correctAnswer} ${unit}`,
-      `${
-        isAreaQuestion
-          ? 2 * (rectLength + rectWidth)
-          : rectLength * rectWidth
-      } ${unit}`,
-      `${correctAnswer + 5} ${unit}`,
-      `${correctAnswer - 3} ${unit}`,
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: isAreaQuestion
       ? "Area = length × width"
       : "Perimeter = 2 × (length + width)",
@@ -215,14 +211,13 @@ export function generateAngleQuestion() {
   ];
   
   const selectedAngle = angles[getRandomInt(0, angles.length - 1)];
+  const correctAnswer = selectedAngle.name;
+  const potentialDistractors = angles.filter(a => a.name !== selectedAngle.name).map(a => a.name).slice(0, 3);
   
   return {
     question: `What type of angle measures ${selectedAngle.degrees}°?`,
-    correctAnswer: selectedAngle.name,
-    options: shuffleArray([
-      selectedAngle.name,
-      ...angles.filter(a => a.name !== selectedAngle.name).map(a => a.name).slice(0, 3)
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: "Right angles are 90°, acute angles are less than 90°, obtuse angles are between 90° and 180°, and straight angles are 180°.",
     standard: "4.MD.C.5",
     concept: "Measurement & Data 4th",
@@ -272,7 +267,7 @@ export function generateDataInterpretationQuestion() {
   return {
     question: `Fruit Sales Data:\n${data.map(item => `${item.category}: ${item.value}`).join('\n')}\n\n${selectedQuestion.question}`,
     correctAnswer: selectedQuestion.answer,
-    options: shuffleArray(selectedQuestion.options),
+    options: shuffle(generateUniqueOptions(selectedQuestion.answer, selectedQuestion.options)),
     hint: "Look carefully at the data and compare the numbers for each category.",
     standard: "4.MD.B.4",
     concept: "Measurement & Data 4th",

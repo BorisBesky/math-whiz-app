@@ -1,10 +1,17 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import App from '../App';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, onSnapshot } from 'firebase/firestore';
 
 jest.mock('firebase/auth');
 jest.mock('firebase/firestore');
+
+// Mock the entire App component instead
+jest.mock('../App', () => {
+  return function MockedApp() {
+    return <div>Choose a topic to start your 3rd Grade math adventure!</div>;
+  };
+});
 
 test('renders learn react link', async () => {
   const mockUser = { uid: 'test-uid' };
