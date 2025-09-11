@@ -461,37 +461,23 @@ const AdminPortal = ({ db, onClose, appId }) => {
               </div>
 
               {/* Debug Information */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="p-6 border-b border-yellow-200">
-                  <h3 className="text-lg font-semibold text-yellow-900 flex items-center">
-                    🔍 Debug Information
-                  </h3>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-2 text-sm">
-                    <p><strong>App ID:</strong> {appId}</p>
-                    <p><strong>Firebase Path:</strong> artifacts/{appId}/users</p>
-                    <p><strong>Students Found:</strong> {students.length}</p>
-                    <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
-                    <div className="text-yellow-700 space-y-2">
-                      <p>Check the browser console for detailed logs about the Firebase query.</p>
-                      <p>If no students appear, it might mean:</p>
-                      <ul className="list-disc list-inside ml-4 space-y-1">
-                        <li>No users have been created yet (try using the main app first)</li>
-                        <li>The Firebase structure is different than expected</li>
-                        <li>There are permission issues with Firebase</li>
-                      </ul>
-                      <p className="font-semibold">To create test data:</p>
-                      <ol className="list-decimal list-inside ml-4 space-y-1">
-                        <li>Close this admin portal</li>
-                        <li>Use the main app to answer some questions</li>
-                        <li>Try different grades and topics</li>
-                        <li>Come back to the admin portal to see the data</li>
-                      </ol>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-6 border-b border-yellow-200">
+                    <h3 className="text-lg font-semibold text-yellow-900 flex items-center">
+                      🔍 Debug Information
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="space-y-2 text-sm">
+                      <p><strong>App ID:</strong> {appId}</p>
+                      <p><strong>Firebase Path:</strong> artifacts/{appId}/users</p>
+                      <p><strong>Students Found:</strong> {students.length}</p>
+                      <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Recent Activity */}
               <div className="bg-white border border-gray-200 rounded-lg">
