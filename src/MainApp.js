@@ -137,6 +137,7 @@ const conceptExplanationFiles = {
   [TOPICS.FRACTIONS_4TH]: "/nf4Explanation.html",
   [TOPICS.MEASUREMENT_DATA_4TH]: "/md4Explanation.html",
   [TOPICS.GEOMETRY]: "/g4Explanation.html",
+  [TOPICS.BINARY_ADDITION]: "/binaryAdditionExplanation.html",
 };
 
 // --- Store Items ---
@@ -363,6 +364,16 @@ const generateQuizQuestions = (
         }
         break;
 
+      case TOPICS.BINARY_ADDITION:
+        // Use the new pluggable content system for Binary Addition
+        const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
+        if (binaryAdditionTopic) {
+          question = binaryAdditionTopic.generateQuestion();
+          // Ensure the concept field matches the old TOPICS constant for compatibility
+          question.concept = TOPICS.BINARY_ADDITION;
+        }
+        break;
+
       default:
         question = {
           question: "No question generated",
@@ -413,6 +424,7 @@ const quizTopicsByGrade = {
     TOPICS.FRACTIONS_4TH,
     TOPICS.MEASUREMENT_DATA_4TH,
     TOPICS.GEOMETRY,
+    TOPICS.BINARY_ADDITION,
   ],
 };
 
@@ -1482,6 +1494,12 @@ const App = () => {
       if (measurementDataTopic && measurementDataTopic.ExplanationComponent) {
         hasReactComponent = true;
         ReactComponent = measurementDataTopic.ExplanationComponent;
+      }
+    } else if (concept === TOPICS.BINARY_ADDITION) {
+      const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
+      if (binaryAdditionTopic && binaryAdditionTopic.ExplanationComponent) {
+        hasReactComponent = true;
+        ReactComponent = binaryAdditionTopic.ExplanationComponent;
       }
     } else if (concept === TOPICS.MULTIPLICATION) {
       const multiplicationTopic = content.getTopic('g3', 'multiplication');
