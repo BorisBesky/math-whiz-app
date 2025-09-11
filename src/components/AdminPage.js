@@ -26,16 +26,28 @@ try {
 }
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+let app, db, auth;
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+}
 
 const AdminPage = () => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!auth) {
+      setError("Firebase authentication not initialized. Please check your environment variables.");
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -87,6 +99,23 @@ const AdminPage = () => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading admin portal...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-red-600 text-2xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Configuration Error</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <a href="/" className="text-blue-600 hover:text-blue-800">← Back to Main App</a>
           </div>
         </div>
       </div>
