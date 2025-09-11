@@ -761,6 +761,12 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           Question
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student Answer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Correct Answer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Result
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -791,6 +797,20 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                               {question.question}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              <span className={`font-medium ${
+                                question.isCorrect 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {question.userAnswer || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              <span className="font-medium text-blue-600">
+                                {question.correctAnswer || 'N/A'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
