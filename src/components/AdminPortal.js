@@ -10,7 +10,10 @@ import {
   TrendingUp,
   GraduationCap,
   Target,
-  CheckCircle
+  CheckCircle,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { TOPICS } from '../constants/topics';
@@ -28,6 +31,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
     averageAccuracy: 0
   });
   const [view, setView] = useState('overview'); // 'overview', 'students', 'student-detail'
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
 
   const fetchStudentData = useCallback(async () => {
     try {
@@ -191,6 +196,75 @@ const AdminPortal = ({ db, onClose, appId }) => {
         completed: (topicProgress.correct || 0) >= goal
       };
     });
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // If clicking the same field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedStudents = () => {
+    if (!sortField) return students;
+
+    return [...students].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortField) {
+        case 'student':
+          aValue = a.id.toLowerCase();
+          bValue = b.id.toLowerCase();
+          break;
+        case 'grade':
+          aValue = a.selectedGrade;
+          bValue = b.selectedGrade;
+          break;
+        case 'questionsToday':
+          aValue = a.questionsToday;
+          bValue = b.questionsToday;
+          break;
+        case 'totalQuestions':
+          aValue = a.totalQuestions;
+          bValue = b.totalQuestions;
+          break;
+        case 'accuracy':
+          aValue = a.accuracy;
+          bValue = b.accuracy;
+          break;
+        case 'coins':
+          aValue = a.coins;
+          bValue = b.coins;
+          break;
+        case 'lastActivity':
+          aValue = a.latestActivity ? new Date(a.latestActivity).getTime() : 0;
+          bValue = b.latestActivity ? new Date(b.latestActivity).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-4 h-4 text-blue-600" />
+      : <ChevronDown className="w-4 h-4 text-blue-600" />;
   };
 
   if (loading) {
@@ -402,26 +476,68 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Student
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('student')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Student
+                            {getSortIcon('student')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Grade
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('grade')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Grade
+                            {getSortIcon('grade')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Questions Today
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('questionsToday')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Questions Today
+                            {getSortIcon('questionsToday')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Questions
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('totalQuestions')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Total Questions
+                            {getSortIcon('totalQuestions')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Accuracy
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('accuracy')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Accuracy
+                            {getSortIcon('accuracy')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Coins
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('coins')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Coins
+                            {getSortIcon('coins')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Last Activity
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('lastActivity')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Last Activity
+                            {getSortIcon('lastActivity')}
+                          </div>
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -429,7 +545,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {students.map(student => (
+                      {getSortedStudents().map(student => (
                         <tr key={student.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
