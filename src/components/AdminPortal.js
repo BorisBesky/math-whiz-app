@@ -33,6 +33,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [view, setView] = useState('overview'); // 'overview', 'students', 'student-detail'
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
+  const [selectedStudents, setSelectedStudents] = useState(new Set());
+  const [isSelectAll, setIsSelectAll] = useState(false);
 
   const fetchStudentData = useCallback(async () => {
     try {
@@ -267,6 +269,59 @@ const AdminPortal = ({ db, onClose, appId }) => {
       : <ChevronDown className="w-4 h-4 text-blue-600" />;
   };
 
+  const handleSelectStudent = (studentId) => {
+    const newSelected = new Set(selectedStudents);
+    if (newSelected.has(studentId)) {
+      newSelected.delete(studentId);
+    } else {
+      newSelected.add(studentId);
+    }
+    setSelectedStudents(newSelected);
+    setIsSelectAll(newSelected.size === getSortedStudents().length);
+  };
+
+  const handleSelectAll = () => {
+    if (isSelectAll) {
+      setSelectedStudents(new Set());
+      setIsSelectAll(false);
+    } else {
+      const allStudentIds = new Set(getSortedStudents().map(student => student.id));
+      setSelectedStudents(allStudentIds);
+      setIsSelectAll(true);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedStudents.size === 0) return;
+
+    const confirmMessage = `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const deletePromises = Array.from(selectedStudents).map(async (studentId) => {
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+        await deleteDoc(profileDocRef);
+        return studentId;
+      });
+
+      await Promise.all(deletePromises);
+      
+      // Update local state
+      setStudents(students.filter(s => !selectedStudents.has(s.id)));
+      setSelectedStudents(new Set());
+      setIsSelectAll(false);
+      
+      // Clear selected student if it was deleted
+      if (selectedStudent && selectedStudents.has(selectedStudent.id)) {
+        setSelectedStudent(null);
+        setView('students');
+      }
+    } catch (error) {
+      console.error('Error deleting students:', error);
+      alert('Error deleting students. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -311,6 +366,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
               <Download className="w-4 h-4" />
               <span>Export CSV</span>
             </button>
+            {view === 'students' && (
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedStudents.size === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedStudents.size})</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -476,6 +541,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            checked={isSelectAll}
+                            onChange={handleSelectAll}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('student')}
@@ -547,6 +620,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getSortedStudents().map(student => (
                         <tr key={student.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedStudents.has(student.id)}
+                              onChange={() => handleSelectStudent(student.id)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
