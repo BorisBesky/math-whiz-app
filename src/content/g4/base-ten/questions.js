@@ -6,6 +6,14 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function getRandomIntUniqueDigits(count) {
+  const digits = new Set();
+  while (digits.size < count) {
+    digits.add(getRandomInt(0, 9));
+  }
+  return Array.from(digits);
+}
+
 /**
  * Generates a random Base Ten question for 4th grade
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
@@ -29,7 +37,7 @@ export function generateQuestion() {
 
 // Additional specialized question generators
 export function generatePlaceValueQuestion() {
-  const number = getRandomInt(1000, 999999);
+  const number = getRandomIntUniqueDigits(7).join('');
   const positions = ["millions", "hundred thousands", "ten thousands", "thousands", "hundreds", "tens", "ones"];
   const digitIndex = getRandomInt(0, 6);
   const digit = number.toString()[digitIndex];
