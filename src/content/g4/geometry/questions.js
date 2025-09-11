@@ -1,17 +1,9 @@
 // Question generation for 4th Grade Geometry topic
+import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions that need to be imported from utils
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /**
@@ -63,7 +55,7 @@ export function generateLinesAndAnglesQuestion() {
   
   return {
     ...questionType,
-    options: shuffleArray(questionType.options),
+    options: shuffle(generateUniqueOptions(questionType.correctAnswer, questionType.options)),
     standard: "4.G.A.1",
     concept: "Geometry",
     grade: "G4",
@@ -105,15 +97,13 @@ export function generateShapeClassificationQuestion() {
   const wrongOptions = otherShapes
     .map((s) => s.name)
     .slice(0, 2);
+
+  const potentialDistractors = [...wrongOptions, "circle"];
   
   return {
     question: `What shape ${shape.description}?`,
     correctAnswer: shape.name,
-    options: shuffleArray([
-      shape.name,
-      ...wrongOptions,
-      "circle",
-    ]),
+    options: shuffle(generateUniqueOptions(shape.name, potentialDistractors)),
     hint: "Think about the properties of each shape.",
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -148,15 +138,12 @@ export function generateTriangleClassificationBySidesQuestion() {
   const wrongOptions = triangleTypes
     .filter(t => t.name !== triangle.name)
     .map(t => t.name);
+  const potentialDistractors = [...wrongOptions, "pentagon"];
   
   return {
     question: `What type of triangle has ${triangle.properties}?`,
     correctAnswer: triangle.name,
-    options: shuffleArray([
-      triangle.name,
-      ...wrongOptions,
-      "pentagon",
-    ]),
+    options: shuffle(generateUniqueOptions(triangle.name, potentialDistractors)),
     hint: triangle.description,
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -191,15 +178,12 @@ export function generateTriangleClassificationByAnglesQuestion() {
   const wrongOptions = triangleTypes
     .filter(t => t.name !== triangle.name)
     .map(t => t.name);
+  const potentialDistractors = [...wrongOptions, "straight triangle"];
   
   return {
     question: `What type of triangle has ${triangle.properties}?`,
     correctAnswer: triangle.name,
-    options: shuffleArray([
-      triangle.name,
-      ...wrongOptions,
-      "straight triangle",
-    ]),
+    options: shuffle(generateUniqueOptions(triangle.name, potentialDistractors)),
     hint: triangle.description,
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -268,10 +252,7 @@ export function generateQuadrilateralPropertiesQuestion() {
   return {
     question: `Which quadrilateral has the property: "${property}"?`,
     correctAnswer: quad.name,
-    options: shuffleArray([
-      quad.name,
-      ...wrongQuads,
-    ]),
+    options: shuffle(generateUniqueOptions(quad.name, wrongQuads)),
     hint: `Think about the defining characteristics of each quadrilateral.`,
     standard: "4.G.A.2",
     concept: "Geometry", 
@@ -321,10 +302,7 @@ export function generateLineSymmetryQuestion() {
   return {
     question: `How many lines of symmetry does a ${example.shape} have?`,
     correctAnswer: example.lines,
-    options: shuffleArray([
-      example.lines,
-      ...wrongOptions,
-    ]),
+    options: shuffle(generateUniqueOptions(example.lines, wrongOptions)),
     hint: `A line of symmetry divides a shape so both halves match exactly. ${example.explanation}.`,
     standard: "4.G.A.3",
     concept: "Geometry",
@@ -394,13 +372,13 @@ export function generateAngleMeasurementQuestion() {
     wrongOptions = angleTypes.filter(a => a.realLife !== angle.realLife).map(a => a.realLife);
   }
   
+  const correctAnswer = qType.correctAnswer(angle);
+  const potentialDistractors = wrongOptions.slice(0, 3);
+
   return {
     question: qType.getQuestion(angle),
-    correctAnswer: qType.correctAnswer(angle),
-    options: shuffleArray([
-      qType.correctAnswer(angle),
-      ...wrongOptions.slice(0, 3),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Remember: ${angle.name}s ${angle.range}.`,
     standard: "4.G.A.1",
     concept: "Geometry",
@@ -469,14 +447,14 @@ export function generatePointsLinesRaysQuestion() {
   } else {
     wrongOptions = ["False", "Sometimes", "Never"];
   }
+
+  const correctAnswer = qType.correctAnswer(concept);
+  const potentialDistractors = wrongOptions.slice(0, 3);
   
   return {
     question: qType.getQuestion(concept),
-    correctAnswer: qType.correctAnswer(concept),
-    options: shuffleArray([
-      qType.correctAnswer(concept),
-      ...wrongOptions.slice(0, 3),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Remember: a ${concept.name} ${concept.definition}.`,
     standard: "4.G.A.1", 
     concept: "Geometry",

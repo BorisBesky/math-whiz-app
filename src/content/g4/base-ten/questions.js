@@ -1,17 +1,9 @@
 // Question generation for 4th Grade Base Ten topic
+import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /**
@@ -42,14 +34,12 @@ export function generatePlaceValueQuestion() {
   const digitIndex = getRandomInt(0, 6);
   const digit = number.toString()[digitIndex];
   const correctPosition = positions[digitIndex];
+  const potentialDistractors = positions.filter((p) => p !== correctPosition).slice(0, 3);
 
   return {
     question: `In the number ${number}, what is the place value of the digit ${digit}?`,
     correctAnswer: correctPosition,
-    options: shuffleArray([
-      correctPosition,
-      ...positions.filter((p) => p !== correctPosition).slice(0, 3),
-    ]),
+    options: shuffle(generateUniqueOptions(correctPosition, potentialDistractors)),
     hint: `Count the positions from right to left: ones, tens, hundreds, thousands, ten thousands, hundred thousands, millions.`,
     standard: "4.NBT.A.1",
     concept: "Base Ten",
@@ -71,16 +61,17 @@ export function generateRoundingQuestion() {
   
   const roundTo = roundingOptions[getRandomInt(0, roundingOptions.length - 1)];
   const rounded = Math.round(number / roundTo.divisor) * roundTo.divisor;
+  const correctAnswer = rounded.toString();
+  const potentialDistractors = [
+    (rounded + roundTo.divisor).toString(),
+    (rounded - roundTo.divisor).toString(),
+    (number).toString(),
+  ];
 
   return {
     question: `Round ${number} to the nearest ${roundTo.name}.`,
-    correctAnswer: rounded.toString(),
-    options: shuffleArray([
-      rounded.toString(),
-      (rounded + roundTo.divisor).toString(),
-      (rounded - roundTo.divisor).toString(),
-      (number).toString(), // Original number as distractor
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Look at the digit to the right of the ${roundTo.name} place. If it's 5 or more, round up. If it's less than 5, round down.`,
     standard: "4.NBT.A.3",
     concept: "Base Ten",
@@ -109,18 +100,20 @@ export function generateMultiDigitArithmeticQuestion() {
     hint = "Subtract place by place, starting from the ones place. Remember to borrow when needed.";
   }
 
+  const correctAnswer = answer.toString();
+  const potentialDistractors = [
+    (answer + 100).toString(),
+    (answer - 100).toString(),
+    (answer + 1000).toString(),
+    (answer + 10000).toString(),
+    (answer + 100000).toString(),
+    (answer + 1000000).toString(),
+  ];
+
   return {
     question,
-    correctAnswer: answer.toString(),
-    options: shuffleArray([
-      answer.toString(),
-      (answer + 100).toString(),
-      (answer - 100).toString(),
-      (answer + 1000).toString(),
-      (answer + 10000).toString(),
-      (answer + 100000).toString(),
-      (answer + 1000000).toString(),
-    ]).slice(0, 3),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -144,7 +137,7 @@ export function generateComparisonQuestion() {
   return {
     question: `Compare these numbers: ${num1} __ ${num2}`,
     correctAnswer,
-    options: shuffleArray([correctAnswer, incorrectAnswer, "="]),
+    options: shuffle(generateUniqueOptions(correctAnswer, [incorrectAnswer, "="])),
     hint: "Compare digits from left to right, starting with the highest place value.",
     standard: "4.NBT.A.2",
     concept: "Base Ten",
@@ -213,16 +206,17 @@ export function generateSubtractionWordProblemQuestion() {
   const smaller = getRandomInt(10000, 85000);
   const difference = getRandomInt(5000, 25000);
   const larger = smaller + difference;
+  const correctAnswer = difference.toString();
+  const potentialDistractors = [
+    (larger).toString(),
+    (smaller).toString(),
+    (larger + smaller).toString(),
+  ];
 
   return {
     question: scenario.question(locationName, smaller, larger, scenario.item),
-    correctAnswer: difference.toString(),
-    options: shuffleArray([
-      difference.toString(),
-      (larger).toString(), // Common wrong answer - using total instead of difference
-      (smaller).toString(), // Common wrong answer - using smaller number
-      (larger + smaller).toString(), // Common wrong answer - addition instead of subtraction
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `To find "how many more," subtract the smaller amount from the larger amount: ${addCommas(larger)} - ${addCommas(smaller)}.`,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -278,6 +272,7 @@ export function generateAdditionWordProblemQuestion() {
   const num1 = getRandomInt(12000, 75000);
   const num2 = getRandomInt(15000, 80000);
   const total = num1 + num2;
+  const correctAnswer = total.toString();
 
   let questionText;
   switch (scenario.context) {
@@ -318,15 +313,16 @@ export function generateAdditionWordProblemQuestion() {
       questionText = `What is ${addCommas(num1)} + ${addCommas(num2)}?`;
   }
 
+  const potentialDistractors = [
+    (total - 1000).toString(),
+    (total + 1000).toString(),
+    (Math.abs(num1 - num2)).toString(),
+  ];
+
   return {
     question: questionText,
-    correctAnswer: total.toString(),
-    options: shuffleArray([
-      total.toString(),
-      (total - 1000).toString(),
-      (total + 1000).toString(),
-      (Math.abs(num1 - num2)).toString(), // Common wrong answer - subtraction instead of addition
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Add the two numbers together: ${addCommas(num1)} + ${addCommas(num2)}.`,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -406,16 +402,17 @@ export function generateMultiStepWordProblemQuestion() {
   if (answer < 0) {
     return generateMultiStepWordProblemQuestion();
   }
+  const correctAnswer = answer.toString();
+  const potentialDistractors = [
+    (answer + 5000).toString(),
+    (answer - 5000).toString(),
+    (answer + 10000).toString(),
+  ];
 
   return {
     question: questionText,
-    correctAnswer: answer.toString(),
-    options: shuffleArray([
-      answer.toString(),
-      (answer + 5000).toString(),
-      (answer - 5000).toString(),
-      (answer + 10000).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: "Break this into steps: first do any addition, then do any subtraction.",
     standard: "4.NBT.B.4",
     concept: "Base Ten", 

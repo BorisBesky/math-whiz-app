@@ -1,17 +1,9 @@
 // Question generation for 4th Grade Operations & Algebraic Thinking topic
+import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /**
@@ -45,6 +37,7 @@ export function generateMultiplicativeComparisonQuestion() {
   const base = getRandomInt(2, 8);
   const multiplier = getRandomInt(2, 6);
   const result = base * multiplier;
+  const correctAnswer = result.toString();
 
   const scenarios = [
     {
@@ -62,16 +55,16 @@ export function generateMultiplicativeComparisonQuestion() {
   ];
 
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const potentialDistractors = [
+    (base + multiplier).toString(),
+    (result + 5).toString(),
+    (result - 3).toString(),
+  ];
 
   return {
     question: scenario.question,
-    correctAnswer: result.toString(),
-    options: shuffleArray([
-      result.toString(),
-      (base + multiplier).toString(),
-      (result + 5).toString(),
-      (result - 3).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: scenario.hint,
     standard: "4.OA.A.1",
     concept: "Operations & Algebraic Thinking",
@@ -87,11 +80,12 @@ export function generatePrimeCompositeQuestion() {
   const testNumber = isPrime
     ? primes[getRandomInt(0, primes.length - 1)]
     : composites[getRandomInt(0, composites.length - 1)];
+  const correctAnswer = isPrime ? "Prime" : "Composite";
 
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
-    correctAnswer: isPrime ? "Prime" : "Composite",
-    options: shuffleArray(["Prime", "Composite"]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite"])),
     hint: isPrime
       ? "A prime number has exactly two factors: 1 and itself."
       : "A composite number has more than two factors.",
@@ -115,16 +109,17 @@ export function generateFactorsQuestion() {
   }
   
   const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
-
-  return {
-    question: `Which of these is a factor of ${base}?`,
-    correctAnswer: correctFactor.toString(),
-    options: shuffleArray([
-      correctFactor.toString(),
+  const correctAnswer = correctFactor.toString();
+  const potentialDistractors = [
       (correctFactor + 1).toString(),
       (base + 1).toString(),
       (correctFactor + 3).toString(),
-    ]),
+  ];
+
+  return {
+    question: `Which of these is a factor of ${base}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `A factor of ${base} divides evenly into ${base} with no remainder.`,
     standard: "4.OA.B.4",
     concept: "Operations & Algebraic Thinking",
@@ -147,16 +142,17 @@ export function generateNumberPatternQuestion() {
   }
   
   const nextValue = startNum + (step * length);
+  const correctAnswer = nextValue.toString();
+  const potentialDistractors = [
+    (nextValue + step).toString(),
+    (nextValue - step).toString(),
+    (nextValue + getRandomInt(1, 5)).toString(),
+  ];
   
   return {
     question: `Look at this number pattern: ${sequence.join(', ')}, ___. What number comes next?`,
-    correctAnswer: nextValue.toString(),
-    options: shuffleArray([
-      nextValue.toString(),
-      (nextValue + step).toString(),
-      (nextValue - step).toString(),
-      (nextValue + getRandomInt(1, 5)).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Look at the difference between each number. The pattern adds ${step} each time.`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -183,16 +179,17 @@ export function generateSequenceCompletionQuestion() {
   const missingValue = sequence[missingIndex];
   const questionSequence = [...sequence];
   questionSequence[missingIndex] = "___";
+  const correctAnswer = missingValue.toString();
+  const potentialDistractors = [
+    (missingValue + step).toString(),
+    (missingValue - step).toString(),
+    (missingValue + getRandomInt(2, 8)).toString(),
+  ];
   
   return {
     question: `Find the missing number in this pattern: ${questionSequence.join(', ')}`,
-    correctAnswer: missingValue.toString(),
-    options: shuffleArray([
-      missingValue.toString(),
-      (missingValue + step).toString(),
-      (missingValue - step).toString(),
-      (missingValue + getRandomInt(2, 8)).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `The pattern increases by ${step} each time. What number is missing?`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -221,12 +218,12 @@ export function generatePatternRuleQuestion() {
   ];
   
   const correctRule = rules.find(r => r.correct).text;
-  const allRules = shuffleArray(rules.map(r => r.text));
+  const allRules = rules.map(r => r.text);
   
   return {
     question: `Look at this pattern: ${sequence.join(', ')}. What is the rule?`,
     correctAnswer: correctRule,
-    options: allRules,
+    options: shuffle(generateUniqueOptions(correctRule, allRules)),
     hint: `Look at how much each number increases from the previous one.`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -263,16 +260,17 @@ export function generateTwoStepPatternQuestion() {
   } else {
     nextValue = operation.func(6, 4);
   }
-  
-  return {
-    question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
-    correctAnswer: nextValue.toString(),
-    options: shuffleArray([
-      nextValue.toString(),
+  const correctAnswer = nextValue.toString();
+  const potentialDistractors = [
       (nextValue + 1).toString(),
       (nextValue - 1).toString(),
       (nextValue + getRandomInt(2, 5)).toString(),
-    ]),
+  ];
+
+  return {
+    question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: operation.name === "square pattern" 
       ? "These are square numbers: 1×1, 2×2, 3×3, 4×4..." 
       : "Look carefully at how each number relates to its position in the sequence.",
@@ -291,16 +289,17 @@ export function generateLongDivisionWithRemainderQuestion() {
   const quotient = getRandomInt(3, 12);
   const remainder = getRandomInt(1, divisor - 1);
   const dividend = (quotient * divisor) + remainder;
-  
-  return {
-    question: `What is ${dividend} ÷ ${divisor}?`,
-    correctAnswer: `${quotient} remainder ${remainder}`,
-    options: shuffleArray([
-      `${quotient} remainder ${remainder}`,
+  const correctAnswer = `${quotient} remainder ${remainder}`;
+  const potentialDistractors = [
       `${quotient + 1} remainder ${remainder}`,
       `${quotient} remainder ${remainder + 1}`,
       `${quotient - 1} remainder ${remainder}`,
-    ]),
+  ];
+
+  return {
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `How many times does ${divisor} go into ${dividend}? Don't forget the remainder!`,
     standard: "4.NBT.B.6",
     concept: "Operations & Algebraic Thinking",
@@ -316,16 +315,17 @@ export function generateLongDivisionNoRemainderQuestion() {
   const divisor = getRandomInt(2, 9);
   const quotient = getRandomInt(4, 15);
   const dividend = quotient * divisor;
-  
-  return {
-    question: `What is ${dividend} ÷ ${divisor}?`,
-    correctAnswer: quotient.toString(),
-    options: shuffleArray([
-      quotient.toString(),
+  const correctAnswer = quotient.toString();
+  const potentialDistractors = [
       (quotient + 1).toString(),
       (quotient - 1).toString(),
       (quotient + getRandomInt(2, 4)).toString(),
-    ]),
+  ];
+
+  return {
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Think: ${divisor} times what number equals ${dividend}?`,
     standard: "4.NBT.B.6",
     concept: "Operations & Algebraic Thinking",
@@ -341,16 +341,17 @@ export function generateTwoDigitMultiplicationQuestion() {
   const twoDigit = getRandomInt(11, 99);
   const oneDigit = getRandomInt(2, 9);
   const result = twoDigit * oneDigit;
-  
-  return {
-    question: `What is ${twoDigit} × ${oneDigit}?`,
-    correctAnswer: result.toString(),
-    options: shuffleArray([
-      result.toString(),
+  const correctAnswer = result.toString();
+  const potentialDistractors = [
       (result + getRandomInt(10, 50)).toString(),
       (result - getRandomInt(10, 30)).toString(),
       (result + oneDigit).toString(),
-    ]),
+  ];
+
+  return {
+    question: `What is ${twoDigit} × ${oneDigit}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Break it down: multiply the ones place first, then the tens place. Don't forget to carry over!`,
     standard: "4.NBT.B.5",
     concept: "Operations & Algebraic Thinking",
@@ -366,6 +367,7 @@ export function generateMultiplicationWordProblemQuestion() {
   const groups = getRandomInt(12, 48);
   const itemsPerGroup = getRandomInt(3, 8);
   const total = groups * itemsPerGroup;
+  const correctAnswer = total.toString();
   
   const scenarios = [
     {
@@ -387,16 +389,16 @@ export function generateMultiplicationWordProblemQuestion() {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  
-  return {
-    question: scenario.question,
-    correctAnswer: total.toString(),
-    options: shuffleArray([
-      total.toString(),
+  const potentialDistractors = [
       (groups + itemsPerGroup).toString(),
       (total - groups).toString(),
       (total + itemsPerGroup).toString(),
-    ]),
+  ];
+
+  return {
+    question: scenario.question,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `This is ${groups} groups of ${itemsPerGroup}. Multiply ${groups} × ${itemsPerGroup}.`,
     standard: "4.OA.A.2",
     concept: "Operations & Algebraic Thinking",
@@ -413,6 +415,7 @@ export function generateDivisionWordProblemQuestion() {
   const quotient = getRandomInt(4, 12);
   const remainder = getRandomInt(1, divisor - 1);
   const dividend = (quotient * divisor) + remainder;
+  const correctAnswer = `${quotient} with ${remainder} left over`;
   
   const scenarios = [
     {
@@ -430,16 +433,16 @@ export function generateDivisionWordProblemQuestion() {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  
-  return {
-    question: scenario.question,
-    correctAnswer: `${quotient} with ${remainder} left over`,
-    options: shuffleArray([
-      `${quotient} with ${remainder} left over`,
+  const potentialDistractors = [
       `${quotient + 1} with ${remainder} left over`,
       `${quotient} with ${remainder + 1} left over`,
       `${quotient - 1} with ${remainder} left over`,
-    ]),
+  ];
+
+  return {
+    question: scenario.question,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Divide ${dividend} by ${divisor}. How many complete groups can you make?`,
     standard: "4.OA.A.3",
     concept: "Operations & Algebraic Thinking",

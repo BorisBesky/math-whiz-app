@@ -1,17 +1,10 @@
 // Question generation for 3rd Grade Division topic
+import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+
 
 // Helper functions
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /**
@@ -23,16 +16,17 @@ export function generateQuestion(difficulty = 0.5) {
   const d_quotient = getRandomInt(2, 2 + Math.floor(7 * difficulty));
   const d_divisor = getRandomInt(2, 2 + Math.floor(7 * difficulty));
   const d_dividend = d_quotient * d_divisor;
-
-  return {
-    question: `What is ${d_dividend} ÷ ${d_divisor}?`,
-    correctAnswer: d_quotient.toString(),
-    options: shuffleArray([
-      d_quotient.toString(),
+  const correctAnswer = d_quotient.toString();
+  const potentialDistractors = [
       (d_quotient + 1).toString(),
       (d_quotient - 1).toString(),
       (d_quotient + getRandomInt(2, 4)).toString(),
-    ]),
+  ];
+
+  return {
+    question: `What is ${d_dividend} ÷ ${d_divisor}?`,
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`,
     standard: "3.OA.C.7",
     concept: "Division",
@@ -51,6 +45,7 @@ export function generateEqualSharingQuestion() {
   // Ensure equal division
   const adjustedTotal = totalItems - (totalItems % numGroups);
   const itemsPerGroup = adjustedTotal / numGroups;
+  const correctAnswer = itemsPerGroup.toString();
   
   const scenarios = [
     {
@@ -76,16 +71,16 @@ export function generateEqualSharingQuestion() {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const potentialDistractors = [
+    (itemsPerGroup + 1).toString(),
+    (itemsPerGroup - 1).toString(),
+    (adjustedTotal - numGroups).toString(),
+  ];
   
   return {
     question: scenario.question(adjustedTotal, numGroups, scenario.item, scenario.container),
-    correctAnswer: itemsPerGroup.toString(),
-    options: shuffleArray([
-      itemsPerGroup.toString(),
-      (itemsPerGroup + 1).toString(),
-      (itemsPerGroup - 1).toString(),
-      (adjustedTotal - numGroups).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Divide ${adjustedTotal} into ${numGroups} equal groups. ${adjustedTotal} ÷ ${numGroups} = ?`,
     standard: "3.OA.A.2",
     concept: "Division",
@@ -101,6 +96,7 @@ export function generateGroupingQuestion() {
   const itemsPerGroup = getRandomInt(3, 8);
   const numGroups = getRandomInt(3, 7);
   const totalItems = itemsPerGroup * numGroups;
+  const correctAnswer = numGroups.toString();
   
   const scenarios = [
     {
@@ -126,16 +122,16 @@ export function generateGroupingQuestion() {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const potentialDistractors = [
+    (numGroups + 1).toString(),
+    (numGroups - 1).toString(),
+    (totalItems - itemsPerGroup).toString(),
+  ];
   
   return {
     question: scenario.question(totalItems, itemsPerGroup, scenario.item, scenario.container),
-    correctAnswer: numGroups.toString(),
-    options: shuffleArray([
-      numGroups.toString(),
-      (numGroups + 1).toString(),
-      (numGroups - 1).toString(),
-      (totalItems - itemsPerGroup).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `How many groups of ${itemsPerGroup} can you make from ${totalItems}? ${totalItems} ÷ ${itemsPerGroup} = ?`,
     standard: "3.OA.A.2",
     concept: "Division",
@@ -172,16 +168,17 @@ export function generateFactFamilyQuestion() {
   ];
   
   const selected = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  
+  const correctAnswer = selected.answer.toString();
+  const potentialDistractors = [
+    (selected.answer + 1).toString(),
+    (selected.answer - 1).toString(),
+    (selected.answer + getRandomInt(2, 4)).toString(),
+  ];
+
   return {
     question: selected.question,
-    correctAnswer: selected.answer.toString(),
-    options: shuffleArray([
-      selected.answer.toString(),
-      (selected.answer + 1).toString(),
-      (selected.answer - 1).toString(),
-      (selected.answer + getRandomInt(2, 4)).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: "Remember: multiplication and division are opposite operations. They're like inverse partners!",
     standard: "3.OA.B.6",
     concept: "Division",
@@ -198,16 +195,18 @@ export function generateRemainderQuestion() {
   const quotient = getRandomInt(3, 8);
   const remainder = getRandomInt(1, divisor - 1);
   const dividend = quotient * divisor + remainder;
+
+  const correctAnswer = remainder.toString();
+  const potentialDistractors = [
+    (remainder + 1).toString(),
+    (remainder - 1 >= 0 ? remainder - 1 : remainder + 1).toString(),
+    divisor.toString(),
+  ];
   
   return {
     question: `What is the remainder when ${dividend} ÷ ${divisor}?`,
-    correctAnswer: remainder.toString(),
-    options: shuffleArray([
-      remainder.toString(),
-      (remainder + 1).toString(),
-      (remainder - 1 >= 0 ? remainder - 1 : remainder + 1).toString(),
-      divisor.toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: `Divide ${dividend} by ${divisor}. How much is left over after making equal groups?`,
     standard: "3.OA.C.7",
     concept: "Division",
@@ -236,16 +235,17 @@ export function generateArrayDivisionQuestion() {
   ];
   
   const selected = questionTypes[getRandomInt(0, questionTypes.length - 1)];
+  const correctAnswer = selected.answer.toString();
+  const potentialDistractors = [
+    (selected.answer + 1).toString(),
+    (selected.answer - 1).toString(),
+    (total - selected.answer).toString(),
+  ];
   
   return {
     question: selected.question,
-    correctAnswer: selected.answer.toString(),
-    options: shuffleArray([
-      selected.answer.toString(),
-      (selected.answer + 1).toString(),
-      (selected.answer - 1).toString(),
-      (total - selected.answer).toString(),
-    ]),
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: "Think about how arrays work. Rows × columns = total, so total ÷ one dimension = the other dimension.",
     standard: "3.OA.A.3",
     concept: "Division",
