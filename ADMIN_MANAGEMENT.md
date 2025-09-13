@@ -1,13 +1,16 @@
 # Admin Account Management
 
 ## Overview
+
 Admin accounts in Math Whiz App are managed exclusively through a secure server-side script for enhanced security. Regular users cannot create admin accounts through the web interface.
 
 ## How to Grant Admin Privileges
 
 ### Prerequisites
+
 1. Ensure your `.env` file contains the required Firebase Admin SDK credentials:
-   ```
+
+   ```env
    FIREBASE_PROJECT_ID=your-project-id
    FIREBASE_CLIENT_EMAIL=your-service-account-email
    FIREBASE_PRIVATE_KEY=your-private-key
@@ -18,6 +21,7 @@ Admin accounts in Math Whiz App are managed exclusively through a secure server-
    - Create the user manually in the Firebase Console
 
 ### Grant Admin Access
+
 Run the following command from the project root:
 
 ```bash
@@ -25,11 +29,13 @@ node set-admin.js <user-email@domain.com>
 ```
 
 **Example:**
+
 ```bash
 node set-admin.js john.doe@school.edu
 ```
 
 ### Expected Output
+
 - **Success:** `✅ Success! Custom claim { admin: true } has been set for user john.doe@school.edu (UID: xxxxx). They will have admin privileges on their next login.`
 - **Already Admin:** `User john.doe@school.edu (UID: xxxxx) is already an admin.`
 - **User Not Found:** `Error: User with email "john.doe@school.edu" not found in Firebase Authentication.`
@@ -80,6 +86,7 @@ Or create a separate script similar to `set-admin.js` for removing privileges.
 ### Environment Variables Setup
 
 Your `.env` file should look like:
+
 ```env
 FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
