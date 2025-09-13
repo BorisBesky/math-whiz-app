@@ -1,98 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { initializeApp } from "firebase/app";
+import React from 'react';
 import { getFirestore } from "firebase/firestore";
-import AdminLogin from './AdminLogin';
+import { useAuth } from '../contexts/AuthContext';
 import AdminPortal from './AdminPortal';
 
-// Firebase configuration - same as in App.js
-let firebaseConfig = {};
-
-try {
-  if (process.env.REACT_APP_FIREBASE_API_KEY) {
-    firebaseConfig = {
-      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.REACT_APP_FIREBASE_APP_ID,
-    };
-  } else {
-    console.error("Firebase configuration not found in environment variables");
-  }
-} catch (error) {
-  console.error("Error reading Firebase configuration:", error);
-}
-
-// Initialize Firebase
-let app, db, auth;
-try {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-} catch (error) {
-  console.error("Firebase initialization error:", error);
-}
-
 const AdminPage = () => {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!auth) {
-      setError("Firebase authentication not initialized. Please check your environment variables.");
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const idTokenResult = await firebaseUser.getIdTokenResult();
-          if (idTokenResult.claims.admin === true) {
-            setIsAdminAuthenticated(true);
-            setUser(firebaseUser);
-          } else {
-            setIsAdminAuthenticated(false);
-            setUser(null);
-          }
-        } catch (error) {
-          console.error('Error checking admin claims:', error);
-          setIsAdminAuthenticated(false);
-          setUser(null);
-        }
-      } else {
-        setIsAdminAuthenticated(false);
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleLoginSuccess = () => {
-    setIsAdminAuthenticated(true);
-  };
+  const { user, logout } = useAuth();
+  const db = getFirestore();
 
   const handleClose = async () => {
     try {
-      await signOut(auth);
+      await logout();
       console.log("Admin user signed out.");
-      // The onAuthStateChanged listener will automatically set isAdminAuthenticated to false
-      // and show the login screen again
     } catch (error) {
       console.error('Error signing out:', error);
-      // Force logout state even if sign out fails
-      setIsAdminAuthenticated(false);
-      setUser(null);
     }
   };
 
-  if (loading) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
@@ -105,37 +29,14 @@ const AdminPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-600 text-2xl">⚠️</span>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Configuration Error</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <a href="/" className="text-blue-600 hover:text-blue-800">← Back to Main App</a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
-      {!isAdminAuthenticated ? (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <AdminLogin onLoginSuccess={handleLoginSuccess} />
-        </div>
-      ) : (
-        <AdminPortal 
-          db={db} 
-          appId={typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id"}
-          currentUser={user}
-          onClose={handleClose}
-        />
-      )}
+      <AdminPortal 
+        db={db} 
+        appId={typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id"}
+        currentUser={user}
+        onClose={handleClose}
+      />
     </div>
   );
 };

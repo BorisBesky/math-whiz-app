@@ -1,5 +1,6 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "katex/dist/katex.min.css";
 import renderMathInElement from "katex/contrib/auto-render";
 import {
@@ -15,6 +16,10 @@ import {
   Store,
   CheckCircle,
   Home,
+  BookOpen,
+  LogOut,
+  User,
+  Shield,
 } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import {
@@ -33,6 +38,8 @@ import {
   arrayUnion,
   getDoc,
 } from "firebase/firestore";
+import { useAuth } from './contexts/AuthContext';
+import { USER_ROLES } from './utils/userRoles';
 import {
   adaptAnsweredHistory,
   nextTargetComplexity,
@@ -524,6 +531,8 @@ const getQuestionHistory = async (userId) => {
 };
 
 const App = () => {
+  const { user: authUser, logout: authLogout, userRole } = useAuth();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
@@ -548,6 +557,16 @@ const App = () => {
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
     useState(false);
+
+  // Custom logout handler that navigates to login page
+  const handleLogout = async () => {
+    try {
+      await authLogout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // New state variables for story problem functionality
   const [showStoryHint, setShowStoryHint] = useState(false);
@@ -1609,32 +1628,119 @@ Answer: [The answer]`;
   };
 
   // --- UI Rendering ---
-  const renderHeader = () => (
-    <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
-      <div className="flex items-center gap-2 text-yellow-600 font-bold px-2">
-        <Coins size={24} />
-        <span>{userData?.coins || 0}</span>
+  const renderHeader = () => {
+    return (
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
+        {/* Login options when no user is authenticated */}
+        {!authUser && (
+          <div className="flex items-center gap-2">
+            <a
+              href="/student-login"
+              className="px-3 py-1 bg-green-100 hover:bg-green-200 rounded-full text-sm text-green-800 transition"
+              title="Student Login"
+            >
+              Student
+            </a>
+            <a
+              href="/teacher-login"
+              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded-full text-sm text-blue-800 transition"
+              title="Teacher Login"
+            >
+              Teacher
+            </a>
+            <a
+              href="/admin-login"
+              className="px-3 py-1 bg-purple-100 hover:bg-purple-200 rounded-full text-sm text-purple-800 transition"
+              title="Admin Login"
+            >
+              Admin
+            </a>
+          </div>
+        )}
+        
+        {/* User info section */}
+        {authUser && (
+          <div className="flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+            <User size={16} />
+            <span className="text-sm font-medium">
+              {authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
+            </span>
+            {userRole && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                {userRole}
+              </span>
+            )}
+          </div>
+        )}
+        
+        {/* Coins */}
+        <div className="flex items-center gap-2 text-yellow-600 font-bold px-2">
+          <Coins size={24} />
+          <span>{userData?.coins || 0}</span>
+        </div>
+        
+        {/* Store */}
+        <button
+          onClick={() => setQuizState(APP_STATES.STORE)}
+          className="p-2 rounded-full hover:bg-gray-200 transition"
+          title="Store"
+        >
+          <Store size={24} className="text-purple-600" />
+        </button>
+        
+        {/* Dashboard */}
+        <button
+          onClick={() => setQuizState("dashboard")}
+          className="p-2 rounded-full hover:bg-gray-200 transition"
+          title="Dashboard"
+        >
+          <BarChart2 size={24} className="text-blue-600" />
+        </button>
+        
+        {/* Teacher Dashboard - only for teachers and admins */}
+        {userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole) && (
+          <a
+            href="/teacher"
+            className="p-2 rounded-full hover:bg-gray-200 transition"
+            title="Teacher Dashboard"
+          >
+            <BookOpen size={24} className="text-indigo-600" />
+          </a>
+        )}
+        
+        {/* Admin Portal - only for admins */}
+        {userRole === USER_ROLES.ADMIN && (
+          <a
+            href="/admin"
+            className="p-2 rounded-full hover:bg-gray-200 transition"
+            title="Admin Portal"
+          >
+            <Shield size={24} className="text-purple-600" />
+          </a>
+        )}
+        
+        {/* Home */}
+        <button
+          onClick={returnToTopics}
+          className="p-2 rounded-full hover:bg-gray-200 transition"
+          title="Home"
+        >
+          <Home size={24} className="text-green-600" />
+        </button>
+        
+        {/* Logout - for all authenticated users */}
+        {authUser && (
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full hover:bg-red-100 transition"
+            title={authUser.isAnonymous ? "Switch User" : "Logout"}
+          >
+            <LogOut size={24} className="text-red-600" />
+          </button>
+        )}
       </div>
-      <button
-        onClick={() => setQuizState(APP_STATES.STORE)}
-        className="p-2 rounded-full hover:bg-gray-200 transition"
-      >
-        <Store size={24} className="text-purple-600" />
-      </button>
-      <button
-        onClick={() => setQuizState("dashboard")}
-        className="p-2 rounded-full hover:bg-gray-200 transition"
-      >
-        <BarChart2 size={24} className="text-blue-600" />
-      </button>
-      <button
-        onClick={returnToTopics}
-        className="p-2 rounded-full hover:bg-gray-200 transition"
-      >
-        <Home size={24} className="text-green-600" />
-      </button>
-    </div>
-  );
+    );
+  };
 
   const renderDashboard = () => {
     const today = getTodayDateString();

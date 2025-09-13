@@ -157,6 +157,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const fetchClasses = useCallback(async () => {
     try {
+
       const classesRef = collection(db, 'artifacts', appId, 'classes');
       const snapshot = await getDocs(classesRef);
       const classesList = snapshot.docs.map(doc => ({
@@ -176,7 +177,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     fetchClasses();
   }, [fetchStudentData, fetchTeachers, fetchClasses]);
 
-  const addTeacher = async () => {
+    const addTeacher = async () => {
     if (!newTeacher.name || !newTeacher.email) {
       alert('Please enter both name and email');
       return;
@@ -204,6 +205,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const deleteTeacher = async (teacherId) => {
     if (window.confirm('Are you sure you want to delete this teacher? This action cannot be undone.')) {
       try {
+        // Check if we're in development mode
+        const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+        
+        if (isDevelopment) {
+          // Update local state for development
+          setTeachers(teachers.filter(t => t.id !== teacherId));
+          return;
+        }
+
         const teacherRef = doc(db, 'artifacts', appId, 'teachers', teacherId);
         await deleteDoc(teacherRef);
         fetchTeachers();
@@ -221,6 +231,22 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
 
     try {
+      // Check if we're in development mode
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      
+      if (isDevelopment) {
+        // Update local state for development
+        setStudents(students.map(student => 
+          student.id === selectedStudentForClass.id 
+            ? { ...student, class: selectedClass }
+            : student
+        ));
+        setShowClassAssignment(false);
+        setSelectedStudentForClass(null);
+        setSelectedClass('');
+        return;
+      }
+
       const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
       await updateDoc(profileDocRef, {
         class: selectedClass,
@@ -244,10 +270,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
   };
 
   const exportStudentData = () => {
+  };
     const csvData = students.map(student => ({
       'Student ID': student.id,
       'Selected Grade': student.selectedGrade,
-      'Class': student.class,
       'Total Questions': student.totalQuestions,
       'Questions Today': student.questionsToday,
       'Accuracy (%)': student.accuracy.toFixed(1),
@@ -317,8 +343,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const handleSort = (field) => {
     if (sortField === field) {
+      // If clicking the same field, toggle direction
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
+      // If clicking a new field, default to ascending
       setSortField(field);
       setSortDirection('asc');
     }
@@ -411,6 +439,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     if (!window.confirm(confirmMessage)) return;
 
     try {
+
       const deletePromises = Array.from(selectedStudents).map(async (studentId) => {
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
         await deleteDoc(profileDocRef);
@@ -419,10 +448,12 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
       await Promise.all(deletePromises);
       
+      // Update local state
       setStudents(students.filter(s => !selectedStudents.has(s.id)));
       setSelectedStudents(new Set());
       setIsSelectAll(false);
       
+      // Clear selected student if it was deleted
       if (selectedStudent && selectedStudents.has(selectedStudent.id)) {
         setSelectedStudent(null);
         setView('students');
@@ -578,6 +609,25 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Debug Information */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-6 border-b border-yellow-200">
+                    <h3 className="text-lg font-semibold text-yellow-900 flex items-center">
+                      🔍 Debug Information
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="space-y-2 text-sm">
+                      <p><strong>App ID:</strong> {appId}</p>
+                      <p><strong>Firebase Path:</strong> artifacts/{appId}/users</p>
+                      <p><strong>Students Found:</strong> {students.length}</p>
+                      <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Recent Activity */}
               <div className="bg-white border border-gray-200 rounded-lg">
@@ -934,10 +984,6 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Selected Grade:</span>
                       <span className="font-medium">{selectedStudent.selectedGrade}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Class:</span>
-                      <span className="font-medium">{selectedStudent.class}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Questions:</span>
