@@ -105,11 +105,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
+        const className = classes.find(c => c.id === data.classId)?.name || 'Unassigned';
+
         return {
           id: data.id,
           selectedGrade: data.selectedGrade || 'G3',
           coins: data.coins || 0,
-          class: data.class || 'Unassigned',
+          class: className,
+          classId: data.classId,
           totalQuestions: totalStudentQuestions,
           questionsToday: questionsToday.length,
           accuracy: accuracy,
@@ -138,22 +141,40 @@ const AdminPortal = ({ db, onClose, appId }) => {
     } finally {
       setLoading(false);
     }
-  }, [appId]);
+  }, [appId, classes]);
 
   const fetchTeachers = useCallback(async () => {
     try {
-      const teachersRef = collection(db, 'artifacts', appId, 'teachers');
-      const snapshot = await getDocs(teachersRef);
-      const teachersList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("No authenticated user found.");
+      }
+
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/.netlify/functions/get-all-teachers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ appId })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+      }
+      
+      const teachersList = await response.json();
       setTeachers(teachersList);
     } catch (error) {
       console.error('Error fetching teachers:', error);
       setError(`Failed to fetch teachers: ${error.message}`);
     }
-  }, [db, appId]);
+  }, [appId]);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -171,10 +192,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
   }, [db, appId]);
 
   useEffect(() => {
-    fetchStudentData();
     fetchTeachers();
     fetchClasses();
-  }, [fetchStudentData, fetchTeachers, fetchClasses]);
+  }, [fetchTeachers, fetchClasses]);
+
+  useEffect(() => {
+    if (classes.length > 0) {
+      fetchStudentData();
+    }
+  }, [fetchStudentData, classes]);
 
   const addTeacher = async () => {
     if (!newTeacher.name || !newTeacher.email) {
@@ -223,14 +249,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
     try {
       const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
       await updateDoc(profileDocRef, {
-        class: selectedClass,
+        classId: selectedClass,
         updatedAt: new Date().toISOString()
       });
       
       // Update local state
+      const assignedClassName = classes.find(c => c.id === selectedClass)?.name || 'Unassigned';
       setStudents(students.map(student => 
         student.id === selectedStudentForClass.id 
-          ? { ...student, class: selectedClass }
+          ? { ...student, class: assignedClassName, classId: selectedClass }
           : student
       ));
       
@@ -845,7 +872,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           Email
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Classes
+                          Created At
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -854,44 +881,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {teachers.map(teacher => (
-                        <tr key={teacher.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <span className="text-green-600 text-sm font-medium">
-                                  {teacher.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
-                                <div className="text-sm text-gray-500">ID: {teacher.id}</div>
-                              </div>
-                            </div>
+                        <tr key={teacher.id}>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.displayName || teacher.name}</td>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.email}</td>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
+                            {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {teacher.email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex flex-wrap gap-1">
-                              {teacher.classes && teacher.classes.length > 0 ? (
-                                teacher.classes.map((className, index) => (
-                                  <span key={index} className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    {className}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-gray-500">No classes assigned</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => deleteTeacher(teacher.id)}
-                              className="text-red-600 hover:text-red-900 inline-flex items-center"
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
-                            </button>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
+                            {/* Placeholder for class count */}
+                            0
                           </td>
                         </tr>
                       ))}
@@ -1209,7 +1207,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 >
                   <option value="">Select a class...</option>
                   {classes.map(cls => (
-                    <option key={cls.id} value={cls.name}>
+                    <option key={cls.id} value={cls.id}>
                       {cls.name} ({cls.teacher})
                     </option>
                   ))}
