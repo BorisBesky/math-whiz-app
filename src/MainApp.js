@@ -846,17 +846,20 @@ const App = () => {
       } else {
         setUser(null);
         setUserData(null);
-        try {
-          if (
-            typeof __initial_auth_token !== "undefined" &&
-            __initial_auth_token
-          ) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
+        // Only sign in anonymously if not on a restricted page
+        if (!window.location.pathname.includes('/admin') && !window.location.pathname.includes('/teacher')) {
+          try {
+            if (
+              typeof __initial_auth_token !== "undefined" &&
+              __initial_auth_token
+            ) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          } catch (error) {
+            console.error("Firebase sign-in error:", error);
           }
-        } catch (error) {
-          console.error("Firebase sign-in error:", error);
         }
       }
     });

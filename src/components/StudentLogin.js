@@ -13,7 +13,7 @@ const StudentLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { loginAsGuest, loginWithEmail, registerWithEmail } = useAuth();
+  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,6 +69,20 @@ const StudentLogin = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Authentication error:', error);
+      setError(getErrorMessage(error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle(USER_ROLES.STUDENT);
+      navigate(from, { replace: true });
+    } catch (error) {
+      console.error('Google sign-in error:', error);
       setError(getErrorMessage(error.message));
     } finally {
       setLoading(false);
@@ -134,8 +148,21 @@ const StudentLogin = () => {
             {loading ? 'Starting...' : 'Start as Guest'}
           </button>
 
+          {/* Google Sign-In */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+              <path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 399.5 0 256S111.8 0 244 0c69.8 0 133 28.2 178.5 74.4l-68.8 68.8C324.5 112.6 287.3 96 244 96c-88.6 0-160.1 71.8-160.1 160.1s71.5 160.1 160.1 160.1c97.3 0 131.3-72.8 136.8-109.9H244v-85.7h244c2.6 14.7 4.2 30.1 4.2 46.4z"></path>
+            </svg>
+            {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
+          </button>
+
           <p className="text-xs text-gray-600 text-center">
-            Guest accounts can be converted to registered accounts later to save progress
+            Guest and Google accounts can be converted to registered accounts later to save progress
           </p>
 
           {/* Email/Password Form */}

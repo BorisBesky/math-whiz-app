@@ -13,7 +13,7 @@ const TeacherLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { loginWithEmail, registerWithEmail } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,6 +49,20 @@ const TeacherLogin = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Authentication error:', error);
+      setError(getErrorMessage(error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle(USER_ROLES.TEACHER);
+      navigate(from, { replace: true });
+    } catch (error) {
+      console.error('Google sign-in error:', error);
       setError(getErrorMessage(error.message));
     } finally {
       setLoading(false);
@@ -169,11 +183,37 @@ const TeacherLogin = () => {
                   <LogIn className="h-5 w-5 text-blue-500 group-hover:text-blue-400" />
                 )}
               </span>
-              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+              {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
             </button>
           </div>
+        </form>
 
-          <div className="text-center">
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or</span>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+              <path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 399.5 0 256S111.8 0 244 0c69.8 0 133 28.2 178.5 74.4l-68.8 68.8C324.5 112.6 287.3 96 244 96c-88.6 0-160.1 71.8-160.1 160.1s71.5 160.1 160.1 160.1c97.3 0 131.3-72.8 136.8-109.9H244v-85.7h244c2.6 14.7 4.2 30.1 4.2 46.4z"></path>
+            </svg>
+            {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
+          </button>
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               type="button"
               onClick={() => {
@@ -183,33 +223,30 @@ const TeacherLogin = () => {
                 setPassword('');
                 setConfirmPassword('');
               }}
-              className="text-sm text-blue-600 hover:text-blue-500"
+              className="text-blue-600 hover:text-blue-500"
             >
-              {isSignUp 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
-              }
+              {isSignUp ? 'Sign in' : 'Sign up'}
             </button>
-          </div>
+          </p>
+        </div>
 
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">Need a different account type?</p>
-            <div className="flex justify-center space-x-4">
-              <Link
-                to="/student-login"
-                className="text-sm text-green-600 hover:text-green-500"
-              >
-                Student Login
-              </Link>
-              <Link
-                to="/admin-login"
-                className="text-sm text-purple-600 hover:text-purple-500"
-              >
-                Admin Login
-              </Link>
-            </div>
+        <div className="text-center space-y-2">
+          <p className="text-sm text-gray-600">Need a different account type?</p>
+          <div className="flex justify-center space-x-4">
+            <Link
+              to="/student-login"
+              className="text-sm text-green-600 hover:text-green-500"
+            >
+              Student Login
+            </Link>
+            <Link
+              to="/admin-login"
+              className="text-sm text-purple-600 hover:text-purple-500"
+            >
+              Admin Login
+            </Link>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

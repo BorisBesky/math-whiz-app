@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { USER_ROLES } from '../utils/userRoles';
 
@@ -161,6 +161,47 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Sign in with Google and verify role
+  const loginWithGoogle = async (expectedRole) => {
+    try {
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // For admin role, check custom claims
+      if (expectedRole === USER_ROLES.ADMIN) {
+        const idTokenResult = await user.getIdTokenResult();
+        if (!idTokenResult.claims.admin) {
+          await signOut(auth);
+          throw new Error(`This account is not registered as a ${expectedRole}`);
+        }
+      } else {
+        // For other roles, check Firestore profile
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+          if (profile.role !== expectedRole) {
+            await signOut(auth);
+            throw new Error(`This account is registered as a ${profile.role}, not as a ${expectedRole}.`);
+          }
+        } else {
+          // If no profile exists, create one for the new user
+          await setUserProfile(user.uid, {
+            email: user.email,
+            role: expectedRole,
+            createdAt: new Date(),
+            isAnonymous: false,
+            displayName: user.displayName,
+          });
+        }
+      }
+      return user;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
   // Register new account with role
   const registerWithEmail = async (email, password, role, additionalData = {}) => {
     try {
@@ -227,11 +268,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check if user has access to current route
-  const hasAccess = (requiredRole) => {
-    return userRole === requiredRole;
-  };
-
   const value = {
     user,
     userRole,
@@ -239,16 +275,11 @@ export const AuthProvider = ({ children }) => {
     error,
     loginAsGuest,
     loginWithEmail,
+    loginWithGoogle,
     registerWithEmail,
     convertGuestToRegistered,
     logout,
-    hasAccess,
-    setError
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
