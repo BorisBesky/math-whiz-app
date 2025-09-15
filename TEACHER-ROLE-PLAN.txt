@@ -1,0 +1,109 @@
+Step 1: Custom Claim (No Change)
+Create Cloud Function to set the custom claim on the teacher's Auth account. This identifies them as a "teacher" in the system, giving them the privilege to perform this kind of check.
+
+JavaScript
+
+// This claim simply confirms: "This user IS a teacher."
+await admin.auth().setCustomUserClaims(userUid, { role: "teacher" });
+
+
+Step 2: Your New Firestore Data Model
+Based on your description, your database structure would look like this:
+
+A classes collection:
+
+Document: class_101_math
+
+subject: "Algebra II"
+
+room: "B-21"
+
+assignedTeacherId: "teacher_bob_uid_123" // <-- Bob teaches this class
+
+Document: class_202_history
+
+subject: "World History"
+
+room: "C-05"
+
+assignedTeacherId: "teacher_alice_uid_456" // <-- Alice teaches this class
+
+A students collection:
+
+Document: student_jane_doe
+
+name: "Jane Doe"
+
+classId: "class_101_math" // <-- Jane is in Bob's class
+
+Document: student_john_smith
+
+name: "John Smith"
+
+classId: "class_101_math" // <-- John is also in Bob's class
+
+Document: student_alex_jones
+
+name: "Alex Jones"
+
+classId: "class_202_history" // <-- Alex is in Alice's class
+
+Step 3: Modified Firestore Security Rule
+Now, when a teacher tries to read a student document, your rule must:
+
+Check if the user is a teacher (using the claim).
+
+Get the classId from the student record.
+
+Fetch the corresponding document from the classes collection.
+
+Check if the user's UID matches the assignedTeacherId on that class document.
+
+This is all done with the built-in get() function.
+
+JavaScript
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // You don't need to secure the 'classes' collection as much for reads,
+    // as it likely just contains public metadata. Writes should be locked.
+    match /classes/{classId} {
+      allow read: if true; // Or 'if request.auth != null'
+      allow write: if false; // Only admins or functions should create classes
+    }
+
+    // This is the key rule for your student records
+    match /studentRecords/{studentId} {
+    
+      allow read, write: if
+          // Condition 1: Is the user a teacher?
+          request.auth.token.role == 'teacher'
+          
+          && // AND
+          
+          // Condition 2: Does their UID match the teacherId on the 
+          // class document that this student belongs to?
+          request.auth.uid == get(
+             /databases/$(database)/documents/classes/$(resource.data.classId)
+          ).data.assignedTeacherId;
+    }
+  }
+}
+How This Rule Works:
+When "Teacher Bob" (UID teacher_bob_uid_123) tries to read student_jane_doe:
+
+Firebase checks: request.auth.token.role == 'teacher'. This is true.
+
+Firebase looks at the student document's data (resource.data) and finds its classId is "class_101_math".
+
+The get() function fetches the document at /classes/class_101_math.
+
+It reads the data from that class: .data.assignedTeacherId, which is "teacher_bob_uid_123".
+
+It compares that value to the requesting user's ID: "teacher_bob_uid_123" == "teacher_bob_uid_123". This is true.
+
+Since both conditions are true, access is GRANTED.
+
+If "Teacher Alice" tried to read the same record, step 5 would fail ("teacher_alice_uid_456" == "teacher_bob_uid_123"), and access would be DENIED.
