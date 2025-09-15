@@ -60,6 +60,20 @@ exports.handler = async (event) => {
       };
     }
 
+    // 3. Get the authenticated user's ID (could be admin or teacher)
+    const authenticatedUserId = decodedToken.uid;
+    
+    // 4. Check if this is a teacher by querying for their classes
+    const classesRef = db.collection(`artifacts/${appId}/classes`);
+    const teacherClassesQuery = classesRef.where('teacherId', '==', authenticatedUserId);
+    const teacherClassesSnapshot = await teacherClassesQuery.get();
+    
+    // 5. Extract class IDs for teacher filtering (empty array if admin)
+    const teacherClassIds = [];
+    teacherClassesSnapshot.forEach(doc => {
+      teacherClassIds.push(doc.id);
+    });
+
     const usersCollectionRef = db.collection(`artifacts/${appId}/users`);
     const userDocRefs = await usersCollectionRef.listDocuments();
 
@@ -78,13 +92,15 @@ exports.handler = async (event) => {
       const userId = userDocRef.id;
       const userDocSnapshot = await userDocRef.get();
 
+      let studentData = null;
+
       // Check 1: Does the main user document contain data?
       if (userDocSnapshot.exists) {
         const userData = userDocSnapshot.data();
         // Check if the data object is not empty
         if (userData && Object.keys(userData).length > 0) {
           console.log(`Success: Found data directly in user document for ${userId}`);
-          return {
+          studentData = {
             id: userId,
             ...userData,
           };
@@ -92,27 +108,49 @@ exports.handler = async (event) => {
       }
 
       // Check 2: If not, does the nested 'profile' document exist and contain data?
-      const profileDocRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
-      const profileSnapshot = await profileDocRef.get();
+      if (!studentData) {
+        const profileDocRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
+        const profileSnapshot = await profileDocRef.get();
 
-      if (profileSnapshot.exists) {
-        const profileData = profileSnapshot.data();
-        if (profileData && Object.keys(profileData).length > 0) {
-          console.log(`Success: Found data in nested profile document for ${userId}`);
-          return {
-            id: userId,
-            ...profileData,
-          };
+        if (profileSnapshot.exists) {
+          const profileData = profileSnapshot.data();
+          if (profileData && Object.keys(profileData).length > 0) {
+            console.log(`Success: Found data in nested profile document for ${userId}`);
+            studentData = {
+              id: userId,
+              ...profileData,
+            };
+          }
         }
       }
       
-      console.log(`Info: No data found for user ${userId} in any expected location.`);
-      return null;
+      if (!studentData) {
+        console.log(`Info: No data found for user ${userId} in any expected location.`);
+        return null;
+      }
+
+      // 3. Filter by teacher's classes if this user is a teacher (has classes assigned)
+      if (teacherClassIds.length > 0) {
+        // This is a teacher, so filter students by classId
+        if (!studentData.classId || !teacherClassIds.includes(studentData.classId)) {
+          console.log(`Filtered out student ${userId} - not in teacher's classes`);
+          return null;
+        }
+        console.log(`Student ${userId} belongs to teacher's class ${studentData.classId}`);
+      }
+
+      return studentData;
     });
 
     const studentData = (await Promise.all(studentDataPromises)).filter(Boolean);
 
-    console.log(`Successfully processed ${studentData.length} student(s).`);
+    if (teacherClassIds.length > 0) {
+      console.log(`Teacher filtering: Found ${teacherClassIds.length} classes for teacher ${authenticatedUserId}`);
+      console.log(`Teacher class IDs: ${teacherClassIds.join(', ')}`);
+      console.log(`Returning ${studentData.length} student(s) from teacher's classes.`);
+    } else {
+      console.log(`Admin access: Returning all ${studentData.length} student(s).`);
+    }
     
     return {
       statusCode: 200,

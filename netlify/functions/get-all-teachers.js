@@ -53,6 +53,7 @@ exports.handler = async (event) => {
         if (profileData && profileData.role === 'teacher') {
           return {
             id: userId,
+            uid: userId, // Firebase Auth UID is the same as the document ID
             ...profileData,
           };
         }

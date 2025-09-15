@@ -19,10 +19,12 @@ import {
   UserCheck
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
 const AdminPortal = ({ db, onClose, appId }) => {
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -52,6 +54,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const fetchStudentData = useCallback(async () => {
     try {
+      console.log('fetchStudentData: starting');
       setLoading(true);
       setError('');
       const auth = getAuth();
@@ -62,6 +65,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       }
 
       const token = await user.getIdToken();
+      console.log('fetchStudentData: calling get-all-students API');
       
       const response = await fetch('/.netlify/functions/get-all-students', {
         method: 'POST',
@@ -72,6 +76,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         body: JSON.stringify({ appId })
       });
 
+      console.log('fetchStudentData: API response status', response.status);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Request failed with status ${response.status}`);
@@ -105,7 +110,9 @@ const AdminPortal = ({ db, onClose, appId }) => {
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
-        const className = classes.find(c => c.id === data.classId)?.name || 'Unassigned';
+        const className = classes.length > 0 
+          ? (classes.find(c => c.id === data.classId)?.name || 'Unassigned')
+          : 'Unassigned';
 
         return {
           id: data.id,
@@ -178,13 +185,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const fetchClasses = useCallback(async () => {
     try {
+      console.log('fetchClasses: starting');
       const classesRef = collection(db, 'artifacts', appId, 'classes');
       const snapshot = await getDocs(classesRef);
+      console.log('fetchClasses: got', snapshot.docs.length, 'classes');
       const classesList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setClasses(classesList);
+      console.log('fetchClasses: classes set', classesList);
     } catch (error) {
       console.error('Error fetching classes:', error);
       setError(`Failed to fetch classes: ${error.message}`);
@@ -192,15 +202,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
   }, [db, appId]);
 
   useEffect(() => {
+    console.log('AdminPortal useEffect: fetchTeachers and fetchClasses');
     fetchTeachers();
     fetchClasses();
   }, [fetchTeachers, fetchClasses]);
 
   useEffect(() => {
-    if (classes.length > 0) {
-      fetchStudentData();
-    }
-  }, [fetchStudentData, classes]);
+    console.log('AdminPortal useEffect: calling fetchStudentData');
+    // Always fetch student data, regardless of classes
+    fetchStudentData();
+  }, [fetchStudentData]);
 
   const addTeacher = async () => {
     if (!newTeacher.name || !newTeacher.email) {
@@ -209,33 +220,101 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
 
     try {
-      const teacherId = newTeacher.email.replace(/[@.]/g, '_');
-      const teacherRef = doc(db, 'artifacts', appId, 'teachers', teacherId);
-      await setDoc(teacherRef, {
-        name: newTeacher.name,
-        email: newTeacher.email,
-        classes: [],
-        createdAt: new Date().toISOString()
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/.netlify/functions/create-teacher', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newTeacher.name,
+          email: newTeacher.email,
+          appId: appId
+        })
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create teacher');
+      }
+
+      console.log('Teacher created successfully:', result);
+      
+      if (result.resetLink) {
+        // Show success message with reset link
+        const message = `Teacher account created successfully!\n\n` +
+          `Password Reset Link:\n${result.resetLink}\n\n` +
+          `Please share this link with ${result.teacherEmail} to set up their password.\n\n` +
+          `The link has been copied to your clipboard.`;
+        
+        // Copy reset link to clipboard
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(result.resetLink).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+          });
+        }
+        
+        alert(message);
+      } else {
+        // Fallback message if reset link wasn't generated
+        alert(`Teacher account created successfully!\n\n` +
+          `Please generate a password reset link for ${result.teacherEmail} ` +
+          `using the Firebase console or admin tools.`);
+      }
       
       setNewTeacher({ name: '', email: '' });
       setShowAddTeacher(false);
       fetchTeachers();
     } catch (error) {
       console.error('Error adding teacher:', error);
-      alert('Error adding teacher. Please try again.');
+      alert(`Error adding teacher: ${error.message}`);
     }
   };
 
-  const deleteTeacher = async (teacherId) => {
-    if (window.confirm('Are you sure you want to delete this teacher? This action cannot be undone.')) {
+  const deleteTeacher = async (teacher) => {
+    const teacherName = teacher.displayName || teacher.name || teacher.email || 'Unknown Teacher';
+    const confirmMessage = `Are you sure you want to delete teacher "${teacherName}" (${teacher.email})?\n\nThis will:\n- Remove their account and admin access\n- Delete their profile\n- Prevent them from logging in\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        const teacherRef = doc(db, 'artifacts', appId, 'teachers', teacherId);
-        await deleteDoc(teacherRef);
+        // Debug logging
+        console.log('Teacher object:', teacher);
+        console.log('AppId:', appId);
+        
+        const requestBody = {
+          teacherId: teacher.id,
+          teacherUid: teacher.uid,
+          appId: appId
+        };
+        
+        console.log('Request body:', requestBody);
+        
+        const token = await user.getIdToken();
+        
+        const response = await fetch('/.netlify/functions/delete-teacher', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to delete teacher');
+        }
+
+        console.log('Teacher deleted successfully:', result);
+        alert(`Teacher "${teacherName}" has been deleted successfully.`);
         fetchTeachers();
       } catch (error) {
         console.error('Error deleting teacher:', error);
-        alert('Error deleting teacher. Please try again.');
+        alert(`Error deleting teacher: ${error.message}`);
       }
     }
   };
@@ -887,9 +966,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
                             {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
                           </td>
-                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
-                            {/* Placeholder for class count */}
-                            0
+                          <td className="p-3 text-sm whitespace-nowrap">
+                            <button
+                              onClick={() => deleteTeacher(teacher)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                              title="Delete Teacher"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))}

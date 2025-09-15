@@ -61,19 +61,26 @@ export const AuthProvider = ({ children }) => {
 
           // Check for admin custom claim first (highest priority)
           if (idTokenResult.claims.admin === true) {
-            role = USER_ROLES.ADMIN;
-            console.log('Auth Debug - Admin role from custom claims');
-            
-            // Ensure admin user has a profile in Firestore
+            // Check if this is a teacher with admin claims or a true admin
             const profile = await getUserProfile(firebaseUser.uid);
-            if (!profile) {
-              await setUserProfile(firebaseUser.uid, {
-                role: USER_ROLES.ADMIN,
-                email: firebaseUser.email,
-                createdAt: new Date(),
-                isAdmin: true
-              });
-              console.log('Auth Debug - Created admin profile in Firestore');
+            
+            if (profile && profile.role === USER_ROLES.TEACHER) {
+              role = USER_ROLES.TEACHER;
+              console.log('Auth Debug - Teacher role with admin claims');
+            } else {
+              role = USER_ROLES.ADMIN;
+              console.log('Auth Debug - Admin role from custom claims');
+              
+              // Ensure admin user has a profile in Firestore
+              if (!profile) {
+                await setUserProfile(firebaseUser.uid, {
+                  role: USER_ROLES.ADMIN,
+                  email: firebaseUser.email,
+                  createdAt: new Date(),
+                  isAdmin: true
+                });
+                console.log('Auth Debug - Created admin profile in Firestore');
+              }
             }
           } else {
             // Get user profile from Firestore for non-admin users
@@ -144,8 +151,31 @@ export const AuthProvider = ({ children }) => {
             await signOut(auth);
             throw new Error(`This account is not registered as a ${expectedRole}`);
           }
+          // Also check that they're not actually a teacher
+          const profile = await getUserProfile(result.user.uid);
+          if (profile && profile.role === USER_ROLES.TEACHER) {
+            await signOut(auth);
+            throw new Error('This account is registered as a teacher. Please use the teacher login.');
+          }
+        } else if (expectedRole === USER_ROLES.TEACHER) {
+          // For teacher role, check both custom claims and profile
+          const idTokenResult = await result.user.getIdTokenResult();
+          if (!idTokenResult.claims.admin) {
+            await signOut(auth);
+            throw new Error('This account does not have teacher permissions. Please contact your administrator.');
+          }
+          const profile = await getUserProfile(result.user.uid);
+          if (!profile || profile.role !== USER_ROLES.TEACHER) {
+            await signOut(auth);
+            throw new Error('This account is not registered as a teacher.');
+          }
         } else {
-          // For student/teacher, check Firestore profile
+          // For student, check Firestore profile and ensure no admin claims
+          const idTokenResult = await result.user.getIdTokenResult();
+          if (idTokenResult.claims.admin) {
+            await signOut(auth);
+            throw new Error('This account has administrative privileges. Please use the appropriate login.');
+          }
           const profile = await getUserProfile(result.user.uid);
           if (!profile || profile.role !== expectedRole) {
             await signOut(auth);
@@ -176,8 +206,31 @@ export const AuthProvider = ({ children }) => {
           await signOut(auth);
           throw new Error(`This account is not registered as a ${expectedRole}`);
         }
+        // Also check that they're not actually a teacher
+        const profile = await getUserProfile(user.uid);
+        if (profile && profile.role === USER_ROLES.TEACHER) {
+          await signOut(auth);
+          throw new Error('This account is registered as a teacher. Please use the teacher login.');
+        }
+      } else if (expectedRole === USER_ROLES.TEACHER) {
+        // For teacher role, check both custom claims and profile
+        const idTokenResult = await user.getIdTokenResult();
+        if (!idTokenResult.claims.admin) {
+          await signOut(auth);
+          throw new Error('This account does not have teacher permissions. Please contact your administrator.');
+        }
+        const profile = await getUserProfile(user.uid);
+        if (!profile || profile.role !== USER_ROLES.TEACHER) {
+          await signOut(auth);
+          throw new Error('This account is not registered as a teacher.');
+        }
       } else {
         // For other roles, check Firestore profile
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.admin) {
+          await signOut(auth);
+          throw new Error('This account has administrative privileges. Please use the appropriate login.');
+        }
         const profile = await getUserProfile(user.uid);
         if (profile) {
           if (profile.role !== expectedRole) {
@@ -185,14 +238,19 @@ export const AuthProvider = ({ children }) => {
             throw new Error(`This account is registered as a ${profile.role}, not as a ${expectedRole}.`);
           }
         } else {
-          // If no profile exists, create one for the new user
-          await setUserProfile(user.uid, {
-            email: user.email,
-            role: expectedRole,
-            createdAt: new Date(),
-            isAnonymous: false,
-            displayName: user.displayName,
-          });
+          // If no profile exists, create one for the new user (only for students)
+          if (expectedRole === USER_ROLES.STUDENT) {
+            await setUserProfile(user.uid, {
+              email: user.email,
+              role: expectedRole,
+              createdAt: new Date(),
+              isAnonymous: false,
+              displayName: user.displayName,
+            });
+          } else {
+            await signOut(auth);
+            throw new Error(`No profile found for this account. Please contact your administrator.`);
+          }
         }
       }
       return user;
@@ -212,9 +270,14 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Admin accounts must be created by system administrators using the set-admin script');
       }
       
+      // For teacher registration, use the create-teacher API to get admin claims
+      if (role === USER_ROLES.TEACHER) {
+        throw new Error('Teacher accounts must be created by administrators through the admin portal. Please contact your administrator to create a teacher account.');
+      }
+      
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Set user profile with role
+      // Set user profile with role (only for students at this point)
       await setUserProfile(result.user.uid, {
         email,
         role,
