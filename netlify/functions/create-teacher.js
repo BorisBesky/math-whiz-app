@@ -119,21 +119,17 @@ exports.handler = async (event) => {
       };
     }
 
-    // Step 2.5: Generate password reset link for first-time setup
-    let resetLink;
-    try {
-      console.log(`Attempting to generate password reset link for ${email}...`);
-      resetLink = await admin.auth().generatePasswordResetLink(email, {
-        url: `${process.env.URL || 'http://localhost:3000'}/login`
-      });
-      console.log(`✅ Password reset link generated successfully for ${email}`);
-      console.log(`Reset link length: ${resetLink.length} characters`);
-    } catch (resetLinkError) {
-      console.error("❌ Error generating password reset link:", resetLinkError.message);
-      console.error("Full error:", resetLinkError);
-      // Continue without reset link - admin can generate one later
-      resetLink = null;
-    }
+    // Step 2.5: Prepare password reset instructions
+    console.log(`Teacher account created for ${email} - password reset via login page`);
+    
+    const resetMessage = `Account created successfully! The teacher can now:
+1. Go to the login page
+2. Click "Forgot Password" 
+3. Enter their email: ${email}
+4. Check their email for password reset instructions
+5. Set up their new password and login`;
+
+    console.log(`✅ Teacher account setup instructions prepared for ${email}`);
 
     // Step 3: Create teacher profile in Firestore
     const teacherId = email.replace(/[@.]/g, '_');
@@ -175,13 +171,9 @@ exports.handler = async (event) => {
           uid: firebaseUser.uid,
           ...teacherData
         },
-        resetLink: resetLink,
-        message: resetLink 
-          ? "Teacher created successfully. Share the password reset link with the teacher."
-          : "Teacher created successfully. Please generate a password reset link for the teacher.",
-        instructions: resetLink 
-          ? `Share this password reset link with ${email} to set up their account: ${resetLink}`
-          : `Password reset link could not be generated automatically. Please use Firebase console to send password reset email to ${email}.`,
+        resetMessage: resetMessage,
+        message: "Teacher created successfully. Password setup via 'Forgot Password' on login page.",
+        instructions: resetMessage,
         teacherEmail: email
       }),
     };

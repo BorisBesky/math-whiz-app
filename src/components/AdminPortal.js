@@ -243,27 +243,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
       console.log('Teacher created successfully:', result);
       
-      if (result.resetLink) {
-        // Show success message with reset link
-        const message = `Teacher account created successfully!\n\n` +
-          `Password Reset Link:\n${result.resetLink}\n\n` +
-          `Please share this link with ${result.teacherEmail} to set up their password.\n\n` +
-          `The link has been copied to your clipboard.`;
-        
-        // Copy reset link to clipboard
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(result.resetLink).catch(err => {
-            console.error('Failed to copy to clipboard:', err);
-          });
-        }
-        
-        alert(message);
-      } else {
-        // Fallback message if reset link wasn't generated
-        alert(`Teacher account created successfully!\n\n` +
-          `Please generate a password reset link for ${result.teacherEmail} ` +
-          `using the Firebase console or admin tools.`);
-      }
+      // Show appropriate message based on reset email status
+      const message = `Teacher account created successfully!\n\n` +
+        `${result.resetMessage}\n\n` +
+        `Teacher Email: ${result.teacherEmail}\n\n` +
+        `Instructions: The teacher can now go to the login page and click "Forgot Password" ` +
+        `to receive a password reset email, or you can manually send them reset instructions.`;
+      
+      alert(message);
       
       setNewTeacher({ name: '', email: '' });
       setShowAddTeacher(false);
