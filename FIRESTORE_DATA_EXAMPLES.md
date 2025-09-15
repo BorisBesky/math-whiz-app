@@ -290,7 +290,7 @@ Some legacy data may be stored in nested subcollections:
 
 ### User Auth Profile
 
-**Path**: `/artifacts/default-app-id/users/student123/profile/main`
+**Path**: `/artifacts/default-app-id/users/student123/math_whiz_data/profile`
 
 ```json
 {

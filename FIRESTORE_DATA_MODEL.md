@@ -175,10 +175,9 @@ Stores user profile information and student progress data.
 
 Some user data may be stored in nested subcollections:
 
-**Path**: `/artifacts/{appId}/users/{userId}/profile/main`
 **Path**: `/artifacts/{appId}/users/{userId}/math_whiz_data/profile`
 
-The system checks both locations for backward compatibility.
+All user profiles are now stored in this single, standardized location.
 
 ### 3. Classes Collection
 
@@ -322,7 +321,7 @@ const classStudentsQuery = studentsRef.where('classId', 'in', classIds);
 
 ```javascript
 const userRef = db.doc(`artifacts/${appId}/users/${userId}`);
-// Also check: db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`)
+// Profile data: db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`)
 ```
 
 ### 3. Get Classes for a Teacher

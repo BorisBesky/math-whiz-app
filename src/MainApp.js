@@ -80,6 +80,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Export db for use in other modules
+export { db };
+
 const DEFAULT_DAILY_GOAL = 4;
 const DAILY_GOAL_BONUS = 10;
 const STORE_BACKGROUND_COST = 20;

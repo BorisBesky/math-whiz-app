@@ -148,7 +148,7 @@ exports.handler = async (event) => {
     console.log(`Teacher profile created in Firestore for ${teacherId}`);
 
     // Step 4: Create user profile document
-    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/profile/main`);
+    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/math_whiz_data/profile`);
     const userProfileData = {
       name: name,
       displayName: name,
