@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collectionGroup, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 
@@ -12,17 +12,35 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const db = getFirestore();
 
   const loadStudents = useCallback(() => {
-    // In a real implementation, you'd have a collection for class enrollments
-    // For now, we'll simulate this with a students collection
-    const appId = 'default-app-id'; // Should match the app structure
-    const studentsRef = collection(db, 'artifacts', appId, 'classStudents');
+    // Load students from the math_whiz_data collection group filtered by classId
+    const studentsRef = collectionGroup(db, 'math_whiz_data');
     const q = query(studentsRef, where('classId', '==', classData.id));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const studentsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const userDocPath = doc.ref.parent.parent;
+        const userId = userDocPath ? userDocPath.id : doc.id;
+        
+        return {
+          id: userId,
+          profileDocId: doc.id,
+          name: data.name || data.displayName || `Student ${userId.slice(-6)}`,
+          email: data.email || '',
+          classId: data.classId,
+          selectedGrade: data.selectedGrade || 'G3',
+          coins: data.coins || 0,
+          joinedAt: data.updatedAt || data.createdAt || new Date(),
+          // Calculate progress from userData
+          progress: calculateStudentProgress(data),
+          lastActivity: getLastActivity(data),
+          // Only include specific fields we need, not the entire data object
+          totalQuestions: data.answeredQuestions ? data.answeredQuestions.length : 0,
+          dailyGoalsByGrade: data.dailyGoalsByGrade || {},
+          ownedBackgrounds: data.ownedBackgrounds || [],
+          activeBackground: data.activeBackground || 'default'
+        };
+      });
       setStudents(studentsData);
       setLoading(false);
     }, (error) => {
@@ -34,19 +52,56 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
     return unsubscribe;
   }, [db, classData.id]);
 
+  // Helper function to calculate student progress
+  const calculateStudentProgress = (userData) => {
+    if (!userData.progressByGrade && !userData.progress) return 0;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const grade = userData.selectedGrade || 'G3';
+    
+    // Get progress for today
+    const todayProgress = userData.progressByGrade?.[today]?.[grade] || userData.progress?.[today] || {};
+    
+    // Calculate completion percentage based on questions answered
+    const totalQuestions = Object.values(todayProgress).reduce((sum, topic) => {
+      if (typeof topic === 'object' && topic.correct !== undefined && topic.incorrect !== undefined) {
+        return sum + topic.correct + topic.incorrect;
+      }
+      return sum;
+    }, 0);
+    
+    // Return a percentage based on questions answered (max 100%)
+    return Math.min(100, Math.floor(totalQuestions / 10 * 100));
+  };
+
+  // Helper function to get last activity
+  const getLastActivity = (userData) => {
+    if (!userData.answeredQuestions || userData.answeredQuestions.length === 0) {
+      return null;
+    }
+    
+    const lastQuestion = userData.answeredQuestions[userData.answeredQuestions.length - 1];
+    return lastQuestion.timestamp ? new Date(lastQuestion.timestamp) : null;
+  };
+
   useEffect(() => {
-    loadStudents();
+    const unsubscribe = loadStudents();
+    return () => unsubscribe && unsubscribe();
   }, [loadStudents]);
 
-  const handleRemoveStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to remove this student from the class?')) {
+  const handleRemoveStudent = async (student) => {
+    if (window.confirm(`Are you sure you want to remove ${student.name} from the class?`)) {
       try {
         const appId = 'default-app-id'; // Should match the app structure
-        await deleteDoc(doc(db, 'artifacts', appId, 'classStudents', studentId));
-        // Update student count in class
-        await updateDoc(doc(db, 'artifacts', appId, 'classes', classData.id), {
-          studentCount: Math.max(0, (classData.studentCount || 0) - 1)
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
+        
+        // Remove classId from student profile
+        await updateDoc(profileDocRef, {
+          classId: null,
+          updatedAt: new Date()
         });
+        
+        // Note: We don't need to manually update studentCount since TeacherDashboard will calculate it dynamically
       } catch (error) {
         console.error('Error removing student:', error);
         setError('Failed to remove student');
@@ -223,7 +278,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                                 {student.name || 'Student'}
                               </div>
                               <div className="text-sm text-gray-500">
-                                ID: {student.studentId || student.id.slice(-6)}
+                                ID: {student.id.slice(-6)} | Grade: {student.selectedGrade}
                               </div>
                             </div>
                           </div>
@@ -254,7 +309,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                               <Mail className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleRemoveStudent(student.id)}
+                              onClick={() => handleRemoveStudent(student)}
                               className="text-red-600 hover:text-red-900"
                               title="Remove from Class"
                             >

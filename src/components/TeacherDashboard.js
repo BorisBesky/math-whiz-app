@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, collectionGroup } from "firebase/firestore";
 import { Users, Plus, Edit3, Trash2, BookOpen, LogOut, Home } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ClassDetail from './ClassDetail';
@@ -7,6 +7,7 @@ import CreateClassForm from './CreateClassForm';
 
 const TeacherDashboard = () => {
   const [classes, setClasses] = useState([]);
+  const [classStudentCounts, setClassStudentCounts] = useState({});
   const [selectedClass, setSelectedClass] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState(null);
@@ -33,11 +34,39 @@ const TeacherDashboard = () => {
     return unsubscribe;
   }, [db]);
 
+  // Load student counts for all classes
+  const loadStudentCounts = useCallback(() => {
+    const studentsRef = collectionGroup(db, 'math_whiz_data');
+    
+    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const studentCounts = {};
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.classId) {
+          studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
+        }
+      });
+      
+      setClassStudentCounts(studentCounts);
+    }, (error) => {
+      console.error('Error loading student counts:', error);
+    });
+
+    return unsubscribe;
+  }, [db]);
+
   useEffect(() => {
     if (user) {
-      loadClasses(user.uid);
+      const unsubscribeClasses = loadClasses(user.uid);
+      const unsubscribeStudentCounts = loadStudentCounts();
+      
+      return () => {
+        unsubscribeClasses();
+        unsubscribeStudentCounts();
+      };
     }
-  }, [user, loadClasses]);
+  }, [user, loadClasses, loadStudentCounts]);
 
   const handleCreateClass = async (classData) => {
     try {
@@ -46,8 +75,8 @@ const TeacherDashboard = () => {
         ...classData,
         teacherId: user.uid,
         teacherEmail: user.email,
-        createdAt: new Date(),
-        studentCount: 0
+        createdAt: new Date()
+        // Remove studentCount since we're calculating it dynamically
       });
       setShowCreateForm(false);
     } catch (error) {
@@ -209,7 +238,7 @@ const TeacherDashboard = () => {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-1 text-gray-600">
                       <Users className="h-4 w-4" />
-                      <span>{classItem.studentCount || 0} students</span>
+                      <span>{classStudentCounts[classItem.id] || 0} students</span>
                     </div>
                     <button
                       onClick={() => setSelectedClass(classItem)}
