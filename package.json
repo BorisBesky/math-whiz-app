@@ -24,7 +24,12 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "netlify dev"
+    "dev": "netlify dev",
+    "migrate:test-env": "node scripts/test-env.js",
+    "migrate:preview": "node scripts/migrate-user-profiles.js --dry-run",
+    "migrate:execute": "node scripts/migrate-user-profiles.js --execute",
+    "validate:preview": "node scripts/validate-user-profiles.js --dry-run",
+    "validate:execute": "node scripts/validate-user-profiles.js --execute"
   },
   "eslintConfig": {
     "extends": [

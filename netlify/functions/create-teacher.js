@@ -119,7 +119,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Step 2.5: Prepare password reset instructions
+    // Step 3: Prepare password reset instructions
     console.log(`Teacher account created for ${email} - password reset via login page`);
     
     const resetMessage = `Account created successfully! The teacher can now:
@@ -131,28 +131,13 @@ exports.handler = async (event) => {
 
     console.log(`✅ Teacher account setup instructions prepared for ${email}`);
 
-    // Step 3: Create teacher profile in Firestore
-    const teacherId = email.replace(/[@.]/g, '_');
-    const teacherRef = db.doc(`artifacts/${appId}/teachers/${teacherId}`);
-    
-    const teacherData = {
-      uid: firebaseUser.uid,
-      name: name,
-      email: email,
-      classes: [],
-      createdAt: new Date().toISOString(),
-      role: 'teacher'
-    };
-
-    await teacherRef.set(teacherData);
-    console.log(`Teacher profile created in Firestore for ${teacherId}`);
-
     // Step 4: Create user profile document
-    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/math_whiz_data/profile`);
+    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/profile/main`);
     const userProfileData = {
       name: name,
       displayName: name,
       email: email,
+      classes: [],
       role: 'teacher',
       needsPasswordReset: true,
       createdAt: new Date().toISOString()
@@ -167,9 +152,8 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         teacher: {
-          id: teacherId,
           uid: firebaseUser.uid,
-          ...teacherData
+          ...userProfileData
         },
         resetMessage: resetMessage,
         message: "Teacher created successfully. Password setup via 'Forgot Password' on login page.",

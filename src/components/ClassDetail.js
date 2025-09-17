@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collectionGroup, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 
@@ -92,6 +93,43 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const handleRemoveStudent = async (student) => {
     if (window.confirm(`Are you sure you want to remove ${student.name} from the class?`)) {
       try {
+        // Get auth token for the API call
+        const auth = getAuth();
+        const token = await auth.currentUser?.getIdToken();
+        
+        if (token) {
+          try {
+            // Find and remove the enrollment from classStudents collection
+            const response = await fetch(`/.netlify/functions/class-students?classId=${classData.id}&studentId=${student.id}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+
+            if (response.ok) {
+              const enrollments = await response.json();
+              const enrollment = enrollments.find(e => e.studentId === student.id && e.classId === classData.id);
+              
+              if (enrollment) {
+                const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
+
+                if (!deleteResponse.ok) {
+                  const errorData = await deleteResponse.json();
+                  throw new Error(errorData.error || 'Failed to remove student from class');
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('Could not remove class enrollment, but continuing with profile update:', error);
+          }
+        }
+        
         const appId = 'default-app-id'; // Should match the app structure
         const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
         

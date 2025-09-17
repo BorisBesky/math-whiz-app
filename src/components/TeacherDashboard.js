@@ -283,7 +283,55 @@ const TeacherDashboard = () => {
   const handleDeleteClass = async (classId) => {
     if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
       try {
+        // Get auth token for the API call
+        const auth = getAuth();
+        const token = await auth.currentUser?.getIdToken();
+        
+        if (token) {
+          try {
+            // Remove all student enrollments for this class
+            const response = await fetch(`/.netlify/functions/class-students?classId=${classId}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+
+            if (response.ok) {
+              const enrollments = await response.json();
+              
+              // Delete all enrollments for this class
+              const deletePromises = enrollments.map(enrollment => 
+                fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${token}`
+                  }
+                })
+              );
+              
+              await Promise.all(deletePromises);
+            }
+          } catch (error) {
+            console.warn('Could not clean up class enrollments, but continuing with class deletion:', error);
+          }
+        }
+        
+        // Delete the class document
         await deleteDoc(doc(db, 'artifacts', appId, 'classes', classId));
+        
+        // Update students' profiles to remove classId reference
+        const studentsInClass = students.filter(s => s.classId === classId);
+        const updatePromises = studentsInClass.map(student => {
+          const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
+          return updateDoc(profileDocRef, {
+            classId: null,
+            updatedAt: new Date().toISOString()
+          });
+        });
+        
+        await Promise.all(updatePromises);
+        
       } catch (error) {
         console.error('Error deleting class:', error);
         setError('Failed to delete class');
@@ -473,7 +521,43 @@ const TeacherDashboard = () => {
     if (!window.confirm(confirmMessage)) return;
 
     try {
+      // Get auth token for the API call
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      
       const deletePromises = Array.from(selectedStudents).map(async (studentId) => {
+        // Remove class enrollment if exists
+        if (token) {
+          try {
+            const student = students.find(s => s.id === studentId);
+            if (student && student.classId) {
+              const response = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${studentId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (response.ok) {
+                const enrollments = await response.json();
+                const enrollment = enrollments.find(e => e.studentId === studentId && e.classId === student.classId);
+                
+                if (enrollment) {
+                  await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.warn(`Could not remove class enrollment for student ${studentId}, but continuing with deletion:`, error);
+          }
+        }
+        
+        // Delete student profile
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
         await deleteDoc(profileDocRef);
         return studentId;

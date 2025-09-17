@@ -101,7 +101,7 @@ exports.handler = async (event) => {
     }
 
     // Step 2: Delete teacher profile from Firestore
-    const teacherRef = db.doc(`artifacts/${appId}/users/${teacherId}/math_whiz_data/profile`);
+    const teacherRef = db.doc(`artifacts/${appId}/users/${teacherId}/profile`);
     const teacherDoc = await teacherRef.get();
     
     if (!teacherDoc.exists) {
@@ -113,9 +113,15 @@ exports.handler = async (event) => {
     }
 
     await teacherRef.delete();
+
+    const math_whiz_dataRef = db.doc(`artifacts/${appId}/users/${teacherId}/math_whiz_data`);
+    const math_whiz_dataDoc = await math_whiz_dataRef.get();
+    if (math_whiz_dataDoc.exists) {
+      await math_whiz_dataRef.delete();
+    }
     console.log(`Teacher profile deleted from Firestore: ${teacherId}`);
 
-        // Step 3: Remove admin custom claims from Firebase Auth user
+    // Step 3: Remove admin custom claims from Firebase Auth user
     try {
       await admin.auth().setCustomUserClaims(teacherUid, { admin: null });
       console.log(`Admin claim removed for user ${teacherUid}`);

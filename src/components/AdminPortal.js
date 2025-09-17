@@ -313,26 +313,133 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
 
     try {
-      const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
-      await updateDoc(profileDocRef, {
-        classId: selectedClass,
-        updatedAt: new Date().toISOString()
-      });
+      // Get auth token for the API call
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
       
-      // Update local state
-      const assignedClassName = classes.find(c => c.id === selectedClass)?.name || 'Unassigned';
-      setStudents(students.map(student => 
-        student.id === selectedStudentForClass.id 
-          ? { ...student, class: assignedClassName, classId: selectedClass }
-          : student
-      ));
+      if (!token) {
+        throw new Error('User not authenticated');
+      }
+
+      // Handle unassignment (removing from class)
+      if (selectedClass === 'Unassigned') {
+        // First, find and remove existing enrollment if any
+        if (selectedStudentForClass.classId) {
+          // Query to find the enrollment record
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const enrollments = await response.json();
+            const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
+            
+            if (enrollment) {
+              // Remove the enrollment
+              const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (!deleteResponse.ok) {
+                const errorData = await deleteResponse.json();
+                throw new Error(errorData.error || 'Failed to remove student from class');
+              }
+            }
+          }
+        }
+
+        // Update the student's profile to remove classId
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
+        await updateDoc(profileDocRef, {
+          classId: null,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        setStudents(students.map(student => 
+          student.id === selectedStudentForClass.id 
+            ? { ...student, class: 'Unassigned', classId: null }
+            : student
+        ));
+
+        alert('Student successfully unassigned from class');
+      } else {
+        // Handle assignment to a specific class
+        
+        // First, remove from current class if enrolled
+        if (selectedStudentForClass.classId) {
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const enrollments = await response.json();
+            const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
+            
+            if (enrollment) {
+              await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+            }
+          }
+        }
+
+        // Add to new class
+        const response = await fetch('/.netlify/functions/class-students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            classId: selectedClass,
+            studentId: selectedStudentForClass.id,
+            studentEmail: selectedStudentForClass.email || '',
+            studentName: selectedStudentForClass.displayName || selectedStudentForClass.email || 'Unknown'
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to assign student to class');
+        }
+
+        // Update the student's profile with the classId for backward compatibility
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
+        await updateDoc(profileDocRef, {
+          classId: selectedClass,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        const assignedClassName = classes.find(c => c.id === selectedClass)?.name || 'Unassigned';
+        setStudents(students.map(student => 
+          student.id === selectedStudentForClass.id 
+            ? { ...student, class: assignedClassName, classId: selectedClass }
+            : student
+        ));
+
+        alert(`Student successfully assigned to ${assignedClassName}`);
+      }
       
       setShowClassAssignment(false);
       setSelectedStudentForClass(null);
       setSelectedClass('');
     } catch (error) {
-      console.error('Error assigning student to class:', error);
-      alert('Error assigning student to class. Please try again.');
+      console.error('Error managing student class assignment:', error);
+      alert(`Error managing student class assignment: ${error.message}`);
     }
   };
 
@@ -365,16 +472,56 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const deleteStudent = async (studentId) => {
     if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
       try {
+        // Get auth token for the API call
+        const auth = getAuth();
+        const token = await auth.currentUser?.getIdToken();
+        
+        if (token) {
+          // Find and remove any class enrollments for this student
+          const student = students.find(s => s.id === studentId);
+          if (student && student.classId) {
+            try {
+              const response = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${studentId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (response.ok) {
+                const enrollments = await response.json();
+                const enrollment = enrollments.find(e => e.studentId === studentId && e.classId === student.classId);
+                
+                if (enrollment) {
+                  await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                }
+              }
+            } catch (error) {
+              console.warn('Could not remove class enrollment, but continuing with student deletion:', error);
+            }
+          }
+        }
+
+        // Delete the student's profile
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
         await deleteDoc(profileDocRef);
+        
+        // Update local state
         setStudents(students.filter(s => s.id !== studentId));
         if (selectedStudent?.id === studentId) {
           setSelectedStudent(null);
           setView('students');
         }
+        
+        alert('Student successfully deleted');
       } catch (error) {
         console.error('Error deleting student:', error);
-        alert('Error deleting student. Please try again.');
+        alert(`Error deleting student: ${error.message}`);
       }
     }
   };

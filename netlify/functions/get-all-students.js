@@ -64,17 +64,42 @@ exports.handler = async (event) => {
     const authenticatedUserId = decodedToken.uid;
     
     // 4. Check if this is a teacher by querying for their classes
-    const classesRef = db.collection(`artifacts/${appId}/classes`);
-    const teacherClassesQuery = classesRef.where('teacherId', '==', authenticatedUserId);
-    const teacherClassesSnapshot = await teacherClassesQuery.get();
-    
-    // 5. Extract class IDs for teacher filtering (empty array if admin)
-    const teacherClassIds = [];
-    teacherClassesSnapshot.forEach(doc => {
-      teacherClassIds.push(doc.id);
-    });
+    const profileRef = db.doc(`artifacts/${appId}/users/${authenticatedUserId}/profile/main`);
+    const profileSnap = await profileRef.get();
+    // check if profile exists and has role 'teacher'
+    let isTeacher = false;
+    let classStudents = [];
+    if (profileSnap.exists) {
+      const profileData = profileSnap.data();
+      if (profileData && profileData.role === 'teacher') {
+        isTeacher = true;
+        let classes = profileData.classes || [];
+        if (classes.length > 0) {
+          console.log(`User ${authenticatedUserId} is a teacher with classes: ${classes.join(', ')}`);
+          // if classes are there, use them to filter students from classStudents collection
+          const studentClassesQuery = db.collection(`artifacts/${appId}/classStudents`).where('classId', 'in', classes);
+          const studentClassesSnapshot = await studentClassesQuery.get();
+          if (!studentClassesSnapshot.empty) {
+            console.log(`Found ${studentClassesSnapshot.size} classStudents documents for teacher's classes.`);
+            studentClassesSnapshot.forEach(doc => {
+              console.log(` - classStudents doc: ${doc.id} =>`, doc.data());
+              classStudents.push(doc.data().studentId);
+            });
+          } else {
+            console.log(`User ${authenticatedUserId} is a teacher but has no classes assigned.`);
+          }
+        }
+      }
+    }
 
     const usersCollectionRef = db.collection(`artifacts/${appId}/users`);
+    // if teacher, filter users to only those in their classes
+    if (isTeacher && classStudents.length > 0) {
+      console.log(`Teacher access: Filtering students to only those in teacher's classes.`);
+      usersCollectionRef = usersCollectionRef.where(admin.firestore.FieldPath.documentId(), 'in', classStudents);
+    } else {
+      console.log(`Admin access: No filtering, retrieving all students.`);
+    }
     const userDocRefs = await usersCollectionRef.listDocuments();
 
     if (userDocRefs.length === 0) {
@@ -93,35 +118,37 @@ exports.handler = async (event) => {
       const userDocSnapshot = await userDocRef.get();
 
       let studentData = null;
-
-      // Check 1: Does the main user document contain data?
       if (userDocSnapshot.exists) {
-        const userData = userDocSnapshot.data();
-        // Check if the data object is not empty
-        if (userData && Object.keys(userData).length > 0) {
-          console.log(`Success: Found data directly in user document for ${userId}`);
-          studentData = {
-            id: userId,
-            ...userData,
-          };
-        }
-      }
+        const mathWhizDataRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
+        const mathWhizDataSnapshot = await mathWhizDataRef.get();
 
-      // Check 2: If not, does the nested 'profile' document exist and contain data?
-      if (!studentData) {
-        const profileDocRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
-        const profileSnapshot = await profileDocRef.get();
-
-        if (profileSnapshot.exists) {
-          const profileData = profileSnapshot.data();
-          if (profileData && Object.keys(profileData).length > 0) {
+        if (mathWhizDataSnapshot.exists) {
+          const mathWhizProfileData = mathWhizDataSnapshot.data();
+          if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0) {
             console.log(`Success: Found data in nested profile document for ${userId}`);
             studentData = {
               id: userId,
-              ...profileData,
+              ...mathWhizProfileData,
             };
           }
         }
+
+        const mainProfileRef = db.doc(`artifacts/${appId}/users/${userId}/profile/main`);
+        const mainProfileSnapshot = await mainProfileRef.get();
+
+        if (mainProfileSnapshot.exists) {
+          const mainProfileData = mainProfileSnapshot.data();
+          if (mainProfileData && Object.keys(mainProfileData).length > 0) {
+            console.log(`Success: Found data in main profile document for ${userId}`);
+            // append or overwrite studentData
+            studentData = {
+              id: userId,
+              ...studentData, // existing data from math_whiz_data/profile if any
+              ...mainProfileData, // overwrite/add data from profile/main
+            };
+          }
+        }
+
       }
       
       if (!studentData) {
@@ -129,24 +156,14 @@ exports.handler = async (event) => {
         return null;
       }
 
-      // 3. Filter by teacher's classes if this user is a teacher (has classes assigned)
-      if (teacherClassIds.length > 0) {
-        // This is a teacher, so filter students by classId
-        if (!studentData.classId || !teacherClassIds.includes(studentData.classId)) {
-          console.log(`Filtered out student ${userId} - not in teacher's classes`);
-          return null;
-        }
-        console.log(`Student ${userId} belongs to teacher's class ${studentData.classId}`);
-      }
-
       return studentData;
     });
 
     const studentData = (await Promise.all(studentDataPromises)).filter(Boolean);
 
-    if (teacherClassIds.length > 0) {
-      console.log(`Teacher filtering: Found ${teacherClassIds.length} classes for teacher ${authenticatedUserId}`);
-      console.log(`Teacher class IDs: ${teacherClassIds.join(', ')}`);
+    if (classStudents.length > 0) {
+      console.log(`Teacher filtering: Found ${classStudents.length} classes for teacher ${authenticatedUserId}`);
+      console.log(`Teacher class IDs: ${classStudents.join(', ')}`);
       console.log(`Returning ${studentData.length} student(s) from teacher's classes.`);
     } else {
       console.log(`Admin access: Returning all ${studentData.length} student(s).`);
