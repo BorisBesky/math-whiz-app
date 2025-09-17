@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   // Get user profile with role from Firestore
   const getUserProfile = useCallback(async (userId) => {
     try {
-      const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'main'));
+      const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile'));
       if (userDoc.exists()) {
         return userDoc.data();
       }
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   // Create or update user profile with role
   const setUserProfile = useCallback(async (userId, profileData) => {
     try {
-      await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'main'), profileData, { merge: true });
+      await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile'), profileData, { merge: true });
     } catch (error) {
       console.error('Error setting user profile:', error);
     }

@@ -7,7 +7,7 @@ import { db } from '../MainApp';
  */
 const getProfileDocRef = (userId) => {
   const appId = process.env.REACT_APP_ID || 'math-whiz-app';
-  return doc(db, 'artifacts', appId, 'users', userId, 'profile');
+  return doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile');
 };
 
 /**

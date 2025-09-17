@@ -585,8 +585,11 @@ const TeacherDashboard = () => {
       setSelectedClass(null);
       setSelectedStudent(null);
       setShowCreateForm(false);
+      // Redirect to unified login page regardless of current route
+      window.location.assign('/login');
     } catch (error) {
       console.error('Error logging out:', error);
+      try { window.location.assign('/login'); } catch (_) {}
     }
   };
 

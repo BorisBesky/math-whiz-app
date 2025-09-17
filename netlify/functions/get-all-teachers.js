@@ -45,7 +45,7 @@ exports.handler = async (event) => {
 
     const teacherDataPromises = userDocRefs.map(async (userDocRef) => {
       const userId = userDocRef.id;
-      const profileDocRef = db.doc(`artifacts/${appId}/users/${userId}/profile/main`);
+      const profileDocRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
       const profileSnapshot = await profileDocRef.get();
 
       if (profileSnapshot.exists) {

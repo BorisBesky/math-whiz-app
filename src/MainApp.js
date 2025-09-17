@@ -834,6 +834,13 @@ const App = () => {
                 dailyStories: { [today]: {} },
                 answeredQuestions: [],
                 lastAskedComplexityByTopic: {},
+                createdAt: new Date().toISOString(),
+                role: "student",
+                displayName: "Young Mathematician",
+                // Add other initial fields as needed
+                email: currentUser.isAnonymous
+                  ? null
+                  : currentUser.email || null,
               };
               setDoc(userDocRef, initialData).then(() => {
                 setUserData(initialData);

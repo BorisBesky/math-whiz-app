@@ -132,7 +132,7 @@ exports.handler = async (event) => {
     console.log(`✅ Teacher account setup instructions prepared for ${email}`);
 
     // Step 4: Create user profile document
-    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/profile/main`);
+    const userProfileRef = db.doc(`artifacts/${appId}/users/${firebaseUser.uid}/math_whiz_data/profile`);
     const userProfileData = {
       name: name,
       displayName: name,

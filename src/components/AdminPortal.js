@@ -326,7 +326,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         // First, find and remove existing enrollment if any
         if (selectedStudentForClass.classId) {
           // Query to find the enrollment record
-          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}`, {
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}&appId=${appId}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`
@@ -339,7 +339,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
             
             if (enrollment) {
               // Remove the enrollment
-              const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+              const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
                 method: 'DELETE',
                 headers: {
                   'Authorization': `Bearer ${token}`
@@ -374,7 +374,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         
         // First, remove from current class if enrolled
         if (selectedStudentForClass.classId) {
-          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}`, {
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}&appId=${appId}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`
@@ -386,7 +386,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
             const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
             
             if (enrollment) {
-              await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+              await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
                 method: 'DELETE',
                 headers: {
                   'Authorization': `Bearer ${token}`
@@ -407,7 +407,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
             classId: selectedClass,
             studentId: selectedStudentForClass.id,
             studentEmail: selectedStudentForClass.email || '',
-            studentName: selectedStudentForClass.displayName || selectedStudentForClass.email || 'Unknown'
+            studentName: selectedStudentForClass.displayName || selectedStudentForClass.email || 'Unknown',
+            appId
           })
         });
 
@@ -481,7 +482,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
           const student = students.find(s => s.id === studentId);
           if (student && student.classId) {
             try {
-              const response = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${studentId}`, {
+              const response = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${studentId}&appId=${appId}`, {
                 method: 'GET',
                 headers: {
                   'Authorization': `Bearer ${token}`
@@ -493,7 +494,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 const enrollment = enrollments.find(e => e.studentId === studentId && e.classId === student.classId);
                 
                 if (enrollment) {
-                  await fetch(`/.netlify/functions/class-students?id=${enrollment.id}`, {
+                  await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
                     method: 'DELETE',
                     headers: {
                       'Authorization': `Bearer ${token}`

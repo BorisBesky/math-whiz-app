@@ -101,7 +101,7 @@ exports.handler = async (event) => {
     }
 
     // Step 2: Delete teacher profile from Firestore
-    const teacherRef = db.doc(`artifacts/${appId}/users/${teacherId}/profile`);
+    const teacherRef = db.doc(`artifacts/${appId}/users/${teacherId}/math_whiz_data/profile`);
     const teacherDoc = await teacherRef.get();
     
     if (!teacherDoc.exists) {

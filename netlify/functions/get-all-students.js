@@ -64,11 +64,12 @@ exports.handler = async (event) => {
     const authenticatedUserId = decodedToken.uid;
     
     // 4. Check if this is a teacher by querying for their classes
-    const profileRef = db.doc(`artifacts/${appId}/users/${authenticatedUserId}/profile/main`);
+    const profileRef = db.doc(`artifacts/${appId}/users/${authenticatedUserId}/math_whiz_data/profile`);
     const profileSnap = await profileRef.get();
     // check if profile exists and has role 'teacher'
-    let isTeacher = false;
-    let classStudents = [];
+  let isTeacher = false;
+  let classStudents = [];
+  const enrollmentsByStudent = {};
     if (profileSnap.exists) {
       const profileData = profileSnap.data();
       if (profileData && profileData.role === 'teacher') {
@@ -82,8 +83,12 @@ exports.handler = async (event) => {
           if (!studentClassesSnapshot.empty) {
             console.log(`Found ${studentClassesSnapshot.size} classStudents documents for teacher's classes.`);
             studentClassesSnapshot.forEach(doc => {
-              console.log(` - classStudents doc: ${doc.id} =>`, doc.data());
-              classStudents.push(doc.data().studentId);
+              const data = doc.data();
+              console.log(` - classStudents doc: ${doc.id} =>`, data);
+              classStudents.push(data.studentId);
+              if (data.studentId && data.classId && !enrollmentsByStudent[data.studentId]) {
+                enrollmentsByStudent[data.studentId] = data.classId;
+              }
             });
           } else {
             console.log(`User ${authenticatedUserId} is a teacher but has no classes assigned.`);
@@ -92,13 +97,27 @@ exports.handler = async (event) => {
       }
     }
 
-    const usersCollectionRef = db.collection(`artifacts/${appId}/users`);
+  // Use let so we can optionally apply a teacher filter below
+  let usersCollectionRef = db.collection(`artifacts/${appId}/users`);
     // if teacher, filter users to only those in their classes
     if (isTeacher && classStudents.length > 0) {
       console.log(`Teacher access: Filtering students to only those in teacher's classes.`);
       usersCollectionRef = usersCollectionRef.where(admin.firestore.FieldPath.documentId(), 'in', classStudents);
     } else {
       console.log(`Admin access: No filtering, retrieving all students.`);
+      // For admins, build a map of enrollments so we can reflect class assignment
+      try {
+        const allEnrollmentsSnap = await db.collection(`artifacts/${appId}/classStudents`).get();
+        console.log(`Admin access: found ${allEnrollmentsSnap.size} enrollment records.`);
+        allEnrollmentsSnap.forEach(doc => {
+          const data = doc.data();
+          if (data.studentId && data.classId && !enrollmentsByStudent[data.studentId]) {
+            enrollmentsByStudent[data.studentId] = data.classId;
+          }
+        });
+      } catch (e) {
+        console.warn('Warning: failed to load class enrollments for admin mapping:', e.message);
+      }
     }
     const userDocRefs = await usersCollectionRef.listDocuments();
 
@@ -115,45 +134,32 @@ exports.handler = async (event) => {
 
     const studentDataPromises = userDocRefs.map(async (userDocRef) => {
       const userId = userDocRef.id;
-      const userDocSnapshot = await userDocRef.get();
-
+      // Note: parent doc may not exist; subcollections can exist independently
       let studentData = null;
-      if (userDocSnapshot.exists) {
-        const mathWhizDataRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
-        const mathWhizDataSnapshot = await mathWhizDataRef.get();
 
-        if (mathWhizDataSnapshot.exists) {
-          const mathWhizProfileData = mathWhizDataSnapshot.data();
-          if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0) {
-            console.log(`Success: Found data in nested profile document for ${userId}`);
-            studentData = {
-              id: userId,
-              ...mathWhizProfileData,
-            };
-          }
+      // Try the primary location first: /math_whiz_data/profile
+      const mathWhizDataRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
+      const mathWhizDataSnapshot = await mathWhizDataRef.get();
+
+      if (mathWhizDataSnapshot.exists) {
+        const mathWhizProfileData = mathWhizDataSnapshot.data();
+        if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0) {
+          console.log(`Success: Found data in math_whiz_data/profile for ${userId}`);
+          studentData = {
+            id: userId,
+            ...mathWhizProfileData,
+          };
         }
-
-        const mainProfileRef = db.doc(`artifacts/${appId}/users/${userId}/profile/main`);
-        const mainProfileSnapshot = await mainProfileRef.get();
-
-        if (mainProfileSnapshot.exists) {
-          const mainProfileData = mainProfileSnapshot.data();
-          if (mainProfileData && Object.keys(mainProfileData).length > 0) {
-            console.log(`Success: Found data in main profile document for ${userId}`);
-            // append or overwrite studentData
-            studentData = {
-              id: userId,
-              ...studentData, // existing data from math_whiz_data/profile if any
-              ...mainProfileData, // overwrite/add data from profile/main
-            };
-          }
-        }
-
       }
       
       if (!studentData) {
         console.log(`Info: No data found for user ${userId} in any expected location.`);
         return null;
+      }
+
+      // If classId not present on profile, try to populate from enrollments mapping
+      if (!studentData.classId && enrollmentsByStudent[userId]) {
+        studentData.classId = enrollmentsByStudent[userId];
       }
 
       return studentData;
