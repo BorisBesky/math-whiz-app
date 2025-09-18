@@ -143,7 +143,7 @@ exports.handler = async (event) => {
 
       if (mathWhizDataSnapshot.exists) {
         const mathWhizProfileData = mathWhizDataSnapshot.data();
-        if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0) {
+        if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0 && mathWhizProfileData.role === 'student') {
           console.log(`Success: Found data in math_whiz_data/profile for ${userId}`);
           studentData = {
             id: userId,
