@@ -12,8 +12,10 @@ const StudentLogin = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
+  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -83,6 +85,28 @@ const StudentLogin = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Google sign-in error:', error);
+      setError(getErrorMessage(error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      await resetPassword(email);
+      setResetEmailSent(true);
+      setShowForgotPassword(false);
+    } catch (error) {
+      console.error('Password reset error:', error);
       setError(getErrorMessage(error.message));
     } finally {
       setLoading(false);
@@ -210,6 +234,17 @@ const StudentLogin = () => {
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Enter your password"
               />
+              {!isSignUp && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-blue-600 hover:text-blue-500"
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
+              )}
             </div>
 
             {isSignUp && (
@@ -235,6 +270,44 @@ const StudentLogin = () => {
               <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <span className="text-sm text-red-700">{error}</span>
+              </div>
+            )}
+
+            {resetEmailSent && (
+              <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="h-5 w-5 text-green-500">✓</div>
+                <span className="text-sm text-green-700">
+                  Password reset email sent! Check your inbox and follow the instructions to reset your password.
+                </span>
+              </div>
+            )}
+
+            {showForgotPassword && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <h3 className="text-sm font-medium text-blue-900 mb-2">Reset Password</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={loading || !email}
+                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Sending...' : 'Send Reset Email'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setError('');
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 
