@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, collectionGroup } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { 
   Users, 
   Plus, 
@@ -199,7 +199,7 @@ const TeacherDashboard = () => {
     }
     
     try {
-      const studentsRef = collectionGroup(db, 'math_whiz_data');
+      const studentsRef = collection(db, 'artifacts', appId, 'classStudents');
       
       const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
         const studentCounts = {};
@@ -221,7 +221,7 @@ const TeacherDashboard = () => {
     } catch (error) {
       console.error('Error in loadStudentCounts:', error);
     }
-  }, [db]);
+  }, [db, appId]);
 
   useEffect(() => {
     console.log('TeacherDashboard useEffect called', { 

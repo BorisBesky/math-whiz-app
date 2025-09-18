@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collectionGroup, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus } from 'lucide-react';
 import EditClassForm from './EditClassForm';
@@ -11,39 +11,49 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [showEditForm, setShowEditForm] = useState(false);
 
   const db = getFirestore();
+  const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
 
   const loadStudents = useCallback(() => {
-    // Load students from the math_whiz_data collection group filtered by classId
-    const studentsRef = collectionGroup(db, 'math_whiz_data');
-    const q = query(studentsRef, where('classId', '==', classData.id));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const userDocPath = doc.ref.parent.parent;
-        const userId = userDocPath ? userDocPath.id : doc.id;
-        
-        return {
-          id: userId,
-          profileDocId: doc.id,
-          name: data.name || data.displayName || `Student ${userId.slice(-6)}`,
-          email: data.email || '',
-          classId: data.classId,
-          selectedGrade: data.selectedGrade || 'G3',
-          coins: data.coins || 0,
-          joinedAt: data.updatedAt || data.createdAt || new Date(),
-          // Calculate progress from userData
-          progress: calculateStudentProgress(data),
-          lastActivity: getLastActivity(data),
-          // Only include specific fields we need, not the entire data object
-          totalQuestions: data.answeredQuestions ? data.answeredQuestions.length : 0,
-          dailyGoalsByGrade: data.dailyGoalsByGrade || {},
-          ownedBackgrounds: data.ownedBackgrounds || [],
-          activeBackground: data.activeBackground || 'default'
-        };
-      });
-      setStudents(studentsData);
-      setLoading(false);
+    const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');
+    const qEnrollments = query(enrollmentsRef, where('classId', '==', classData.id));
+
+    const unsubscribe = onSnapshot(qEnrollments, async (snapshot) => {
+      try {
+        const enrollments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        const studentsData = await Promise.all(enrollments.map(async (enr) => {
+          const userId = enr.studentId;
+          const profileRef = doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile');
+          const profileSnap = await getDoc(profileRef);
+          const data = profileSnap.exists() ? profileSnap.data() : {};
+
+          const answeredQuestions = Array.isArray(data.answeredQuestions) ? data.answeredQuestions : [];
+
+          return {
+            id: userId,
+            profileDocId: profileSnap.id,
+            name: data.name || data.displayName || enr.studentName || `Student ${userId.slice(-6)}`,
+            email: data.email || enr.studentEmail || '',
+            classId: classData.id,
+            selectedGrade: data.selectedGrade || 'G3',
+            coins: data.coins || 0,
+            joinedAt: data.updatedAt || data.createdAt || enr.joinedAt || new Date(),
+            progress: calculateStudentProgress(data),
+            lastActivity: getLastActivity(data),
+            totalQuestions: answeredQuestions.length,
+            dailyGoalsByGrade: data.dailyGoalsByGrade || {},
+            ownedBackgrounds: data.ownedBackgrounds || [],
+            activeBackground: data.activeBackground || 'default'
+          };
+        }));
+
+        setStudents(studentsData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error building student list:', err);
+        setError('Failed to load students');
+        setLoading(false);
+      }
     }, (error) => {
       console.error('Error loading students:', error);
       setError('Failed to load students');
@@ -51,7 +61,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
     });
 
     return unsubscribe;
-  }, [db, classData.id]);
+  }, [db, appId, classData.id]);
 
   // Helper function to calculate student progress
   const calculateStudentProgress = (userData) => {
@@ -130,8 +140,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           }
         }
         
-        const appId = 'default-app-id'; // Should match the app structure
-        const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
+  const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
         
         // Remove classId from student profile
         await updateDoc(profileDocRef, {
