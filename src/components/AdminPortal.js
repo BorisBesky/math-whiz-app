@@ -44,6 +44,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [isSelectAll, setIsSelectAll] = useState(false);
   const [showBulkClassAssignment, setShowBulkClassAssignment] = useState(false);
   const [selectedBulkClass, setSelectedBulkClass] = useState('');
+  const [selectedTeachers, setSelectedTeachers] = useState(new Set());
+  const [isSelectAllTeachers, setIsSelectAllTeachers] = useState(false);
   
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
@@ -802,6 +804,72 @@ const AdminPortal = ({ db, onClose, appId }) => {
       alert('Error deleting students. Please try again.');
     }
   };
+  
+  const handleSelectTeacher = (teacherId) => {
+    const newSelected = new Set(selectedTeachers);
+    if (newSelected.has(teacherId)) {
+      newSelected.delete(teacherId);
+    } else {
+      newSelected.add(teacherId);
+    }
+    setSelectedTeachers(newSelected);
+  setIsSelectAllTeachers(newSelected.size === getSortedTeachers().length);
+  };
+  
+  const handleSelectAllTeachers = () => {
+    if (isSelectAllTeachers) {
+      setSelectedTeachers(new Set());
+      setIsSelectAllTeachers(false);
+    } else {
+  const allIds = new Set(getSortedTeachers().map(t => t.id));
+      setSelectedTeachers(allIds);
+      setIsSelectAllTeachers(true);
+    }
+  };
+  
+  const handleBulkDeleteTeachers = async () => {
+    if (selectedTeachers.size === 0) {
+      alert('No teachers selected.');
+      return;
+    }
+    const count = selectedTeachers.size;
+    const confirmMessage = `Are you sure you want to delete ${count} teacher(s)?\n\nThis will remove their accounts and profiles. This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const token = await user.getIdToken();
+      const selectedIds = Array.from(selectedTeachers);
+
+      await Promise.all(selectedIds.map(async (id) => {
+        const t = teachers.find(tt => tt.id === id);
+        if (!t) return;
+        const requestBody = { teacherId: t.id, teacherUid: t.uid, appId };
+        const resp = await fetch('/.netlify/functions/delete-teacher', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+        if (!resp.ok) {
+          let message = 'Failed to delete teacher';
+          try { const j = await resp.json(); message = j.error || message; } catch {}
+          throw new Error(`${t.email || t.id}: ${message}`);
+        }
+      }));
+
+      alert(`Deleted ${count} teacher(s) successfully.`);
+      setSelectedTeachers(new Set());
+      setIsSelectAllTeachers(false);
+      fetchTeachers();
+    } catch (error) {
+      console.error('Bulk delete teachers error:', error);
+      alert(`Error deleting some teachers: ${error.message}`);
+      // Still refresh to reflect partial progress
+      fetchTeachers();
+    }
+  };
 
   if (loading) {
     return (
@@ -855,6 +923,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Selected ({selectedStudents.size})</span>
+              </button>
+            )}
+            {view === 'teachers' && (
+              <button
+                onClick={handleBulkDeleteTeachers}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedTeachers.size === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedTeachers.size})</span>
               </button>
             )}
             {view === 'students' && (
@@ -1225,6 +1303,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            checked={isSelectAllTeachers}
+                            onChange={handleSelectAllTeachers}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('teacher')}
@@ -1260,6 +1346,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getSortedTeachers().map(teacher => (
                         <tr key={teacher.id}>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedTeachers.has(teacher.id)}
+                              onChange={() => handleSelectTeacher(teacher.id)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          </td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.displayName || teacher.name}</td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.email}</td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
