@@ -15,7 +15,7 @@ exports.handler = async (event) => {
       body: '',
     };
   }
-  
+
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -50,7 +50,7 @@ exports.handler = async (event) => {
   try {
     // 1. Verify the user's ID token
     const decodedToken = await admin.auth().verifyIdToken(token);
-    
+
     // 2. IMPORTANT: Check for admin custom claim
     if (decodedToken.admin !== true) {
       return {
@@ -62,14 +62,14 @@ exports.handler = async (event) => {
 
     // 3. Get the authenticated user's ID (could be admin or teacher)
     const authenticatedUserId = decodedToken.uid;
-    
+
     // 4. Check if this is a teacher by querying for their classes
     const profileRef = db.doc(`artifacts/${appId}/users/${authenticatedUserId}/math_whiz_data/profile`);
     const profileSnap = await profileRef.get();
     // check if profile exists and has role 'teacher'
-  let isTeacher = false;
-  let classStudents = [];
-  const enrollmentsByStudent = {};
+    let isTeacher = false;
+    let classStudents = [];
+    const enrollmentsByStudent = {};
     if (profileSnap.exists) {
       const profileData = profileSnap.data();
       if (profileData && profileData.role === 'teacher') {
@@ -97,8 +97,8 @@ exports.handler = async (event) => {
       }
     }
 
-  // Use let so we can optionally apply a teacher filter below
-  let usersCollectionRef = db.collection(`artifacts/${appId}/users`);
+    // Use let so we can optionally apply a teacher filter below
+    let usersCollectionRef = db.collection(`artifacts/${appId}/users`);
     // if teacher, filter users to only those in their classes
     if (isTeacher && classStudents.length > 0) {
       console.log(`Teacher access: Filtering students to only those in teacher's classes.`);
@@ -151,7 +151,7 @@ exports.handler = async (event) => {
           };
         }
       }
-      
+
       if (!studentData) {
         console.log(`Info: No data found for user ${userId} in any expected location.`);
         return null;
@@ -174,7 +174,7 @@ exports.handler = async (event) => {
     } else {
       console.log(`Admin access: Returning all ${studentData.length} student(s).`);
     }
-    
+
     return {
       statusCode: 200,
       headers,
@@ -183,7 +183,7 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error("Error in get-all-students function:", error);
     if (error.code === 'auth/id-token-expired') {
-        return { statusCode: 401, headers, body: JSON.stringify({ error: "Token expired. Please log in again." }) };
+      return { statusCode: 401, headers, body: JSON.stringify({ error: "Token expired. Please log in again." }) };
     }
     return {
       statusCode: 500,
