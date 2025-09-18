@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
@@ -9,6 +9,9 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [invite, setInvite] = useState({ joinCode: '', joinUrl: '' });
 
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
@@ -61,6 +64,35 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
 
     return unsubscribe;
   }, [db, appId, classData.id]);
+
+  const fetchInvite = async (rotate = false) => {
+    setInviteLoading(true);
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/.netlify/functions/join-class', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'request-link',
+          classId: classData.id,
+          appId,
+          rotate,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to get invite link');
+      const data = await res.json();
+      setInvite({ joinCode: data.joinCode, joinUrl: data.joinUrl });
+    } catch (e) {
+      console.error(e);
+      setError('Could not generate invite link');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
 
   // Helper function to get last activity
   const getLastActivity = (userData) => {
@@ -249,7 +281,10 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                 <h2 className="text-xl font-semibold text-gray-900">Students</h2>
                 <p className="text-gray-600">Manage students enrolled in this class</p>
               </div>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+              <button
+                onClick={() => { setShowInvite(true); fetchInvite(false); }}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
                 <Plus className="h-4 w-4" />
                 <span>Add Student</span>
               </button>
@@ -260,7 +295,10 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No students enrolled</h3>
                 <p className="text-gray-600 mb-4">Start by adding students to your class</p>
-                <button className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                <button
+                  onClick={() => { setShowInvite(true); fetchInvite(false); }}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
                   <Plus className="h-4 w-4" />
                   <span>Add Your First Student</span>
                 </button>
@@ -340,6 +378,67 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           </div>
         </div>
       </div>
+
+      {/* Invite Modal */}
+      {showInvite && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Invite Students</h3>
+              <button onClick={() => setShowInvite(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Share this link or code with your students. They must sign in and will be added to this class automatically.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Join Link</label>
+                <div className="flex mt-1">
+                  <input
+                    className="flex-1 border rounded-l px-3 py-2 text-sm"
+                    readOnly
+                    value={invite.joinUrl || 'Loading...'}
+                  />
+                  <button
+                    onClick={() => invite.joinUrl && navigator.clipboard.writeText(invite.joinUrl)}
+                    disabled={!invite.joinUrl}
+                    className="px-3 py-2 border border-l-0 rounded-r bg-gray-50 hover:bg-gray-100"
+                    title="Copy link"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500">Join Code</label>
+                <div className="flex items-center justify-between border rounded px-3 py-2">
+                  <span className="font-mono">{invite.joinCode || 'Loading...'}</span>
+                  <button
+                    onClick={() => fetchInvite(true)}
+                    disabled={inviteLoading}
+                    className="inline-flex items-center space-x-1 text-sm text-blue-700 hover:text-blue-900"
+                    title="Rotate code"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                    <span>{inviteLoading ? 'Rotating…' : 'Rotate'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setShowInvite(false)}
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Class Modal */}
       {showEditForm && (
