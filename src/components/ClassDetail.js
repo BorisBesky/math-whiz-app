@@ -11,7 +11,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
-  const [invite, setInvite] = useState({ joinCode: '', joinUrl: '' });
+  const [invite, setInvite] = useState({ joinCode: '', joinUrl: '', expiresAt: '' });
 
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
@@ -85,7 +85,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
       });
       if (!res.ok) throw new Error('Failed to get invite link');
       const data = await res.json();
-      setInvite({ joinCode: data.joinCode, joinUrl: data.joinUrl });
+  setInvite({ joinCode: data.joinCode, joinUrl: data.joinUrl, expiresAt: data.expiresAt });
     } catch (e) {
       console.error(e);
       setError('Could not generate invite link');
@@ -425,6 +425,9 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                     <span>{inviteLoading ? 'Rotating…' : 'Rotate'}</span>
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Expires: {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : 'Loading...'}
+                </p>
               </div>
             </div>
 

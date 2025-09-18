@@ -44,7 +44,7 @@ exports.handler = async (event) => {
       return json(400, { error: 'Invalid action' });
     }
 
-    const classesCol = db.collection('artifacts').doc(appId).collection('classes');
+  const classesCol = db.collection('artifacts').doc(appId).collection('classes');
     const enrollmentsCol = db.collection('artifacts').doc(appId).collection('classStudents');
 
     if (action === 'request-link') {
@@ -60,19 +60,32 @@ exports.handler = async (event) => {
         return json(403, { error: 'Not class owner' });
       }
 
+      const nowMs = Date.now();
+      const ttlMinutes = parseInt(process.env.JOIN_CODE_TTL_MINUTES || '1440', 10); // default 24h
+      const newExpiry = new Date(nowMs + ttlMinutes * 60 * 1000);
+
       let joinCode = classData.joinCode;
-      if (!joinCode || rotate) {
+      const expiresAtExisting = classData.joinCodeExpiresAt?.toDate ? classData.joinCodeExpiresAt.toDate() : (classData.joinCodeExpiresAt ? new Date(classData.joinCodeExpiresAt) : null);
+      const isExpired = expiresAtExisting ? expiresAtExisting.getTime() <= nowMs : true;
+
+      if (!joinCode || rotate || isExpired) {
         joinCode = genCode(7);
         await classRef.update({
           joinCode,
           joinCodeUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          joinCodeExpiresAt: admin.firestore.Timestamp.fromDate(newExpiry),
         });
       }
 
       const baseUrl = process.env.PUBLIC_APP_BASE_URL || '';
       const joinUrl = baseUrl ? `${baseUrl}/join?code=${joinCode}` : `/join?code=${joinCode}`;
 
-      return json(200, { joinCode, joinUrl });
+      // resolve current expiry (if we didn't rotate)
+      const expiresAt = (!rotate && !isExpired && expiresAtExisting)
+        ? expiresAtExisting
+        : newExpiry;
+
+      return json(200, { joinCode, joinUrl, expiresAt: expiresAt.toISOString() });
     }
 
     if (action === 'redeem') {
@@ -84,6 +97,13 @@ exports.handler = async (event) => {
 
       const classDoc = classesByCode.docs[0];
       const classId = classDoc.id;
+      const classData = classDoc.data();
+
+      // Enforce expiry
+      const expiresAt = classData.joinCodeExpiresAt?.toDate ? classData.joinCodeExpiresAt.toDate() : (classData.joinCodeExpiresAt ? new Date(classData.joinCodeExpiresAt) : null);
+      if (!expiresAt || expiresAt.getTime() <= Date.now()) {
+        return json(410, { error: 'Code expired' });
+      }
 
       const existing = await enrollmentsCol
         .where('classId', '==', classId)

@@ -30,7 +30,10 @@ const JoinClass = () => {
         body: JSON.stringify({ action: 'redeem', code: code.trim(), appId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to join class');
+      if (!res.ok) {
+        if (res.status === 410) throw new Error('This code has expired. Ask your teacher for a new code.');
+        throw new Error(data.error || 'Failed to join class');
+      }
       setStatus('success');
       setTimeout(() => navigate('/teacher'), 1200);
     } catch (e) {
