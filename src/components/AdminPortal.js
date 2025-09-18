@@ -679,6 +679,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
           aValue = a.selectedGrade;
           bValue = b.selectedGrade;
           break;
+        case 'class':
+          aValue = (a.class || 'Unassigned').toLowerCase();
+          bValue = (b.class || 'Unassigned').toLowerCase();
+          break;
         case 'questionsToday':
           aValue = a.questionsToday;
           bValue = b.questionsToday;
@@ -709,6 +713,32 @@ const AdminPortal = ({ db, onClose, appId }) => {
       if (aValue > bValue) {
         return sortDirection === 'asc' ? 1 : -1;
       }
+      return 0;
+    });
+  };
+
+  const getSortedTeachers = () => {
+    if (!['teacher', 'email', 'createdAt'].includes(sortField)) return teachers;
+    return [...teachers].sort((a, b) => {
+      let aValue, bValue;
+      switch (sortField) {
+        case 'teacher':
+          aValue = (a.displayName || a.name || '').toLowerCase();
+          bValue = (b.displayName || b.name || '').toLowerCase();
+          break;
+        case 'email':
+          aValue = (a.email || '').toLowerCase();
+          bValue = (b.email || '').toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   };
@@ -1004,8 +1034,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('grade')}
                           </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Class
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('class')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Class
+                            {getSortIcon('class')}
+                          </div>
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
@@ -1189,14 +1225,32 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Teacher
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('teacher')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Teacher
+                            {getSortIcon('teacher')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('email')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Email
+                            {getSortIcon('email')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Created At
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('createdAt')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Created At
+                            {getSortIcon('createdAt')}
+                          </div>
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -1204,7 +1258,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {teachers.map(teacher => (
+                      {getSortedTeachers().map(teacher => (
                         <tr key={teacher.id}>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.displayName || teacher.name}</td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.email}</td>
