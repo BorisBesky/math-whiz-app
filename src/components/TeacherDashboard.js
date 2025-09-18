@@ -47,6 +47,10 @@ const TeacherDashboard = () => {
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [goalGrade, setGoalGrade] = useState('G3');
+  const [goalTargets, setGoalTargets] = useState({});
+  const [goalStudentIds, setGoalStudentIds] = useState([]);
 
   const { user, logout } = useAuth();
   const db = getFirestore();
@@ -425,6 +429,82 @@ const TeacherDashboard = () => {
     });
   };
 
+  const getTopicsForGrade = (grade) => {
+    return grade === 'G3'
+      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
+      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
+  };
+
+  const openGoalsModalForStudent = (student) => {
+    const grade = student.selectedGrade || 'G3';
+    const topics = getTopicsForGrade(grade);
+    const current = {};
+    topics.forEach(t => {
+      current[t] = student.dailyGoalsByGrade?.[grade]?.[t] || 4;
+    });
+    setGoalGrade(grade);
+    setGoalTargets(current);
+    setGoalStudentIds([student.id]);
+    setShowGoalsModal(true);
+  };
+
+  const openGoalsModalForSelected = () => {
+    const ids = Array.from(selectedStudents);
+    const grade = 'G3';
+    const topics = getTopicsForGrade(grade);
+    const current = {};
+    topics.forEach(t => { current[t] = 4; });
+    setGoalGrade(grade);
+    setGoalTargets(current);
+    setGoalStudentIds(ids);
+    setShowGoalsModal(true);
+  };
+
+  const handleGoalGradeChange = (grade) => {
+    const topics = getTopicsForGrade(grade);
+    const next = { ...goalTargets };
+    // Ensure all topics exist
+    topics.forEach(t => { if (typeof next[t] === 'undefined') next[t] = 4; });
+    // Remove topics not in this grade
+    Object.keys(next).forEach(k => { if (!topics.includes(k)) delete next[k]; });
+    setGoalGrade(grade);
+    setGoalTargets(next);
+  };
+
+  const saveGoals = async () => {
+    if (!db || goalStudentIds.length === 0) return;
+    try {
+      const topics = getTopicsForGrade(goalGrade);
+      const updatesBase = {};
+      topics.forEach(t => {
+        const val = parseInt(goalTargets[t], 10);
+        updatesBase[`dailyGoalsByGrade.${goalGrade}.${t}`] = isNaN(val) ? 0 : val;
+      });
+
+      await Promise.all(goalStudentIds.map(async (sid) => {
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', sid, 'math_whiz_data', 'profile');
+        await updateDoc(profileDocRef, updatesBase);
+      }));
+
+      // Update local state
+      setStudents(prev => prev.map(s => {
+        if (!goalStudentIds.includes(s.id)) return s;
+        const nextGoals = { ...(s.dailyGoalsByGrade || {}) };
+        nextGoals[goalGrade] = { ...(nextGoals[goalGrade] || {}) };
+        Object.entries(goalTargets).forEach(([k, v]) => {
+          nextGoals[goalGrade][k] = parseInt(v, 10) || 0;
+        });
+        return { ...s, dailyGoalsByGrade: nextGoals };
+      }));
+
+      setShowGoalsModal(false);
+      setGoalStudentIds([]);
+    } catch (e) {
+      console.error('Failed to save goals', e);
+      setError('Failed to save goals');
+    }
+  };
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -657,6 +737,14 @@ const TeacherDashboard = () => {
                   >
                     <Download className="w-4 h-4" />
                     <span>Export CSV</span>
+                  </button>
+                  <button
+                    onClick={openGoalsModalForSelected}
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={selectedStudents.size === 0}
+                  >
+                    <Target className="w-4 h-4" />
+                    <span>Set Goals ({selectedStudents.size})</span>
                   </button>
                   <button
                     onClick={handleBulkDelete}
@@ -986,6 +1074,13 @@ const TeacherDashboard = () => {
                             View
                           </button>
                           <button
+                            onClick={() => openGoalsModalForStudent(student)}
+                            className="text-purple-600 hover:text-purple-900 inline-flex items-center"
+                          >
+                            <Target className="w-4 h-4 mr-1" />
+                            Set Goals
+                          </button>
+                          <button
                             onClick={() => deleteStudent(student.id)}
                             className="text-red-600 hover:text-red-900 inline-flex items-center"
                           >
@@ -1308,6 +1403,48 @@ const TeacherDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Set Goals Modal */}
+      {showGoalsModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Set Daily Goals</h3>
+              <button onClick={() => setShowGoalsModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div className="mb-4 flex items-center space-x-4">
+              <label className="text-sm text-gray-700">Grade:</label>
+              <select
+                value={goalGrade}
+                onChange={(e) => handleGoalGradeChange(e.target.value)}
+                className="border rounded px-2 py-1"
+              >
+                <option value="G3">G3</option>
+                <option value="G4">G4</option>
+              </select>
+              <span className="text-sm text-gray-500">Applying to {goalStudentIds.length} student(s)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {getTopicsForGrade(goalGrade).map(topic => (
+                <div key={topic} className="flex items-center justify-between border rounded px-3 py-2">
+                  <span className="text-sm text-gray-700 mr-3 truncate">{topic}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={goalTargets[topic] ?? 4}
+                    onChange={(e) => setGoalTargets(prev => ({ ...prev, [topic]: e.target.value }))}
+                    className="w-20 border rounded px-2 py-1 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-right space-x-2">
+              <button onClick={() => setShowGoalsModal(false)} className="px-4 py-2 rounded border">Cancel</button>
+              <button onClick={saveGoals} className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Class Modal */}
       {showCreateForm && (
