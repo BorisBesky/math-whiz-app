@@ -38,7 +38,6 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
             selectedGrade: data.selectedGrade || 'G3',
             coins: data.coins || 0,
             joinedAt: data.updatedAt || data.createdAt || enr.joinedAt || new Date(),
-            progress: calculateStudentProgress(data),
             lastActivity: getLastActivity(data),
             totalQuestions: answeredQuestions.length,
             dailyGoalsByGrade: data.dailyGoalsByGrade || {},
@@ -62,28 +61,6 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
 
     return unsubscribe;
   }, [db, appId, classData.id]);
-
-  // Helper function to calculate student progress
-  const calculateStudentProgress = (userData) => {
-    if (!userData.progressByGrade && !userData.progress) return 0;
-    
-    const today = new Date().toISOString().split('T')[0];
-    const grade = userData.selectedGrade || 'G3';
-    
-    // Get progress for today
-    const todayProgress = userData.progressByGrade?.[today]?.[grade] || userData.progress?.[today] || {};
-    
-    // Calculate completion percentage based on questions answered
-    const totalQuestions = Object.values(todayProgress).reduce((sum, topic) => {
-      if (typeof topic === 'object' && topic.correct !== undefined && topic.incorrect !== undefined) {
-        return sum + topic.correct + topic.incorrect;
-      }
-      return sum;
-    }, 0);
-    
-    // Return a percentage based on questions answered (max 100%)
-    return Math.min(100, Math.floor(totalQuestions / 10 * 100));
-  };
 
   // Helper function to get last activity
   const getLastActivity = (userData) => {
@@ -302,9 +279,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progress
-                      </th>
+                      
                       <th className="relative px-6 py-3">
                         <span className="sr-only">Actions</span>
                       </th>
@@ -336,25 +311,17 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(student.joinedAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-green-600 h-2 rounded-full" 
-                                style={{ width: `${student.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="ml-2">{student.progress || 0}%</span>
-                          </div>
-                        </td>
+                        
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            <button
-                              className="text-green-600 hover:text-green-900"
-                              title="Send Email"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </button>
+                            {student.email && (
+                              <button
+                                className="text-green-600 hover:text-green-900"
+                                title="Send Email"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleRemoveStudent(student)}
                               className="text-red-600 hover:text-red-900"
