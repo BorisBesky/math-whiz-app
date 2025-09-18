@@ -42,6 +42,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
+  const [showBulkClassAssignment, setShowBulkClassAssignment] = useState(false);
+  const [selectedBulkClass, setSelectedBulkClass] = useState('');
   
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
@@ -444,6 +446,103 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
   };
 
+  const bulkAssignStudentsToClass = async () => {
+    if (selectedStudents.size === 0) {
+      alert('Please select at least one student.');
+      return;
+    }
+    if (!selectedBulkClass) {
+      alert('Please select a class.');
+      return;
+    }
+
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        alert('Authentication required. Please sign in again.');
+        return;
+      }
+
+      const selectedIds = Array.from(selectedStudents);
+      const assignedClassName = selectedBulkClass === 'Unassigned'
+        ? 'Unassigned'
+        : (classes.find(c => c.id === selectedBulkClass)?.name || 'Unassigned');
+
+      if (selectedBulkClass === 'Unassigned') {
+        // Unassign all selected students from their current class if any
+        await Promise.all(selectedIds.map(async (studentId) => {
+          const student = students.find(s => s.id === studentId);
+          if (!student?.classId) return; // nothing to remove
+
+          try {
+            const resp = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${student.id}&appId=${appId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resp.ok) {
+              const enrollments = await resp.json();
+              const enrollment = enrollments.find(e => e.studentId === student.id && e.classId === student.classId);
+              if (enrollment) {
+                await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('Could not remove class enrollment for student:', studentId, e);
+          }
+
+          // Update profile to remove classId
+          const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+          await updateDoc(profileDocRef, { classId: null, updatedAt: new Date().toISOString() });
+        }));
+
+        // Update local state
+        setStudents(prev => prev.map(s => selectedStudents.has(s.id) ? { ...s, class: 'Unassigned', classId: null } : s));
+      } else {
+        // Assign all selected students to the chosen class
+        await Promise.all(selectedIds.map(async (studentId) => {
+          const student = students.find(s => s.id === studentId);
+          try {
+            await fetch('/.netlify/functions/class-students', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                classId: selectedBulkClass,
+                studentId,
+                studentEmail: student?.email || '',
+                studentName: student?.displayName || student?.email || 'Unknown',
+                appId
+              })
+            });
+          } catch (e) {
+            console.warn('Failed to assign student to class:', studentId, e);
+          }
+
+          // Update the student's profile with the classId
+          const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+          await updateDoc(profileDocRef, { classId: selectedBulkClass, updatedAt: new Date().toISOString() });
+        }));
+
+        // Update local state
+        setStudents(prev => prev.map(s => selectedStudents.has(s.id) ? { ...s, class: assignedClassName, classId: selectedBulkClass } : s));
+      }
+
+      alert(`Updated ${selectedStudents.size} student(s): ${assignedClassName}`);
+      setShowBulkClassAssignment(false);
+      setSelectedBulkClass('');
+      setSelectedStudents(new Set());
+      setIsSelectAll(false);
+    } catch (error) {
+      console.error('Error in bulk class assignment:', error);
+      alert(`Error in bulk class assignment: ${error.message}`);
+    }
+  };
+
   const exportStudentData = () => {
     const csvData = students.map(student => ({
       'Student ID': student.id,
@@ -726,6 +825,17 @@ const AdminPortal = ({ db, onClose, appId }) => {
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Selected ({selectedStudents.size})</span>
+              </button>
+            )}
+            {view === 'students' && (
+              <button
+                onClick={() => setShowBulkClassAssignment(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedStudents.size === 0}
+                title="Assign selected students to a class"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Assign To Class</span>
               </button>
             )}
             <button
@@ -1451,6 +1561,48 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Assign to Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkClassAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Selected Students to Class</h3>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-700">Selected: {selectedStudents.size} student(s)</div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Class</label>
+                <select
+                  value={selectedBulkClass}
+                  onChange={(e) => setSelectedBulkClass(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a class...</option>
+                  {classes.map(cls => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.teacher})
+                    </option>
+                  ))}
+                  <option value="Unassigned">Unassigned</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => { setShowBulkClassAssignment(false); setSelectedBulkClass(''); }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={bulkAssignStudentsToClass}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedStudents.size === 0 || !selectedBulkClass}
+              >
+                Assign
               </button>
             </div>
           </div>
