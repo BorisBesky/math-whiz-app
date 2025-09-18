@@ -1303,7 +1303,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left">
                           <input
                             type="checkbox"
                             checked={isSelectAllTeachers}
@@ -1346,7 +1346,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getSortedTeachers().map(teacher => (
                         <tr key={teacher.id}>
-                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <input
                               type="checkbox"
                               checked={selectedTeachers.has(teacher.id)}
