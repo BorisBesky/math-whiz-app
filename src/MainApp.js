@@ -37,6 +37,9 @@ import {
   increment,
   arrayUnion,
   getDoc,
+  collection,
+  query,
+  where,
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
 import { USER_ROLES } from './utils/userRoles';
@@ -560,6 +563,8 @@ const App = () => {
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
     useState(false);
+  // Enrollment state derived solely from artifacts/{appId}/classStudents
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   // Custom logout handler that navigates to login page
   const handleLogout = async () => {
@@ -625,9 +630,11 @@ const App = () => {
   // --- Firebase Auth and Data Loading ---
   useEffect(() => {
     let unsubscribeSnapshot = () => {};
+    let unsubscribeEnrollment = () => {};
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       unsubscribeSnapshot(); // Clean up previous listener if user changes
+      unsubscribeEnrollment();
 
       if (currentUser) {
         setUser(currentUser);
@@ -853,6 +860,26 @@ const App = () => {
             console.error("Firestore snapshot error:", error);
           }
         );
+
+        // Subscribe to class enrollment using classStudents as the only source of truth
+        try {
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+          const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');
+          const q = query(enrollmentsRef, where('studentId', '==', currentUser.uid));
+          unsubscribeEnrollment = onSnapshot(
+            q,
+            (snap) => {
+              setIsEnrolled(!snap.empty);
+            },
+            (err) => {
+              console.warn('Enrollment subscription error:', err);
+              setIsEnrolled(false);
+            }
+          );
+        } catch (e) {
+          console.warn('Failed to subscribe to enrollment:', e);
+          setIsEnrolled(false);
+        }
       } else {
         setUser(null);
         setUserData(null);
@@ -877,6 +904,7 @@ const App = () => {
     return () => {
       unsubscribeAuth();
       unsubscribeSnapshot();
+      unsubscribeEnrollment();
     };
   }, []);
 
@@ -1760,6 +1788,12 @@ Answer: [The answer]`;
     const currentTopics =
       quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
 
+    // Determine permissions for editing goals
+    const isTeacherOrAdmin =
+      userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole);
+  const isEnrolledStudent = !isTeacherOrAdmin && isEnrolled;
+    const canEditGoals = isTeacherOrAdmin || !isEnrolledStudent;
+
     // Get today's answered questions for the selected grade
     const todaysQuestions =
       userData?.answeredQuestions?.filter(
@@ -1833,6 +1867,9 @@ Answer: [The answer]`;
       {};
 
     const handleGradeGoalChange = async (e, topic) => {
+      if (!canEditGoals) {
+        return; // Enrolled students cannot modify goals
+      }
       const newGoal = parseInt(e.target.value, 10);
       if (user && !isNaN(newGoal) && newGoal > 0) {
         const userDocRef = getUserDocRef(user.uid);
@@ -1884,6 +1921,13 @@ Answer: [The answer]`;
           </div>
         </div>
 
+        {/* Show a friendly note if goals are managed by a teacher */}
+        {!canEditGoals && (
+          <div className="mb-4 text-center text-sm text-gray-600">
+            Goals are managed by your teacher and can't be changed here.
+          </div>
+        )}
+
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
           {currentTopics.map((topic) => (
             <div key={topic}>
@@ -1893,21 +1937,29 @@ Answer: [The answer]`;
               >
                 {topic}
               </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  id={`goal-${topic}`}
-                  min={GOAL_RANGE_MIN}
-                  max={GOAL_RANGE_MAX}
-                  step={GOAL_RANGE_STEP}
-                  value={dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL}
-                  onChange={(e) => handleGradeGoalChange(e, topic)}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
-                  {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
-                </span>
-              </div>
+              {canEditGoals ? (
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    id={`goal-${topic}`}
+                    min={GOAL_RANGE_MIN}
+                    max={GOAL_RANGE_MAX}
+                    step={GOAL_RANGE_STEP}
+                    value={dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL}
+                    onChange={(e) => handleGradeGoalChange(e, topic)}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
+                    {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-24 text-center">
+                    {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
