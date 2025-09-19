@@ -7,9 +7,10 @@ This document describes the complete Firestore database structure used by the Ma
 | Collection | Purpose | Key Fields | Access Control |
 |------------|---------|------------|----------------|
 | `users` | Student/teacher profiles and progress | `role`, `answeredQuestions`, `topicMastery` | Self + Teachers (for students) |
-| `classes` | Teacher-created class information | `teacherId`, `name`, `studentCount` | Teacher owners only |
+| `classes` | Teacher-created class information | `teacherId`, `name`| Class teachers + admin |
 | `classStudents` | Student enrollment in classes | `classId`, `studentId`, `progress` | Class teachers + admin |
-| `teachers` | Teacher profile metadata | `uid`, `name`, `classes[]` | Admin only |
+
+
 
 📚 **See also**: [Data Examples Document](./FIRESTORE_DATA_EXAMPLES.md) for concrete examples and sample queries.
 
@@ -22,7 +23,6 @@ artifacts/
     ├── users/
     ├── classes/
     ├── classStudents/
-    └── teachers/
 ```
 
 The default `appId` is `"default-app-id"` unless configured otherwise.
@@ -39,7 +39,7 @@ The root collection that contains all application data. This allows for multi-te
 
 Stores user profile information and student progress data.
 
-**Path**: `/artifacts/{appId}/users/{userId}`
+**Path**: `/artifacts/{appId}/users/{userId}/math_whiz_data/profile`
 
 #### User Document Structure
 
@@ -171,14 +171,6 @@ Stores user profile information and student progress data.
 }
 ```
 
-#### Nested User Profile Structure
-
-Some user data may be stored in nested subcollections:
-
-**Path**: `/artifacts/{appId}/users/{userId}/math_whiz_data/profile`
-
-All user profiles are now stored in this single, standardized location.
-
 ### 3. Classes Collection
 
 Stores information about teacher-created classes.
@@ -198,7 +190,6 @@ Stores information about teacher-created classes.
   period?: string,           // Class period (e.g., "1st Period")
   createdAt: Date,           // Class creation timestamp
   updatedAt: Date,           // Last modification timestamp
-  studentCount: number       // Number of enrolled students
 }
 ```
 
@@ -218,34 +209,8 @@ Manages the relationship between students and classes (enrollment).
   studentEmail?: string,     // Student's email (if available)
   studentName?: string,      // Student's display name
   joinedAt: Date,           // When student joined the class
-  progress: number          // Student's progress in the class (0-100)
 }
 ```
-
-### 5. Teachers Collection
-
-Stores teacher profile information and metadata.
-
-**Path**: `/artifacts/{appId}/teachers/{teacherId}`
-
-#### Teacher Document Structure
-
-```typescript
-{
-  id: string,               // Teacher ID (usually email with special chars replaced)
-  uid: string,             // Firebase Auth UID
-  name: string,            // Teacher's full name
-  email: string,           // Teacher's email address
-  role: 'teacher',         // User role
-  classes: string[],       // Array of class IDs this teacher manages
-  createdAt: string,       // ISO string of creation date
-  needsPasswordReset?: boolean
-}
-```
-
-## Authentication & Authorization
-
-### Firebase Auth Custom Claims
 
 The application uses Firebase Auth custom claims for authorization:
 
@@ -265,7 +230,6 @@ The application uses Firebase Auth custom claims for authorization:
 erDiagram
     USERS ||--o{ CLASS_STUDENTS : "enrolled in"
     CLASSES ||--o{ CLASS_STUDENTS : "contains"
-    TEACHERS ||--o{ CLASSES : "manages"
     
     USERS {
         string id PK
@@ -293,14 +257,7 @@ erDiagram
         string studentEmail
         number progress
     }
-    
-    TEACHERS {
-        string id PK
-        string uid FK
-        string name
-        string email
-        array classes
-    }
+
 ```
 
 ## Common Query Patterns
@@ -321,7 +278,7 @@ const classStudentsQuery = studentsRef.where('classId', 'in', classIds);
 
 ```javascript
 const userRef = db.doc(`artifacts/${appId}/users/${userId}`);
-// Profile data: db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`)
+const userProfileRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
 ```
 
 ### 3. Get Classes for a Teacher
