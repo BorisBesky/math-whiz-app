@@ -566,6 +566,13 @@ const App = () => {
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
 
+  // Navigate to login page for anonymous users to upgrade their account
+  const handleUserClick = () => {
+    if (authUser && authUser.isAnonymous) {
+      navigate('/student-login?mode=signup');
+    }
+  };
+
   // Custom logout handler that navigates to login page
   const handleLogout = async () => {
     try {
@@ -787,6 +794,12 @@ const App = () => {
 
               if (needsUpdate) {
                 updateDoc(userDocRef, updatePayload);
+              }
+
+              // Ensure ownedBackgrounds exists to prevent crashes
+              if (!data.ownedBackgrounds) {
+                data.ownedBackgrounds = ['default'];
+                updateDoc(userDocRef, { ownedBackgrounds: ['default'] });
               }
             } else {
               const today = getTodayDateString();
@@ -1701,7 +1714,11 @@ Answer: [The answer]`;
         
         {/* User info section */}
         {authUser && (
-          <div className="flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+          <div 
+            className={`flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-200 transition' : ''}`}
+            onClick={handleUserClick}
+            title={authUser.isAnonymous ? "Click to create an account and save your progress!" : (authUser.displayName || authUser.email)}
+          >
             <User size={16} />
             <span className="text-sm font-medium">
               {authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
@@ -2455,18 +2472,18 @@ Answer: [The answer]`;
                   </div>
                 </div>
               ))}
-            </div>
-          )}
 
-          {/* Reset button when all topics are completed */}
-          {allCompleted && (
-            <div className="mt-4">
-              <button
-                onClick={resetAllProgress}
-                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
-              >
-                <Award size={20} /> Start Fresh Cycle
-              </button>
+              {/* Reset button when all topics are completed */}
+              {allCompleted && (
+                <div className="mt-4">
+                  <button
+                    onClick={resetAllProgress}
+                    className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <Award size={20} /> Start Fresh Cycle
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2717,7 +2734,7 @@ Answer: [The answer]`;
           )}
           <button
             onClick={returnToTopics}
-            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105"
+            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
           >
             Choose New Topic
           </button>

@@ -196,6 +196,24 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
+
+      // If user is anonymous, link the account. Otherwise, sign in.
+      if (auth.currentUser && auth.currentUser.isAnonymous) {
+        const result = await linkWithCredential(auth.currentUser, provider);
+        const user = result.user;
+        
+        // Update profile to non-anonymous
+        await setUserProfile(user.uid, {
+          email: user.email,
+          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
+          isAnonymous: false,
+          displayName: user.displayName,
+          convertedAt: new Date()
+        });
+
+        return user;
+      }
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
@@ -274,6 +292,23 @@ export const AuthProvider = ({ children }) => {
       if (role === USER_ROLES.TEACHER) {
         throw new Error('Teacher accounts must be created by administrators through the admin portal. Please contact your administrator to create a teacher account.');
       }
+
+      // If user is anonymous, link the account. Otherwise, create a new one.
+      if (auth.currentUser && auth.currentUser.isAnonymous) {
+        const credential = EmailAuthProvider.credential(email, password);
+        const result = await linkWithCredential(auth.currentUser, credential);
+        
+        // Update profile
+        await setUserProfile(result.user.uid, {
+          email,
+          role: USER_ROLES.STUDENT,
+          isAnonymous: false,
+          convertedAt: new Date(),
+          ...additionalData
+        });
+        
+        return result.user;
+      }
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -287,33 +322,6 @@ export const AuthProvider = ({ children }) => {
       });
       
       return result.user;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Convert guest account to registered account
-  const convertGuestToRegistered = async (email, password) => {
-    try {
-      setError(null);
-      if (!user || !user.isAnonymous) {
-        throw new Error('Can only convert anonymous accounts');
-      }
-
-      // Update the anonymous user with email/password
-      const credential = EmailAuthProvider.credential(email, password);
-      await linkWithCredential(user, credential);
-      
-      // Update profile
-      await setUserProfile(user.uid, {
-        email,
-        role: USER_ROLES.STUDENT,
-        isAnonymous: false,
-        convertedAt: new Date()
-      });
-      
-      return user;
     } catch (error) {
       setError(error.message);
       throw error;
@@ -351,7 +359,6 @@ export const AuthProvider = ({ children }) => {
     loginWithEmail,
     loginWithGoogle,
     registerWithEmail,
-    convertGuestToRegistered,
     logout,
     resetPassword,
   };
