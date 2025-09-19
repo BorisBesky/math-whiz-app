@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, linkWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { USER_ROLES } from '../utils/userRoles';
 
@@ -199,7 +199,7 @@ export const AuthProvider = ({ children }) => {
 
       // If user is anonymous, link the account. Otherwise, sign in.
       if (auth.currentUser && auth.currentUser.isAnonymous) {
-        const result = await linkWithCredential(auth.currentUser, provider);
+        const result = await linkWithPopup(auth.currentUser, provider);
         const user = result.user;
         
         // Update profile to non-anonymous
