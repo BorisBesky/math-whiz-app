@@ -140,9 +140,10 @@ exports.handler = async (event) => {
       // Try the primary location first: /math_whiz_data/profile
       const mathWhizDataRef = db.doc(`artifacts/${appId}/users/${userId}/math_whiz_data/profile`);
       const mathWhizDataSnapshot = await mathWhizDataRef.get();
+      let mathWhizProfileData = null;
 
       if (mathWhizDataSnapshot.exists) {
-        const mathWhizProfileData = mathWhizDataSnapshot.data();
+        mathWhizProfileData = mathWhizDataSnapshot.data();
         if (mathWhizProfileData && Object.keys(mathWhizProfileData).length > 0 && mathWhizProfileData.role === 'student') {
           console.log(`Success: Found data in math_whiz_data/profile for ${userId}`);
           studentData = {
@@ -153,7 +154,13 @@ exports.handler = async (event) => {
       }
 
       if (!studentData) {
-        console.log(`Info: No data found for user ${userId} in any expected location.`);
+        if (mathWhizDataSnapshot.exists ) {
+          if (mathWhizProfileData && mathWhizProfileData.role !== 'student') {
+            console.log(`Info: math_whiz_data/profile exists for ${userId} and the user is ${mathWhizProfileData.role}.`);
+          }
+        } else {
+          console.log(`Info: No math_whiz_data/profile found for ${userId}.`);
+        }
         return null;
       }
 

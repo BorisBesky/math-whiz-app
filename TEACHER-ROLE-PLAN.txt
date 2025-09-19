@@ -1,5 +1,5 @@
 Step 1: Custom Claim (No Change)
-Create Cloud Function to set the custom claim on the teacher's Auth account. This identifies them as a "teacher" in the system, giving them the privilege to perform this kind of check.
+Create Cloud Function to set the custom claim on the teacher's Auth account. This identifies them as a "teacher" in the system
 
 JavaScript
 
@@ -7,7 +7,7 @@ JavaScript
 await admin.auth().setCustomUserClaims(userUid, { role: "teacher" });
 
 
-Step 2: Your New Firestore Data Model
+Step 2: New Firestore Data Model
 Based on your description, your database structure would look like this:
 
 A classes collection:

@@ -15,8 +15,9 @@
   - View all system records.
 
 ### Teacher Dashboard
-- Create and manage classes.
-- Remove students from classes.
-- Send emails and invitation emails to students.
-- View all class records.
-- View class statistics (by topic, student, class, etc.).
+- [x] Create and manage classes.
+- [x] Remove students from classes.
+- [x] Send invitation links to students.
+- [ ] Send emails and invitation emails to students.
+- [x] View all class records.
+- [x] View class statistics (by topic, student, class, etc.).
