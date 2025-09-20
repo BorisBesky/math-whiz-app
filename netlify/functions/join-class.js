@@ -130,7 +130,11 @@ exports.handler = async (event) => {
         .collection('users').doc(user.uid)
         .collection('math_whiz_data').doc('profile');
 
-      await profileRef.set({ classId, updatedAt: now }, { merge: true });
+      await profileRef.set({
+        classId,
+        teacherIds: admin.firestore.FieldValue.arrayUnion(classData.teacherId),
+        updatedAt: now
+      }, { merge: true });
 
       return json(200, { status: 'enrolled', classId });
     }

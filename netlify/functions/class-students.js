@@ -198,10 +198,46 @@ async function handleRemoveStudent(params, appId, headers) {
     }
 
     const enrollmentData = enrollmentDoc.data();
-    const classId = enrollmentData.classId;
+    const { classId, studentId } = enrollmentData;
 
     // Delete the enrollment
     await db.collection('artifacts').doc(appId).collection('classStudents').doc(enrollmentId).delete();
+
+    // Update student's teacherIds array
+    const classDoc = await db.collection('artifacts').doc(appId).collection('classes').doc(classId).get();
+    if (classDoc.exists) {
+      const teacherId = classDoc.data().teacherId;
+      if (teacherId) {
+        const enrollmentsCol = db.collection('artifacts').doc(appId).collection('classStudents');
+        const otherEnrollments = await enrollmentsCol
+          .where('studentId', '==', studentId)
+          .get();
+
+        let otherClassesWithSameTeacher = false;
+        if (!otherEnrollments.empty) {
+          const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
+          if (otherClassIds.length > 0) {
+            const otherClasses = await db.collection('artifacts').doc(appId).collection('classes')
+              .where(admin.firestore.FieldPath.documentId(), 'in', otherClassIds)
+              .where('teacherId', '==', teacherId)
+              .get();
+            if (!otherClasses.empty) {
+              otherClassesWithSameTeacher = true;
+            }
+          }
+        }
+
+        if (!otherClassesWithSameTeacher) {
+          const profileRef = db.collection('artifacts').doc(appId)
+            .collection('users').doc(studentId)
+            .collection('math_whiz_data').doc('profile');
+          
+          await profileRef.update({
+            teacherIds: admin.firestore.FieldValue.arrayRemove(teacherId)
+          });
+        }
+      }
+    }
 
     // Update student count in class
     const classRef = db.collection('artifacts').doc(appId).collection('classes').doc(classId);

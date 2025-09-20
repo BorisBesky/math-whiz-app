@@ -1,19 +1,4 @@
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-
-// Initialize Firebase Admin
-let app;
-try {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-  app = initializeApp({
-    credential: cert(serviceAccount),
-    projectId: process.env.FIREBASE_PROJECT_ID
-  });
-} catch (error) {
-  console.error('Firebase Admin initialization error:', error);
-}
-
-const db = getFirestore(app);
+const { admin, db } = require('./firebase-admin');
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -205,19 +190,59 @@ async function handleDeleteClass(params, headers) {
     }
 
     const appId = process.env.APP_ID || 'default-app-id';
-    
-    // Also delete all students in this class
-    const studentsRef = db.collection('artifacts').doc(appId).collection('classStudents');
-    const studentsQuery = studentsRef.where('classId', '==', classId);
-    const studentsSnapshot = await studentsQuery.get();
+    const classesCol = db.collection('artifacts').doc(appId).collection('classes');
+    const enrollmentsCol = db.collection('artifacts').doc(appId).collection('classStudents');
+
+    const classDoc = await classesCol.doc(classId).get();
+    if (!classDoc.exists) {
+      return { statusCode: 404, headers, body: JSON.stringify({ error: 'Class not found' }) };
+    }
+    const { teacherId } = classDoc.data();
+
+    // Find all students in the class
+    const studentsSnapshot = await enrollmentsCol.where('classId', '==', classId).get();
+    const studentIds = studentsSnapshot.docs.map(doc => doc.data().studentId);
 
     const batch = db.batch();
+
+    // Delete all enrollments for this class
     studentsSnapshot.forEach(doc => {
       batch.delete(doc.ref);
     });
 
+    // For each student, check if they are in other classes with the same teacher
+    for (const studentId of studentIds) {
+      const otherEnrollments = await enrollmentsCol
+        .where('studentId', '==', studentId)
+        .where('classId', '!=', classId)
+        .get();
+
+      let otherClassesWithSameTeacher = false;
+      if (!otherEnrollments.empty) {
+        const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
+        if (otherClassIds.length > 0) {
+          const otherClasses = await classesCol
+            .where(admin.firestore.FieldPath.documentId(), 'in', otherClassIds)
+            .where('teacherId', '==', teacherId)
+            .get();
+          if (!otherClasses.empty) {
+            otherClassesWithSameTeacher = true;
+          }
+        }
+      }
+
+      if (!otherClassesWithSameTeacher) {
+        const profileRef = db.collection('artifacts').doc(appId)
+          .collection('users').doc(studentId)
+          .collection('math_whiz_data').doc('profile');
+        batch.update(profileRef, {
+          teacherIds: admin.firestore.FieldValue.arrayRemove(teacherId)
+        });
+      }
+    }
+
     // Delete the class
-    batch.delete(db.collection('artifacts').doc(appId).collection('classes').doc(classId));
+    batch.delete(classesCol.doc(classId));
     await batch.commit();
 
     return {
