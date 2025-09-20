@@ -52,11 +52,11 @@ exports.handler = async (event) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
 
     // 2. IMPORTANT: Check for admin custom claim
-    if (decodedToken.admin !== true) {
+    if (decodedToken.admin !== true && decodedToken.role !== 'teacher') {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: "Forbidden: User is not an admin." }),
+        body: JSON.stringify({ error: "Forbidden: User is not an admin or teacher." }),
       };
     }
 

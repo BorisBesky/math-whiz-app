@@ -7,51 +7,7 @@ JavaScript
 await admin.auth().setCustomUserClaims(userUid, { role: "teacher" });
 
 
-Step 2: Modified Firestore Security Rule
-Now, when a teacher tries to read a student document, the rule must:
-Check if the user is a teacher (using the claim).
-Get the classId from the studentClass record.
-Fetch the corresponding document from the classes collection.
-Check if the user's UID matches the teacherId on that class document.
 
-
-JavaScript
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // You don't need to secure the 'classes' collection as much for reads,
-    // as it likely just contains public metadata. Writes should be locked.
-    match /classes/{classId} {
-      allow read: if true; // Or 'if request.auth != null'
-      allow write: if request.auth.token.role == 'teacher'; // Only teachers or functions should create classes
-    }
-
-    // This is the key rule for your student records
-    match /users/{userId}/math_whiz_data/profile {
-    
-      allow read, write: if
-          // Condition 1: Is the user a teacher?
-          request.auth.token.role == 'teacher'
-          
-          && // AND
-          
-          // Condition 2: Does their UID match the teacherId on the 
-          // class document that this student belongs to?
-          request.auth.uid == get(
-             /databases/$(database)/documents/classStudents/$(resource.data.classId)
-          ).data.teacherId;
-
-          && // AND
-
-          // userId is the student being accessed
-          userId == get(
-            /databases/$(database)/documents/classStudents/$(resource.data.classId)
-          ).data.studentId;
-    }
-  }
-}
 How This Rule Works:
 When teacher with UID UID_T tries to read student with UID UID_S:
 

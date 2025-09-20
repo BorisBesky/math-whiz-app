@@ -160,9 +160,9 @@ export const AuthProvider = ({ children }) => {
         } else if (expectedRole === USER_ROLES.TEACHER) {
           // For teacher role, check both custom claims and profile
           const idTokenResult = await result.user.getIdTokenResult();
-          if (!idTokenResult.claims.admin) {
+          if (!idTokenResult.claims.role === 'teacher') {
             await signOut(auth);
-            throw new Error('This account does not have teacher permissions. Please contact your administrator.');
+            throw new Error('This account does not have teacher permissions.');
           }
           const profile = await getUserProfile(result.user.uid);
           if (!profile || profile.role !== USER_ROLES.TEACHER) {
@@ -316,10 +316,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Admin accounts must be created by system administrators using the set-admin script');
       }
       
-      // For teacher registration, use the create-teacher API to get admin claims
-      if (role === USER_ROLES.TEACHER) {
-        throw new Error('Teacher accounts must be created by administrators through the admin portal. Please contact your administrator to create a teacher account.');
-      }
+      // // For teacher registration, use the create-teacher API to get admin claims
+      // if (role === USER_ROLES.TEACHER) {
+      //   throw new Error('Teacher accounts must be created by administrators through the admin portal. Please contact your administrator to create a teacher account.');
+      // }
 
       // If user is anonymous, link the account. Otherwise, create a new one.
       if (auth.currentUser && auth.currentUser.isAnonymous) {
@@ -329,7 +329,7 @@ export const AuthProvider = ({ children }) => {
         // Update profile
         await setUserProfile(result.user.uid, {
           email,
-          role: USER_ROLES.STUDENT,
+          role,
           isAnonymous: false,
           convertedAt: new Date(),
           ...additionalData

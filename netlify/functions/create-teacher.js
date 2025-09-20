@@ -43,26 +43,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // Verify the requester is an admin
-    const authHeader = event.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ error: "Missing authorization token" }),
-      };
-    }
-
-    const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    
-    if (decodedToken.admin !== true) {
-      return {
-        statusCode: 403,
-        headers,
-        body: JSON.stringify({ error: "Forbidden: Only admins can create teachers." }),
-      };
-    }
 
     console.log(`Creating teacher account for ${email}...`);
 
@@ -103,17 +83,17 @@ exports.handler = async (event) => {
       }
     }
 
-    // Step 2: Set admin custom claim for the teacher
+    // Step 2: Set custom claim for the teacher role
     try {
-      await admin.auth().setCustomUserClaims(firebaseUser.uid, { admin: true });
-      console.log(`Admin claim set for user ${firebaseUser.uid}`);
+      await admin.auth().setCustomUserClaims(firebaseUser.uid, { role: "teacher" });
+      console.log(`"teacher" role claim set for user ${firebaseUser.uid}`);
     } catch (claimError) {
-      console.error("Error setting admin claim:", claimError);
+      console.error("Error setting custom claim:", claimError);
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: "Failed to set admin claim",
+          error: "Failed to set custom claim",
           details: claimError.message 
         }),
       };
