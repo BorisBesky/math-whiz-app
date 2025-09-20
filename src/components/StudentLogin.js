@@ -15,7 +15,7 @@ const StudentLogin = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword } = useAuth();
+  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, registerWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -85,6 +85,20 @@ const StudentLogin = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Google sign-in error:', error);
+      setError(getErrorMessage(error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await registerWithGoogle(USER_ROLES.STUDENT);
+      navigate(from, { replace: true });
+    } catch (error) {
+      console.error('Google sign-up error:', error);
       setError(getErrorMessage(error.message));
     } finally {
       setLoading(false);
@@ -175,7 +189,7 @@ const StudentLogin = () => {
           {/* Google Sign-In */}
           <button
             type="button"
-            onClick={handleGoogleSignIn}
+            onClick={isSignUp ? handleGoogleSignUp : handleGoogleSignIn}
             disabled={loading}
             className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >

@@ -191,6 +191,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
+  // Sign in with Google and verify role
+  const registerWithGoogle = async (expectedRole) => {
+    try {
+      setError(null);
+      const provider = new GoogleAuthProvider();
+
+      // If user is anonymous, link the account.
+      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
+        const result = await linkWithPopup(auth.currentUser, provider);
+        const user = result.user;
+        
+        // Update profile to non-anonymous
+        await setUserProfile(user.uid, {
+          email: user.email,
+          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
+          isAnonymous: false,
+          displayName: user.displayName,
+          convertedAt: new Date()
+        });
+
+        return user;
+      }
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
   // Sign in with Google and verify role
   const loginWithGoogle = async (expectedRole) => {
     try {
@@ -198,7 +226,7 @@ export const AuthProvider = ({ children }) => {
       const provider = new GoogleAuthProvider();
 
       // If user is anonymous, link the account. Otherwise, sign in.
-      if (auth.currentUser && auth.currentUser.isAnonymous) {
+      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
         const result = await linkWithPopup(auth.currentUser, provider);
         const user = result.user;
         
@@ -358,6 +386,7 @@ export const AuthProvider = ({ children }) => {
     loginAsGuest,
     loginWithEmail,
     loginWithGoogle,
+    registerWithGoogle,
     registerWithEmail,
     logout,
     resetPassword,
