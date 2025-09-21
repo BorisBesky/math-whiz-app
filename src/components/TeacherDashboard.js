@@ -79,7 +79,16 @@ const TeacherDashboard = () => {
       }
 
       const token = await currentUser.getIdToken();
-      
+      // check if user token has role claim
+      const tokenClaims = await currentUser.getIdTokenResult();
+      const userRole = tokenClaims.claims.role;
+
+      if (process.env.NODE_ENV === 'development') {
+
+        console.log('User ID: ', user.uid);
+        console.log('userRole: ', userRole);
+      }
+
       const response = await fetch('/.netlify/functions/get-all-students', {
         method: 'POST',
         headers: {
