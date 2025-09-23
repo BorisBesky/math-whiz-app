@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy } from 'lucide-react';
 import EditClassForm from './EditClassForm';
@@ -149,15 +149,6 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           }
         }
         
-  const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
-        
-        // Remove classId from student profile
-        await updateDoc(profileDocRef, {
-          classId: null,
-          updatedAt: new Date()
-        });
-        
-        // Note: We don't need to manually update studentCount since TeacherDashboard will calculate it dynamically
       } catch (error) {
         console.error('Error removing student:', error);
         setError('Failed to remove student');

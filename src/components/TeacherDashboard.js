@@ -333,18 +333,6 @@ const TeacherDashboard = () => {
         // Delete the class document
         await deleteDoc(doc(db, 'artifacts', appId, 'classes', classId));
         
-        // Update students' profiles to remove classId reference
-        const studentsInClass = students.filter(s => s.classId === classId);
-        const updatePromises = studentsInClass.map(student => {
-          const profileDocRef = doc(db, 'artifacts', appId, 'users', student.id, 'math_whiz_data', 'profile');
-          return updateDoc(profileDocRef, {
-            classId: null,
-            updatedAt: new Date().toISOString()
-          });
-        });
-        
-        await Promise.all(updatePromises);
-        
       } catch (error) {
         console.error('Error deleting class:', error);
         setError('Failed to delete class');
@@ -358,23 +346,6 @@ const TeacherDashboard = () => {
     } catch (error) {
       console.error('Error updating class:', error);
       setError('Failed to update class');
-    }
-  };
-
-  const deleteStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
-      try {
-        const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-        await deleteDoc(profileDocRef);
-        setStudents(students.filter(s => s.id !== studentId));
-        if (selectedStudent?.id === studentId) {
-          setSelectedStudent(null);
-          setView('students');
-        }
-      } catch (error) {
-        console.error('Error deleting student:', error);
-        setError('Error deleting student. Please try again.');
-      }
     }
   };
 
@@ -1088,13 +1059,6 @@ const TeacherDashboard = () => {
                           >
                             <Target className="w-4 h-4 mr-1" />
                             Set Goals
-                          </button>
-                          <button
-                            onClick={() => deleteStudent(student.id)}
-                            className="text-red-600 hover:text-red-900 inline-flex items-center"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
                           </button>
                         </td>
                       </tr>

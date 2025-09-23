@@ -161,6 +161,23 @@ async function handleAddStudent(studentData, appId, headers) {
       studentCount: admin.firestore.FieldValue.increment(1)
     });
 
+    // Update student's teacherIds array
+    const classDoc = await classRef.get();
+    if (classDoc.exists) {
+      const teacherId = classDoc.data().teacherId;
+      if (teacherId) {
+        const profileRef = db.collection('artifacts').doc(appId)
+          .collection('users').doc(studentId)
+          .collection('math_whiz_data').doc('profile');
+        
+        await profileRef.set({
+          teacherIds: admin.firestore.FieldValue.arrayUnion(teacherId)
+        }, { merge: true });
+      }
+    }
+
+    console.log(`[class-students] Student ${studentId} added to class ${classId} in app ${appId}`);
+
     return {
       statusCode: 201,
       headers,
@@ -203,8 +220,14 @@ async function handleRemoveStudent(params, appId, headers) {
     // Delete the enrollment
     await db.collection('artifacts').doc(appId).collection('classStudents').doc(enrollmentId).delete();
 
+    // Decrement student count in class
+    const classRef = db.collection('artifacts').doc(appId).collection('classes').doc(classId);
+    await classRef.update({
+      studentCount: admin.firestore.FieldValue.increment(-1)
+    });
+
     // Update student's teacherIds array
-    const classDoc = await db.collection('artifacts').doc(appId).collection('classes').doc(classId).get();
+    const classDoc = await classRef.get();
     if (classDoc.exists) {
       const teacherId = classDoc.data().teacherId;
       if (teacherId) {
@@ -238,12 +261,6 @@ async function handleRemoveStudent(params, appId, headers) {
         }
       }
     }
-
-    // Update student count in class
-    const classRef = db.collection('artifacts').doc(appId).collection('classes').doc(classId);
-    await classRef.update({
-      studentCount: admin.firestore.FieldValue.increment(-1)
-    });
 
     return {
       statusCode: 200,
