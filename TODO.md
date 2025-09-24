@@ -21,3 +21,6 @@
 - [ ] Send emails and invitation emails to students.
 - [x] View all class records.
 - [x] View class statistics (by topic, student, class, etc.).
+
+### Student Features
+- **Student removal from class**: Make sure other students in the class are unaffected.
