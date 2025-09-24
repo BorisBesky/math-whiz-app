@@ -110,13 +110,7 @@ const TeacherDashboard = () => {
       let totalCorrect = 0;
       let activeToday = 0;
 
-      // Filter students that belong to this teacher's classes
-      const teacherClassIds = classes.filter(c => c.teacherId === user.uid).map(c => c.id);
-      const teacherStudents = rawStudentData.filter(student => 
-        teacherClassIds.includes(student.classId)
-      );
-
-      const processedStudentData = teacherStudents.map(data => {
+      const processedStudentData = rawStudentData.map(data => {
         const answeredQuestions = data.answeredQuestions || [];
         const questionsToday = answeredQuestions.filter(q => q.date === today);
         const totalStudentQuestions = answeredQuestions.length;
