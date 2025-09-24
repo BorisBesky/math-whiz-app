@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore }from "firebase/firestore";
 import AdminLogin from './AdminLogin';
 import AdminPortal from './AdminPortal';
 
@@ -74,21 +74,19 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleLoginSuccess = () => {
-    setIsAdminAuthenticated(true);
-  };
-
   const handleClose = async () => {
     try {
       await signOut(auth);
       console.log("Admin user signed out.");
-      // The onAuthStateChanged listener will automatically set isAdminAuthenticated to false
-      // and show the login screen again
+      // Redirect explicitly to unified login page
+      window.location.assign('/login');
     } catch (error) {
       console.error('Error signing out:', error);
       // Force logout state even if sign out fails
       setIsAdminAuthenticated(false);
       setUser(null);
+      // Best effort redirect to login
+      try { window.location.assign('/login'); } catch(_) {}
     }
   };
 
@@ -108,34 +106,26 @@ const AdminPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-600 text-2xl">⚠️</span>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Configuration Error</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <a href="/" className="text-blue-600 hover:text-blue-800">← Back to Main App</a>
-          </div>
+        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+          <h2 className="text-xl font-bold text-red-600">Initialization Error</h2>
+          <p className="text-gray-700 mt-2">{error}</p>
         </div>
       </div>
     );
   }
 
+  if (!isAdminAuthenticated) {
+    return <AdminLogin />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {!isAdminAuthenticated ? (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <AdminLogin onLoginSuccess={handleLoginSuccess} />
-        </div>
-      ) : (
-        <AdminPortal 
-          db={db} 
-          appId={typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id"}
-          currentUser={user}
-          onClose={handleClose}
-        />
-      )}
+      <AdminPortal 
+        db={db} 
+        appId={typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id"}
+        currentUser={user}
+        onClose={handleClose}
+      />
     </div>
   );
 };

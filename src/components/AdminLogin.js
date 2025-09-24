@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Lock, Eye, EyeOff } from 'lucide-react';
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext';
+import { USER_ROLES } from '../utils/userRoles';
 
-const AdminLogin = ({ onLoginSuccess }) => {
+const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const auth = getAuth();
+  const { loginWithEmail, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSignOutAndRetry = async () => {
-    // This function signs out the anonymous user before logging in as admin.
-    await signOut(auth);
-    handleSubmit();
+  const from = location.state?.from?.pathname || '/admin';
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle(USER_ROLES.ADMIN);
+      navigate(from, { replace: true });
+    } catch (error) {
+      console.error('Admin Google sign-in error:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('Google sign-in was cancelled.');
+      } else {
+        setError(getErrorMessage(error.message));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -22,45 +40,29 @@ const AdminLogin = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      // Get the ID token and check for the admin claim
-      const idTokenResult = await user.getIdTokenResult();
-      
-      if (idTokenResult.claims.admin === true) {
-        console.log("Admin user successfully authenticated.");
-        onLoginSuccess(); // Callback to parent component
-      } else {
-        setError("Login successful, but you don't have admin privileges.");
-        await signOut(auth); // Sign out non-admin user
-      }
-
+      await loginWithEmail(email, password, USER_ROLES.ADMIN);
+      navigate(from, { replace: true });
     } catch (error) {
       console.error('Admin login error:', error); // Log the full error for debugging
-
-      switch (error.code) {
-        case 'auth/wrong-password':
-        case 'auth/user-not-found':
-        case 'auth/invalid-email':
-          setError('Invalid email or password.');
-          break;
-        case 'auth/operation-not-allowed':
-          setError('Error: Email/Password sign-in is not enabled. Please enable it in the Firebase Authentication console.');
-          break;
-        case 'auth/network-request-failed':
-          setError('Network error: Please check your internet connection and any Firebase API key restrictions.');
-          break;
-        case 'auth/uid-already-exists':
-          setError('Switching user sessions. Retrying login...');
-          handleSignOutAndRetry();
-          return; // Important to exit here
-        default:
-          setError(`An unexpected error occurred: ${error.message}`);
-          break;
-      }
+      setError(getErrorMessage(error.message));
     }
     setLoading(false);
+  };
+
+  const getErrorMessage = (errorMessage) => {
+    if (errorMessage.includes('user-not-found') || errorMessage.includes('invalid-email')) {
+      return 'Invalid email or password.';
+    } else if (errorMessage.includes('wrong-password')) {
+      return 'Invalid email or password.';
+    } else if (errorMessage.includes('operation-not-allowed')) {
+      return 'Error: Email/Password sign-in is not enabled.';
+    } else if (errorMessage.includes('network-request-failed')) {
+      return 'Network error: Please check your internet connection.';
+    } else if (errorMessage.includes('not registered as a admin')) {
+      return 'This account is not registered as an administrator. Access denied.';
+    } else {
+      return errorMessage || 'An unexpected error occurred. Please try again.';
+    }
   };
 
   return (
@@ -72,7 +74,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
               <Shield className="w-8 h-8 text-blue-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">Admin Sign In</h2>
-            <p className="text-gray-600 mt-2">Use your admin email and password to continue.</p>
+            <p className="text-gray-600 mt-2">Use your admin credentials to continue.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,7 +137,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
               disabled={loading || !password || !email}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? (
+              {loading && !password ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Authenticating...
@@ -145,6 +147,30 @@ const AdminLogin = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or sign in with</span>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              <svg className="w-5 h-5 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                <path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 399.5 0 256S111.8 0 244 0c69.8 0 133 28.2 178.5 74.4l-68.8 68.8C324.5 112.6 287.3 96 244 96c-88.6 0-160.1 71.8-160.1 160.1s71.5 160.1 160.1 160.1c97.3 0 131.3-72.8 136.8-109.9H244v-85.7h244c2.6 14.7 4.2 30.1 4.2 46.4z"></path>
+              </svg>
+              Sign in with Google
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
