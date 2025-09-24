@@ -114,8 +114,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
-        const classNames = data.teacherIds && data.teacherIds.length > 0 
-          ? classes.filter(c => data.teacherIds.includes(c.teacherId)).map(c => c.name).join(', ') || 'Unassigned Class'
+        const classNames = data.teacherIds?.length > 0 
+          ? classes.filter(c => data.teacherIds.includes(c.teacherId)).map(c => c.name).join(', ') || 'Unassigned'
           : 'Unassigned';
 
         return {
