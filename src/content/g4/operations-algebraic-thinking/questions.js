@@ -85,7 +85,7 @@ export function generatePrimeCompositeQuestion() {
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite"])),
+    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite", "Both"], 3)),
     hint: isPrime
       ? "A prime number has exactly two factors: 1 and itself."
       : "A composite number has more than two factors.",
@@ -96,25 +96,49 @@ export function generatePrimeCompositeQuestion() {
   };
 }
 
+const primeNumbersSet = new Set([7, 11, 13, 17, 19]);
+
 export function generateFactorsQuestion() {
-  const base = getRandomInt(6, 20);
-  const factors = [];
-  for (let i = 1; i <= base; i++) {
-    if (base % i === 0) factors.push(i);
-  }
-  
-  // Ensure we have enough factors to choose from
+  let base;
+  let factors = [];
+  let attempts = 0;
+  const maxAttempts = 14; // Prevent infinite loop
+
+  do {
+    base = getRandomInt(6, 20);
+    while (primeNumbersSet.has(base)) {
+      attempts++;
+      if (attempts >= maxAttempts) break; // safeguard against infinite loop
+      base = getRandomInt(6, 20);
+    }
+    attempts = 0; // reset attempts for factor finding
+    factors = [];
+    for (let i = 1; i <= base; i++) {
+      if (base % i === 0) factors.push(i);
+    }
+    attempts++;
+  } while (factors.length < 3 && attempts < maxAttempts);
+
+  // If still not enough factors after max attempts, use a known composite number
+  // safeguard against infinite loop, since no primes are selected, shouldn't happen
   if (factors.length < 3) {
-    return generateFactorsQuestion(); // Retry with different number
+    base = 12; // 12 has factors: 1,2,3,4,6,12
+    factors = [1,2,3,4,6,12];
   }
   
   const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
   const correctAnswer = correctFactor.toString();
-  const potentialDistractors = [
-      (correctFactor + 1).toString(),
-      (base + 1).toString(),
-      (correctFactor + 3).toString(),
-  ];
+  const getNonFactors = (factors, n) => {
+    const nonFactors = [];
+    console.log('getting nonfactors for factors:', factors);
+    for (let i = 2; nonFactors.length < n; i++) {
+      if (!factors.includes(i) && !nonFactors.includes(i)) {
+        nonFactors.push(i);
+      }
+    }
+    return nonFactors;
+  };
+  const potentialDistractors = getNonFactors(factors, 3).map(n => n.toString());
 
   return {
     question: `Which of these is a factor of ${base}?`,
@@ -237,29 +261,30 @@ export function generatePatternRuleQuestion() {
  */
 export function generateTwoStepPatternQuestion() {
   // More complex patterns for 4th grade
+  const step1 = getRandomInt(2, 9);
+  const step2 = getRandomInt(2, 9);
+  const startNum = getRandomInt(2, 10);
+
   const operations = [
-    { name: "add then multiply", func: (n, i) => (n + 2) * (i + 1) },
-    { name: "multiply then add", func: (n, i) => (n * 2) + i },
-    { name: "square pattern", func: (n, i) => (i + 1) * (i + 1) },
+    { name: "add then multiply", func1: (n) => (n + step1), func2: (n) => n * step2 },
+    { name: "multiply then add", func1: (n) => (n * step1), func2: (n) => n + step2 },
+    { name: "subtract then add", func1: (n) => (n - step1), func2: (n) => n + step2 },
   ];
   
   const operation = operations[getRandomInt(0, operations.length - 1)];
   const sequence = [];
-  
-  for (let i = 0; i < 4; i++) {
-    if (operation.name === "square pattern") {
-      sequence.push((i + 1) * (i + 1));
-    } else {
-      sequence.push(operation.func(i + 2, i));
-    }
+  sequence.push(startNum);
+  for (let i = 1; i < 4; i+=2) {
+      sequence.push(operation.func1(sequence[i - 1]));
+      if (operation.func2) {
+        sequence.push(operation.func2(sequence[i]));
+      }
   }
   
   let nextValue;
-  if (operation.name === "square pattern") {
-    nextValue = 5 * 5; // Next square number
-  } else {
-    nextValue = operation.func(6, 4);
-  }
+
+  nextValue = operation.func1(sequence[sequence.length - 1]);
+
   const correctAnswer = nextValue.toString();
   const potentialDistractors = [
       (nextValue + 1).toString(),
@@ -271,9 +296,13 @@ export function generateTwoStepPatternQuestion() {
     question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    hint: operation.name === "square pattern" 
-      ? "These are square numbers: 1×1, 2×2, 3×3, 4×4..." 
-      : "Look carefully at how each number relates to its position in the sequence.",
+    hint: operation.name === "add then multiply" 
+      ? "Look carefully at how each number relates to its position in the sequence. First step is addition, second step is multiplication."
+      : operation.name === "subtract then add"
+      ? "Look carefully at how each number relates to its position in the sequence. First step is subtraction, second step is addition."
+      : operation.name === "multiply then add"
+      ? "Look carefully at how each number relates to its position in the sequence. First step is multiplication, second step is addition."
+      : "Unknown pattern, contact support.",
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
