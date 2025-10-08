@@ -37,7 +37,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     totalQuestions: 0,
     averageAccuracy: 0
   });
-  const [view, setView] = useState('overview'); // 'overview', 'students', 'teachers', 'student-detail'
+  const [view, setView] = useState('overview'); // 'overview', 'students', 'teachers', 'student-detail', 'classes', 'class-detail'
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
@@ -46,6 +46,17 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [selectedBulkClass, setSelectedBulkClass] = useState('');
   const [selectedTeachers, setSelectedTeachers] = useState(new Set());
   const [isSelectAllTeachers, setIsSelectAllTeachers] = useState(false);
+  
+  // Class management states
+  const [selectedClasses, setSelectedClasses] = useState(new Set());
+  const [isSelectAllClasses, setIsSelectAllClasses] = useState(false);
+  const [showAddClass, setShowAddClass] = useState(false);
+  const [showEditClass, setShowEditClass] = useState(false);
+  const [showClassDetail, setShowClassDetail] = useState(false);
+  const [newClass, setNewClass] = useState({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+  const [editingClass, setEditingClass] = useState(null);
+  const [selectedClassForDetail, setSelectedClassForDetail] = useState(null);
+  const [classStudents, setClassStudents] = useState([]);
   
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
@@ -745,6 +756,47 @@ const AdminPortal = ({ db, onClose, appId }) => {
     });
   };
 
+  const getSortedClasses = () => {
+    if (!['name', 'teacher', 'gradeLevel', 'subject', 'studentCount', 'createdAt'].includes(sortField)) return classes;
+    return [...classes].sort((a, b) => {
+      let aValue, bValue;
+      switch (sortField) {
+        case 'name':
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
+          break;
+        case 'teacher':
+          // Find teacher name from teachers array
+          const teacherA = teachers.find(t => t.id === a.teacherId);
+          const teacherB = teachers.find(t => t.id === b.teacherId);
+          aValue = (teacherA?.displayName || teacherA?.name || teacherA?.email || '').toLowerCase();
+          bValue = (teacherB?.displayName || teacherB?.name || teacherB?.email || '').toLowerCase();
+          break;
+        case 'gradeLevel':
+          aValue = (a.gradeLevel || '').toLowerCase();
+          bValue = (b.gradeLevel || '').toLowerCase();
+          break;
+        case 'subject':
+          aValue = (a.subject || '').toLowerCase();
+          bValue = (b.subject || '').toLowerCase();
+          break;
+        case 'studentCount':
+          aValue = a.studentCount || 0;
+          bValue = b.studentCount || 0;
+          break;
+        case 'createdAt':
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   const getSortIcon = (field) => {
     if (sortField !== field) {
       return <ChevronsUpDown className="w-4 h-4 text-gray-400" />;
@@ -871,6 +923,218 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
   };
 
+  // Class management functions
+  const handleCreateClass = async () => {
+    if (!newClass.name || !newClass.teacherId || !newClass.subject || !newClass.gradeLevel) {
+      alert('Please fill in all required fields (Name, Teacher, Subject, Grade Level)');
+      return;
+    }
+
+    try {
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/.netlify/functions/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...newClass,
+          appId: appId
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create class');
+      }
+
+      console.log('Class created successfully:', result);
+      alert('Class created successfully!');
+      
+      setNewClass({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+      setShowAddClass(false);
+      fetchClasses();
+    } catch (error) {
+      console.error('Error creating class:', error);
+      alert(`Error creating class: ${error.message}`);
+    }
+  };
+
+  const handleUpdateClass = async () => {
+    if (!editingClass || !editingClass.name || !editingClass.teacherId || !editingClass.subject || !editingClass.gradeLevel) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const token = await user.getIdToken();
+      
+      const response = await fetch(`/.netlify/functions/classes?id=${editingClass.id}&appId=${appId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editingClass.name,
+          teacherId: editingClass.teacherId,
+          subject: editingClass.subject,
+          gradeLevel: editingClass.gradeLevel,
+          description: editingClass.description || '',
+          period: editingClass.period || ''
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update class');
+      }
+
+      console.log('Class updated successfully:', result);
+      alert('Class updated successfully!');
+      
+      setEditingClass(null);
+      setShowEditClass(false);
+      fetchClasses();
+    } catch (error) {
+      console.error('Error updating class:', error);
+      alert(`Error updating class: ${error.message}`);
+    }
+  };
+
+  const handleDeleteClass = async (classToDelete) => {
+    const confirmMessage = `Are you sure you want to delete class "${classToDelete.name}"?\n\nThis will:\n- Remove all student enrollments\n- Delete the class permanently\n\nThis action cannot be undone.`;
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const token = await user.getIdToken();
+      
+      const response = await fetch(`/.netlify/functions/classes?id=${classToDelete.id}&appId=${appId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete class');
+      }
+
+      console.log('Class deleted successfully:', result);
+      alert(`Class "${classToDelete.name}" has been deleted successfully.`);
+      fetchClasses();
+      fetchStudentData(); // Refresh student data to update class assignments
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      alert(`Error deleting class: ${error.message}`);
+    }
+  };
+
+  const handleBulkDeleteClasses = async () => {
+    if (selectedClasses.size === 0) {
+      alert('No classes selected.');
+      return;
+    }
+    
+    const count = selectedClasses.size;
+    const confirmMessage = `Are you sure you want to delete ${count} class(es)?\n\nThis will remove all student enrollments and delete the classes permanently. This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const token = await user.getIdToken();
+      const selectedIds = Array.from(selectedClasses);
+
+      await Promise.all(selectedIds.map(async (id) => {
+        const cls = classes.find(c => c.id === id);
+        if (!cls) return;
+        
+        const resp = await fetch(`/.netlify/functions/classes?id=${id}&appId=${appId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!resp.ok) {
+          let message = 'Failed to delete class';
+          try { const j = await resp.json(); message = j.error || message; } catch {}
+          throw new Error(`${cls.name}: ${message}`);
+        }
+      }));
+
+      alert(`Deleted ${count} class(es) successfully.`);
+      setSelectedClasses(new Set());
+      setIsSelectAllClasses(false);
+      fetchClasses();
+      fetchStudentData();
+    } catch (error) {
+      console.error('Bulk delete classes error:', error);
+      alert(`Error deleting some classes: ${error.message}`);
+      // Still refresh to reflect partial progress
+      fetchClasses();
+      fetchStudentData();
+    }
+  };
+
+  const handleSelectClass = (classId) => {
+    const newSelected = new Set(selectedClasses);
+    if (newSelected.has(classId)) {
+      newSelected.delete(classId);
+    } else {
+      newSelected.add(classId);
+    }
+    setSelectedClasses(newSelected);
+    setIsSelectAllClasses(newSelected.size === getSortedClasses().length);
+  };
+
+  const handleSelectAllClasses = () => {
+    if (isSelectAllClasses) {
+      setSelectedClasses(new Set());
+      setIsSelectAllClasses(false);
+    } else {
+      const allIds = new Set(getSortedClasses().map(c => c.id));
+      setSelectedClasses(allIds);
+      setIsSelectAllClasses(true);
+    }
+  };
+
+  const fetchClassStudents = async (classId) => {
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      
+      if (!token) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await fetch(`/.netlify/functions/class-students?classId=${classId}&appId=${appId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch class students');
+      }
+
+      const enrollments = await response.json();
+      setClassStudents(enrollments);
+    } catch (error) {
+      console.error('Error fetching class students:', error);
+      setError(`Failed to fetch class students: ${error.message}`);
+      setClassStudents([]);
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -935,6 +1199,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <span>Delete Selected ({selectedTeachers.size})</span>
               </button>
             )}
+            {view === 'classes' && (
+              <button
+                onClick={handleBulkDeleteClasses}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedClasses.size === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedClasses.size})</span>
+              </button>
+            )}
             {view === 'students' && (
               <button
                 onClick={() => setShowBulkClassAssignment(true)}
@@ -980,6 +1254,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
               : 'text-gray-600 hover:text-gray-900'}`}
           >
             Teachers ({teachers.length})
+          </button>
+          <button
+            onClick={() => setView('classes')}
+            className={`px-6 py-3 font-medium ${view === 'classes' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Classes ({classes.length})
           </button>
         </div>
 
@@ -1384,6 +1666,174 @@ const AdminPortal = ({ db, onClose, appId }) => {
             </div>
           )}
 
+          {/* Classes List */}
+          {view === 'classes' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Classes Management</h3>
+                <button
+                  onClick={() => setShowAddClass(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add Class</span>
+                </button>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left">
+                          <input
+                            type="checkbox"
+                            checked={isSelectAllClasses}
+                            onChange={handleSelectAllClasses}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('name')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Name
+                            {getSortIcon('name')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('teacher')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Teacher
+                            {getSortIcon('teacher')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('gradeLevel')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Grade Level
+                            {getSortIcon('gradeLevel')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('subject')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Subject
+                            {getSortIcon('subject')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('studentCount')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Students
+                            {getSortIcon('studentCount')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('createdAt')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Created
+                            {getSortIcon('createdAt')}
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getSortedClasses().map(classItem => {
+                        const teacher = teachers.find(t => t.id === classItem.teacherId);
+                        return (
+                          <tr key={classItem.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedClasses.has(classItem.id)}
+                                onChange={() => handleSelectClass(classItem.id)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{classItem.name}</div>
+                              {classItem.period && (
+                                <div className="text-sm text-gray-500">{classItem.period}</div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {teacher?.displayName || teacher?.name || teacher?.email || 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {classItem.gradeLevel}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {classItem.subject}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {classItem.studentCount || 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {classItem.createdAt ? new Date(classItem.createdAt.seconds ? classItem.createdAt.seconds * 1000 : classItem.createdAt).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedClassForDetail(classItem);
+                                  fetchClassStudents(classItem.id);
+                                  setView('class-detail');
+                                }}
+                                className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingClass(classItem);
+                                  setShowEditClass(true);
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClass(classItem)}
+                                className="text-red-600 hover:text-red-900 inline-flex items-center"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {classes.length === 0 && (
+                  <div className="text-center py-12">
+                    <GraduationCap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No classes found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Student Detail */}
           {view === 'student-detail' && selectedStudent && (
             <div className="space-y-6">
@@ -1598,6 +2048,185 @@ const AdminPortal = ({ db, onClose, appId }) => {
               </div>
             </div>
           )}
+
+          {/* Class Detail */}
+          {view === 'class-detail' && selectedClassForDetail && (
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setView('classes')}
+                  className="text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  ← Back to Classes
+                </button>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedClassForDetail.name}
+                  </h3>
+                  <p className="text-gray-600">{selectedClassForDetail.subject} - {selectedClassForDetail.gradeLevel}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Class Information */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-900 mb-4">Class Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Class Name:</span>
+                      <span className="font-medium">{selectedClassForDetail.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Teacher:</span>
+                      <span className="font-medium">
+                        {teachers.find(t => t.id === selectedClassForDetail.teacherId)?.displayName || 
+                         teachers.find(t => t.id === selectedClassForDetail.teacherId)?.name || 
+                         'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subject:</span>
+                      <span className="font-medium">{selectedClassForDetail.subject}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Grade Level:</span>
+                      <span className="font-medium">{selectedClassForDetail.gradeLevel}</span>
+                    </div>
+                    {selectedClassForDetail.period && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Period:</span>
+                        <span className="font-medium">{selectedClassForDetail.period}</span>
+                      </div>
+                    )}
+                    {selectedClassForDetail.description && (
+                      <div className="flex flex-col">
+                        <span className="text-gray-600 mb-1">Description:</span>
+                        <span className="font-medium">{selectedClassForDetail.description}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Students:</span>
+                      <span className="font-medium">{selectedClassForDetail.studentCount || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Created:</span>
+                      <span className="font-medium">
+                        {selectedClassForDetail.createdAt 
+                          ? new Date(selectedClassForDetail.createdAt.seconds ? selectedClassForDetail.createdAt.seconds * 1000 : selectedClassForDetail.createdAt).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Class Statistics */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-900 mb-4">Class Statistics</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Enrolled Students:</span>
+                      <span className="font-medium">{classStudents.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Active Students:</span>
+                      <span className="font-medium">
+                        {classStudents.filter(s => {
+                          const student = students.find(st => st.id === s.studentId);
+                          return student?.isActiveToday;
+                        }).length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enrolled Students */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="p-6 border-b border-gray-200">
+                  <h4 className="font-semibold text-gray-900">Enrolled Students</h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Joined Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Questions Today
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Questions
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Accuracy
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {classStudents.map(enrollment => {
+                        const student = students.find(s => s.id === enrollment.studentId);
+                        return (
+                          <tr key={enrollment.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                  <span className="text-blue-600 text-sm font-medium">
+                                    {enrollment.studentId.slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {enrollment.studentName || `Student ${enrollment.studentId.slice(0, 8)}`}
+                                  </div>
+                                  <div className="text-sm text-gray-500">ID: {enrollment.studentId}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {enrollment.studentEmail || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {enrollment.joinedAt 
+                                ? new Date(enrollment.joinedAt.seconds ? enrollment.joinedAt.seconds * 1000 : enrollment.joinedAt).toLocaleDateString()
+                                : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {student?.questionsToday || 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {student?.totalQuestions || 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {student ? (
+                                <span className={`${student.accuracy >= 80 ? 'text-green-600' : student.accuracy >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                  {student.accuracy.toFixed(1)}%
+                                </span>
+                              ) : (
+                                <span className="text-gray-500">N/A</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {classStudents.length === 0 && (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No students enrolled in this class</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1751,6 +2380,216 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 disabled={selectedStudents.size === 0 || !selectedBulkClass}
               >
                 Assign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Class Modal */}
+      {showAddClass && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Class</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newClass.name}
+                  onChange={(e) => setNewClass({...newClass, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Math 4A"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teacher <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newClass.teacherId}
+                  onChange={(e) => setNewClass({...newClass, teacherId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a teacher...</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.displayName || teacher.name || teacher.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newClass.subject}
+                  onChange={(e) => setNewClass({...newClass, subject: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Mathematics"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Grade Level <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newClass.gradeLevel}
+                  onChange={(e) => setNewClass({...newClass, gradeLevel: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 4th Grade"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Period
+                </label>
+                <input
+                  type="text"
+                  value={newClass.period}
+                  onChange={(e) => setNewClass({...newClass, period: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 1st Period"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newClass.description}
+                  onChange={(e) => setNewClass({...newClass, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional class description"
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddClass(false);
+                  setNewClass({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateClass}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Class Modal */}
+      {showEditClass && editingClass && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Class</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingClass.name}
+                  onChange={(e) => setEditingClass({...editingClass, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Math 4A"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teacher <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={editingClass.teacherId}
+                  onChange={(e) => setEditingClass({...editingClass, teacherId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a teacher...</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.displayName || teacher.name || teacher.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingClass.subject}
+                  onChange={(e) => setEditingClass({...editingClass, subject: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Mathematics"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Grade Level <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingClass.gradeLevel}
+                  onChange={(e) => setEditingClass({...editingClass, gradeLevel: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 4th Grade"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Period
+                </label>
+                <input
+                  type="text"
+                  value={editingClass.period || ''}
+                  onChange={(e) => setEditingClass({...editingClass, period: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 1st Period"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editingClass.description || ''}
+                  onChange={(e) => setEditingClass({...editingClass, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional class description"
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditClass(false);
+                  setEditingClass(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateClass}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>
