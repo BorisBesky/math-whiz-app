@@ -52,7 +52,6 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [isSelectAllClasses, setIsSelectAllClasses] = useState(false);
   const [showAddClass, setShowAddClass] = useState(false);
   const [showEditClass, setShowEditClass] = useState(false);
-  const [showClassDetail, setShowClassDetail] = useState(false);
   const [newClass, setNewClass] = useState({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
   const [editingClass, setEditingClass] = useState(null);
   const [selectedClassForDetail, setSelectedClassForDetail] = useState(null);
@@ -131,6 +130,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
         return {
           id: data.id,
+          email: data.email || null,
           selectedGrade: data.selectedGrade || 'G3',
           coins: data.coins || 0,
           class: classNames,
@@ -558,6 +558,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const exportStudentData = () => {
     const csvData = students.map(student => ({
+      'Email': student.email || '',
       'Student ID': student.id,
       'Selected Grade': student.selectedGrade,
       'Class': student.class,
@@ -1335,17 +1336,17 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     .slice(0, 10)
                     .map(student => (
                       <div key={student.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 text-sm font-medium">
-                              {student.id.slice(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">Student {student.id.slice(0, 8)}</p>
-                            <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
-                          </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 text-sm font-medium">
+                            {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
+                          </span>
                         </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{student.email || `Student ${student.id.slice(0, 8)}`}</p>
+                          <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
+                        </div>
+                      </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-900">{formatDate(student.latestActivity)}</p>
                           <p className="text-sm text-gray-600">{formatTime(student.latestActivity)}</p>
@@ -1465,19 +1466,19 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <span className="text-blue-600 text-sm font-medium">
-                                  {student.id.slice(0, 2).toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  Student {student.id.slice(0, 8)}
-                                </div>
-                                <div className="text-sm text-gray-500">ID: {student.id}</div>
-                              </div>
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                              <span className="text-blue-600 text-sm font-medium">
+                                {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
+                              </span>
                             </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {student.email || `Student ${student.id.slice(0, 8)}`}
+                              </div>
+                              <div className="text-sm text-gray-500">ID: {student.id}</div>
+                            </div>
+                          </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -1844,12 +1845,12 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 >
                   ← Back to Students
                 </button>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Student {selectedStudent.id.slice(0, 8)}
-                  </h3>
-                  <p className="text-gray-600">ID: {selectedStudent.id}</p>
-                </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
+                </h3>
+                <p className="text-gray-600">ID: {selectedStudent.id}</p>
+              </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2178,19 +2179,19 @@ const AdminPortal = ({ db, onClose, appId }) => {
                               <div className="flex items-center">
                                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                   <span className="text-blue-600 text-sm font-medium">
-                                    {enrollment.studentId.slice(0, 2).toUpperCase()}
+                                    {student?.email ? student.email.slice(0, 2).toUpperCase() : enrollment.studentId.slice(0, 2).toUpperCase()}
                                   </span>
                                 </div>
                                 <div>
                                   <div className="text-sm font-medium text-gray-900">
-                                    {enrollment.studentName || `Student ${enrollment.studentId.slice(0, 8)}`}
+                                    {student?.email || enrollment.studentName || `Student ${enrollment.studentId.slice(0, 8)}`}
                                   </div>
                                   <div className="text-sm text-gray-500">ID: {enrollment.studentId}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {enrollment.studentEmail || 'N/A'}
+                              {student?.email || 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {enrollment.joinedAt 
@@ -2296,10 +2297,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <div className="flex items-center">
                     <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
                       <span className="text-blue-600 text-xs font-medium">
-                        {selectedStudentForClass.id.slice(0, 2).toUpperCase()}
+                        {selectedStudentForClass.email ? selectedStudentForClass.email.slice(0, 2).toUpperCase() : selectedStudentForClass.id.slice(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium">Student {selectedStudentForClass.id.slice(0, 8)}</span>
+                    <span className="text-sm font-medium">{selectedStudentForClass.email || `Student ${selectedStudentForClass.id.slice(0, 8)}`}</span>
                   </div>
                 </div>
               </div>

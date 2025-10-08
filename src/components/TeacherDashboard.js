@@ -135,6 +135,7 @@ const TeacherDashboard = () => {
 
         return {
           id: data.id,
+          email: data.email || null,
           selectedGrade: data.selectedGrade || 'G3',
           coins: data.coins || 0,
           class: className,
@@ -350,6 +351,7 @@ const TeacherDashboard = () => {
     }
 
     const csvData = students.map(student => ({
+      'Email': student.email || '',
       'Student ID': student.id,
       'Selected Grade': student.selectedGrade,
       'Class': student.class,
@@ -860,11 +862,11 @@ const TeacherDashboard = () => {
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 text-sm font-medium">
-                            {student.id.slice(0, 2).toUpperCase()}
+                            {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">Student {student.id.slice(0, 8)}</p>
+                          <p className="font-medium text-gray-900">{student.email || `Student ${student.id.slice(0, 8)}`}</p>
                           <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
                         </div>
                       </div>
@@ -984,12 +986,12 @@ const TeacherDashboard = () => {
                           <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                               <span className="text-blue-600 text-sm font-medium">
-                                {student.id.slice(0, 2).toUpperCase()}
+                                {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
                               </span>
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                Student {student.id.slice(0, 8)}
+                                {student.email || `Student ${student.id.slice(0, 8)}`}
                               </div>
                               <div className="text-sm text-gray-500">ID: {student.id}</div>
                             </div>
@@ -1167,7 +1169,7 @@ const TeacherDashboard = () => {
               </button>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  Student {selectedStudent.id.slice(0, 8)}
+                  {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
                 </h3>
                 <p className="text-gray-600">ID: {selectedStudent.id}</p>
               </div>
