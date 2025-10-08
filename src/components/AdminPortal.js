@@ -641,11 +641,23 @@ const AdminPortal = ({ db, onClose, appId }) => {
   };
 
   const formatDate = (date) => {
-    return date ? new Date(date).toLocaleDateString() : 'Never';
+    if (!date) return 'N/A';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'N/A' : parsedDate.toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
   };
 
   const formatTime = (date) => {
-    return date ? new Date(date).toLocaleTimeString() : 'Never';
+    if (!date) return 'Never';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleTimeString();
+    } catch {
+      return 'Never';
+    }
   };
 
   const calculateTopicProgress = (student, grade) => {
@@ -1640,7 +1652,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.displayName || teacher.name}</td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.email}</td>
                           <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
-                            {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
+                            {formatDate(teacher.createdAt)}
                           </td>
                           <td className="p-3 text-sm whitespace-nowrap">
                             <button
@@ -1787,7 +1799,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
                               {classItem.studentCount || 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {classItem.createdAt ? new Date(classItem.createdAt.seconds ? classItem.createdAt.seconds * 1000 : classItem.createdAt).toLocaleDateString() : 'N/A'}
+                              {(() => {
+                                if (!classItem.createdAt) return 'N/A';
+                                try {
+                                  const date = new Date(classItem.createdAt.seconds ? classItem.createdAt.seconds * 1000 : classItem.createdAt);
+                                  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                                } catch {
+                                  return 'N/A';
+                                }
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                               <button
@@ -1992,10 +2012,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
                         .map((question, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {new Date(question.timestamp).toLocaleDateString()}
+                              {formatDate(question.timestamp)}
                               <br />
                               <span className="text-gray-500">
-                                {new Date(question.timestamp).toLocaleTimeString()}
+                                {formatTime(question.timestamp)}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -2112,9 +2132,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Created:</span>
                       <span className="font-medium">
-                        {selectedClassForDetail.createdAt 
-                          ? new Date(selectedClassForDetail.createdAt.seconds ? selectedClassForDetail.createdAt.seconds * 1000 : selectedClassForDetail.createdAt).toLocaleDateString() 
-                          : 'N/A'}
+                        {(() => {
+                          if (!selectedClassForDetail.createdAt) return 'N/A';
+                          try {
+                            const date = new Date(selectedClassForDetail.createdAt.seconds ? selectedClassForDetail.createdAt.seconds * 1000 : selectedClassForDetail.createdAt);
+                            return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                          } catch {
+                            return 'N/A';
+                          }
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -2194,9 +2220,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
                               {student?.email || 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {enrollment.joinedAt 
-                                ? new Date(enrollment.joinedAt.seconds ? enrollment.joinedAt.seconds * 1000 : enrollment.joinedAt).toLocaleDateString()
-                                : 'N/A'}
+                              {(() => {
+                                if (!enrollment.joinedAt) return 'N/A';
+                                try {
+                                  const date = new Date(enrollment.joinedAt.seconds ? enrollment.joinedAt.seconds * 1000 : enrollment.joinedAt);
+                                  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                                } catch {
+                                  return 'N/A';
+                                }
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {student?.questionsToday || 0}

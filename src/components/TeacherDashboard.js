@@ -377,11 +377,23 @@ const TeacherDashboard = () => {
   };
 
   const formatDate = (date) => {
-    return date ? new Date(date).toLocaleDateString() : 'Never';
+    if (!date) return 'Never';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleDateString();
+    } catch {
+      return 'Never';
+    }
   };
 
   const formatTime = (date) => {
-    return date ? new Date(date).toLocaleTimeString() : 'Never';
+    if (!date) return 'Never';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleTimeString();
+    } catch {
+      return 'Never';
+    }
   };
 
   const calculateTopicProgress = (student, grade) => {
@@ -1314,10 +1326,10 @@ const TeacherDashboard = () => {
                       .map((question, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(question.timestamp).toLocaleDateString()}
+                            {formatDate(question.timestamp)}
                             <br />
                             <span className="text-gray-500">
-                              {new Date(question.timestamp).toLocaleTimeString()}
+                              {formatTime(question.timestamp)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
