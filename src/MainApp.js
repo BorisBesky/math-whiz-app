@@ -331,7 +331,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Operations & Algebraic Thinking
         const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
         if (oaTopic) {
-          question = oaTopic.generateQuestion();
+          question = oaTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
         } 
@@ -341,7 +341,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Base Ten
         const baseTenTopic = content.getTopic('g4', 'base-ten');
         if (baseTenTopic) {
-          question = baseTenTopic.generateQuestion();
+          question = baseTenTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.BASE_TEN;
         }
@@ -351,7 +351,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Fractions
         const fractionsTopic = content.getTopic('g4', 'fractions');
         if (fractionsTopic) {
-          question = fractionsTopic.generateQuestion();
+          question = fractionsTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.FRACTIONS_4TH;
         }
@@ -361,7 +361,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Measurement & Data
         const measurementDataTopic = content.getTopic('g4', 'measurement-data');
         if (measurementDataTopic) {
-          question = measurementDataTopic.generateQuestion();
+          question = measurementDataTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.MEASUREMENT_DATA_4TH;
         }
@@ -371,7 +371,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Geometry
         const geometryTopic = content.getTopic('g4', 'geometry');
         if (geometryTopic) {
-          question = geometryTopic.generateQuestion();
+          question = geometryTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.GEOMETRY;
         }
@@ -381,7 +381,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Binary Addition
         const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
         if (binaryAdditionTopic) {
-          question = binaryAdditionTopic.generateQuestion();
+          question = binaryAdditionTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.BINARY_ADDITION;
         }
