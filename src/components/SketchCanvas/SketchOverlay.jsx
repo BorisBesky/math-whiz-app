@@ -20,9 +20,13 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     
     // Set canvas size to match window
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      // Context will be set and trigger redraw effect
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
+      ctx.scale(dpr, dpr);
       setContext(ctx);
     };
 
