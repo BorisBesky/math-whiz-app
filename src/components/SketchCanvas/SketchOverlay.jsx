@@ -138,9 +138,8 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     // Now commit the stroke from ref to state (only one re-render per stroke!)
     if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
       // Remove any strokes after current index (for redo functionality)
-      const newStrokes = currentStrokeIndex >= 0 
-        ? [...strokes.slice(0, currentStrokeIndex + 1), currentStrokeRef.current]
-        : [...strokes, currentStrokeRef.current];
+      const base = strokes.slice(0, currentStrokeIndex + 1);
+      const newStrokes = [...base, currentStrokeRef.current];
       
       setStrokes(newStrokes);
       setCurrentStrokeIndex(newStrokes.length - 1);
