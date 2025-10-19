@@ -443,7 +443,6 @@ test.describe('Sketch Overlay', () => {
     await page.click('button:has-text("Sketch")');
     
     // Verify quiz content is still visible (though behind overlay)
-    const quizContainer = page.locator('[ref="quizContainerRef"]');
     
     // Close overlay
     await page.click('.sketch-control-btn.close-btn');
