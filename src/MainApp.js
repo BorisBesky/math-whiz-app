@@ -20,6 +20,7 @@ import {
   LogOut,
   User,
   Shield,
+  PenTool,
 } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import {
@@ -40,6 +41,7 @@ import {
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
 import { USER_ROLES } from './utils/userRoles';
+import SketchOverlay from './components/SketchCanvas';
 import {
   adaptAnsweredHistory,
   nextTargetComplexity,
@@ -572,6 +574,9 @@ const App = () => {
   const [showStoryHint, setShowStoryHint] = useState(false);
   const [showStoryAnswer, setShowStoryAnswer] = useState(false);
   const [storyData, setStoryData] = useState(null);
+
+  // Sketch overlay state
+  const [showSketchOverlay, setShowSketchOverlay] = useState(false);
 
   const [difficulty, setDifficulty] = useState(0.5);
   const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState(
@@ -2492,13 +2497,19 @@ Answer: [The answer]`;
 
           {/* Bottom layout: two rows, responsive */}
           <div className="mt-auto w-full">
-            {/* First row: Explain Concept | Show/Hide Hint */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {/* First row: Explain Concept | Sketch | Show/Hide Hint */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <button
                 onClick={handleExplainConcept}
                 className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition"
               >
                 <Sparkles size={20} /> Learn About This
+              </button>
+              <button
+                onClick={() => setShowSketchOverlay(true)}
+                className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-2 px-4 rounded-lg hover:bg-orange-100 transition"
+              >
+                <PenTool size={20} /> Sketch
               </button>
               <button
                 onClick={() => setShowHint(!showHint)}
@@ -2839,6 +2850,10 @@ Answer: [The answer]`;
         {renderModal()}
         {renderResumeModal()}
         {renderContent()}
+        <SketchOverlay 
+          isVisible={showSketchOverlay} 
+          onClose={() => setShowSketchOverlay(false)} 
+        />
       </div>
     </div>
   );
