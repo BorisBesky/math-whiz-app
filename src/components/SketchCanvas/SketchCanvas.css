@@ -1,0 +1,124 @@
+/* Sketch Overlay Styles */
+
+/* Main overlay - transparent background with high z-index */
+.sketch-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.05); /* Very light tint to show overlay is active */
+  pointer-events: none; /* Allow clicks to pass through the overlay container */
+}
+
+/* Canvas element - enable pointer events only on canvas */
+.sketch-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  pointer-events: auto; /* Enable drawing on canvas */
+  touch-action: none; /* Prevent default touch behaviors like scrolling */
+}
+
+/* Controls toolbar */
+.sketch-controls {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto; /* Enable clicks on controls */
+  z-index: 10000;
+}
+
+/* Control buttons */
+.sketch-control-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.sketch-control-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.sketch-control-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.sketch-control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sketch-control-btn.close-btn {
+  color: #ef4444;
+}
+
+.sketch-control-btn.close-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+/* Divider between button groups */
+.sketch-control-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 4px 0;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .sketch-controls {
+    top: auto;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+    padding: 8px 12px;
+  }
+
+  .sketch-control-divider {
+    width: 1px;
+    height: auto;
+    margin: 0 4px;
+  }
+}
+
+/* Animation for overlay entrance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sketch-overlay {
+  animation: fadeIn 0.2s ease-in;
+}
