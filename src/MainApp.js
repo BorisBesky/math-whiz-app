@@ -43,6 +43,11 @@ import {
   where,
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
+import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
+import TutorialOverlay from './components/TutorialOverlay';
+import { mainAppTutorial } from './tutorials/mainAppTutorial';
+import { dashboardTutorial } from './tutorials/dashboardTutorial';
+import { storeTutorial } from './tutorials/storeTutorial';
 import { USER_ROLES } from './utils/userRoles';
 import SketchOverlay from './components/SketchCanvas';
 import {
@@ -333,7 +338,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Operations & Algebraic Thinking
         const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
         if (oaTopic) {
-          question = oaTopic.generateQuestion();
+          question = oaTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
         } 
@@ -343,7 +348,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Base Ten
         const baseTenTopic = content.getTopic('g4', 'base-ten');
         if (baseTenTopic) {
-          question = baseTenTopic.generateQuestion();
+          question = baseTenTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.BASE_TEN;
         }
@@ -353,7 +358,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Fractions
         const fractionsTopic = content.getTopic('g4', 'fractions');
         if (fractionsTopic) {
-          question = fractionsTopic.generateQuestion();
+          question = fractionsTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.FRACTIONS_4TH;
         }
@@ -363,7 +368,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Measurement & Data
         const measurementDataTopic = content.getTopic('g4', 'measurement-data');
         if (measurementDataTopic) {
-          question = measurementDataTopic.generateQuestion();
+          question = measurementDataTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.MEASUREMENT_DATA_4TH;
         }
@@ -373,7 +378,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Geometry
         const geometryTopic = content.getTopic('g4', 'geometry');
         if (geometryTopic) {
-          question = geometryTopic.generateQuestion();
+          question = geometryTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.GEOMETRY;
         }
@@ -383,7 +388,7 @@ const generateQuizQuestions = (
         // Use the new pluggable content system for Binary Addition
         const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
         if (binaryAdditionTopic) {
-          question = binaryAdditionTopic.generateQuestion();
+          question = binaryAdditionTopic.generateQuestion(difficulty);
           // Ensure the concept field matches the old TOPICS constant for compatibility
           question.concept = TOPICS.BINARY_ADDITION;
         }
@@ -538,7 +543,8 @@ const getQuestionHistory = async (userId) => {
   return [];
 };
 
-const App = () => {
+const MainAppContent = () => {
+  const { startTutorial, shouldShowTutorial } = useTutorial();
   const { user: authUser, logout: authLogout, userRole } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -796,6 +802,14 @@ const App = () => {
                 data.lastAskedComplexityByTopic || {}
               );
 
+              // Check if we should show tutorial for first-time visitors
+              if (shouldShowTutorial('mainApp')) {
+                // Small delay to ensure UI is rendered
+                setTimeout(() => {
+                  startTutorial('mainApp', mainAppTutorial);
+                }, 1000);
+              }
+
               if (needsUpdate) {
                 updateDoc(userDocRef, updatePayload);
               }
@@ -923,7 +937,23 @@ const App = () => {
       unsubscribeSnapshot();
       unsubscribeEnrollment();
     };
-  }, []);
+  }, [shouldShowTutorial, startTutorial]);
+
+  // Tutorial triggers for different views
+  useEffect(() => {
+    if (!userData) return;
+
+    // Small delay to ensure UI is rendered
+    const timer = setTimeout(() => {
+      if (quizState === APP_STATES.DASHBOARD && shouldShowTutorial('dashboard')) {
+        startTutorial('dashboard', dashboardTutorial);
+      } else if (quizState === APP_STATES.STORE && shouldShowTutorial('store')) {
+        startTutorial('store', storeTutorial);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [quizState, userData, shouldShowTutorial, startTutorial]);
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
@@ -1688,7 +1718,7 @@ Answer: [The answer]`;
   // --- UI Rendering ---
   const renderHeader = () => {
     return (
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10">
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10" data-tutorial-id="navigation-menu">
         {/* Login options when no user is authenticated */}
         {!authUser && (
           <div className="flex items-center gap-2">
@@ -1722,6 +1752,7 @@ Answer: [The answer]`;
             className={`flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-200 transition' : ''}`}
             onClick={handleUserClick}
             title={authUser.isAnonymous ? "Click to create an account and save your progress!" : (authUser.displayName || authUser.email)}
+            data-tutorial-id="settings-menu"
           >
             <User size={16} />
             <span className="text-sm font-medium">
@@ -1746,6 +1777,7 @@ Answer: [The answer]`;
           onClick={() => setQuizState(APP_STATES.STORE)}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Store"
+          data-tutorial-id="store-button"
         >
           <Store size={24} className="text-purple-600" />
         </button>
@@ -1755,6 +1787,7 @@ Answer: [The answer]`;
           onClick={() => setQuizState("dashboard")}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Dashboard"
+          data-tutorial-id="dashboard-button"
         >
           <BarChart2 size={24} className="text-blue-600" />
         </button>
@@ -1781,11 +1814,34 @@ Answer: [The answer]`;
           </a>
         )}
         
+        {/* Help/Tutorial */}
+        <button
+          onClick={() => {
+            // Show appropriate tutorial based on current page
+            switch (quizState) {
+              case APP_STATES.DASHBOARD:
+                startTutorial('dashboard', dashboardTutorial);
+                break;
+              case APP_STATES.STORE:
+                startTutorial('store', storeTutorial);
+                break;
+              default:
+                startTutorial('mainApp', mainAppTutorial);
+                break;
+            }
+          }}
+          className="p-2 rounded-full hover:bg-gray-200 transition"
+          title="Show Tutorial"
+        >
+          <HelpCircle size={24} className="text-green-600" />
+        </button>
+
         {/* Home */}
         <button
           onClick={returnToTopics}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Home"
+          data-tutorial-id="return-to-topics-button"
         >
           <Home size={24} className="text-green-600" />
         </button>
@@ -1796,6 +1852,7 @@ Answer: [The answer]`;
             onClick={handleLogout}
             className="p-2 rounded-full hover:bg-red-100 transition"
             title={authUser.isAnonymous ? "Switch User" : "Logout"}
+            data-tutorial-id="logout-button"
           >
             <LogOut size={24} className="text-red-600" />
           </button>
@@ -1909,8 +1966,8 @@ Answer: [The answer]`;
     };
 
     return (
-      <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+      <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20" data-tutorial-id="dashboard-container">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center" data-tutorial-id="dashboard-title">
           {selectedGrade === "G3" ? "3rd" : "4th"} Grade Daily Goals & Progress
         </h2>
 
@@ -1949,7 +2006,7 @@ Answer: [The answer]`;
           </div>
         )}
 
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" data-tutorial-id="daily-goals">
           {currentTopics.map((topic) => (
             <div key={topic}>
               <label
@@ -1988,7 +2045,7 @@ Answer: [The answer]`;
         <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">
           Today's Performance
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8" data-tutorial-id="progress-stats">
           <div className="bg-blue-100 p-4 rounded-lg">
             <p className="text-lg text-blue-800">Total Answered</p>
             <p className="text-3xl font-bold text-blue-600">{totalAnswered}</p>
@@ -2175,11 +2232,11 @@ Answer: [The answer]`;
 
   const renderStore = () => {
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20">
-        <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center">
+      <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20" data-tutorial-id="store-container">
+        <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center" data-tutorial-id="store-title">
           Rewards Store
         </h2>
-        <p className="text-lg text-gray-600 mb-8 text-center">
+        <p className="text-lg text-gray-600 mb-8 text-center" data-tutorial-id="store-description">
           Use your coins to buy new backgrounds!
         </p>
 
@@ -2195,7 +2252,7 @@ Answer: [The answer]`;
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" data-tutorial-id="store-items">
           {storeItems.map((item) => {
             const isOwned = userData.ownedBackgrounds.includes(item.id);
             const isActive = userData.activeBackground === item.id;
@@ -2314,8 +2371,8 @@ Answer: [The answer]`;
     };
 
     return (
-      <div className="text-center mt-20">
-        <div className="mb-2 flex justify-center items-center">
+      <div className="text-center mt-20 pb-20">
+        <div className="mb-2 flex justify-center items-center" data-tutorial-id="welcome-header">
           {/* Using animated gif for better performance */}
           <img
             src="/math-whiz-title.gif"
@@ -2374,7 +2431,7 @@ Answer: [The answer]`;
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto px-4" data-tutorial-id="topic-selection">
           {currentTopics.map((topic) => {
             const isAvailable = availableTopics.includes(topic);
             const isCompleted =
@@ -2385,14 +2442,14 @@ Answer: [The answer]`;
                 key={topic}
                 onClick={() => handleTopicSelection(topic)}
                 disabled={!isAvailable}
-                className={`w-full p-6 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group ${
+                className={`w-full p-4 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group min-h-[140px] ${
                   isAvailable
                     ? "bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer"
                     : "bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60"
                 }`}
               >
                 <div
-                  className={`p-4 rounded-full mb-4 transition-colors duration-300 ${
+                  className={`p-3 rounded-full mb-3 transition-colors duration-300 ${
                     isAvailable
                       ? "bg-blue-100 group-hover:bg-blue-500"
                       : "bg-gray-200"
@@ -2415,7 +2472,7 @@ Answer: [The answer]`;
                   )}
                 </div>
                 <h3
-                  className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
+                  className={`text-lg md:text-xl font-bold transition-colors duration-300 ${
                     isAvailable
                       ? "text-gray-800 group-hover:text-blue-600"
                       : "text-gray-500"
@@ -2424,7 +2481,7 @@ Answer: [The answer]`;
                   {topic}
                 </h3>
                 <p
-                  className={`mt-2 ${
+                  className={`mt-1 text-sm ${
                     isAvailable ? "text-gray-500" : "text-gray-400"
                   }`}
                 >
@@ -2441,7 +2498,7 @@ Answer: [The answer]`;
           })}
         </div>
         {/* Progress Info */}
-        <div className="mt-8 mb-6 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
+        <div className="mt-8 mb-8 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
           <p className="text-sm text-gray-700 font-medium">
             {allCompleted ? (
               <span className="text-green-600">
@@ -2506,6 +2563,7 @@ Answer: [The answer]`;
           ref={quizContainerRef}
           className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col"
           style={{ minHeight: 600, height: 600 }}
+          data-tutorial-id="question-interface"
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl md:text-3xl font-bold text-blue-600">
@@ -2580,6 +2638,7 @@ Answer: [The answer]`;
               <button
                 onClick={handleExplainConcept}
                 className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition"
+                data-tutorial-id="ai-tutor-button"
               >
                 <Sparkles size={20} /> Learn About This
               </button>
@@ -2915,7 +2974,7 @@ Answer: [The answer]`;
 
   return (
     <div
-      className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans relative transition-all duration-500"
+      className="min-h-screen bg-gray-100 font-sans relative transition-all duration-500"
       style={{
         backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : "none",
         backgroundSize: "cover",
@@ -2932,8 +2991,22 @@ Answer: [The answer]`;
           isVisible={showSketchOverlay} 
           onClose={() => setShowSketchOverlay(false)} 
         />
+        <div className="flex justify-center p-4">
+          <div className="w-full max-w-6xl">
+            {renderContent()}
+          </div>
+        </div>
+        <TutorialOverlay />
       </div>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <TutorialProvider>
+      <MainAppContent />
+    </TutorialProvider>
   );
 };
 

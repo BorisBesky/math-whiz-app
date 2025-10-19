@@ -32,32 +32,40 @@ function simplifyFraction(numerator, denominator) {
 
 /**
  * Generates a random Fractions question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  const nfType = getRandomInt(1, 5);
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
+  const questionTypes = [
+    { generator: generateEquivalentFractionsQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateFractionAdditionQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generateFractionSubtractionQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateFractionComparisonQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    { generator: generateDecimalNotationQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+  ];
   
-  switch (nfType) {
-    case 1:
-        return generateEquivalentFractionsQuestion();
-    case 2:
-        return generateFractionAdditionQuestion();
-    case 3:
-        return generateFractionSubtractionQuestion();
-    case 4:
-        return generateFractionComparisonQuestion();
-    case 5:
-        return generateDecimalNotationQuestion();
-    default:
-      return generateEquivalentFractionsQuestion();
-  }
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
 // Additional specialized question generators
-export function generateEquivalentFractionsQuestion() {
-  const numerator = getRandomInt(1, 5);
-  const denominator = getRandomInt(numerator + 1, 10);
-  const multiplier = getRandomInt(2, 6);
+/**
+ * Generates an equivalent fractions question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
+  // Scale numerator/denominator ranges and multiplier by difficulty
+  const maxNumerator = Math.max(3, Math.min(8, 3 + Math.floor(difficulty * 5)));
+  const numerator = getRandomInt(1, maxNumerator);
+  const denominator = getRandomInt(numerator + 1, 10 + Math.floor(difficulty * 5));
+  const multiplier = getRandomInt(2, 4 + Math.floor(difficulty * 4));
   
   const equivNum = numerator * multiplier;
   const equivDen = denominator * multiplier;
@@ -77,11 +85,20 @@ export function generateEquivalentFractionsQuestion() {
     concept: "Fractions 4th",
     grade: "G4",
     subtopic: "equivalent fractions",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateFractionAdditionQuestion() {
-  const denominator = getRandomInt(4, 12);
+/**
+ * Generates a fraction addition question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateFractionAdditionQuestion(difficulty = 0.5) {
+  // Scale denominator range by difficulty
+  const minDenom = 4 + Math.floor(difficulty * 2);
+  const maxDenom = 8 + Math.floor(difficulty * 8);
+  const denominator = getRandomInt(minDenom, maxDenom);
   const num1 = getRandomInt(1, Math.floor(denominator / 2));
   const num2 = getRandomInt(1, denominator - num1 - 1);
   
@@ -102,11 +119,20 @@ export function generateFractionAdditionQuestion() {
     concept: "Fractions 4th",
     grade: "G4",
     subtopic: "addition",
+    difficultyRange: { min: 0.3, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateFractionSubtractionQuestion() {
-  const denominator = getRandomInt(4, 12);
+/**
+ * Generates a fraction subtraction question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateFractionSubtractionQuestion(difficulty = 0.5) {
+  // Scale denominator range by difficulty
+  const minDenom = 4 + Math.floor(difficulty * 2);
+  const maxDenom = 8 + Math.floor(difficulty * 10);
+  const denominator = getRandomInt(minDenom, maxDenom);
   const num1 = getRandomInt(3, denominator - 1);
   const num2 = getRandomInt(1, num1 - 1);
   
@@ -127,18 +153,26 @@ export function generateFractionSubtractionQuestion() {
     concept: "Fractions 4th",
     grade: "G4",
     subtopic: "subtraction",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateFractionComparisonQuestion() {
-  const frac1Num = getRandomInt(1, 6);
-  const frac1Den = getRandomInt(frac1Num + 1, 10);
-  const frac2Num = getRandomInt(1, 6);
-  const frac2Den = getRandomInt(frac2Num + 1, 10);
+/**
+ * Generates a fraction comparison question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateFractionComparisonQuestion(difficulty = 0.5) {
+  // Scale numerator and denominator ranges by difficulty
+  const maxNum = Math.max(4, Math.min(10, 4 + Math.floor(difficulty * 6)));
+  const frac1Num = getRandomInt(1, maxNum);
+  const frac1Den = getRandomInt(frac1Num + 1, 10 + Math.floor(difficulty * 5));
+  const frac2Num = getRandomInt(1, maxNum);
+  const frac2Den = getRandomInt(frac2Num + 1, 10 + Math.floor(difficulty * 5));
 
   // Ensure fractions are different
   if (frac1Num / frac1Den === frac2Num / frac2Den) {
-    return generateFractionComparisonQuestion();
+    return generateFractionComparisonQuestion(difficulty);
   }
 
   const decimal1 = frac1Num / frac1Den;
@@ -155,15 +189,23 @@ export function generateFractionComparisonQuestion() {
     concept: "Fractions 4th",
     grade: "G4",
     subtopic: "comparison",
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateDecimalNotationQuestion() {
-  // Generate tenths and hundredths (4.NF.6)
-  const isHundredths = Math.random() < 0.5;
+/**
+ * Generates a decimal notation question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalNotationQuestion(difficulty = 0.5) {
+  // At higher difficulty, prefer hundredths over tenths
+  const isHundredths = difficulty > 0.5 ? Math.random() < 0.7 : Math.random() < 0.4;
   
   if (isHundredths) {
-    const numerator = getRandomInt(1, 99);
+    // Scale numerator range by difficulty
+    const maxNum = Math.floor(20 + difficulty * 79);
+    const numerator = getRandomInt(1, maxNum);
     const decimal = (numerator / 100).toFixed(2);
     const potentialDistractors = [
         (numerator / 10).toFixed(1),
@@ -180,6 +222,8 @@ export function generateDecimalNotationQuestion() {
       concept: "Fractions 4th",
       grade: "G4",
       subtopic: "decimal notation",
+      difficultyRange: { min: 0.6, max: 1.0 },
+      suggestedDifficulty: difficulty,
     };
   } else {
     const numerator = getRandomInt(1, 9);
@@ -199,6 +243,8 @@ export function generateDecimalNotationQuestion() {
       concept: "Fractions 4th",
       grade: "G4",
       subtopic: "decimal notation",
+      difficultyRange: { min: 0.6, max: 1.0 },
+      suggestedDifficulty: difficulty,
     };
   }
 }

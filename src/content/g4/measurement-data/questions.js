@@ -8,30 +8,32 @@ function getRandomInt(min, max) {
 
 /**
  * Generates a random Measurement & Data question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  const md4Type = getRandomInt(1, 4);
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
+  const questionTypes = [
+    { generator: generateLengthConversionQuestion, minDifficulty: 0.0, maxDifficulty: 0.8 },
+    { generator: generateWeightCapacityConversionQuestion, minDifficulty: 0.2, maxDifficulty: 0.9 },
+    { generator: generateTimeConversionQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generateAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+  ];
   
-  switch (md4Type) {
-    case 1: // Length conversions (4.MD.1)
-      return generateLengthConversionQuestion();
-      
-    case 2: // Weight/Mass and Capacity conversions (4.MD.1)
-      return generateWeightCapacityConversionQuestion();
-      
-    case 3: // Time conversions (4.MD.1)
-      return generateTimeConversionQuestion();
-      
-    case 4: // Area and perimeter (4.MD.3)
-      return generateAreaPerimeterQuestion();
-      
-    default:
-      return generateLengthConversionQuestion();
-  }
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
-export function generateLengthConversionQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateLengthConversionQuestion(difficulty = 0.5) {
   const lengthConversions = [
     { from: "feet", to: "inches", factor: 12, abbrev: ["ft", "in"] },
     { from: "yards", to: "feet", factor: 3, abbrev: ["yd", "ft"] },
@@ -73,7 +75,10 @@ export function generateLengthConversionQuestion() {
   };
 }
 
-export function generateWeightCapacityConversionQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateWeightCapacityConversionQuestion(difficulty = 0.5) {
   const weightCapacityConversions = [
     {
       from: "pounds",
@@ -126,7 +131,10 @@ export function generateWeightCapacityConversionQuestion() {
   };
 }
 
-export function generateTimeConversionQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateTimeConversionQuestion(difficulty = 0.5) {
   const timeConversions = [
     {
       from: "hours",
@@ -167,7 +175,10 @@ export function generateTimeConversionQuestion() {
   };
 }
 
-export function generateAreaPerimeterQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateAreaPerimeterQuestion(difficulty = 0.5) {
   const rectLength = getRandomInt(4, 12);
   const rectWidth = getRandomInt(3, 8);
   const isAreaQuestion = Math.random() < 0.5;
@@ -202,7 +213,10 @@ export function generateAreaPerimeterQuestion() {
   };
 }
 
-export function generateAngleQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateAngleQuestion(difficulty = 0.5) {
   const angles = [
     { name: "right angle", degrees: 90 },
     { name: "straight angle", degrees: 180 },
@@ -226,7 +240,10 @@ export function generateAngleQuestion() {
   };
 }
 
-export function generateDataInterpretationQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDataInterpretationQuestion(difficulty = 0.5) {
   const data = [
     { category: "Apples", value: getRandomInt(15, 30) },
     { category: "Oranges", value: getRandomInt(10, 25) },

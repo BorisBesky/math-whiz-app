@@ -34,25 +34,34 @@ function addBinary(bin1, bin2) {
 
 /**
  * Generates a random Binary Addition question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  // Array of all available question generators
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
   const questionTypes = [
-    generateBinaryToDecimalQuestion,
-    generateDecimalToBinaryQuestion,
-    generateBinaryAdditionQuestion,
-    generateBinaryComparisonQuestion,
-    generateBinaryPlaceValueQuestion,
+    { generator: generateBinaryToDecimalQuestion, minDifficulty: 0.0, maxDifficulty: 0.6 },
+    { generator: generateBinaryPlaceValueQuestion, minDifficulty: 0.2, maxDifficulty: 0.7 },
+    { generator: generateDecimalToBinaryQuestion, minDifficulty: 0.3, maxDifficulty: 0.8 },
+    { generator: generateBinaryComparisonQuestion, minDifficulty: 0.4, maxDifficulty: 0.9 },
+    { generator: generateBinaryAdditionQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
   ];
   
-  // Randomly select a question type
-  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  return selectedGenerator();
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
 // Convert binary to decimal
-export function generateBinaryToDecimalQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateBinaryToDecimalQuestion(difficulty = 0.5) {
   // Keep numbers small for 4th graders (1-15 decimal range)
   const decimal = getRandomInt(1, 15);
   const binary = decimalToBinary(decimal);
@@ -78,7 +87,10 @@ export function generateBinaryToDecimalQuestion() {
 }
 
 // Convert decimal to binary
-export function generateDecimalToBinaryQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalToBinaryQuestion(difficulty = 0.5) {
   // Keep numbers small for 4th graders (1-15 decimal range)
   const decimal = getRandomInt(1, 15);
   const correctBinary = decimalToBinary(decimal);
@@ -105,7 +117,10 @@ export function generateDecimalToBinaryQuestion() {
 }
 
 // Binary addition problem
-export function generateBinaryAdditionQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateBinaryAdditionQuestion(difficulty = 0.5) {
   // Use small numbers to keep it manageable for 4th graders
   const num1 = getRandomInt(1, 7);  // 1-7 in decimal
   const num2 = getRandomInt(1, 7);  // 1-7 in decimal
@@ -137,7 +152,10 @@ export function generateBinaryAdditionQuestion() {
 }
 
 // Compare binary numbers
-export function generateBinaryComparisonQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateBinaryComparisonQuestion(difficulty = 0.5) {
   const num1 = getRandomInt(3, 12);
   const num2 = getRandomInt(3, 12);
   
@@ -177,7 +195,10 @@ export function generateBinaryComparisonQuestion() {
 }
 
 // Binary place value question
-export function generateBinaryPlaceValueQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateBinaryPlaceValueQuestion(difficulty = 0.5) {
   // Use numbers that clearly show place value (powers of 2)
   const powers = [1, 2, 4, 8]; // 2^0, 2^1, 2^2, 2^3
   const selectedPower = powers[getRandomInt(0, powers.length - 1)];

@@ -170,10 +170,15 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
 
   const formatDate = (date) => {
     if (!date) return 'N/A';
-    if (date.toDate) {
-      return date.toDate().toLocaleDateString();
+    try {
+      if (date.toDate) {
+        return date.toDate().toLocaleDateString();
+      }
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'N/A' : parsedDate.toLocaleDateString();
+    } catch {
+      return 'N/A';
     }
-    return new Date(date).toLocaleDateString();
   };
 
   if (loading) {

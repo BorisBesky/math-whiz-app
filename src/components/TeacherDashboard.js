@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
+import { useTutorial } from '../contexts/TutorialContext';
+import TutorialOverlay from './TutorialOverlay';
+import { teacherDashboardTutorial } from '../tutorials/teacherDashboardTutorial';
 import { TOPICS } from '../constants/topics';
 import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
@@ -53,6 +56,7 @@ const TeacherDashboard = () => {
   const [goalStudentIds, setGoalStudentIds] = useState([]);
 
   const { user, logout } = useAuth();
+  const { startTutorial, shouldShowTutorial } = useTutorial();
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
 
@@ -135,6 +139,7 @@ const TeacherDashboard = () => {
 
         return {
           id: data.id,
+          email: data.email || null,
           selectedGrade: data.selectedGrade || 'G3',
           coins: data.coins || 0,
           class: className,
@@ -272,6 +277,16 @@ const TeacherDashboard = () => {
     }
   }, [user, db, classes.length]);
 
+  // Initialize tutorial for first-time visitors
+  useEffect(() => {
+    if (!loading && user && shouldShowTutorial('teacherDashboard')) {
+      // Small delay to ensure UI is rendered
+      setTimeout(() => {
+        startTutorial('teacherDashboard', teacherDashboardTutorial);
+      }, 1000);
+    }
+  }, [loading, user, shouldShowTutorial, startTutorial]);
+
   const handleCreateClass = async (classData) => {
     try {
       await addDoc(collection(db, 'artifacts', appId, 'classes'), {
@@ -350,6 +365,7 @@ const TeacherDashboard = () => {
     }
 
     const csvData = students.map(student => ({
+      'Email': student.email || '',
       'Student ID': student.id,
       'Selected Grade': student.selectedGrade,
       'Class': student.class,
@@ -375,11 +391,23 @@ const TeacherDashboard = () => {
   };
 
   const formatDate = (date) => {
-    return date ? new Date(date).toLocaleDateString() : 'Never';
+    if (!date) return 'Never';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleDateString();
+    } catch {
+      return 'Never';
+    }
   };
 
   const formatTime = (date) => {
-    return date ? new Date(date).toLocaleTimeString() : 'Never';
+    if (!date) return 'Never';
+    try {
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleTimeString();
+    } catch {
+      return 'Never';
+    }
   };
 
   const calculateTopicProgress = (student, grade) => {
@@ -688,12 +716,22 @@ const TeacherDashboard = () => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <BookOpen className="h-8 w-8 text-blue-600" />
-              <div>
+              <div data-tutorial-id="dashboard-header">
                 <h1 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h1>
                 <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => startTutorial('teacherDashboard', teacherDashboardTutorial)}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                title="Show Tutorial"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Help</span>
+              </button>
               <button
                 onClick={fetchStudentData}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -708,6 +746,7 @@ const TeacherDashboard = () => {
                   <button
                     onClick={exportStudentData}
                     className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    data-tutorial-id="export-button"
                   >
                     <Download className="w-4 h-4" />
                     <span>Export CSV</span>
@@ -740,6 +779,7 @@ const TeacherDashboard = () => {
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                data-tutorial-id="teacher-settings"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -752,7 +792,7 @@ const TeacherDashboard = () => {
       {/* Navigation */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-gray-200" data-tutorial-id="navigation-tabs">
             <button
               onClick={() => setView('overview')}
               className={`px-6 py-3 font-medium ${view === 'overview' 
@@ -800,7 +840,7 @@ const TeacherDashboard = () => {
         {view === 'overview' && (
           <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6" data-tutorial-id="overview-stats">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -860,11 +900,11 @@ const TeacherDashboard = () => {
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 text-sm font-medium">
-                            {student.id.slice(0, 2).toUpperCase()}
+                            {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">Student {student.id.slice(0, 8)}</p>
+                          <p className="font-medium text-gray-900">{student.email || `Student ${student.id.slice(0, 8)}`}</p>
                           <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
                         </div>
                       </div>
@@ -884,10 +924,10 @@ const TeacherDashboard = () => {
 
         {/* Students List */}
         {view === 'students' && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-tutorial-id="students-tab">
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200" data-tutorial-id="student-progress">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -984,12 +1024,12 @@ const TeacherDashboard = () => {
                           <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                               <span className="text-blue-600 text-sm font-medium">
-                                {student.id.slice(0, 2).toUpperCase()}
+                                {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
                               </span>
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                Student {student.id.slice(0, 8)}
+                                {student.email || `Student ${student.id.slice(0, 8)}`}
                               </div>
                               <div className="text-sm text-gray-500">ID: {student.id}</div>
                             </div>
@@ -1081,6 +1121,7 @@ const TeacherDashboard = () => {
               <button
                 onClick={() => setShowCreateForm(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                data-tutorial-id="create-class-button"
               >
                 <Plus className="h-4 w-4" />
                 <span>Create Class</span>
@@ -1088,7 +1129,7 @@ const TeacherDashboard = () => {
             </div>
 
             {/* Classes Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-tutorial-id="classes-list">
               {classes.map((classItem) => (
                 <div
                   key={classItem.id}
@@ -1108,6 +1149,7 @@ const TeacherDashboard = () => {
                           onClick={() => setSelectedClass(classItem)}
                           className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                           title="View Details"
+                          data-tutorial-id="class-analytics"
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
@@ -1167,7 +1209,7 @@ const TeacherDashboard = () => {
               </button>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  Student {selectedStudent.id.slice(0, 8)}
+                  {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
                 </h3>
                 <p className="text-gray-600">ID: {selectedStudent.id}</p>
               </div>
@@ -1312,10 +1354,10 @@ const TeacherDashboard = () => {
                       .map((question, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(question.timestamp).toLocaleDateString()}
+                            {formatDate(question.timestamp)}
                             <br />
                             <span className="text-gray-500">
-                              {new Date(question.timestamp).toLocaleTimeString()}
+                              {formatTime(question.timestamp)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1420,6 +1462,9 @@ const TeacherDashboard = () => {
           onCancel={() => setShowCreateForm(false)}
         />
       )}
+
+      {/* Tutorial Overlay */}
+      <TutorialOverlay />
     </div>
   );
 };

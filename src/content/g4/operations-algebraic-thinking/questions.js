@@ -8,32 +8,41 @@ function getRandomInt(min, max) {
 
 /**
  * Generates a random Operations & Algebraic Thinking question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  // Array of all available question generators
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
   const questionTypes = [
-    generateMultiplicativeComparisonQuestion,
-    generatePrimeCompositeQuestion,
-    generateFactorsQuestion,
-    generateNumberPatternQuestion,
-    generateSequenceCompletionQuestion,
-    generatePatternRuleQuestion,
-    generateTwoStepPatternQuestion,
-    generateLongDivisionWithRemainderQuestion,
-    generateLongDivisionNoRemainderQuestion,
-    generateTwoDigitMultiplicationQuestion,
-    generateMultiplicationWordProblemQuestion,
-    generateDivisionWordProblemQuestion,
+    { generator: generateNumberPatternQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateSequenceCompletionQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateMultiplicativeComparisonQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    { generator: generateTwoDigitMultiplicationQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generateFactorsQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generateLongDivisionNoRemainderQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generatePrimeCompositeQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateMultiplicationWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generatePatternRuleQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    { generator: generateDivisionWordProblemQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    { generator: generateTwoStepPatternQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    { generator: generateLongDivisionWithRemainderQuestion, minDifficulty: 0.7, maxDifficulty: 1.0 },
   ];
   
-  // Randomly select a question type
-  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  return selectedGenerator();
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
 // Additional specialized question generators
-export function generateMultiplicativeComparisonQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiplicativeComparisonQuestion(difficulty = 0.5) {
   const base = getRandomInt(2, 8);
   const multiplier = getRandomInt(2, 6);
   const result = base * multiplier;
@@ -70,10 +79,15 @@ export function generateMultiplicativeComparisonQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "multiplicative comparison",
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generatePrimeCompositeQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generatePrimeCompositeQuestion(difficulty = 0.5) {
   const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
   const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 22];
   const isPrime = Math.random() < 0.5;
@@ -85,7 +99,7 @@ export function generatePrimeCompositeQuestion() {
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite"])),
+    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite", "Both"], 3)),
     hint: isPrime
       ? "A prime number has exactly two factors: 1 and itself."
       : "A composite number has more than two factors.",
@@ -93,28 +107,57 @@ export function generatePrimeCompositeQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "prime vs composite",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateFactorsQuestion() {
-  const base = getRandomInt(6, 20);
-  const factors = [];
-  for (let i = 1; i <= base; i++) {
-    if (base % i === 0) factors.push(i);
-  }
-  
-  // Ensure we have enough factors to choose from
+const primeNumbersSet = new Set([7, 11, 13, 17, 19]);
+
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateFactorsQuestion(difficulty = 0.5) {
+  let base;
+  let factors = [];
+  let attempts = 0;
+  const maxAttempts = 14; // Prevent infinite loop
+
+  do {
+    base = getRandomInt(6, 20);
+    while (primeNumbersSet.has(base)) {
+      attempts++;
+      if (attempts >= maxAttempts) break; // safeguard against infinite loop
+      base = getRandomInt(6, 20);
+    }
+    attempts = 0; // reset attempts for factor finding
+    factors = [];
+    for (let i = 1; i <= base; i++) {
+      if (base % i === 0) factors.push(i);
+    }
+    attempts++;
+  } while (factors.length < 3 && attempts < maxAttempts);
+
+  // If still not enough factors after max attempts, use a known composite number
+  // safeguard against infinite loop, since no primes are selected, shouldn't happen
   if (factors.length < 3) {
-    return generateFactorsQuestion(); // Retry with different number
+    base = 12; // 12 has factors: 1,2,3,4,6,12
+    factors = [1,2,3,4,6,12];
   }
   
   const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
   const correctAnswer = correctFactor.toString();
-  const potentialDistractors = [
-      (correctFactor + 1).toString(),
-      (base + 1).toString(),
-      (correctFactor + 3).toString(),
-  ];
+  const getNonFactors = (factors, n) => {
+    const nonFactors = [];
+    console.log('getting nonfactors for factors:', factors);
+    for (let i = 2; nonFactors.length < n; i++) {
+      if (!factors.includes(i) && !nonFactors.includes(i)) {
+        nonFactors.push(i);
+      }
+    }
+    return nonFactors;
+  };
+  const potentialDistractors = getNonFactors(factors, 3).map(n => n.toString());
 
   return {
     question: `Which of these is a factor of ${base}?`,
@@ -125,13 +168,18 @@ export function generateFactorsQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "factors",
+    difficultyRange: { min: 0.3, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a number pattern recognition question
  */
-export function generateNumberPatternQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateNumberPatternQuestion(difficulty = 0.5) {
   const step = getRandomInt(2, 12);
   const startNum = getRandomInt(1, 20);
   const length = getRandomInt(4, 6);
@@ -158,13 +206,18 @@ export function generateNumberPatternQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "number patterns",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a number sequence completion question with missing number
  */
-export function generateSequenceCompletionQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateSequenceCompletionQuestion(difficulty = 0.5) {
   const step = getRandomInt(3, 15);
   const startNum = getRandomInt(5, 25);
   const length = getRandomInt(5, 7);
@@ -195,13 +248,18 @@ export function generateSequenceCompletionQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "number patterns",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a pattern rule identification question
  */
-export function generatePatternRuleQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generatePatternRuleQuestion(difficulty = 0.5) {
   const step = getRandomInt(3, 10);
   const startNum = getRandomInt(2, 15);
   const sequence = [];
@@ -229,37 +287,43 @@ export function generatePatternRuleQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "number patterns",
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a two-step number pattern question
  */
-export function generateTwoStepPatternQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateTwoStepPatternQuestion(difficulty = 0.5) {
   // More complex patterns for 4th grade
+  const step1 = getRandomInt(2, 9);
+  const step2 = getRandomInt(2, 9);
+  const startNum = getRandomInt(2, 10);
+
   const operations = [
-    { name: "add then multiply", func: (n, i) => (n + 2) * (i + 1) },
-    { name: "multiply then add", func: (n, i) => (n * 2) + i },
-    { name: "square pattern", func: (n, i) => (i + 1) * (i + 1) },
+    { name: "add then multiply", func1: (n) => (n + step1), func2: (n) => n * step2 },
+    { name: "multiply then add", func1: (n) => (n * step1), func2: (n) => n + step2 },
+    { name: "subtract then add", func1: (n) => (n - step1), func2: (n) => n + step2 },
   ];
   
   const operation = operations[getRandomInt(0, operations.length - 1)];
   const sequence = [];
-  
-  for (let i = 0; i < 4; i++) {
-    if (operation.name === "square pattern") {
-      sequence.push((i + 1) * (i + 1));
-    } else {
-      sequence.push(operation.func(i + 2, i));
-    }
+  sequence.push(startNum);
+  for (let i = 1; i < 4; i+=2) {
+      sequence.push(operation.func1(sequence[i - 1]));
+      if (operation.func2) {
+        sequence.push(operation.func2(sequence[i]));
+      }
   }
   
   let nextValue;
-  if (operation.name === "square pattern") {
-    nextValue = 5 * 5; // Next square number
-  } else {
-    nextValue = operation.func(6, 4);
-  }
+
+  nextValue = operation.func1(sequence[sequence.length - 1]);
+
   const correctAnswer = nextValue.toString();
   const potentialDistractors = [
       (nextValue + 1).toString(),
@@ -271,20 +335,29 @@ export function generateTwoStepPatternQuestion() {
     question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    hint: operation.name === "square pattern" 
-      ? "These are square numbers: 1×1, 2×2, 3×3, 4×4..." 
-      : "Look carefully at how each number relates to its position in the sequence.",
+    hint: operation.name === "add then multiply" 
+      ? "Look carefully at how each number relates to its position in the sequence. First step is addition, second step is multiplication."
+      : operation.name === "subtract then add"
+      ? "Look carefully at how each number relates to its position in the sequence. First step is subtraction, second step is addition."
+      : operation.name === "multiply then add"
+      ? "Look carefully at how each number relates to its position in the sequence. First step is multiplication, second step is addition."
+      : "Unknown pattern, contact support.",
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "number patterns",
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a long division question with remainder
  */
-export function generateLongDivisionWithRemainderQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateLongDivisionWithRemainderQuestion(difficulty = 0.5) {
   const divisor = getRandomInt(2, 9);
   const quotient = getRandomInt(3, 12);
   const remainder = getRandomInt(1, divisor - 1);
@@ -305,13 +378,18 @@ export function generateLongDivisionWithRemainderQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "long division with remainder",
+    difficultyRange: { min: 0.7, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a long division question without remainder
  */
-export function generateLongDivisionNoRemainderQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateLongDivisionNoRemainderQuestion(difficulty = 0.5) {
   const divisor = getRandomInt(2, 9);
   const quotient = getRandomInt(4, 15);
   const dividend = quotient * divisor;
@@ -331,13 +409,18 @@ export function generateLongDivisionNoRemainderQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "long division",
+    difficultyRange: { min: 0.3, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a two-digit by one-digit multiplication question
  */
-export function generateTwoDigitMultiplicationQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateTwoDigitMultiplicationQuestion(difficulty = 0.5) {
   const twoDigit = getRandomInt(11, 99);
   const oneDigit = getRandomInt(2, 9);
   const result = twoDigit * oneDigit;
@@ -357,13 +440,18 @@ export function generateTwoDigitMultiplicationQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "multi-digit multiplication",
+    difficultyRange: { min: 0.3, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a word problem involving two-digit multiplication
  */
-export function generateMultiplicationWordProblemQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiplicationWordProblemQuestion(difficulty = 0.5) {
   const groups = getRandomInt(12, 48);
   const itemsPerGroup = getRandomInt(3, 8);
   const total = groups * itemsPerGroup;
@@ -404,13 +492,18 @@ export function generateMultiplicationWordProblemQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "multiplication word problems",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates a division word problem with remainder
  */
-export function generateDivisionWordProblemQuestion() {
+/**
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDivisionWordProblemQuestion(difficulty = 0.5) {
   const divisor = getRandomInt(3, 8);
   const quotient = getRandomInt(4, 12);
   const remainder = getRandomInt(1, divisor - 1);
@@ -448,6 +541,8 @@ export function generateDivisionWordProblemQuestion() {
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
     subtopic: "division word problems",
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 

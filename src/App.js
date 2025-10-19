@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { TutorialProvider } from './contexts/TutorialContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainApp from './MainApp';
 import AdminPage from './components/AdminPage';
@@ -42,7 +43,9 @@ const App = () => {
           path="/teacher" 
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
-              <TeacherDashboard />
+              <TutorialProvider>
+                <TeacherDashboard />
+              </TutorialProvider>
             </ProtectedRoute>
           } 
         />

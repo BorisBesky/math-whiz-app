@@ -8,28 +8,38 @@ function getRandomInt(min, max) {
 
 /**
  * Generates a random geometry question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  // Array of all available question generators
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
   const questionTypes = [
-    generateLinesAndAnglesQuestion,
-    generateShapeClassificationQuestion,
-    generateTriangleClassificationBySidesQuestion,
-    generateTriangleClassificationByAnglesQuestion,
-    generateQuadrilateralPropertiesQuestion,
-    generateLineSymmetryQuestion,
-    generateAngleMeasurementQuestion,
-    generatePointsLinesRaysQuestion,
+    { generator: generateLinesAndAnglesQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generatePointsLinesRaysQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateShapeClassificationQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    { generator: generateLineSymmetryQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    { generator: generateTriangleClassificationBySidesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateTriangleClassificationByAnglesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   ];
   
-  // Randomly select a question type
-  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  return selectedGenerator();
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
 // Additional question types for future expansion
-export function generateLinesAndAnglesQuestion() {
+/**
+ * Generates a lines and angles question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateLinesAndAnglesQuestion(difficulty = 0.5) {
   const questionTypes = [
     {
       question: "Two lines that never meet and are always the same distance apart are called:",
@@ -60,10 +70,16 @@ export function generateLinesAndAnglesQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "lines and angles",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateShapeClassificationQuestion() {
+/**
+ * Generates a shape classification question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateShapeClassificationQuestion(difficulty = 0.5) {
   const shapes = [
     {
       name: "square",
@@ -109,13 +125,16 @@ export function generateShapeClassificationQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "classify shapes",
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about triangle classification by sides
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateTriangleClassificationBySidesQuestion() {
+export function generateTriangleClassificationBySidesQuestion(difficulty = 0.5) {
   const triangleTypes = [
     {
       name: "equilateral",
@@ -149,13 +168,16 @@ export function generateTriangleClassificationBySidesQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "triangle classification",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about triangle classification by angles
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateTriangleClassificationByAnglesQuestion() {
+export function generateTriangleClassificationByAnglesQuestion(difficulty = 0.5) {
   const triangleTypes = [
     {
       name: "right triangle",
@@ -189,13 +211,16 @@ export function generateTriangleClassificationByAnglesQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "triangle classification",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about quadrilateral properties
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateQuadrilateralPropertiesQuestion() {
+export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
   const quadrilaterals = [
     {
       name: "square",
@@ -258,13 +283,16 @@ export function generateQuadrilateralPropertiesQuestion() {
     concept: "Geometry", 
     grade: "G4",
     subtopic: "quadrilateral properties",
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about line symmetry
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateLineSymmetryQuestion() {
+export function generateLineSymmetryQuestion(difficulty = 0.5) {
   const symmetryExamples = [
     {
       shape: "circle",
@@ -308,13 +336,16 @@ export function generateLineSymmetryQuestion() {
     concept: "Geometry",
     grade: "G4", 
     subtopic: "line symmetry",
+    difficultyRange: { min: 0.3, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about angle measurement and classification
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateAngleMeasurementQuestion() {
+export function generateAngleMeasurementQuestion(difficulty = 0.5) {
   const angleTypes = [
     {
       name: "acute angle",
@@ -384,13 +415,16 @@ export function generateAngleMeasurementQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "angle measurement",
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates questions about points, lines, and rays
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generatePointsLinesRaysQuestion() {
+export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
   const concepts = [
     {
       name: "point",
@@ -460,6 +494,8 @@ export function generatePointsLinesRaysQuestion() {
     concept: "Geometry",
     grade: "G4",
     subtopic: "points lines rays",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 

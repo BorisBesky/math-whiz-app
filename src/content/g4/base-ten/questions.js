@@ -16,32 +16,47 @@ function getRandomIntUniqueDigits(count) {
 
 /**
  * Generates a random Base Ten question for 4th grade
+ * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion() {
-  // Array of all available question generators
+export function generateQuestion(difficulty = 0.5) {
+  // Define question types with minimum and maximum difficulty thresholds
   const questionTypes = [
-    generatePlaceValueQuestion,
-    generateRoundingQuestion,
-    generateMultiDigitArithmeticQuestion,
-    generateComparisonQuestion,
-    generateSubtractionWordProblemQuestion,
-    generateAdditionWordProblemQuestion,
-    generateMultiStepWordProblemQuestion,
+    { generator: generatePlaceValueQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    { generator: generateRoundingQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    { generator: generateMultiDigitArithmeticQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateAdditionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateSubtractionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    { generator: generateMultiStepWordProblemQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   ];
   
-  // Randomly select a question type
-  const selectedGenerator = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  return selectedGenerator();
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+  
+  // Randomly select from available types
+  const selected = available[getRandomInt(0, available.length - 1)];
+  return selected.generator(difficulty);
 }
 
 // Additional specialized question generators
-export function generatePlaceValueQuestion() {
-  const number = getRandomIntUniqueDigits(7).join('');
+/**
+ * Generates a place value question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generatePlaceValueQuestion(difficulty = 0.5) {
+  // Scale number of digits based on difficulty (3-7 digits)
+  const numDigits = Math.max(3, Math.min(7, 3 + Math.floor(difficulty * 4)));
+  const number = getRandomIntUniqueDigits(numDigits).join('');
   const positions = ["millions", "hundred thousands", "ten thousands", "thousands", "hundreds", "tens", "ones"];
-  const digitIndex = getRandomInt(0, 6);
+  
+  // At higher difficulty, focus on larger place values
+  const maxIndex = numDigits - 1;
+  const digitIndex = getRandomInt(0, maxIndex);
   const digit = number.toString()[digitIndex];
-  const correctPosition = positions[digitIndex];
+  const correctPosition = positions[6 - (numDigits - 1) + digitIndex];
   const potentialDistractors = positions.filter((p) => p !== correctPosition).slice(0, 3);
 
   return {
@@ -53,11 +68,21 @@ export function generatePlaceValueQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: "place value",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateRoundingQuestion() {
-  const number = getRandomInt(1234, 10000000);
+/**
+ * Generates a rounding question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateRoundingQuestion(difficulty = 0.5) {
+  // Scale number range by difficulty
+  const minNum = 1234 + Math.floor(difficulty * 10000);
+  const maxNum = 10000 + Math.floor(difficulty * 9990000);
+  const number = getRandomInt(minNum, maxNum);
+  
   const roundingOptions = [
     { name: "tens", divisor: 10 },
     { name: "hundreds", divisor: 100 },
@@ -67,7 +92,9 @@ export function generateRoundingQuestion() {
     { name: "millions", divisor: 1000000 }
   ];
   
-  const roundTo = roundingOptions[getRandomInt(0, roundingOptions.length - 1)];
+  // Select rounding place based on difficulty (easier = smaller places)
+  const maxIndex = Math.min(5, Math.floor(difficulty * 6));
+  const roundTo = roundingOptions[getRandomInt(0, maxIndex)];
   const rounded = Math.round(number / roundTo.divisor) * roundTo.divisor;
   const correctAnswer = rounded.toString();
   const potentialDistractors = [
@@ -85,12 +112,21 @@ export function generateRoundingQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: "rounding",
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateMultiDigitArithmeticQuestion() {
-  const num1 = getRandomInt(1000, 1000000);
-  const num2 = getRandomInt(1000, 1000000);
+/**
+ * Generates a multi-digit arithmetic question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiDigitArithmeticQuestion(difficulty = 0.5) {
+  // Scale number range by difficulty
+  const minNum = 1000 + Math.floor(difficulty * 9000);
+  const maxNum = 10000 + Math.floor(difficulty * 990000);
+  const num1 = getRandomInt(minNum, maxNum);
+  const num2 = getRandomInt(minNum, maxNum);
   const isAddition = Math.random() < 0.5;
   
   let question, answer, hint;
@@ -127,16 +163,25 @@ export function generateMultiDigitArithmeticQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: isAddition ? "addition" : "subtraction",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
-export function generateComparisonQuestion() {
-  const num1 = getRandomInt(1000, 1000000);
-  const num2 = getRandomInt(1000, 1000000);
+/**
+ * Generates a comparison question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateComparisonQuestion(difficulty = 0.5) {
+  // Scale number range by difficulty
+  const minNum = 1000 + Math.floor(difficulty * 9000);
+  const maxNum = 10000 + Math.floor(difficulty * 990000);
+  const num1 = getRandomInt(minNum, maxNum);
+  const num2 = getRandomInt(minNum, maxNum);
   
   // Ensure numbers are different
   if (num1 === num2) {
-    return generateComparisonQuestion();
+    return generateComparisonQuestion(difficulty);
   }
   
   const correctAnswer = num1 > num2 ? ">" : "<";
@@ -151,13 +196,16 @@ export function generateComparisonQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: "comparison",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates multi-digit subtraction word problems (4.NBT.B.4)
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateSubtractionWordProblemQuestion() {
+export function generateSubtractionWordProblemQuestion(difficulty = 0.5) {
   const scenarios = [
     {
       context: "food drive",
@@ -210,9 +258,13 @@ export function generateSubtractionWordProblemQuestion() {
     ? schoolNames[getRandomInt(0, schoolNames.length - 1)]
     : organizationNames[getRandomInt(0, organizationNames.length - 1)];
 
-  // Generate numbers ensuring the second is larger
-  const smaller = getRandomInt(10000, 85000);
-  const difference = getRandomInt(5000, 25000);
+  // Generate numbers ensuring the second is larger, scaled by difficulty
+  const minSmaller = 10000 + Math.floor(difficulty * 20000);
+  const maxSmaller = 50000 + Math.floor(difficulty * 35000);
+  const smaller = getRandomInt(minSmaller, maxSmaller);
+  const minDiff = 5000 + Math.floor(difficulty * 5000);
+  const maxDiff = 15000 + Math.floor(difficulty * 10000);
+  const difference = getRandomInt(minDiff, maxDiff);
   const larger = smaller + difference;
   const correctAnswer = difference.toString();
   const potentialDistractors = [
@@ -230,13 +282,16 @@ export function generateSubtractionWordProblemQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: "subtraction word problems",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates multi-digit addition word problems (4.NBT.B.4)
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateAdditionWordProblemQuestion() {
+export function generateAdditionWordProblemQuestion(difficulty = 0.5) {
   const scenarios = [
     {
       context: "attendance",
@@ -277,8 +332,13 @@ export function generateAdditionWordProblemQuestion() {
     candidates: ["Sarah", "Mike", "Emma", "Alex", "Jordan"]
   };
 
-  const num1 = getRandomInt(12000, 75000);
-  const num2 = getRandomInt(15000, 80000);
+  // Scale number range by difficulty
+  const minNum1 = 12000 + Math.floor(difficulty * 20000);
+  const maxNum1 = 40000 + Math.floor(difficulty * 35000);
+  const minNum2 = 15000 + Math.floor(difficulty * 25000);
+  const maxNum2 = 45000 + Math.floor(difficulty * 35000);
+  const num1 = getRandomInt(minNum1, maxNum1);
+  const num2 = getRandomInt(minNum2, maxNum2);
   const total = num1 + num2;
   const correctAnswer = total.toString();
 
@@ -336,13 +396,16 @@ export function generateAdditionWordProblemQuestion() {
     concept: "Base Ten",
     grade: "G4",
     subtopic: "addition word problems",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
 /**
  * Generates multi-step word problems involving both addition and subtraction (4.NBT.B.4)
+ * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateMultiStepWordProblemQuestion() {
+export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
   const scenarios = [
     {
       context: "school supplies",
@@ -370,11 +433,12 @@ export function generateMultiStepWordProblemQuestion() {
 
   let questionText, answer;
   
+  // Scale number ranges by difficulty
   switch (scenario.context) {
     case "school supplies":
-      const initial = getRandomInt(25000, 75000);
-      const bought = getRandomInt(15000, 35000);
-      const used = getRandomInt(20000, 45000);
+      const initial = getRandomInt(25000 + Math.floor(difficulty * 20000), 50000 + Math.floor(difficulty * 25000));
+      const bought = getRandomInt(15000 + Math.floor(difficulty * 10000), 25000 + Math.floor(difficulty * 10000));
+      const used = getRandomInt(20000 + Math.floor(difficulty * 10000), 35000 + Math.floor(difficulty * 10000));
       answer = initial + bought - used;
       questionText = scenario.question(
         names.schools[getRandomInt(0, names.schools.length - 1)],
@@ -382,9 +446,9 @@ export function generateMultiStepWordProblemQuestion() {
       );
       break;
     case "concert tickets":
-      const capacity = getRandomInt(35000, 85000);
-      const sold1 = getRandomInt(15000, 30000);
-      const sold2 = getRandomInt(10000, 25000);
+      const capacity = getRandomInt(35000 + Math.floor(difficulty * 30000), 60000 + Math.floor(difficulty * 25000));
+      const sold1 = getRandomInt(15000 + Math.floor(difficulty * 10000), 25000 + Math.floor(difficulty * 5000));
+      const sold2 = getRandomInt(10000 + Math.floor(difficulty * 10000), 20000 + Math.floor(difficulty * 5000));
       answer = capacity - (sold1 + sold2);
       questionText = scenario.question(
         names.venues[getRandomInt(0, names.venues.length - 1)],
@@ -392,9 +456,9 @@ export function generateMultiStepWordProblemQuestion() {
       );
       break;
     case "charity drive":
-      const goal = getRandomInt(75000, 150000);
-      const week1 = getRandomInt(20000, 40000);
-      const week2 = getRandomInt(15000, 35000);
+      const goal = getRandomInt(75000 + Math.floor(difficulty * 40000), 120000 + Math.floor(difficulty * 30000));
+      const week1 = getRandomInt(20000 + Math.floor(difficulty * 15000), 35000 + Math.floor(difficulty * 5000));
+      const week2 = getRandomInt(15000 + Math.floor(difficulty * 15000), 30000 + Math.floor(difficulty * 5000));
       answer = goal - (week1 + week2);
       questionText = scenario.question(
         names.organizations[getRandomInt(0, names.organizations.length - 1)],
@@ -408,7 +472,7 @@ export function generateMultiStepWordProblemQuestion() {
 
   // Ensure answer is positive
   if (answer < 0) {
-    return generateMultiStepWordProblemQuestion();
+    return generateMultiStepWordProblemQuestion(difficulty);
   }
   const correctAnswer = answer.toString();
   const potentialDistractors = [
@@ -426,6 +490,8 @@ export function generateMultiStepWordProblemQuestion() {
     concept: "Base Ten", 
     grade: "G4",
     subtopic: "multi-step word problems",
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
   };
 }
 
