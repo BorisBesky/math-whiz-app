@@ -2986,7 +2986,6 @@ Answer: [The answer]`;
         {renderHeader()}
         {renderModal()}
         {renderResumeModal()}
-        {renderContent()}
         <SketchOverlay 
           isVisible={showSketchOverlay} 
           onClose={() => setShowSketchOverlay(false)} 

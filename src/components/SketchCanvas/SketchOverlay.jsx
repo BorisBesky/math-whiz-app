@@ -1,48 +1,15 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import SketchControls from './SketchControls';
 import './SketchCanvas.css';
 
 const SketchOverlay = ({ isVisible, onClose }) => {
   const canvasRef = useRef(null);
+  const currentStrokeRef = useRef(null); // Use ref to store mutable stroke data during drawing
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState('draw'); // 'draw' or 'erase'
   const [strokes, setStrokes] = useState([]); // Array of stroke objects
-  const [currentStroke, setCurrentStroke] = useState(null);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
-
-  // Redraw all strokes on canvas - wrapped in useCallback to avoid dependency issues
-  const redrawCanvas = useCallback((ctx) => {
-    if (!ctx) return;
-    
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // Only draw strokes up to currentStrokeIndex
-    const strokesToDraw = currentStrokeIndex >= 0 
-      ? strokes.slice(0, currentStrokeIndex + 1)
-      : strokes;
-
-    strokesToDraw.forEach(stroke => {
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.globalCompositeOperation = stroke.mode === 'erase' ? 'destination-out' : 'source-over';
-
-      ctx.beginPath();
-      stroke.points.forEach((point, index) => {
-        if (index === 0) {
-          ctx.moveTo(point.x, point.y);
-        } else {
-          ctx.lineTo(point.x, point.y);
-        }
-      });
-      ctx.stroke();
-    });
-
-    // Reset composite operation
-    ctx.globalCompositeOperation = 'source-over';
-  }, [strokes, currentStrokeIndex]);
 
   // Initialize canvas
   useEffect(() => {
@@ -55,8 +22,8 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      // Redraw all strokes after resize
-      redrawCanvas(ctx);
+      // Context will be set and trigger redraw effect
+      setContext(ctx);
     };
 
     resizeCanvas();
@@ -66,7 +33,40 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     return () => {
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [isVisible, redrawCanvas]);
+  }, [isVisible]);
+
+  // Redraw canvas whenever strokes, index, or context changes
+  useEffect(() => {
+    if (!context || !isVisible) return;
+    
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    
+    // Only draw strokes up to currentStrokeIndex
+    const strokesToDraw = currentStrokeIndex >= 0 
+      ? strokes.slice(0, currentStrokeIndex + 1)
+      : [];
+
+    strokesToDraw.forEach(stroke => {
+      context.strokeStyle = stroke.color;
+      context.lineWidth = stroke.width;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.globalCompositeOperation = stroke.mode === 'erase' ? 'destination-out' : 'source-over';
+
+      context.beginPath();
+      stroke.points.forEach((point, index) => {
+        if (index === 0) {
+          context.moveTo(point.x, point.y);
+        } else {
+          context.lineTo(point.x, point.y);
+        }
+      });
+      context.stroke();
+    });
+
+    // Reset composite operation
+    context.globalCompositeOperation = 'source-over';
+  }, [strokes, currentStrokeIndex, context, isVisible]);
 
   // Get coordinates from mouse or touch event
   const getCoordinates = (e) => {
@@ -94,40 +94,37 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     e.preventDefault();
     setIsDrawing(true);
     const coords = getCoordinates(e);
-    setCurrentStroke({
+    // Store stroke in ref to avoid re-renders during drawing
+    currentStrokeRef.current = {
       points: [coords],
       color: currentTool === 'draw' ? '#000000' : '#FFFFFF',
       width: currentTool === 'draw' ? 3 : 20,
       mode: currentTool
-    });
+    };
   };
 
   // Draw
   const draw = (e) => {
-    if (!isDrawing || !context || !currentStroke) return;
+    if (!isDrawing || !context || !currentStrokeRef.current) return;
     e.preventDefault();
 
     const coords = getCoordinates(e);
-    const newStroke = {
-      ...currentStroke,
-      points: [...currentStroke.points, coords]
-    };
-    setCurrentStroke(newStroke);
+    
+    // Mutate the ref directly - no re-render!
+    const currentStroke = currentStrokeRef.current;
+    const lastPoint = currentStroke.points[currentStroke.points.length - 1];
+    currentStroke.points.push(coords);
 
     // Draw the current segment
-    context.strokeStyle = newStroke.color;
-    context.lineWidth = newStroke.width;
+    context.strokeStyle = currentStroke.color;
+    context.lineWidth = currentStroke.width;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    context.globalCompositeOperation = currentTool === 'erase' ? 'destination-out' : 'source-over';
-
-    const points = newStroke.points;
-    const lastPoint = points[points.length - 2];
-    const currentPoint = points[points.length - 1];
+    context.globalCompositeOperation = currentStroke.mode === 'erase' ? 'destination-out' : 'source-over';
 
     context.beginPath();
     context.moveTo(lastPoint.x, lastPoint.y);
-    context.lineTo(currentPoint.x, currentPoint.y);
+    context.lineTo(coords.x, coords.y);
     context.stroke();
   };
 
@@ -138,24 +135,26 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     
     setIsDrawing(false);
 
-    if (currentStroke && currentStroke.points.length > 0) {
+    // Now commit the stroke from ref to state (only one re-render per stroke!)
+    if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
       // Remove any strokes after current index (for redo functionality)
       const newStrokes = currentStrokeIndex >= 0 
-        ? [...strokes.slice(0, currentStrokeIndex + 1), currentStroke]
-        : [...strokes, currentStroke];
+        ? [...strokes.slice(0, currentStrokeIndex + 1), currentStrokeRef.current]
+        : [...strokes, currentStrokeRef.current];
       
       setStrokes(newStrokes);
       setCurrentStrokeIndex(newStrokes.length - 1);
     }
 
-    setCurrentStroke(null);
+    // Clear the ref
+    currentStrokeRef.current = null;
   };
 
   // Undo last stroke
   const handleUndo = () => {
     if (currentStrokeIndex >= 0) {
       setCurrentStrokeIndex(currentStrokeIndex - 1);
-      redrawCanvas(context);
+      // Redraw will happen automatically via useEffect
     }
   };
 
@@ -163,7 +162,7 @@ const SketchOverlay = ({ isVisible, onClose }) => {
   const handleRedo = () => {
     if (currentStrokeIndex < strokes.length - 1) {
       setCurrentStrokeIndex(currentStrokeIndex + 1);
-      redrawCanvas(context);
+      // Redraw will happen automatically via useEffect
     }
   };
 
@@ -174,7 +173,7 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     }
     setStrokes([]);
     setCurrentStrokeIndex(-1);
-    setCurrentStroke(null);
+    currentStrokeRef.current = null;
     onClose();
   };
 
