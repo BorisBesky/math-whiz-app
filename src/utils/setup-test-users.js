@@ -40,7 +40,7 @@ const setupTestUsers = async () => {
       const user = userCredential.user;
       
       // Create user profile in Firestore
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main'), {
+      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'math_whiz_data', 'profile'), {
         email: userData.email,
         role: userData.role,
         displayName: userData.displayName,

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, linkWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { USER_ROLES } from '../utils/userRoles';
 
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   // Get user profile with role from Firestore
   const getUserProfile = useCallback(async (userId) => {
     try {
-      const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'main'));
+      const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile'));
       if (userDoc.exists()) {
         return userDoc.data();
       }
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   // Create or update user profile with role
   const setUserProfile = useCallback(async (userId, profileData) => {
     try {
-      await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'main'), profileData, { merge: true });
+      await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile'), profileData, { merge: true });
     } catch (error) {
       console.error('Error setting user profile:', error);
     }
@@ -61,19 +61,26 @@ export const AuthProvider = ({ children }) => {
 
           // Check for admin custom claim first (highest priority)
           if (idTokenResult.claims.admin === true) {
-            role = USER_ROLES.ADMIN;
-            console.log('Auth Debug - Admin role from custom claims');
-            
-            // Ensure admin user has a profile in Firestore
+            // Check if this is a teacher with admin claims or a true admin
             const profile = await getUserProfile(firebaseUser.uid);
-            if (!profile) {
-              await setUserProfile(firebaseUser.uid, {
-                role: USER_ROLES.ADMIN,
-                email: firebaseUser.email,
-                createdAt: new Date(),
-                isAdmin: true
-              });
-              console.log('Auth Debug - Created admin profile in Firestore');
+            
+            if (profile && profile.role === USER_ROLES.TEACHER) {
+              role = USER_ROLES.TEACHER;
+              console.log('Auth Debug - Teacher role with admin claims');
+            } else {
+              role = USER_ROLES.ADMIN;
+              console.log('Auth Debug - Admin role from custom claims');
+              
+              // Ensure admin user has a profile in Firestore
+              if (!profile) {
+                await setUserProfile(firebaseUser.uid, {
+                  role: USER_ROLES.ADMIN,
+                  email: firebaseUser.email,
+                  createdAt: new Date(),
+                  isAdmin: true
+                });
+                console.log('Auth Debug - Created admin profile in Firestore');
+              }
             }
           } else {
             // Get user profile from Firestore for non-admin users
@@ -144,8 +151,31 @@ export const AuthProvider = ({ children }) => {
             await signOut(auth);
             throw new Error(`This account is not registered as a ${expectedRole}`);
           }
+          // Also check that they're not actually a teacher
+          const profile = await getUserProfile(result.user.uid);
+          if (profile && profile.role === USER_ROLES.TEACHER) {
+            await signOut(auth);
+            throw new Error('This account is registered as a teacher. Please use the teacher login.');
+          }
+        } else if (expectedRole === USER_ROLES.TEACHER) {
+          // For teacher role, check both custom claims and profile
+          const idTokenResult = await result.user.getIdTokenResult();
+          if (!idTokenResult.claims.role === 'teacher') {
+            await signOut(auth);
+            throw new Error('This account does not have teacher permissions.');
+          }
+          const profile = await getUserProfile(result.user.uid);
+          if (!profile || profile.role !== USER_ROLES.TEACHER) {
+            await signOut(auth);
+            throw new Error('This account is not registered as a teacher.');
+          }
         } else {
-          // For student/teacher, check Firestore profile
+          // For student, check Firestore profile and ensure no admin claims
+          const idTokenResult = await result.user.getIdTokenResult();
+          if (idTokenResult.claims.admin) {
+            await signOut(auth);
+            throw new Error('This account has administrative privileges. Please use the appropriate login.');
+          }
           const profile = await getUserProfile(result.user.uid);
           if (!profile || profile.role !== expectedRole) {
             await signOut(auth);
@@ -161,11 +191,57 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
+  // Sign in with Google and verify role
+  const registerWithGoogle = async (expectedRole) => {
+    try {
+      setError(null);
+      const provider = new GoogleAuthProvider();
+
+      // If user is anonymous, link the account.
+      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
+        const result = await linkWithPopup(auth.currentUser, provider);
+        const user = result.user;
+        
+        // Update profile to non-anonymous
+        await setUserProfile(user.uid, {
+          email: user.email,
+          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
+          isAnonymous: false,
+          displayName: user.displayName,
+          convertedAt: new Date()
+        });
+
+        return user;
+      }
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
   // Sign in with Google and verify role
   const loginWithGoogle = async (expectedRole) => {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
+
+      // If user is anonymous, link the account. Otherwise, sign in.
+      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
+        const result = await linkWithPopup(auth.currentUser, provider);
+        const user = result.user;
+        
+        // Update profile to non-anonymous
+        await setUserProfile(user.uid, {
+          email: user.email,
+          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
+          isAnonymous: false,
+          displayName: user.displayName,
+          convertedAt: new Date()
+        });
+
+        return user;
+      }
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
@@ -176,8 +252,31 @@ export const AuthProvider = ({ children }) => {
           await signOut(auth);
           throw new Error(`This account is not registered as a ${expectedRole}`);
         }
+        // Also check that they're not actually a teacher
+        const profile = await getUserProfile(user.uid);
+        if (profile && profile.role === USER_ROLES.TEACHER) {
+          await signOut(auth);
+          throw new Error('This account is registered as a teacher. Please use the teacher login.');
+        }
+      } else if (expectedRole === USER_ROLES.TEACHER) {
+        // For teacher role, check both custom claims and profile
+        const idTokenResult = await user.getIdTokenResult();
+        if (!idTokenResult.claims.admin) {
+          await signOut(auth);
+          throw new Error('This account does not have teacher permissions. Please contact your administrator.');
+        }
+        const profile = await getUserProfile(user.uid);
+        if (!profile || profile.role !== USER_ROLES.TEACHER) {
+          await signOut(auth);
+          throw new Error('This account is not registered as a teacher.');
+        }
       } else {
         // For other roles, check Firestore profile
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.admin) {
+          await signOut(auth);
+          throw new Error('This account has administrative privileges. Please use the appropriate login.');
+        }
         const profile = await getUserProfile(user.uid);
         if (profile) {
           if (profile.role !== expectedRole) {
@@ -185,14 +284,19 @@ export const AuthProvider = ({ children }) => {
             throw new Error(`This account is registered as a ${profile.role}, not as a ${expectedRole}.`);
           }
         } else {
-          // If no profile exists, create one for the new user
-          await setUserProfile(user.uid, {
-            email: user.email,
-            role: expectedRole,
-            createdAt: new Date(),
-            isAnonymous: false,
-            displayName: user.displayName,
-          });
+          // If no profile exists, create one for the new user (only for students)
+          if (expectedRole === USER_ROLES.STUDENT) {
+            await setUserProfile(user.uid, {
+              email: user.email,
+              role: expectedRole,
+              createdAt: new Date(),
+              isAnonymous: false,
+              displayName: user.displayName,
+            });
+          } else {
+            await signOut(auth);
+            throw new Error(`No profile found for this account. Please contact your administrator.`);
+          }
         }
       }
       return user;
@@ -212,9 +316,31 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Admin accounts must be created by system administrators using the set-admin script');
       }
       
+      // // For teacher registration, use the create-teacher API to get admin claims
+      // if (role === USER_ROLES.TEACHER) {
+      //   throw new Error('Teacher accounts must be created by administrators through the admin portal. Please contact your administrator to create a teacher account.');
+      // }
+
+      // If user is anonymous, link the account. Otherwise, create a new one.
+      if (auth.currentUser && auth.currentUser.isAnonymous) {
+        const credential = EmailAuthProvider.credential(email, password);
+        const result = await linkWithCredential(auth.currentUser, credential);
+        
+        // Update profile
+        await setUserProfile(result.user.uid, {
+          email,
+          role,
+          isAnonymous: false,
+          convertedAt: new Date(),
+          ...additionalData
+        });
+        
+        return result.user;
+      }
+      
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Set user profile with role
+      // Set user profile with role (only for students at this point)
       await setUserProfile(result.user.uid, {
         email,
         role,
@@ -224,33 +350,6 @@ export const AuthProvider = ({ children }) => {
       });
       
       return result.user;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Convert guest account to registered account
-  const convertGuestToRegistered = async (email, password) => {
-    try {
-      setError(null);
-      if (!user || !user.isAnonymous) {
-        throw new Error('Can only convert anonymous accounts');
-      }
-
-      // Update the anonymous user with email/password
-      const credential = EmailAuthProvider.credential(email, password);
-      await linkWithCredential(user, credential);
-      
-      // Update profile
-      await setUserProfile(user.uid, {
-        email,
-        role: USER_ROLES.STUDENT,
-        isAnonymous: false,
-        convertedAt: new Date()
-      });
-      
-      return user;
     } catch (error) {
       setError(error.message);
       throw error;
@@ -268,6 +367,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Reset password
+  const resetPassword = async (email) => {
+    try {
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     userRole,
@@ -276,9 +386,10 @@ export const AuthProvider = ({ children }) => {
     loginAsGuest,
     loginWithEmail,
     loginWithGoogle,
+    registerWithGoogle,
     registerWithEmail,
-    convertGuestToRegistered,
     logout,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

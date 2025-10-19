@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+		// Allow anonymous students to access their records
+    // match /{document=**} {
+    //  allow read, write: if request.time < timestamp.date(2026, 10, 12);
+    // }
+    
+    // Helper function to check if the requester is a teacher
+    // This now checks for the 'teacher' custom claim.
+    function isTeacher() {
+      return request.auth != null && 'role' in request.auth.token && request.auth.token.role == 'teacher';
+    }
+
+    // Helper function to check if the requester is an admin
+    // This remains the same, checking for the 'admin' custom claim.
+    function isAdmin() {
+      return request.auth != null && 'admin' in request.auth.token && request.auth.token.admin == true;
+    }
+
+    match /artifacts/{appId} {
+
+      // Rules for user profiles
+      match /users/{userId}/math_whiz_data/profile {
+        // Students can access their own data.
+        // Teachers can access data of students in their classes.
+        // Admins can access all user data.
+        allow read, write: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isAdmin() ||
+                              (isTeacher() && (request.auth.uid in resource.data.teacherIds))
+                            );
+      }
+
+      // Rules for classes
+      match /classes/{classId} {
+        // Teachers can manage their own classes.
+        // Admins can manage all classes.
+        // Authenticated users can read class details.
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (
+                       isAdmin() ||
+                       (isTeacher() && request.resource.data.teacherId == request.auth.uid)
+                     );
+      }
+
+      // Rules for class enrollments
+      match /classStudents/{enrollmentId} {
+        // Teachers can manage enrollments for their own classes.
+        // Admins can manage all enrollments.
+        // Authenticated users can read enrollment data.
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (
+                       isAdmin() ||
+                       (isTeacher() && get(/databases/$(database)/documents/artifacts/$(appId)/classes/$(resource.data.classId)).data.teacherId == request.auth.uid)
+                     );
+      }
+    }
+  }
+}

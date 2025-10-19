@@ -38,6 +38,9 @@ import {
   increment,
   arrayUnion,
   getDoc,
+  collection,
+  query,
+  where,
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
 import { USER_ROLES } from './utils/userRoles';
@@ -81,6 +84,9 @@ if (typeof __firebase_config !== "undefined") {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Export db for use in other modules
+export { db };
 
 const DEFAULT_DAILY_GOAL = 4;
 const DAILY_GOAL_BONUS = 10;
@@ -559,6 +565,15 @@ const App = () => {
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
     useState(false);
+  // Enrollment state derived solely from artifacts/{appId}/classStudents
+  const [isEnrolled, setIsEnrolled] = useState(false);
+
+  // Navigate to login page for anonymous users to upgrade their account
+  const handleUserClick = () => {
+    if (authUser && authUser.isAnonymous) {
+      navigate('/student-login?mode=signup');
+    }
+  };
 
   // Custom logout handler that navigates to login page
   const handleLogout = async () => {
@@ -603,7 +618,6 @@ const App = () => {
         renderMathInElement(quizContainerRef.current, {
           delimiters: [
             { left: "$$", right: "$$", display: true },
-            { left: "$", right: "$", display: false },
             { left: "\\(", right: "\\)", display: false },
             { left: "\\[", right: "\\]", display: true },
           ],
@@ -627,9 +641,11 @@ const App = () => {
   // --- Firebase Auth and Data Loading ---
   useEffect(() => {
     let unsubscribeSnapshot = () => {};
+    let unsubscribeEnrollment = () => {};
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       unsubscribeSnapshot(); // Clean up previous listener if user changes
+      unsubscribeEnrollment();
 
       if (currentUser) {
         setUser(currentUser);
@@ -783,6 +799,12 @@ const App = () => {
               if (needsUpdate) {
                 updateDoc(userDocRef, updatePayload);
               }
+
+              // Ensure ownedBackgrounds exists to prevent crashes
+              if (!data.ownedBackgrounds) {
+                data.ownedBackgrounds = ['default'];
+                updateDoc(userDocRef, { ownedBackgrounds: ['default'] });
+              }
             } else {
               const today = getTodayDateString();
 
@@ -836,6 +858,13 @@ const App = () => {
                 dailyStories: { [today]: {} },
                 answeredQuestions: [],
                 lastAskedComplexityByTopic: {},
+                createdAt: new Date().toISOString(),
+                role: "student",
+                displayName: "Young Mathematician",
+                // Add other initial fields as needed
+                email: currentUser.isAnonymous
+                  ? null
+                  : currentUser.email || null,
               };
               setDoc(userDocRef, initialData).then(() => {
                 setUserData(initialData);
@@ -848,6 +877,26 @@ const App = () => {
             console.error("Firestore snapshot error:", error);
           }
         );
+
+        // Subscribe to class enrollment using classStudents as the only source of truth
+        try {
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+          const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');
+          const q = query(enrollmentsRef, where('studentId', '==', currentUser.uid));
+          unsubscribeEnrollment = onSnapshot(
+            q,
+            (snap) => {
+              setIsEnrolled(!snap.empty);
+            },
+            (err) => {
+              console.warn('Enrollment subscription error:', err);
+              setIsEnrolled(false);
+            }
+          );
+        } catch (e) {
+          console.warn('Failed to subscribe to enrollment:', e);
+          setIsEnrolled(false);
+        }
       } else {
         setUser(null);
         setUserData(null);
@@ -872,6 +921,7 @@ const App = () => {
     return () => {
       unsubscribeAuth();
       unsubscribeSnapshot();
+      unsubscribeEnrollment();
     };
   }, []);
 
@@ -1668,7 +1718,11 @@ Answer: [The answer]`;
         
         {/* User info section */}
         {authUser && (
-          <div className="flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+          <div 
+            className={`flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-200 transition' : ''}`}
+            onClick={handleUserClick}
+            title={authUser.isAnonymous ? "Click to create an account and save your progress!" : (authUser.displayName || authUser.email)}
+          >
             <User size={16} />
             <span className="text-sm font-medium">
               {authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
@@ -1755,6 +1809,12 @@ Answer: [The answer]`;
     const currentTopics =
       quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
 
+    // Determine permissions for editing goals
+    const isTeacherOrAdmin =
+      userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole);
+  const isEnrolledStudent = !isTeacherOrAdmin && isEnrolled;
+    const canEditGoals = isTeacherOrAdmin || !isEnrolledStudent;
+
     // Get today's answered questions for the selected grade
     const todaysQuestions =
       userData?.answeredQuestions?.filter(
@@ -1828,6 +1888,9 @@ Answer: [The answer]`;
       {};
 
     const handleGradeGoalChange = async (e, topic) => {
+      if (!canEditGoals) {
+        return; // Enrolled students cannot modify goals
+      }
       const newGoal = parseInt(e.target.value, 10);
       if (user && !isNaN(newGoal) && newGoal > 0) {
         const userDocRef = getUserDocRef(user.uid);
@@ -1879,6 +1942,13 @@ Answer: [The answer]`;
           </div>
         </div>
 
+        {/* Show a friendly note if goals are managed by a teacher */}
+        {!canEditGoals && (
+          <div className="mb-4 text-center text-sm text-gray-600">
+            Goals are managed by your teacher and can't be changed here.
+          </div>
+        )}
+
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
           {currentTopics.map((topic) => (
             <div key={topic}>
@@ -1888,21 +1958,29 @@ Answer: [The answer]`;
               >
                 {topic}
               </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  id={`goal-${topic}`}
-                  min={GOAL_RANGE_MIN}
-                  max={GOAL_RANGE_MAX}
-                  step={GOAL_RANGE_STEP}
-                  value={dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL}
-                  onChange={(e) => handleGradeGoalChange(e, topic)}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
-                  {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
-                </span>
-              </div>
+              {canEditGoals ? (
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    id={`goal-${topic}`}
+                    min={GOAL_RANGE_MIN}
+                    max={GOAL_RANGE_MAX}
+                    step={GOAL_RANGE_STEP}
+                    value={dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL}
+                    onChange={(e) => handleGradeGoalChange(e, topic)}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-20 text-center">
+                    {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <span className="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-24 text-center">
+                    {dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL} Qs
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -2398,18 +2476,18 @@ Answer: [The answer]`;
                   </div>
                 </div>
               ))}
-            </div>
-          )}
 
-          {/* Reset button when all topics are completed */}
-          {allCompleted && (
-            <div className="mt-4">
-              <button
-                onClick={resetAllProgress}
-                className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
-              >
-                <Award size={20} /> Start Fresh Cycle
-              </button>
+              {/* Reset button when all topics are completed */}
+              {allCompleted && (
+                <div className="mt-4">
+                  <button
+                    onClick={resetAllProgress}
+                    className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <Award size={20} /> Start Fresh Cycle
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2666,7 +2744,7 @@ Answer: [The answer]`;
           )}
           <button
             onClick={returnToTopics}
-            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105"
+            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
           >
             Choose New Topic
           </button>

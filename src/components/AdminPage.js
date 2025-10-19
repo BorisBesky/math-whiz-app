@@ -78,13 +78,15 @@ const AdminPage = () => {
     try {
       await signOut(auth);
       console.log("Admin user signed out.");
-      // The onAuthStateChanged listener will automatically set isAdminAuthenticated to false
-      // and show the login screen again
+      // Redirect explicitly to unified login page
+      window.location.assign('/login');
     } catch (error) {
       console.error('Error signing out:', error);
       // Force logout state even if sign out fails
       setIsAdminAuthenticated(false);
       setUser(null);
+      // Best effort redirect to login
+      try { window.location.assign('/login'); } catch(_) {}
     }
   };
 

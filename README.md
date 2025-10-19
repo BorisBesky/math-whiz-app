@@ -108,7 +108,12 @@ The app features a sophisticated complexity engine that:
 - Implements progressive difficulty scaling
 - Maintains topic-specific performance history
 
-### Data Structure
+### Database Architecture
+The application uses Firebase Firestore with a multi-tenant structure. For detailed information about the data model, see:
+- **[Firestore Data Model](./FIRESTORE_DATA_MODEL.md)** - Complete schema documentation
+- **[Data Examples](./FIRESTORE_DATA_EXAMPLES.md)** - Sample data structures and queries
+
+### Data Structure Overview
 ```javascript
 // User progress is organized by grade and topic
 {

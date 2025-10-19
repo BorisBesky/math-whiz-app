@@ -19,10 +19,12 @@ import {
   UserCheck
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
 const AdminPortal = ({ db, onClose, appId }) => {
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -40,6 +42,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
+  const [showBulkClassAssignment, setShowBulkClassAssignment] = useState(false);
+  const [selectedBulkClass, setSelectedBulkClass] = useState('');
+  const [selectedTeachers, setSelectedTeachers] = useState(new Set());
+  const [isSelectAllTeachers, setIsSelectAllTeachers] = useState(false);
   
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
@@ -52,6 +58,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const fetchStudentData = useCallback(async () => {
     try {
+      console.log('fetchStudentData: starting');
       setLoading(true);
       setError('');
       const auth = getAuth();
@@ -62,6 +69,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       }
 
       const token = await user.getIdToken();
+      console.log('fetchStudentData: calling get-all-students API');
       
       const response = await fetch('/.netlify/functions/get-all-students', {
         method: 'POST',
@@ -72,6 +80,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         body: JSON.stringify({ appId })
       });
 
+      console.log('fetchStudentData: API response status', response.status);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Request failed with status ${response.status}`);
@@ -105,11 +114,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
+        const classNames = data.teacherIds?.length > 0 
+          ? classes.filter(c => data.teacherIds.includes(c.teacherId)).map(c => c.name).join(', ') || 'Unassigned'
+          : 'Unassigned';
+
         return {
           id: data.id,
           selectedGrade: data.selectedGrade || 'G3',
           coins: data.coins || 0,
-          class: data.class || 'Unassigned',
+          class: classNames,
+          classId: data.classId,
           totalQuestions: totalStudentQuestions,
           questionsToday: questionsToday.length,
           accuracy: accuracy,
@@ -138,32 +152,53 @@ const AdminPortal = ({ db, onClose, appId }) => {
     } finally {
       setLoading(false);
     }
-  }, [appId]);
+  }, [appId, classes]);
 
   const fetchTeachers = useCallback(async () => {
     try {
-      const teachersRef = collection(db, 'artifacts', appId, 'teachers');
-      const snapshot = await getDocs(teachersRef);
-      const teachersList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("No authenticated user found.");
+      }
+
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/.netlify/functions/get-all-teachers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ appId })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+      }
+      
+      const teachersList = await response.json();
       setTeachers(teachersList);
     } catch (error) {
       console.error('Error fetching teachers:', error);
       setError(`Failed to fetch teachers: ${error.message}`);
     }
-  }, [db, appId]);
+  }, [appId]);
 
   const fetchClasses = useCallback(async () => {
     try {
+      console.log('fetchClasses: starting');
       const classesRef = collection(db, 'artifacts', appId, 'classes');
       const snapshot = await getDocs(classesRef);
+      console.log('fetchClasses: got', snapshot.docs.length, 'classes');
       const classesList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setClasses(classesList);
+      console.log('fetchClasses: classes set', classesList);
     } catch (error) {
       console.error('Error fetching classes:', error);
       setError(`Failed to fetch classes: ${error.message}`);
@@ -171,10 +206,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
   }, [db, appId]);
 
   useEffect(() => {
-    fetchStudentData();
+    console.log('AdminPortal useEffect: fetchTeachers and fetchClasses');
     fetchTeachers();
     fetchClasses();
-  }, [fetchStudentData, fetchTeachers, fetchClasses]);
+  }, [fetchTeachers, fetchClasses]);
+
+  useEffect(() => {
+    console.log('AdminPortal useEffect: calling fetchStudentData');
+    // Always fetch student data, regardless of classes
+    fetchStudentData();
+  }, [fetchStudentData]);
 
   const addTeacher = async () => {
     if (!newTeacher.name || !newTeacher.email) {
@@ -183,33 +224,88 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
 
     try {
-      const teacherId = newTeacher.email.replace(/[@.]/g, '_');
-      const teacherRef = doc(db, 'artifacts', appId, 'teachers', teacherId);
-      await setDoc(teacherRef, {
-        name: newTeacher.name,
-        email: newTeacher.email,
-        classes: [],
-        createdAt: new Date().toISOString()
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/.netlify/functions/create-teacher', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newTeacher.name,
+          email: newTeacher.email,
+          appId: appId
+        })
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create teacher');
+      }
+
+      console.log('Teacher created successfully:', result);
+      
+      // Show appropriate message based on reset email status
+      const message = `Teacher account created successfully!\n\n` +
+        `${result.resetMessage}\n\n` +
+        `Teacher Email: ${result.teacherEmail}\n\n` +
+        `Instructions: The teacher can now go to the login page and click "Forgot Password" ` +
+        `to receive a password reset email, or you can manually send them reset instructions.`;
+      
+      alert(message);
       
       setNewTeacher({ name: '', email: '' });
       setShowAddTeacher(false);
       fetchTeachers();
     } catch (error) {
       console.error('Error adding teacher:', error);
-      alert('Error adding teacher. Please try again.');
+      alert(`Error adding teacher: ${error.message}`);
     }
   };
 
-  const deleteTeacher = async (teacherId) => {
-    if (window.confirm('Are you sure you want to delete this teacher? This action cannot be undone.')) {
+  const deleteTeacher = async (teacher) => {
+    const teacherName = teacher.displayName || teacher.name || teacher.email || 'Unknown Teacher';
+    const confirmMessage = `Are you sure you want to delete teacher "${teacherName}" (${teacher.email})?\n\nThis will:\n- Remove their account and admin access\n- Delete their profile\n- Prevent them from logging in\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        const teacherRef = doc(db, 'artifacts', appId, 'teachers', teacherId);
-        await deleteDoc(teacherRef);
+        // Debug logging
+        console.log('Teacher object:', teacher);
+        console.log('AppId:', appId);
+        
+        const requestBody = {
+          teacherId: teacher.id,
+          teacherUid: teacher.uid,
+          appId: appId
+        };
+        
+        console.log('Request body:', requestBody);
+        
+        const token = await user.getIdToken();
+        
+        const response = await fetch('/.netlify/functions/delete-teacher', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to delete teacher');
+        }
+
+        console.log('Teacher deleted successfully:', result);
+        alert(`Teacher "${teacherName}" has been deleted successfully.`);
         fetchTeachers();
       } catch (error) {
         console.error('Error deleting teacher:', error);
-        alert('Error deleting teacher. Please try again.');
+        alert(`Error deleting teacher: ${error.message}`);
       }
     }
   };
@@ -221,25 +317,231 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
 
     try {
-      const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
-      await updateDoc(profileDocRef, {
-        class: selectedClass,
-        updatedAt: new Date().toISOString()
-      });
+      // Get auth token for the API call
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
       
-      // Update local state
-      setStudents(students.map(student => 
-        student.id === selectedStudentForClass.id 
-          ? { ...student, class: selectedClass }
-          : student
-      ));
+      if (!token) {
+        throw new Error('User not authenticated');
+      }
+
+      // Handle unassignment (removing from class)
+      if (selectedClass === 'Unassigned') {
+        // First, find and remove existing enrollment if any
+        if (selectedStudentForClass.classId) {
+          // Query to find the enrollment record
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}&appId=${appId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const enrollments = await response.json();
+            const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
+            
+            if (enrollment) {
+              // Remove the enrollment
+              const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (!deleteResponse.ok) {
+                const errorData = await deleteResponse.json();
+                throw new Error(errorData.error || 'Failed to remove student from class');
+              }
+            }
+          }
+        }
+
+        // Update the student's profile to remove classId
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
+        await updateDoc(profileDocRef, {
+          classId: null,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        setStudents(students.map(student => 
+          student.id === selectedStudentForClass.id 
+            ? { ...student, class: 'Unassigned', classId: null }
+            : student
+        ));
+
+        alert('Student successfully unassigned from class');
+      } else {
+        // Handle assignment to a specific class
+        
+        // First, remove from current class if enrolled
+        if (selectedStudentForClass.classId) {
+          const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}&appId=${appId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const enrollments = await response.json();
+            const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
+            
+            if (enrollment) {
+              await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+            }
+          }
+        }
+
+        // Add to new class
+        const response = await fetch('/.netlify/functions/class-students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            classId: selectedClass,
+            studentId: selectedStudentForClass.id,
+            studentEmail: selectedStudentForClass.email || '',
+            studentName: selectedStudentForClass.displayName || selectedStudentForClass.email || 'Unknown',
+            appId
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to assign student to class');
+        }
+
+        // Update the student's profile with the classId for backward compatibility
+        const profileDocRef = doc(db, 'artifacts', appId, 'users', selectedStudentForClass.id, 'math_whiz_data', 'profile');
+        await updateDoc(profileDocRef, {
+          classId: selectedClass,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        const assignedClassName = classes.find(c => c.id === selectedClass)?.name || 'Unassigned';
+        setStudents(students.map(student => 
+          student.id === selectedStudentForClass.id 
+            ? { ...student, class: assignedClassName, classId: selectedClass }
+            : student
+        ));
+
+        alert(`Student successfully assigned to ${assignedClassName}`);
+      }
       
       setShowClassAssignment(false);
       setSelectedStudentForClass(null);
       setSelectedClass('');
     } catch (error) {
-      console.error('Error assigning student to class:', error);
-      alert('Error assigning student to class. Please try again.');
+      console.error('Error managing student class assignment:', error);
+      alert(`Error managing student class assignment: ${error.message}`);
+    }
+  };
+
+  const bulkAssignStudentsToClass = async () => {
+    if (selectedStudents.size === 0) {
+      alert('Please select at least one student.');
+      return;
+    }
+    if (!selectedBulkClass) {
+      alert('Please select a class.');
+      return;
+    }
+
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        alert('Authentication required. Please sign in again.');
+        return;
+      }
+
+      const selectedIds = Array.from(selectedStudents);
+      const assignedClassName = selectedBulkClass === 'Unassigned'
+        ? 'Unassigned'
+        : (classes.find(c => c.id === selectedBulkClass)?.name || 'Unassigned');
+
+      if (selectedBulkClass === 'Unassigned') {
+        // Unassign all selected students from their current class if any
+        await Promise.all(selectedIds.map(async (studentId) => {
+          const student = students.find(s => s.id === studentId);
+          if (!student?.classId) return; // nothing to remove
+
+          try {
+            const resp = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${student.id}&appId=${appId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resp.ok) {
+              const enrollments = await resp.json();
+              const enrollment = enrollments.find(e => e.studentId === student.id && e.classId === student.classId);
+              if (enrollment) {
+                await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('Could not remove class enrollment for student:', studentId, e);
+          }
+
+          // Update profile to remove classId
+          const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+          await updateDoc(profileDocRef, { classId: null, updatedAt: new Date().toISOString() });
+        }));
+
+        // Update local state
+        setStudents(prev => prev.map(s => selectedStudents.has(s.id) ? { ...s, class: 'Unassigned', classId: null } : s));
+      } else {
+        // Assign all selected students to the chosen class
+        await Promise.all(selectedIds.map(async (studentId) => {
+          const student = students.find(s => s.id === studentId);
+          try {
+            await fetch('/.netlify/functions/class-students', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                classId: selectedBulkClass,
+                studentId,
+                studentEmail: student?.email || '',
+                studentName: student?.displayName || student?.email || 'Unknown',
+                appId
+              })
+            });
+          } catch (e) {
+            console.warn('Failed to assign student to class:', studentId, e);
+          }
+
+          // Update the student's profile with the classId
+          const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+          await updateDoc(profileDocRef, { classId: selectedBulkClass, updatedAt: new Date().toISOString() });
+        }));
+
+        // Update local state
+        setStudents(prev => prev.map(s => selectedStudents.has(s.id) ? { ...s, class: assignedClassName, classId: selectedBulkClass } : s));
+      }
+
+      alert(`Updated ${selectedStudents.size} student(s): ${assignedClassName}`);
+      setShowBulkClassAssignment(false);
+      setSelectedBulkClass('');
+      setSelectedStudents(new Set());
+      setIsSelectAll(false);
+    } catch (error) {
+      console.error('Error in bulk class assignment:', error);
+      alert(`Error in bulk class assignment: ${error.message}`);
     }
   };
 
@@ -272,16 +574,56 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const deleteStudent = async (studentId) => {
     if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
       try {
+        // Get auth token for the API call
+        const auth = getAuth();
+        const token = await auth.currentUser?.getIdToken();
+        
+        if (token) {
+          // Find and remove any class enrollments for this student
+          const student = students.find(s => s.id === studentId);
+          if (student && student.classId) {
+            try {
+              const response = await fetch(`/.netlify/functions/class-students?classId=${student.classId}&studentId=${studentId}&appId=${appId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (response.ok) {
+                const enrollments = await response.json();
+                const enrollment = enrollments.find(e => e.studentId === studentId && e.classId === student.classId);
+                
+                if (enrollment) {
+                  await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                }
+              }
+            } catch (error) {
+              console.warn('Could not remove class enrollment, but continuing with student deletion:', error);
+            }
+          }
+        }
+
+        // Delete the student's profile
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
         await deleteDoc(profileDocRef);
+        
+        // Update local state
         setStudents(students.filter(s => s.id !== studentId));
         if (selectedStudent?.id === studentId) {
           setSelectedStudent(null);
           setView('students');
         }
+        
+        alert('Student successfully deleted');
       } catch (error) {
         console.error('Error deleting student:', error);
-        alert('Error deleting student. Please try again.');
+        alert(`Error deleting student: ${error.message}`);
       }
     }
   };
@@ -339,6 +681,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
           aValue = a.selectedGrade;
           bValue = b.selectedGrade;
           break;
+        case 'class':
+          aValue = (a.class || 'Unassigned').toLowerCase();
+          bValue = (b.class || 'Unassigned').toLowerCase();
+          break;
         case 'questionsToday':
           aValue = a.questionsToday;
           bValue = b.questionsToday;
@@ -369,6 +715,32 @@ const AdminPortal = ({ db, onClose, appId }) => {
       if (aValue > bValue) {
         return sortDirection === 'asc' ? 1 : -1;
       }
+      return 0;
+    });
+  };
+
+  const getSortedTeachers = () => {
+    if (!['teacher', 'email', 'createdAt'].includes(sortField)) return teachers;
+    return [...teachers].sort((a, b) => {
+      let aValue, bValue;
+      switch (sortField) {
+        case 'teacher':
+          aValue = (a.displayName || a.name || '').toLowerCase();
+          bValue = (b.displayName || b.name || '').toLowerCase();
+          break;
+        case 'email':
+          aValue = (a.email || '').toLowerCase();
+          bValue = (b.email || '').toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   };
@@ -432,6 +804,72 @@ const AdminPortal = ({ db, onClose, appId }) => {
       alert('Error deleting students. Please try again.');
     }
   };
+  
+  const handleSelectTeacher = (teacherId) => {
+    const newSelected = new Set(selectedTeachers);
+    if (newSelected.has(teacherId)) {
+      newSelected.delete(teacherId);
+    } else {
+      newSelected.add(teacherId);
+    }
+    setSelectedTeachers(newSelected);
+  setIsSelectAllTeachers(newSelected.size === getSortedTeachers().length);
+  };
+  
+  const handleSelectAllTeachers = () => {
+    if (isSelectAllTeachers) {
+      setSelectedTeachers(new Set());
+      setIsSelectAllTeachers(false);
+    } else {
+  const allIds = new Set(getSortedTeachers().map(t => t.id));
+      setSelectedTeachers(allIds);
+      setIsSelectAllTeachers(true);
+    }
+  };
+  
+  const handleBulkDeleteTeachers = async () => {
+    if (selectedTeachers.size === 0) {
+      alert('No teachers selected.');
+      return;
+    }
+    const count = selectedTeachers.size;
+    const confirmMessage = `Are you sure you want to delete ${count} teacher(s)?\n\nThis will remove their accounts and profiles. This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const token = await user.getIdToken();
+      const selectedIds = Array.from(selectedTeachers);
+
+      await Promise.all(selectedIds.map(async (id) => {
+        const t = teachers.find(tt => tt.id === id);
+        if (!t) return;
+        const requestBody = { teacherId: t.id, teacherUid: t.uid, appId };
+        const resp = await fetch('/.netlify/functions/delete-teacher', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+        if (!resp.ok) {
+          let message = 'Failed to delete teacher';
+          try { const j = await resp.json(); message = j.error || message; } catch {}
+          throw new Error(`${t.email || t.id}: ${message}`);
+        }
+      }));
+
+      alert(`Deleted ${count} teacher(s) successfully.`);
+      setSelectedTeachers(new Set());
+      setIsSelectAllTeachers(false);
+      fetchTeachers();
+    } catch (error) {
+      console.error('Bulk delete teachers error:', error);
+      alert(`Error deleting some teachers: ${error.message}`);
+      // Still refresh to reflect partial progress
+      fetchTeachers();
+    }
+  };
 
   if (loading) {
     return (
@@ -485,6 +923,27 @@ const AdminPortal = ({ db, onClose, appId }) => {
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Selected ({selectedStudents.size})</span>
+              </button>
+            )}
+            {view === 'teachers' && (
+              <button
+                onClick={handleBulkDeleteTeachers}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedTeachers.size === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedTeachers.size})</span>
+              </button>
+            )}
+            {view === 'students' && (
+              <button
+                onClick={() => setShowBulkClassAssignment(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedStudents.size === 0}
+                title="Assign selected students to a class"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Assign To Class</span>
               </button>
             )}
             <button
@@ -653,8 +1112,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('grade')}
                           </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Class
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('class')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Class
+                            {getSortIcon('class')}
+                          </div>
                         </th>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
@@ -838,14 +1303,40 @@ const AdminPortal = ({ db, onClose, appId }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Teacher
+                        <th className="px-6 py-4 text-left">
+                          <input
+                            type="checkbox"
+                            checked={isSelectAllTeachers}
+                            onChange={handleSelectAllTeachers}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('teacher')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Teacher
+                            {getSortIcon('teacher')}
+                          </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Classes
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('email')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Email
+                            {getSortIcon('email')}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('createdAt')}
+                        >
+                          <div className="flex items-center justify-between">
+                            Created At
+                            {getSortIcon('createdAt')}
+                          </div>
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -853,43 +1344,28 @@ const AdminPortal = ({ db, onClose, appId }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {teachers.map(teacher => (
-                        <tr key={teacher.id} className="hover:bg-gray-50">
+                      {getSortedTeachers().map(teacher => (
+                        <tr key={teacher.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                <span className="text-green-600 text-sm font-medium">
-                                  {teacher.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
-                                <div className="text-sm text-gray-500">ID: {teacher.id}</div>
-                              </div>
-                            </div>
+                            <input
+                              type="checkbox"
+                              checked={selectedTeachers.has(teacher.id)}
+                              onChange={() => handleSelectTeacher(teacher.id)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {teacher.email}
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.displayName || teacher.name}</td>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">{teacher.email}</td>
+                          <td className="p-3 text-sm text-gray-700 whitespace-nowrap">
+                            {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : 'N/A'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex flex-wrap gap-1">
-                              {teacher.classes && teacher.classes.length > 0 ? (
-                                teacher.classes.map((className, index) => (
-                                  <span key={index} className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    {className}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-gray-500">No classes assigned</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <td className="p-3 text-sm whitespace-nowrap">
                             <button
-                              onClick={() => deleteTeacher(teacher.id)}
-                              className="text-red-600 hover:text-red-900 inline-flex items-center"
+                              onClick={() => deleteTeacher(teacher)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                              title="Delete Teacher"
                             >
-                              <Trash2 className="w-4 h-4 mr-1" />
+                              <Trash2 className="h-4 w-4 mr-1" />
                               Delete
                             </button>
                           </td>
@@ -1209,7 +1685,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 >
                   <option value="">Select a class...</option>
                   {classes.map(cls => (
-                    <option key={cls.id} value={cls.name}>
+                    <option key={cls.id} value={cls.id}>
                       {cls.name} ({cls.teacher})
                     </option>
                   ))}
@@ -1233,6 +1709,48 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Assign to Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkClassAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Selected Students to Class</h3>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-700">Selected: {selectedStudents.size} student(s)</div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Class</label>
+                <select
+                  value={selectedBulkClass}
+                  onChange={(e) => setSelectedBulkClass(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a class...</option>
+                  {classes.map(cls => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.teacher})
+                    </option>
+                  ))}
+                  <option value="Unassigned">Unassigned</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => { setShowBulkClassAssignment(false); setSelectedBulkClass(''); }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={bulkAssignStudentsToClass}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedStudents.size === 0 || !selectedBulkClass}
+              >
+                Assign
               </button>
             </div>
           </div>

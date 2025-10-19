@@ -1,19 +1,5 @@
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-
-// Initialize Firebase Admin
-let app;
-try {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-  app = initializeApp({
-    credential: cert(serviceAccount),
-    projectId: process.env.FIREBASE_PROJECT_ID
-  });
-} catch (error) {
-  console.error('Firebase Admin initialization error:', error);
-}
-
-const db = getFirestore(app);
+// Use the shared Firebase Admin wrapper to standardize env handling
+const { admin, db } = require('./firebase-admin');
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -28,8 +14,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { httpMethod, body: requestBody, queryStringParameters } = event;
-    const body = requestBody ? JSON.parse(requestBody) : {};
+  const { httpMethod, body: requestBody, queryStringParameters } = event;
+  const body = requestBody ? JSON.parse(requestBody) : {};
+  const appId = body.appId || queryStringParameters?.appId || process.env.APP_ID || 'default-app-id';
 
     // Extract authorization token
     const authHeader = event.headers.authorization;
@@ -43,13 +30,13 @@ exports.handler = async (event, context) => {
 
     switch (httpMethod) {
       case 'GET':
-        return await handleGetClassStudents(queryStringParameters, headers);
+        return await handleGetClassStudents(queryStringParameters, appId, headers);
       
       case 'POST':
-        return await handleAddStudent(body, headers);
+        return await handleAddStudent(body, appId, headers);
       
       case 'DELETE':
-        return await handleRemoveStudent(queryStringParameters, headers);
+        return await handleRemoveStudent(queryStringParameters, appId, headers);
       
       default:
         return {
@@ -68,7 +55,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function handleGetClassStudents(params, headers) {
+async function handleGetClassStudents(params, appId, headers) {
   try {
     const classId = params?.classId;
     if (!classId) {
@@ -79,9 +66,11 @@ async function handleGetClassStudents(params, headers) {
       };
     }
 
-    const appId = process.env.APP_ID || 'default-app-id';
     const studentsRef = db.collection('artifacts').doc(appId).collection('classStudents');
-    const query = studentsRef.where('classId', '==', classId);
+    let query = studentsRef.where('classId', '==', classId);
+    if (params?.studentId) {
+      query = query.where('studentId', '==', params.studentId);
+    }
     const snapshot = await query.get();
 
     const students = [];
@@ -107,7 +96,7 @@ async function handleGetClassStudents(params, headers) {
   }
 }
 
-async function handleAddStudent(studentData, headers) {
+async function handleAddStudent(studentData, appId, headers) {
   try {
     const { classId, studentId, studentEmail, studentName } = studentData;
 
@@ -119,8 +108,6 @@ async function handleAddStudent(studentData, headers) {
       };
     }
 
-    const appId = process.env.APP_ID || 'default-app-id';
-    
     // Check if student is already in the class
     const existingRef = db.collection('artifacts').doc(appId).collection('classStudents');
     const existingQuery = existingRef
@@ -129,10 +116,18 @@ async function handleAddStudent(studentData, headers) {
     const existingSnapshot = await existingQuery.get();
 
     if (!existingSnapshot.empty) {
+      console.log('[class-students] Duplicate enrollment detected', {
+        appId,
+        classId,
+        studentId,
+        count: existingSnapshot.size,
+        docs: existingSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      });
+      const existing = existingSnapshot.docs[0];
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: 'Student is already in this class' })
+        body: JSON.stringify({ id: existing.id, ...existing.data(), duplicate: true })
       };
     }
 
@@ -145,21 +140,48 @@ async function handleAddStudent(studentData, headers) {
       progress: 0
     };
 
-    const docRef = await db.collection('artifacts').doc(appId).collection('classStudents').add(newEnrollment);
+    // Use deterministic doc ID to prevent duplicates: classId__studentId
+    const enrollmentId = `${classId}__${studentId}`;
+    const enrollmentRef = db.collection('artifacts').doc(appId).collection('classStudents').doc(enrollmentId);
+    const enrollmentExisting = await enrollmentRef.get();
+    if (enrollmentExisting.exists) {
+      console.log('[class-students] Enrollment doc already exists with deterministic ID', { appId, classId, studentId, enrollmentId });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ id: enrollmentId, ...enrollmentExisting.data(), duplicate: true })
+      };
+    }
+
+    await enrollmentRef.set(newEnrollment, { merge: false });
 
     // Update student count in class
     const classRef = db.collection('artifacts').doc(appId).collection('classes').doc(classId);
     await classRef.update({
-      studentCount: db.FieldValue.increment(1)
+      studentCount: admin.firestore.FieldValue.increment(1)
     });
+
+    // Update student's teacherIds array
+    const classDoc = await classRef.get();
+    if (classDoc.exists) {
+      const teacherId = classDoc.data().teacherId;
+      if (teacherId) {
+        const profileRef = db.collection('artifacts').doc(appId)
+          .collection('users').doc(studentId)
+          .collection('math_whiz_data').doc('profile');
+        
+        await profileRef.set({
+          teacherIds: admin.firestore.FieldValue.arrayUnion(teacherId)
+        }, { merge: true });
+      }
+    }
+
+    console.log(`[class-students] Student ${studentId} added to class ${classId} in app ${appId}`);
 
     return {
       statusCode: 201,
       headers,
-      body: JSON.stringify({
-        id: docRef.id,
-        ...newEnrollment
-      })
+      body: JSON.stringify({ id: enrollmentId, ...newEnrollment })
     };
   } catch (error) {
     console.error('Error adding student:', error);
@@ -171,7 +193,7 @@ async function handleAddStudent(studentData, headers) {
   }
 }
 
-async function handleRemoveStudent(params, headers) {
+async function handleRemoveStudent(params, appId, headers) {
   try {
     const enrollmentId = params?.id;
     if (!enrollmentId) {
@@ -182,8 +204,6 @@ async function handleRemoveStudent(params, headers) {
       };
     }
 
-    const appId = process.env.APP_ID || 'default-app-id';
-    
     // Get the enrollment data first
     const enrollmentDoc = await db.collection('artifacts').doc(appId).collection('classStudents').doc(enrollmentId).get();
     if (!enrollmentDoc.exists) {
@@ -195,16 +215,52 @@ async function handleRemoveStudent(params, headers) {
     }
 
     const enrollmentData = enrollmentDoc.data();
-    const classId = enrollmentData.classId;
+    const { classId, studentId } = enrollmentData;
 
     // Delete the enrollment
     await db.collection('artifacts').doc(appId).collection('classStudents').doc(enrollmentId).delete();
 
-    // Update student count in class
+    // Decrement student count in class
     const classRef = db.collection('artifacts').doc(appId).collection('classes').doc(classId);
     await classRef.update({
-      studentCount: db.FieldValue.increment(-1)
+      studentCount: admin.firestore.FieldValue.increment(-1)
     });
+
+    // Update student's teacherIds array
+    const classDoc = await classRef.get();
+    if (classDoc.exists) {
+      const teacherId = classDoc.data().teacherId;
+      if (teacherId) {
+        const enrollmentsCol = db.collection('artifacts').doc(appId).collection('classStudents');
+        const otherEnrollments = await enrollmentsCol
+          .where('studentId', '==', studentId)
+          .get();
+
+        let otherClassesWithSameTeacher = false;
+        if (!otherEnrollments.empty) {
+          const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
+          if (otherClassIds.length > 0) {
+            const otherClasses = await db.collection('artifacts').doc(appId).collection('classes')
+              .where(admin.firestore.FieldPath.documentId(), 'in', otherClassIds)
+              .where('teacherId', '==', teacherId)
+              .get();
+            if (!otherClasses.empty) {
+              otherClassesWithSameTeacher = true;
+            }
+          }
+        }
+
+        if (!otherClassesWithSameTeacher) {
+          const profileRef = db.collection('artifacts').doc(appId)
+            .collection('users').doc(studentId)
+            .collection('math_whiz_data').doc('profile');
+          
+          await profileRef.update({
+            teacherIds: admin.firestore.FieldValue.arrayRemove(teacherId)
+          });
+        }
+      }
+    }
 
     return {
       statusCode: 200,
