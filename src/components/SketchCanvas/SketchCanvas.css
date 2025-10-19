@@ -96,8 +96,8 @@
   .sketch-controls {
     top: auto;
     bottom: 20px;
-    right: 50%;
-    transform: translateX(50%);
+    left: 50%;
+    transform: translateX(-50%);
     flex-direction: row;
     padding: 8px 12px;
   }
