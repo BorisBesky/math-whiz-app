@@ -103,7 +103,7 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
     },
     {
       name: "parallelogram",
-      description: "has 4 sides with opposite sides parallel and equal",
+      description: "has 4 sides with opposite sides parallel and equal and angles not necessarily 90°",
       properties: ["4 sides", "opposite sides parallel", "opposite sides equal"],
     },
   ];
@@ -430,7 +430,7 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
       name: "point",
       definition: "an exact location with no size",
       example: "the tip of a pencil",
-      notation: "written with a capital letter",
+      notation: "represented by a dot",
     },
     {
       name: "line", 
@@ -447,7 +447,7 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
     {
       name: "line segment",
       definition: "a part of a line with two endpoints",
-      example: "like a piece of string", 
+      example: "like a street between two intersections", 
       notation: "has two endpoints",
     },
   ];

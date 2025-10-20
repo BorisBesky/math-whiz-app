@@ -25,7 +25,13 @@ const GeometryExplanation = () => {
         strokeWidth: '3',
         showPoints: true
       });
-      
+
+      shapes.createLineSegmentSVG('line-segment-demo', {
+        stroke: '#4caf50',
+        strokeWidth: '3',
+        showLabel: true
+      });
+
       shapes.createRaySVG('ray-demo', {
         stroke: '#ff9800',
         strokeWidth: '3',
@@ -588,6 +594,15 @@ const GeometryExplanation = () => {
       background: 'white',
       padding: '15px',
       borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      transition: 'transform 0.2s',
+      '&:hover': {
+        transform: 'scale(1.05)',
+      },
+      cursor: 'pointer',
+      '&:active': {
+        transform: 'scale(0.95)',
+      },
     },
     shapeBox20: {
       background: 'white',
@@ -607,7 +622,7 @@ const GeometryExplanation = () => {
         <p>The building blocks of geometry! Every shape is made from these basic elements.</p>
         
         <div style={styles.geometryVisual}>
-          <div style={styles.grid}>
+          <div style={styles.grid3}>
             <div>
               <h3>🔵 Point</h3>
               <div id="point-demo"></div>
@@ -617,6 +632,11 @@ const GeometryExplanation = () => {
               <h3>📏 Line</h3>
               <div id="line-demo"></div>
               <p>Goes on forever in both directions</p>
+            </div>
+            <div>
+              <h3>📏 Line Segment</h3>
+              <div id="line-segment-demo"></div>
+              <p>Has two endpoints and a definite length</p>
             </div>
             <div>
               <h3>➡️ Ray</h3>

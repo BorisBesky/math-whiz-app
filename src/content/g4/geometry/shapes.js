@@ -810,7 +810,7 @@ export function createLineSVG(containerId, options = {}) {
 
   container.innerHTML = "";
 
-  const svgSize = 200;
+  const svgSize = 150;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", svgSize);
   svg.setAttribute("height", svgSize);
@@ -895,7 +895,7 @@ export function createRaySVG(containerId, options = {}) {
 
   container.innerHTML = "";
 
-  const svgSize = 200;
+  const svgSize = 150;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", svgSize);
   svg.setAttribute("height", svgSize);
@@ -961,6 +961,61 @@ export function createRaySVG(containerId, options = {}) {
 }
 
 /**
+ * Creates an SVG line segment
+ * @param {string} containerId - The ID of the container element
+ * @param {object} options - Styling options
+ */
+export function createLineSegmentSVG(containerId, options = {}) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const svgSize = 150;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", svgSize);
+  svg.setAttribute("height", svgSize);
+  svg.setAttribute("viewBox", `0 0 ${svgSize} ${svgSize}`);
+
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+  const lineLength = 100;
+
+  // Create line segment
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", centerX - lineLength / 2);
+  line.setAttribute("y1", centerY);
+  line.setAttribute("x2", centerX + lineLength / 2);
+  line.setAttribute("y2", centerY);
+  line.setAttribute("stroke", options.stroke || "#2196f3");
+  line.setAttribute("stroke-width", options.strokeWidth || "3");
+  svg.appendChild(line);
+
+  // Add endpoints
+  const startPoint = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle"
+  );
+  startPoint.setAttribute("cx", centerX - lineLength / 2);
+  startPoint.setAttribute("cy", centerY);
+  startPoint.setAttribute("r", "5");
+  startPoint.setAttribute("fill", "#333");
+  svg.appendChild(startPoint);
+
+  const endPoint = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle"
+  );
+  endPoint.setAttribute("cx", centerX + lineLength / 2);
+  endPoint.setAttribute("cy", centerY);
+  endPoint.setAttribute("r", "5");
+  endPoint.setAttribute("fill", "#333");
+  svg.appendChild(endPoint);
+
+  container.appendChild(svg);
+}
+
+/**
  * Creates an SVG angle
  * @param {string} containerId - The ID of the container element
  * @param {number} angle - Angle in degrees
@@ -972,7 +1027,7 @@ export function createAngleSVG(containerId, angle = 45, options = {}) {
 
   container.innerHTML = "";
 
-  const svgSize = 200;
+  const svgSize = 150;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", svgSize);
   svg.setAttribute("height", svgSize);
@@ -1638,6 +1693,7 @@ const geometricShapes = {
   createAnimatedAreaDemo,
   createPointSVG,
   createLineSVG,
+  createLineSegmentSVG,
   createRaySVG,
   createAngleSVG,
   createClassifiedTriangleSVG,
