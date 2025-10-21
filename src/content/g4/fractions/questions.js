@@ -134,13 +134,18 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
   // Scale denominator range by difficulty
   const minDenom = 4 + Math.floor(difficulty * 2);
   const maxDenom = 8 + Math.floor(difficulty * 10);
-  const denominator = getRandomInt(minDenom, maxDenom);
-  const denominator2 = getRandomInt(minDenom, maxDenom);
+  let denominator = getRandomInt(minDenom, maxDenom);
+  let denominator2 = getRandomInt(minDenom, maxDenom);
   // Ensure numerators are less than denominators
-  const num1 = getRandomInt(2, denominator - 1);
-  const num2 = getRandomInt(2, denominator2 - 1);
+  let num1 = getRandomInt(2, denominator - 1);
+  let num2 = getRandomInt(2, denominator2 - 1);
 
-  const difference = num1 * denominator2 - num2 * denominator;
+  let difference = num1 * denominator2 - num2 * denominator;
+  if (difference <= 0) {
+    [num1, num2] = [num2, num1];
+    [denominator, denominator2] = [denominator2, denominator];
+    difference *= -1;
+  }
   const simplifiedAnswer = simplifyFraction(difference, denominator * denominator2);
   const potentialDistractors = [
     simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2)),
