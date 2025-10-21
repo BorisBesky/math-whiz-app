@@ -96,7 +96,7 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     if (comp_den1 === comp_den2) {
       comp_den2 = comp_den1 + 1 <= maxDen ? comp_den1 + 1 : comp_den1 - 1;
     }
-    const correctAnswer = comp_den1 > comp_den2 ? ">" : "<";
+    const correctAnswer = comp_den1 < comp_den2 ? ">" : "<";
 
     return {
       question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
