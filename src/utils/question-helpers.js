@@ -28,7 +28,7 @@ export function generateUniqueOptions(correctAnswer, potentialDistractors, numOp
   }
 
   // If not enough unique distractors, generate random numbers
-  while ((correctAnswer).type === "number" && options.length < numOptions) {
+  while (typeof correctAnswer === "number" && options.length < numOptions) {
     const randomOffset = Math.floor(Math.random() * 10) + 1;
     const randomDistractor = (parseInt(correctAnswer) + randomOffset).toString();
     if (!options.includes(randomDistractor)) {

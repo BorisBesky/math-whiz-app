@@ -268,14 +268,14 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
   ];
   
   const quad = quadrilaterals[getRandomInt(0, quadrilaterals.length - 1)];
-  const properties = quad.properties
+  const properties = quad.properties;
   const wrongQuads = quadrilaterals
     .filter(q => q.name !== quad.name)
     .map(q => q.name)
     .slice(0, 3);
   
   return {
-    question: `Which quadrilateral has the property: "${properties.join(", ")}"?`,
+    question: `Which quadrilateral has ALL of these properties: "${properties.join(", ")}"?`,
     correctAnswer: quad.name,
     options: shuffle(generateUniqueOptions(quad.name, wrongQuads)),
     hint: `Think about the defining characteristics of each quadrilateral.`,

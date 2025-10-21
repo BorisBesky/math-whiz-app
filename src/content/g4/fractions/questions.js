@@ -116,7 +116,7 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
     question: `What is ${num1}/${denominator} + ${num2}/${denominator2}?`,
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
-    hint: "To add fractions with different denominators, you first need to find a common denominator!When adding fractions with the same denominator, add the numerators and keep the denominator the same.",
+    hint: "To add fractions with different denominators, you first need to find a common denominator! When adding fractions with the same denominator, add the numerators and keep the denominator the same.",
     standard: "4.NF.B.3.a",
     concept: "Fractions 4th",
     grade: "G4",
