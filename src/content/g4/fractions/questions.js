@@ -99,22 +99,24 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
   const minDenom = 4 + Math.floor(difficulty * 2);
   const maxDenom = 8 + Math.floor(difficulty * 8);
   const denominator = getRandomInt(minDenom, maxDenom);
+  const denominator2 = getRandomInt(minDenom, maxDenom);
+  const common_denominator = denominator * denominator2;
   const num1 = getRandomInt(1, Math.floor(denominator / 2));
-  const num2 = getRandomInt(1, denominator - num1 - 1);
-  
-  const sum = num1 + num2;
-  const simplifiedAnswer = simplifyFraction(sum, denominator);
+  const num2 = getRandomInt(1, Math.floor(denominator2 / 2));
+
+  const sum = num1 * denominator2 + num2 * denominator;
+  const simplifiedAnswer = simplifyFraction(sum, common_denominator);
   const potentialDistractors = [
-      `${sum}/${denominator + 1}`,
-      `${sum + 1}/${denominator}`,
-      `${num1 + num2}/${denominator * 2}`,
+      `${sum}/${common_denominator + 1}`,
+      `${sum + 1}/${common_denominator}`,
+      `${num1 + num2}/${common_denominator * 2}`,
   ];
 
   return {
-    question: `What is ${num1}/${denominator} + ${num2}/${denominator}?`,
+    question: `What is ${num1}/${denominator} + ${num2}/${denominator2}?`,
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
-    hint: "When adding fractions with the same denominator, add the numerators and keep the denominator the same.",
+    hint: "To add fractions with different denominators, you first need to find a common denominator!When adding fractions with the same denominator, add the numerators and keep the denominator the same.",
     standard: "4.NF.B.3.a",
     concept: "Fractions 4th",
     grade: "G4",
@@ -133,19 +135,21 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
   const minDenom = 4 + Math.floor(difficulty * 2);
   const maxDenom = 8 + Math.floor(difficulty * 10);
   const denominator = getRandomInt(minDenom, maxDenom);
-  const num1 = getRandomInt(3, denominator - 1);
-  const num2 = getRandomInt(1, num1 - 1);
-  
-  const difference = num1 - num2;
-  const simplifiedAnswer = simplifyFraction(difference, denominator);
+  const denominator2 = getRandomInt(minDenom, maxDenom);
+  // Ensure numerators are less than denominators
+  const num1 = getRandomInt(2, denominator - 1);
+  const num2 = getRandomInt(2, denominator2 - 1);
+
+  const difference = num1 * denominator2 - num2 * denominator;
+  const simplifiedAnswer = simplifyFraction(difference, denominator * denominator2);
   const potentialDistractors = [
-      `${difference}/${denominator + 1}`,
-      `${difference + 1}/${denominator}`,
-      `${num1 - num2}/${denominator * 2}`,
+    simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2)),
+    simplifyFraction(difference + 1, denominator * denominator2),
+    simplifyFraction(difference, denominator * denominator2 + 1),
   ];
 
   return {
-    question: `What is ${num1}/${denominator} - ${num2}/${denominator}?`,
+    question: `What is ${num1}/${denominator} - ${num2}/${denominator2}?`,
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
     hint: "When subtracting fractions with the same denominator, subtract the numerators and keep the denominator the same.",
@@ -164,24 +168,24 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
  */
 export function generateFractionComparisonQuestion(difficulty = 0.5) {
   // Scale numerator and denominator ranges by difficulty
-  const maxNum = Math.max(4, Math.min(10, 4 + Math.floor(difficulty * 6)));
-  const frac1Num = getRandomInt(1, maxNum);
-  const frac1Den = getRandomInt(frac1Num + 1, 10 + Math.floor(difficulty * 5));
-  const frac2Num = getRandomInt(1, maxNum);
-  const frac2Den = getRandomInt(frac2Num + 1, 10 + Math.floor(difficulty * 5));
+  const maxNum = Math.min(10, 4 + Math.floor(difficulty * 6));
+  let num1 = getRandomInt(1, maxNum);
+  const den1 = getRandomInt(num1 + 1, 10 + Math.floor(difficulty * 5));
+  let num2 = getRandomInt(1, maxNum);
+  const den2 = getRandomInt(num2 + 1, 10 + Math.floor(difficulty * 5));
 
   // Ensure fractions are different
-  if (frac1Num / frac1Den === frac2Num / frac2Den) {
-    return generateFractionComparisonQuestion(difficulty);
+  if (num1 / den1 === num2 / den2) {
+    num2 = num1 + 1 <= maxNum ? num1 + 1 : num1 - 1;
   }
 
-  const decimal1 = frac1Num / frac1Den;
-  const decimal2 = frac2Num / frac2Den;
+  const decimal1 = num1 / den1;
+  const decimal2 = num2 / den2;
   const correctAnswer = decimal1 > decimal2 ? ">" : "<";
   const potentialDistractors = [correctAnswer === ">" ? "<" : ">", "="];
 
   return {
-    question: `Compare these fractions: ${frac1Num}/${frac1Den} ___ ${frac2Num}/${frac2Den}`,
+    question: `Compare these fractions: ${num1}/${den1} ___ ${num2}/${den2}`,
     correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     hint: "Convert to common denominators, or think about which fraction is closer to 0, 1/2, or 1.",

@@ -244,7 +244,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
       name: "rhombus",
       properties: [
         "all sides equal",
-        "opposite angles equal",
+        "opposite angles equal and not necessarily 90°",
         "opposite sides parallel",
         "2 lines of symmetry",
       ],
@@ -253,7 +253,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
       name: "parallelogram", 
       properties: [
         "opposite sides equal",
-        "opposite angles equal",
+        "opposite angles equal and not necessarily 90°",
         "opposite sides parallel",
       ],
     },
@@ -268,14 +268,14 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
   ];
   
   const quad = quadrilaterals[getRandomInt(0, quadrilaterals.length - 1)];
-  const property = quad.properties[getRandomInt(0, quad.properties.length - 1)];
+  const properties = quad.properties
   const wrongQuads = quadrilaterals
     .filter(q => q.name !== quad.name)
     .map(q => q.name)
     .slice(0, 3);
   
   return {
-    question: `Which quadrilateral has the property: "${property}"?`,
+    question: `Which quadrilateral has the property: "${properties.join(", ")}"?`,
     correctAnswer: quad.name,
     options: shuffle(generateUniqueOptions(quad.name, wrongQuads)),
     hint: `Think about the defining characteristics of each quadrilateral.`,

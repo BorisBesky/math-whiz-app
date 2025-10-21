@@ -19,24 +19,28 @@ export function generateQuestion(difficulty = 0.5) {
 
   switch (fractionQuestionType) {
     case 1: // Equivalent Fractions
-      return generateEquivalentFractionsQuestion();
+      return generateEquivalentFractionsQuestion(difficulty);
     case 2: // Fraction Addition
-      return generateFractionAdditionQuestion();
+      return generateFractionAdditionQuestion(difficulty);
     case 3: // Fraction Subtraction
-      return generateFractionSubtractionQuestion();
+      return generateFractionSubtractionQuestion(difficulty);
     case 4: // Fraction Comparison
-      return generateFractionComparisonQuestion();
+      return generateFractionComparisonQuestion(difficulty);
     case 5: // Fraction Simplification
-      return generateFractionSimplificationQuestion();
+      return generateFractionSimplificationQuestion(difficulty);
     default:
-      return generateEquivalentFractionsQuestion();
+      return generateEquivalentFractionsQuestion(difficulty);
   }
 }
 
-export function generateEquivalentFractionsQuestion() {
-  const f_num_eq = getRandomInt(1, 8);
+export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
+  const minNum = 1 + Math.floor(4 * difficulty);
+  const maxNum = 5 + Math.floor(5 * difficulty);
+  const f_num_eq = getRandomInt(minNum, maxNum);
   const f_den_eq = getRandomInt(f_num_eq + 1, 9);
-  const multiplier = getRandomInt(2, 4);
+  const minMultiplier = 1 + Math.floor(3 * difficulty);
+  const maxMultiplier = 6 + Math.floor(4 * difficulty);
+  const multiplier = getRandomInt(minMultiplier, maxMultiplier);
   const eq_num = f_num_eq * multiplier;
   const eq_den = f_den_eq * multiplier;
   const correctAnswer = `${eq_num}/${eq_den}`;
@@ -58,22 +62,24 @@ export function generateEquivalentFractionsQuestion() {
   };
 }
 
-export function generateFractionComparisonQuestion() {
+export function generateFractionComparisonQuestion(difficulty = 0.5) {
   const comp_type = getRandomInt(1, 2);
   if (comp_type === 1) {
     // Same denominator
     const comp_den = getRandomInt(3, 12);
     let comp_num1 = getRandomInt(1, comp_den - 1);
     let comp_num2 = getRandomInt(1, comp_den - 1);
-    while (comp_num1 === comp_num2) {
-      comp_num2 = getRandomInt(1, comp_den - 1);
+    // Ensure they are not equal
+    if (comp_num1 === comp_num2) {
+      comp_num2 = comp_num1 + 1 <= comp_den - 1 ? comp_num1 + 1 : comp_num1 - 1;
     }
+
     const correctAnswer = comp_num1 > comp_num2 ? ">" : "<";
 
     return {
       question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">", "="])),
+      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
       hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
       standard: "3.NF.A.3.d",
       concept: "Fractions",
@@ -82,18 +88,20 @@ export function generateFractionComparisonQuestion() {
     };
   } else {
     // Same numerator
-    const comp_num = getRandomInt(1, 10);
-    let comp_den1 = getRandomInt(comp_num + 1, 15);
-    let comp_den2 = getRandomInt(comp_num + 1, 15);
-    while (comp_den1 === comp_den2) {
-      comp_den2 = getRandomInt(comp_num + 1, 15);
+    const minDen = 2 + Math.floor(5 * difficulty);
+    const maxDen = 8 + Math.floor(7 * difficulty);
+    const comp_num = getRandomInt(minDen, maxDen - 1);
+    let comp_den1 = getRandomInt(comp_num + 1, maxDen);
+    let comp_den2 = getRandomInt(comp_num + 1, maxDen);
+    if (comp_den1 === comp_den2) {
+      comp_den2 = comp_den1 + 1 <= maxDen ? comp_den1 + 1 : comp_den1 - 1;
     }
-    const correctAnswer = comp_den1 < comp_den2 ? ">" : "<";
+    const correctAnswer = comp_den1 > comp_den2 ? ">" : "<";
 
     return {
       question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">", "="])),
+      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
       hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
       standard: "3.NF.A.3.d",
       concept: "Fractions",
@@ -103,7 +111,7 @@ export function generateFractionComparisonQuestion() {
   }
 }
 
-export function generateFractionAdditionQuestion() {
+export function generateFractionAdditionQuestion(difficulty = 0.5) {
   const add_den1 = getRandomInt(2, 5);
   let add_den2 = getRandomInt(2, 6);
   while (add_den1 === add_den2) {
@@ -132,32 +140,30 @@ export function generateFractionAdditionQuestion() {
   };
 }
 
-export function generateFractionSubtractionQuestion() {
-  let sub_den1 = getRandomInt(2, 6);
-  let sub_den2 = getRandomInt(2, 6);
-  let sub_num1 = getRandomInt(1, sub_den1 - 1 > 0 ? sub_den1 - 1 : 1);
-  let sub_num2 = getRandomInt(1, sub_den2 - 1 > 0 ? sub_den2 - 1 : 1);
-
-  while (sub_num1 * sub_den2 <= sub_num2 * sub_den1 || sub_den1 === sub_den2) {
-    sub_den1 = getRandomInt(2, 6);
-    sub_den2 = getRandomInt(2, 6);
-    sub_num1 = getRandomInt(1, sub_den1 - 1 > 0 ? sub_den1 - 1 : 1);
-    sub_num2 = getRandomInt(1, sub_den2 - 1 > 0 ? sub_den2 - 1 : 1);
+export function generateFractionSubtractionQuestion(difficulty = 0.5) {
+  const maxDen = 6 + Math.floor(4 * difficulty);
+  const minDen = 2 + Math.floor(2 * difficulty);
+  let den1 = getRandomInt(minDen, maxDen);
+  let den2 = getRandomInt(minDen, maxDen);
+  if (den1 === den2) {
+    den2 = den1 + 1 <= maxDen ? den1 + 1 : den1 - 1;
   }
+  let num1 = getRandomInt(1, den1 - 1);
+  let num2 = getRandomInt(1, den2 - 1);
 
-  const common_sub_den = sub_den1 * sub_den2;
-  const sub_diff_num = sub_num1 * sub_den2 - sub_num2 * sub_den1;
-  const sub_answer = getSimplifiedFraction(sub_diff_num, common_sub_den);
+  const common_den = den1 * den2;
+  const diff_num = num1 * den2 - num2 * den1;
+  const answer = getSimplifiedFraction(diff_num, common_den);
   const potentialDistractors = [
-    getSimplifiedFraction(Math.abs(sub_num1 - sub_num2), Math.abs(sub_den1 - sub_den2)),
-    getSimplifiedFraction(sub_diff_num + 1, common_sub_den),
-    getSimplifiedFraction(sub_diff_num, common_sub_den + 1),
+    getSimplifiedFraction(Math.abs(num1 - num2), Math.abs(den1 - den2)),
+    getSimplifiedFraction(diff_num + 1, common_den),
+    getSimplifiedFraction(diff_num, common_den + 1),
   ];
 
   return {
-    question: `What is ${sub_num1}/${sub_den1} - ${sub_num2}/${sub_den2}?`,
-    correctAnswer: sub_answer,
-    options: shuffle(generateUniqueOptions(sub_answer, potentialDistractors)),
+    question: `What is ${num1}/${den1} - ${num2}/${den2}?`,
+    correctAnswer: answer,
+    options: shuffle(generateUniqueOptions(answer, potentialDistractors)),
     hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
     standard: "4.NF.B.3",
     concept: "Fractions",
@@ -166,16 +172,16 @@ export function generateFractionSubtractionQuestion() {
   };
 }
 
-export function generateFractionSimplificationQuestion() {
-  const simp_multiplier = getRandomInt(3, 9);
-  const simp_num = getRandomInt(1, 5);
-  const simp_den = getRandomInt(simp_num + 1, 11);
-  const starting_num = simp_num * simp_multiplier;
-  const starting_den = simp_den * simp_multiplier;
+export function generateFractionSimplificationQuestion(difficulty = 0.5) {
+  const multiplier = getRandomInt(3, 4 + Math.floor(6 * difficulty));
+  const num = getRandomInt(1, 5);
+  const den = getRandomInt(num + 1, 11);
+  const starting_num = num * multiplier;
+  const starting_den = den * multiplier;
   const simplified_fraction = getSimplifiedFraction(starting_num, starting_den);
   const potentialDistractors = [
-    `${simp_num}/${simp_den + getRandomInt(1, 3)}`,
-    `${Math.abs(simp_num - getRandomInt(1, 3))}/${simp_den}`,
+    `${num}/${den + getRandomInt(1, 3)}`,
+    `${Math.abs(num - getRandomInt(1, 3))}/${den}`,
     getSimplifiedFraction(Math.floor(starting_num / 2), Math.floor(starting_den / 2)),
   ];
 
