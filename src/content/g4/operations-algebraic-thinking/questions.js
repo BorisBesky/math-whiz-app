@@ -2,6 +2,7 @@
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
+// Get random integer between min and max (inclusive)
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -84,25 +85,46 @@ export function generateMultiplicativeComparisonQuestion(difficulty = 0.5) {
   };
 }
 
+const PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+
+// Generate array of composite numbers
+const COMPOSITES = (() => {
+  const composites = [];
+  for (let i = 4; i <= 100; i++) {
+    if (!PRIMES.includes(i)) {
+      composites.push(i);
+    }
+  }
+  return composites;
+})();
+
+// Generate factors and non-factors for each composite number
+const COMPOSITES_FNF = COMPOSITES.map(x => {
+  const factors = [];
+  const nonFactors = [];
+  for (let i = 1; i <= x; i++) {
+    if (x % i === 0) factors.push(i);
+    else nonFactors.push(i);
+  }
+  return { number: x, factors: factors, nonFactors: nonFactors };
+});
+
 /**
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generatePrimeCompositeQuestion(difficulty = 0.5) {
-  const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
-  const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 22];
+export function generatePrimeCompositeQuestion(difficulty = 0.1) {
   const isPrime = Math.random() < 0.5;
   const testNumber = isPrime
-    ? primes[getRandomInt(0, primes.length - 1)]
-    : composites[getRandomInt(0, composites.length - 1)];
+    ? PRIMES[getRandomInt(0, PRIMES.length - 1)]
+    : COMPOSITES[getRandomInt(0, COMPOSITES.length - 1)];
   const correctAnswer = isPrime ? "Prime" : "Composite";
+  const incorrectAnswer = isPrime ? "Composite" : "Prime";
 
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, ["Prime", "Composite", "Both"], 3)),
-    hint: isPrime
-      ? "A prime number has exactly two factors: 1 and itself."
-      : "A composite number has more than two factors.",
+    options: shuffle(generateUniqueOptions(correctAnswer, [incorrectAnswer], 2)),
+    hint: "A prime number has exactly two factors: 1 and itself. A composite number has more than two factors.",
     standard: "4.OA.B.4",
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
@@ -112,57 +134,24 @@ export function generatePrimeCompositeQuestion(difficulty = 0.5) {
   };
 }
 
-const primeNumbersSet = new Set([7, 11, 13, 17, 19]);
-
 /**
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateFactorsQuestion(difficulty = 0.5) {
-  let base;
-  let factors = [];
-  let attempts = 0;
-  const maxAttempts = 14; // Prevent infinite loop
 
-  do {
-    base = getRandomInt(6, 20);
-    while (primeNumbersSet.has(base)) {
-      attempts++;
-      if (attempts >= maxAttempts) break; // safeguard against infinite loop
-      base = getRandomInt(6, 20);
-    }
-    attempts = 0; // reset attempts for factor finding
-    factors = [];
-    for (let i = 1; i <= base; i++) {
-      if (base % i === 0) factors.push(i);
-    }
-    attempts++;
-  } while (factors.length < 3 && attempts < maxAttempts);
-
-  // If still not enough factors after max attempts, use a known composite number
-  // safeguard against infinite loop, since no primes are selected, shouldn't happen
-  if (factors.length < 3) {
-    base = 12; // 12 has factors: 1,2,3,4,6,12
-    factors = [1,2,3,4,6,12];
-  }
+  const base = COMPOSITES[getRandomInt(0, COMPOSITES.length - 1)];
+  const factors = COMPOSITES_FNF.find(item => item.number === base).factors;
   
   const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
   const correctAnswer = correctFactor.toString();
-  const getNonFactors = (factors, n) => {
-    const nonFactors = [];
-    console.log('getting nonfactors for factors:', factors);
-    for (let i = 2; nonFactors.length < n; i++) {
-      if (!factors.includes(i) && !nonFactors.includes(i)) {
-        nonFactors.push(i);
-      }
-    }
-    return nonFactors;
-  };
-  const potentialDistractors = getNonFactors(factors, 3).map(n => n.toString());
+  const getNonFactors = COMPOSITES_FNF.find(item => item.number === base).nonFactors;
+  const potentialDistractors = getNonFactors.map(n => n.toString());
+
 
   return {
     question: `Which of these is a factor of ${base}?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors, Math.min(3, potentialDistractors.length) + 1)),
     hint: `A factor of ${base} divides evenly into ${base} with no remainder.`,
     standard: "4.OA.B.4",
     concept: "Operations & Algebraic Thinking",
@@ -276,12 +265,12 @@ export function generatePatternRuleQuestion(difficulty = 0.5) {
   ];
   
   const correctRule = rules.find(r => r.correct).text;
-  const allRules = rules.map(r => r.text);
+  const incorrectRules = rules.filter(r => !r.correct).map(r => r.text);
   
   return {
     question: `Look at this pattern: ${sequence.join(', ')}. What is the rule?`,
     correctAnswer: correctRule,
-    options: shuffle(generateUniqueOptions(correctRule, allRules)),
+    options: shuffle(generateUniqueOptions(correctRule, incorrectRules)),
     hint: `Look at how much each number increases from the previous one.`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -335,13 +324,7 @@ export function generateTwoStepPatternQuestion(difficulty = 0.5) {
     question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    hint: operation.name === "add then multiply" 
-      ? "Look carefully at how each number relates to its position in the sequence. First step is addition, second step is multiplication."
-      : operation.name === "subtract then add"
-      ? "Look carefully at how each number relates to its position in the sequence. First step is subtraction, second step is addition."
-      : operation.name === "multiply then add"
-      ? "Look carefully at how each number relates to its position in the sequence. First step is multiplication, second step is addition."
-      : "Unknown pattern, contact support.",
+    hint: "The pattern is formed by applying two operations in sequence. Both - 1st and 2nd step - are either + or - or ×. Look carefully at how each number in the sequence changes from one to the next.",
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
     grade: "G4",
