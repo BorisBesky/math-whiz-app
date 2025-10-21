@@ -268,7 +268,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
   ];
   
   const quad = quadrilaterals[getRandomInt(0, quadrilaterals.length - 1)];
-  const properties = quad.properties
+  const properties = quad.properties;
   const wrongQuads = quadrilaterals
     .filter(q => q.name !== quad.name)
     .map(q => q.name)
