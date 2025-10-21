@@ -275,7 +275,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
     .slice(0, 3);
   
   return {
-    question: `Which quadrilateral has the property: "${properties.join(", ")}"?`,
+    question: `Which quadrilateral has ALL of these properties: "${properties.join(", ")}"?`,
     correctAnswer: quad.name,
     options: shuffle(generateUniqueOptions(quad.name, wrongQuads)),
     hint: `Think about the defining characteristics of each quadrilateral.`,
