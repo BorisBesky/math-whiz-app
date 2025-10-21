@@ -609,6 +609,13 @@ const GeometryExplanation = () => {
       padding: '20px',
       borderRadius: '8px',
     },
+    svgContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
+      margin: '0 auto',
+    },
     centerText: {
       textAlign: 'center',
     },
@@ -625,27 +632,27 @@ const GeometryExplanation = () => {
           <div style={styles.grid3}>
             <div>
               <h3>🔵 Point</h3>
-              <div id="point-demo"></div>
+              <div id="point-demo" style={styles.svgContainer}></div>
               <p>An exact location with no size</p>
             </div>
             <div>
               <h3>📏 Line</h3>
-              <div id="line-demo"></div>
+              <div id="line-demo" style={styles.svgContainer}></div>
               <p>Goes on forever in both directions</p>
             </div>
             <div>
               <h3>📏 Line Segment</h3>
-              <div id="line-segment-demo"></div>
+              <div id="line-segment-demo" style={styles.svgContainer}></div>
               <p>Has two endpoints and a definite length</p>
             </div>
             <div>
               <h3>➡️ Ray</h3>
-              <div id="ray-demo"></div>
+              <div id="ray-demo" style={styles.svgContainer}></div>
               <p>Starts at a point and goes on forever in one direction</p>
             </div>
             <div>
               <h3>📐 Angle</h3>
-              <div id="angle-demo"></div>
+              <div id="angle-demo" style={styles.svgContainer}></div>
               <p>Formed when two rays meet at a point</p>
             </div>
           </div>
@@ -664,17 +671,17 @@ const GeometryExplanation = () => {
             <div style={styles.shapeBox}>
               <strong>Equilateral</strong><br/>
               All 3 sides equal<br/>
-              <div id="equilateral-triangle"></div>
+              <div id="equilateral-triangle" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Isosceles</strong><br/>
               2 sides equal<br/>
-              <div id="isosceles-triangle"></div>
+              <div id="isosceles-triangle" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Scalene</strong><br/>
               All sides different<br/>
-              <div id="scalene-triangle"></div>
+              <div id="scalene-triangle" style={styles.svgContainer}></div>
             </div>
           </div>
           
@@ -683,17 +690,17 @@ const GeometryExplanation = () => {
             <div style={styles.shapeBox}>
               <strong>Right Triangle</strong><br/>
               Has one 90° angle<br/>
-              <div id="right-triangle"></div>
+              <div id="right-triangle" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Acute Triangle</strong><br/>
               All angles less than 90°<br/>
-              <div id="acute-triangle"></div>
+              <div id="acute-triangle" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Obtuse Triangle</strong><br/>
               One angle greater than 90°<br/>
-              <div id="obtuse-triangle"></div>
+              <div id="obtuse-triangle" style={styles.svgContainer}></div>
             </div>
           </div>
         </div>
@@ -708,40 +715,40 @@ const GeometryExplanation = () => {
               • All sides equal<br/>
               • All angles are 90°<br/>
               • Opposite sides parallel<br/>
-              <div id="square-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="square-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
             <div style={styles.shapeBox20}>
               <strong>📱 Rectangle</strong><br/>
               • Opposite sides equal<br/>
               • All angles are 90°<br/>
               • Opposite sides parallel<br/>
-              <div id="rectangle-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="rectangle-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
             <div style={styles.shapeBox20}>
               <strong>🔶 Rhombus</strong><br/>
               • All sides equal<br/>
               • Opposite angles equal<br/>
               • Opposite sides parallel<br/>
-              <div id="rhombus-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="rhombus-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
             <div style={styles.shapeBox20}>
               <strong>🔧 Parallelogram</strong><br/>
               • Opposite sides equal<br/>
               • Opposite angles equal<br/>
               • Opposite sides parallel<br/>
-              <div id="parallelogram-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="parallelogram-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
             <div style={styles.shapeBox20}>
               <strong>🪂 Trapezoid</strong><br/>
               • Exactly one pair of parallel sides<br/>
               • Can have different shapes<br/>
-              <div id="trapezoid-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="trapezoid-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
             <div style={styles.shapeBox20}>
               <strong>🏠 Quadrilateral</strong><br/>
               • Any four-sided shape<br/>
               • General term for all 4-sided figures<br/>
-              <div id="general-quadrilateral" style={{marginTop: '10px'}}></div>
+              <div id="general-quadrilateral" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
             </div>
           </div>
         </div>
@@ -760,19 +767,19 @@ const GeometryExplanation = () => {
               <strong>Butterfly 🦋</strong><br/>
               1 line of symmetry<br/>
               (vertical through middle)<br/>
-              <div id="butterfly-symmetry"></div>
+              <div id="butterfly-symmetry" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Square ⬜</strong><br/>
               4 lines of symmetry<br/>
               (2 diagonal, 2 through sides)<br/>
-              <div id="square-symmetry"></div>
+              <div id="square-symmetry" style={styles.svgContainer}></div>
             </div>
             <div style={styles.shapeBox}>
               <strong>Circle ⭕</strong><br/>
               Infinite lines of symmetry<br/>
               (any line through center)<br/>
-              <div id="circle-symmetry"></div>
+              <div id="circle-symmetry" style={styles.svgContainer}></div>
             </div>
           </div>
         </div>
@@ -789,22 +796,22 @@ const GeometryExplanation = () => {
             <div style={{...styles.angleVisual, textAlign: 'center', padding: '15px', border: '2px solid #ddd', borderRadius: '8px'}}>
               <strong>Acute Angle</strong><br/>
               Less than 90°<br/>
-              <div id="acute-angle"></div>
+              <div id="acute-angle" style={styles.svgContainer}></div>
             </div>
             <div style={{...styles.angleVisual, textAlign: 'center', padding: '15px', border: '2px solid #ddd', borderRadius: '8px'}}>
               <strong>Right Angle</strong><br/>
               Exactly 90°<br/>
-              <div id="right-angle"></div>
+              <div id="right-angle" style={styles.svgContainer}></div>
             </div>
             <div style={{...styles.angleVisual, textAlign: 'center', padding: '15px', border: '2px solid #ddd', borderRadius: '8px'}}>
               <strong>Obtuse Angle</strong><br/>
               Between 90° and 180°<br/>
-              <div id="obtuse-angle"></div>
+              <div id="obtuse-angle" style={styles.svgContainer}></div>
             </div>
             <div style={{...styles.angleVisual, textAlign: 'center', padding: '15px', border: '2px solid #ddd', borderRadius: '8px'}}>
               <strong>Straight Angle</strong><br/>
               Exactly 180°<br/>
-              <div id="straight-angle"></div>
+              <div id="straight-angle" style={styles.svgContainer}></div>
             </div>
           </div>
         </div>
@@ -829,7 +836,7 @@ const GeometryExplanation = () => {
               • 4 right angles (90°)<br/>
               • 4 lines of symmetry<br/>
               • Opposite sides parallel<br/>
-              <div id="square-demo" style={{marginTop: '10px'}}></div>
+              <div id="square-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>👆 Click me!</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -838,7 +845,7 @@ const GeometryExplanation = () => {
               • 4 right angles (90°)<br/>
               • 2 lines of symmetry<br/>
               • Opposite sides parallel<br/>
-              <div id="rectangle-demo" style={{marginTop: '10px'}}></div>
+              <div id="rectangle-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Longer than it is wide</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -847,7 +854,7 @@ const GeometryExplanation = () => {
               • Opposite angles equal<br/>
               • 2 lines of symmetry<br/>
               • Opposite sides parallel<br/>
-              <div id="rhombus-demo" style={{marginTop: '10px'}}></div>
+              <div id="rhombus-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Like a tilted square</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -856,7 +863,7 @@ const GeometryExplanation = () => {
               • Opposite angles equal<br/>
               • No right angles<br/>
               • Opposite sides parallel<br/>
-              <div id="parallelogram-demo" style={{marginTop: '10px'}}></div>
+              <div id="parallelogram-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Leaning rectangle</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -865,7 +872,7 @@ const GeometryExplanation = () => {
               • Exactly 1 pair parallel sides<br/>
               • Can have different angles<br/>
               • May have line symmetry<br/>
-              <div id="trapezoid-demo" style={{marginTop: '10px'}}></div>
+              <div id="trapezoid-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Like a pyramid base</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -874,7 +881,7 @@ const GeometryExplanation = () => {
               • 3 angles<br/>
               • Sum of angles = 180°<br/>
               • Can be many types<br/>
-              <div id="triangle-demo" style={{marginTop: '10px'}}></div>
+              <div id="triangle-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Simplest polygon</small>
             </div>
           </div>
@@ -889,7 +896,7 @@ const GeometryExplanation = () => {
               • No sides or angles<br/>
               • Infinite lines of symmetry<br/>
               • Circumference and diameter<br/>
-              <div id="circle-demo" style={{marginTop: '10px'}}></div>
+              <div id="circle-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Perfectly round</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -898,7 +905,7 @@ const GeometryExplanation = () => {
               • 5 equal angles<br/>
               • 5 lines of symmetry<br/>
               • Sum of angles = 540°<br/>
-              <div id="pentagon-demo" style={{marginTop: '10px'}}></div>
+              <div id="pentagon-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Like home plate</small>
             </div>
             <div style={styles.shapeBox20}>
@@ -907,7 +914,7 @@ const GeometryExplanation = () => {
               • 6 equal angles<br/>
               • 6 lines of symmetry<br/>
               • Sum of angles = 720°<br/>
-              <div id="hexagon-demo" style={{marginTop: '10px'}}></div>
+              <div id="hexagon-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Like a honeycomb</small>
             </div>
           </div>
