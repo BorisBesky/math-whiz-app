@@ -189,7 +189,7 @@ const TutorialOverlay = () => {
             left: highlightRect.left,
             width: highlightRect.width,
             height: highlightRect.height,
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 30px rgba(59, 130, 246, 0.8)',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.1), 0 0 30px rgba(59, 130, 246, 0.8)',
             pointerEvents: 'none',
             zIndex: 10001,
             backgroundColor: 'transparent'
@@ -197,7 +197,7 @@ const TutorialOverlay = () => {
         />
       ) : (
         /* Full backdrop when no element is highlighted */
-        <div className="absolute inset-0 bg-black bg-opacity-60 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-300" />
       )}
 
       {/* Tooltip */}
