@@ -35,12 +35,16 @@ export function normalizeNumericAnswer(answer) {
   
   // Handle decimal numbers
   if (trimmed.includes('.')) {
-    const parsed = parseFloat(trimmed);
-    return isNaN(parsed) ? trimmed : parsed.toString();
+    // Split into integer and fractional parts
+    const [intPart, fracPart] = trimmed.split('.');
+    // Remove leading zeros from integer part, but preserve '0' if intPart is all zeros
+    const normInt = intPart.replace(/^0+(?=\d)/, '') || '0';
+    // Recombine, preserving fractional part exactly
+    return normInt + '.' + fracPart;
   }
   
   // Handle integers - remove leading zeros
-  const parsed = parseInt(trimmed, 10);
-  return isNaN(parsed) ? trimmed : parsed.toString();
+  const normInt = trimmed.replace(/^0+(?=\d)/, '') || '0';
+  return normInt;
 }
 
