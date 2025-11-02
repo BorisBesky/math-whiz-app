@@ -50,6 +50,8 @@ import { dashboardTutorial } from './tutorials/dashboardTutorial';
 import { storeTutorial } from './tutorials/storeTutorial';
 import { USER_ROLES } from './utils/userRoles';
 import SketchOverlay from './components/SketchCanvas';
+import NumberPad from './components/NumberPad';
+import { isNumericQuestion, normalizeNumericAnswer } from './utils/answer-helpers';
 import {
   adaptAnsweredHistory,
   nextTargetComplexity,
@@ -555,6 +557,7 @@ const MainAppContent = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [userAnswer, setUserAnswer] = useState(null);
+  const [numericInput, setNumericInput] = useState(''); // For number pad input
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState(null); // Changed to null, will hold an object {message, type}
   const [isAnswered, setIsAnswered] = useState(false);
@@ -1089,8 +1092,17 @@ const MainAppContent = () => {
 
     setIsAnswered(true);
     const timeTaken = (Date.now() - questionStartTime.current) / 1000; // in seconds
-    const isCorrect =
-      userAnswer === currentQuiz[currentQuestionIndex].correctAnswer;
+    
+    // Normalize answers for numeric questions
+    const currentQuestion = currentQuiz[currentQuestionIndex];
+    const normalizedUserAnswer = isNumericQuestion(currentQuestion) 
+      ? normalizeNumericAnswer(userAnswer)
+      : userAnswer;
+    const normalizedCorrectAnswer = isNumericQuestion(currentQuestion)
+      ? normalizeNumericAnswer(currentQuestion.correctAnswer)
+      : currentQuestion.correctAnswer;
+    
+    const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
     const today = getTodayDateString();
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
@@ -1364,6 +1376,7 @@ const MainAppContent = () => {
 
   const resetQuestionState = () => {
     setUserAnswer(null);
+    setNumericInput(''); // Clear numeric input
     setShowHint(false);
     setFeedback(null);
     setIsAnswered(false);
@@ -2585,44 +2598,66 @@ Answer: [The answer]`;
           <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">
             {formatMathText(currentQuestion.question)}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {currentQuestion.options.map((option, index) => {
-              const isSelected = userAnswer === option;
-              const isCorrect = option === currentQuestion.correctAnswer;
-              let buttonClass =
-                "bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400";
-              if (isAnswered) {
-                if (isCorrect)
-                  buttonClass =
-                    "bg-green-100 border-2 border-green-500 text-green-800";
-                else if (isSelected && !isCorrect)
-                  buttonClass =
-                    "bg-red-100 border-2 border-red-500 text-red-800";
-                else
-                  buttonClass =
-                    "bg-gray-100 border-2 border-gray-300 text-gray-500";
-              } else if (isSelected) {
-                buttonClass = "bg-blue-100 border-2 border-blue-500";
-              }
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(option)}
-                  onDoubleClick={() => {
-                    if (!isAnswered) {
-                      handleAnswer(option);
-                      // Use setTimeout to ensure the answer is set before checking
-                      setTimeout(() => checkAnswer(), 0);
-                    }
-                  }}
-                  disabled={isAnswered}
-                  className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}
-                >
-                  {formatMathText(option)}
-                </button>
-              );
-            })}
-          </div>
+          
+          {/* Conditionally render number pad or multiple choice */}
+          {isNumericQuestion(currentQuestion) ? (
+            <div className="mb-6">
+              <NumberPad 
+                value={numericInput}
+                onChange={(value) => {
+                  setNumericInput(value);
+                  setUserAnswer(value);
+                }}
+                disabled={isAnswered}
+              />
+              {isAnswered && (
+                <div className="mt-4 text-center">
+                  <p className="text-lg font-semibold">
+                    Correct answer: <span className="text-green-600">{currentQuestion.correctAnswer}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {currentQuestion.options.map((option, index) => {
+                const isSelected = userAnswer === option;
+                const isCorrect = option === currentQuestion.correctAnswer;
+                let buttonClass =
+                  "bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400";
+                if (isAnswered) {
+                  if (isCorrect)
+                    buttonClass =
+                      "bg-green-100 border-2 border-green-500 text-green-800";
+                  else if (isSelected && !isCorrect)
+                    buttonClass =
+                      "bg-red-100 border-2 border-red-500 text-red-800";
+                  else
+                    buttonClass =
+                      "bg-gray-100 border-2 border-gray-300 text-gray-500";
+                } else if (isSelected) {
+                  buttonClass = "bg-blue-100 border-2 border-blue-500";
+                }
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(option)}
+                    onDoubleClick={() => {
+                      if (!isAnswered) {
+                        handleAnswer(option);
+                        // Use setTimeout to ensure the answer is set before checking
+                        setTimeout(() => checkAnswer(), 0);
+                      }
+                    }}
+                    disabled={isAnswered}
+                    className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}
+                  >
+                    {formatMathText(option)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {showHint && !isAnswered && (
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg">
               <p>
@@ -2671,15 +2706,17 @@ Answer: [The answer]`;
               >
                 {feedback ? (
                   feedback.message
-                ) : userAnswer !== null ? (
+                ) : userAnswer !== null && userAnswer !== '' ? (
                   <span>
-                    Selected:{" "}
+                    {isNumericQuestion(currentQuestion) ? 'Your answer' : 'Selected'}:{" "}
                     <span className="font-bold">
                       {formatMathText(userAnswer)}
                     </span>
                   </span>
                 ) : (
-                  <span className="italic text-gray-400">Select an answer</span>
+                  <span className="italic text-gray-400">
+                    {isNumericQuestion(currentQuestion) ? 'Enter a number' : 'Select an answer'}
+                  </span>
                 )}
               </div>
               <div className="flex items-center justify-center w-full">
@@ -2693,7 +2730,7 @@ Answer: [The answer]`;
                 ) : (
                   <button
                     onClick={checkAnswer}
-                    disabled={userAnswer === null}
+                    disabled={userAnswer === null || userAnswer === ''}
                     className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     Check Answer
