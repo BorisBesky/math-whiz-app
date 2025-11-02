@@ -16,6 +16,11 @@ export function isNumericQuestion(question) {
     return false;
   }
 
+  // Need to keep factors as multi-choice even if numeric
+  if (question.subtopic && question.subtopic === "factors") {
+    return false;
+  }
+
   // Check if all options are purely numeric (including negative numbers)
   return question.options.every(option => {
     const optionStr = option?.toString().trim();

@@ -2652,14 +2652,16 @@ Answer: [The answer]`;
           {/* Conditionally render number pad or multiple choice */}
           {isNumericQuestion(currentQuestion) ? (
             <div className="mb-6">
-              <NumberPad 
-                value={numericInput}
-                onChange={(value) => {
-                  setNumericInput(value);
-                  setUserAnswer(value);
-                }}
-                disabled={isAnswered}
-              />
+              {!isAnswered && (
+                <NumberPad 
+                  value={numericInput}
+                  onChange={(value) => {
+                    setNumericInput(value);
+                    setUserAnswer(value);
+                  }}
+                  disabled={isAnswered}
+                />
+              )}
               {isAnswered && (
                 <div className="mt-4 text-center">
                   <p className="text-lg font-semibold">
@@ -2709,7 +2711,10 @@ Answer: [The answer]`;
             </div>
           )}
           {showHint && !isAnswered && (
-            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg">
+            <div 
+              onClick={() => setShowHint(false)}
+              className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded-r-lg cursor-pointer hover:bg-yellow-200 transition-colors"
+            >
               <p>
                 <span className="font-bold">Hint:</span> {currentQuestion.hint}
               </p>
@@ -2719,34 +2724,34 @@ Answer: [The answer]`;
           {/* Bottom layout: two rows, responsive */}
           <div className="mt-auto w-full">
             {/* First row: Explain Concept | Sketch | Show/Hide Hint */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
               <button
                 onClick={handleExplainConcept}
-                className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-2 px-4 rounded-lg hover:bg-purple-100 transition"
+                className="w-full flex items-center justify-center gap-2 text-purple-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-purple-100 transition text-sm"
                 data-tutorial-id="ai-tutor-button"
               >
-                <Sparkles size={20} /> Learn About This
+                <Sparkles size={18} /> Learn About This
               </button>
               <button
                 onClick={() => setShowSketchOverlay(true)}
-                className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-2 px-4 rounded-lg hover:bg-orange-100 transition"
+                className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition text-sm"
               >
-                <PenTool size={20} /> Sketch
+                <PenTool size={18} /> Sketch
               </button>
               <button
                 onClick={() => setShowHint(!showHint)}
                 disabled={isAnswered}
-                className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 text-blue-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                <HelpCircle size={20} />
+                <HelpCircle size={18} />
                 {showHint ? "Hide Hint" : "Show Hint"}
               </button>
             </div>
             {/* Second row: Response Field | Check/Next Button */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Response Field: show feedback, selected answer, or prompt to select */}
               <div
-                className={`flex items-center justify-center w-full min-h-[48px] rounded-lg border px-4 text-lg font-medium ${
+                className={`flex items-center justify-center w-full min-h-[40px] rounded-lg border px-3 text-sm font-medium ${
                   feedback
                     ? feedback.type === "success"
                       ? "bg-green-100 border-green-500 text-green-800"
@@ -2773,15 +2778,15 @@ Answer: [The answer]`;
                 {isAnswered ? (
                   <button
                     onClick={nextQuestion}
-                    className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 text-sm"
                   >
-                    Next Question <ChevronsRight size={20} />
+                    Next Question <ChevronsRight size={18} />
                   </button>
                 ) : (
                   <button
                     onClick={checkAnswer}
                     disabled={userAnswer === null || userAnswer === ''}
-                    className="w-full sm:w-auto bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                   >
                     Check Answer
                   </button>

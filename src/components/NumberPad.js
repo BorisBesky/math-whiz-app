@@ -47,27 +47,27 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
   };
 
   const buttonClass = (isSpecial = false) => {
-    const baseClass = "p-2.5 rounded-lg text-lg font-bold transition-all duration-200 ";
+    const baseClass = "p-2 rounded-lg text-base font-bold transition-all duration-200 ";
     if (disabled) {
       return baseClass + "bg-gray-200 text-gray-400 cursor-not-allowed";
     }
     if (isSpecial) {
       return baseClass + "bg-red-500 text-white hover:bg-red-600 active:scale-95";
     }
-    return baseClass + "bg-blue-500 text-white hover:bg-blue-600 active:scale-95";
+    return baseClass + "bg-blue-900 text-white hover:bg-blue-600 active:scale-95";
   };
 
   return (
     <div className="w-full max-w-xs mx-auto">
       {/* Display Screen */}
-      <div className="mb-3 p-3 bg-white border-2 border-blue-300 rounded-lg min-h-[50px] flex items-center justify-center">
-        <span className={`text-xl font-bold ${value ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+      <div className="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center">
+        <span className={`text-lg font-bold ${value ? 'text-gray-800' : 'text-gray-400 italic'}`}>
           {value || 'Enter number...'}
         </span>
       </div>
 
       {/* Number Pad Grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1">
         {/* Numbers 1-9 */}
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <button
@@ -101,7 +101,7 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
         <button
           onClick={handleDecimalClick}
           disabled={disabled}
-          className={buttonClass() + " flex items-center justify-center text-2xl"}
+          className={buttonClass() + " flex items-center justify-center text-xl"}
           title="Decimal Point"
         >
           .
@@ -114,16 +114,16 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
           className={buttonClass(true) + " col-span-1 flex items-center justify-center"}
           title="Clear"
         >
-          <X size={20} />
+          <X size={16} />
         </button>
 
         <button
           onClick={handleBackspace}
           disabled={disabled}
-          className={buttonClass(true) + " col-span-2 flex items-center justify-center gap-1.5"}
+          className={buttonClass(true) + " col-span-2 flex items-center justify-center gap-1"}
           title="Backspace"
         >
-          <Delete size={18} /> Delete
+          <Delete size={14} /> Delete
         </button>
       </div>
     </div>
