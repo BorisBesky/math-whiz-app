@@ -8,23 +8,24 @@ export function isNumericQuestion(question) {
     return false;
   }
 
-  // Check if the correct answer is purely numeric
+  // Check if the correct answer is purely numeric (including negative numbers)
   const correctAnswer = question.correctAnswer?.toString().trim();
   
-  // If correct answer contains non-digit characters (except decimal point), it's not purely numeric
-  if (correctAnswer && !/^\d+(\.\d+)?$/.test(correctAnswer)) {
+  // If correct answer contains non-digit characters (except decimal point and negative sign), it's not purely numeric
+  if (correctAnswer && !/^-?\d+(\.\d+)?$/.test(correctAnswer)) {
     return false;
   }
 
-  // Check if all options are purely numeric
+  // Check if all options are purely numeric (including negative numbers)
   return question.options.every(option => {
     const optionStr = option?.toString().trim();
-    return /^\d+(\.\d+)?$/.test(optionStr);
+    return /^-?\d+(\.\d+)?$/.test(optionStr);
   });
 }
 
 /**
  * Normalizes a numeric answer by removing leading zeros and whitespace
+ * Handles positive, negative, integer, and decimal numbers
  * @param {string} answer - The answer to normalize
  * @returns {string} - Normalized answer
  */
@@ -33,13 +34,13 @@ export function normalizeNumericAnswer(answer) {
   
   const trimmed = answer.toString().trim();
   
-  // Handle decimal numbers
+  // Handle decimal numbers (both positive and negative)
   if (trimmed.includes('.')) {
     const parsed = parseFloat(trimmed);
     return isNaN(parsed) ? trimmed : parsed.toString();
   }
   
-  // Handle integers - remove leading zeros
+  // Handle integers - remove leading zeros (preserves negative sign)
   const parsed = parseInt(trimmed, 10);
   return isNaN(parsed) ? trimmed : parsed.toString();
 }

@@ -22,6 +22,20 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
     }
   };
 
+  const handleToggleSign = () => {
+    if (disabled) return;
+    // Don't toggle if empty or just "0"
+    if (value === '' || value === '0' || value === '0.') return;
+    
+    if (value.startsWith('-')) {
+      // Remove negative sign
+      onChange(value.slice(1));
+    } else {
+      // Add negative sign
+      onChange('-' + value);
+    }
+  };
+
   const handleBackspace = () => {
     if (disabled) return;
     onChange(value.slice(0, -1));
@@ -66,14 +80,14 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
           </button>
         ))}
 
-        {/* Bottom row: Clear, 0, Backspace */}
+        {/* Bottom row: +/-, 0, Decimal */}
         <button
-          onClick={handleClear}
+          onClick={handleToggleSign}
           disabled={disabled}
-          className={buttonClass(true) + " flex items-center justify-center"}
-          title="Clear"
+          className={buttonClass() + " flex items-center justify-center text-lg"}
+          title="Toggle Positive/Negative"
         >
-          <X size={20} />
+          +/−
         </button>
 
         <button
@@ -93,11 +107,20 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
           .
         </button>
 
-        {/* Second bottom row: Backspace spanning across */}
+        {/* Second bottom row: Clear and Backspace */}
+        <button
+          onClick={handleClear}
+          disabled={disabled}
+          className={buttonClass(true) + " col-span-1 flex items-center justify-center"}
+          title="Clear"
+        >
+          <X size={20} />
+        </button>
+
         <button
           onClick={handleBackspace}
           disabled={disabled}
-          className={buttonClass(true) + " col-span-3 flex items-center justify-center gap-1.5"}
+          className={buttonClass(true) + " col-span-2 flex items-center justify-center gap-1.5"}
           title="Backspace"
         >
           <Delete size={18} /> Delete
