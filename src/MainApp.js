@@ -262,6 +262,56 @@ const storeItems = [
     name: "Elephant Smiles",
     url: "https://images4whizkids.s3.us-east-2.amazonaws.com/elephant.jpeg",
   },
+  {
+    id: "bg21",
+    name: "Zombies and Witches Trick or Treat",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/zombie-witches.jpg",
+  },
+  {
+    id: "bg22",
+    name: "Werewolf",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/werewolf.jpg",
+  },
+  {
+    id: "bg23",
+    name: "Trick-or-Treaters",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/tric-or-treaters.jpg",
+  },
+  {
+    id: "bg24",
+    name: "Skeleton Dancing",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/skeleton-dancing.jpg",
+  },
+  {
+    id: "bg25",
+    name: "Scarecrow",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/scarecrow.jpg",
+  },
+  {
+    id: "bg26",
+    name: "Mushroom",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/mushroom.jpg",
+  },
+  {
+    id: "bg27",
+    name: "Kitten Pumpkin",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kitten-pumpkin.jpg",
+  },
+  {
+    id: "bg28",
+    name: "Gummy Worms",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/gummy-worms.jpg",
+  },
+  {
+    id: "bg29",
+    name: "Ghost",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/ghost.jpg",
+  },
+  {
+    id: "bg30",
+    name: "Bat",
+    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/bat.jpg",
+  }
 ];
 
 // --- Dynamic Quiz Generation ---
