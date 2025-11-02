@@ -12,14 +12,14 @@ export function isNumericQuestion(question) {
   const correctAnswer = question.correctAnswer?.toString().trim();
   
   // If correct answer contains non-digit characters (except decimal point), it's not purely numeric
-  if (correctAnswer && !/^\d+(\.\d+)?$/.test(correctAnswer)) {
+  if (correctAnswer && !/^-?\d+(\.\d+)?$/.test(correctAnswer)) {
     return false;
   }
 
   // Check if all options are purely numeric
   return question.options.every(option => {
     const optionStr = option?.toString().trim();
-    return /^\d+(\.\d+)?$/.test(optionStr);
+    return /^-?\d+(\.\d+)?$/.test(optionStr);
   });
 }
 
