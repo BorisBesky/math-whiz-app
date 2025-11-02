@@ -17,8 +17,8 @@ const NumberPad = ({ value, onChange, disabled = false }) => {
     if (disabled) return;
     // Only allow one decimal point
     if (!value.includes('.')) {
-      // If value is empty, add "0." instead of just "."
-      onChange(value === '' ? '0.' : value + '.');
+      // If value is empty or just "-", add "0." after the sign instead of just "."
+      onChange(value === '' || value === '-' ? (value + '0.') : value + '.');
     }
   };
 
