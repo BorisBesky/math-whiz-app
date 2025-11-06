@@ -2665,7 +2665,11 @@ Answer: [The answer]`;
               {isAnswered && (
                 <div className="mt-4 text-center">
                   <p className="text-lg font-semibold">
-                    Correct answer: <span className="text-green-600">{currentQuestion.correctAnswer}</span>
+                    Your answer was: <span className={
+                      normalizeNumericAnswer(userAnswer) === normalizeNumericAnswer(currentQuestion.correctAnswer)
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }>{userAnswer}</span>
                   </p>
                 </div>
               )}
