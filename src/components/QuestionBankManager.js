@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc, deleteDoc, orderBy, setDoc, addDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { BookOpen, Trash2, Users, Filter, X, CheckCircle, ChevronDown, ChevronUp, Share2, User as UserIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon } from 'lucide-react';
 import { TOPICS } from '../constants/topics';
 
 const QuestionBankManager = ({ 
@@ -112,14 +111,27 @@ const QuestionBankManager = ({
     if (!isAdmin || !db) return;
 
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
-    const q = query(sharedRef, orderBy('addedAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    // Query without orderBy to avoid index requirements
+    const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
       const questionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         collection: 'sharedQuestionBank',
         ...doc.data()
       }));
+      
+      // Sort client-side by addedAt or createdAt
+      questionsData.sort((a, b) => {
+        const timeFieldA = a.addedAt || a.createdAt;
+        const timeFieldB = b.addedAt || b.createdAt;
+        if (timeFieldA && timeFieldB) {
+          const timeA = timeFieldA.toDate ? timeFieldA.toDate() : new Date(timeFieldA);
+          const timeB = timeFieldB.toDate ? timeFieldB.toDate() : new Date(timeFieldB);
+          return timeB - timeA; // desc
+        }
+        return 0;
+      });
+      
       setSharedQuestions(questionsData);
     }, (err) => {
       console.error('Error loading shared questions:', err);

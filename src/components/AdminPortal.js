@@ -19,7 +19,6 @@ import {
   UserCheck,
   LayoutDashboard,
   BookOpen,
-  HelpCircle,
   ClipboardList,
   RefreshCw,
   X
@@ -27,7 +26,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 
 const AdminPortal = ({ db, onClose, appId }) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Edit3, Trash2, Check, X as XIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { TOPICS } from '../constants/topics';
@@ -83,7 +83,6 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
   };
 
   const deleteSelected = () => {
-    const indicesToDelete = Array.from(selectedQuestions).sort((a, b) => b - a);
     const updated = editedQuestions.filter((_, i) => !selectedQuestions.has(i));
     setEditedQuestions(updated);
     setSelectedQuestions(new Set());

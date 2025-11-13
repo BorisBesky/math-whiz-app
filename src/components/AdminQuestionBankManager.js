@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, doc, deleteDoc, addDoc, getDocs, getDoc, updateDoc, orderBy, setDoc, collectionGroup, where } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import QuestionBankManager from './QuestionBankManager';
 
@@ -8,7 +8,6 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
   const [sharedQuestions, setSharedQuestions] = useState([]);
   const [allTeachers, setAllTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const db = getFirestore();
   const currentAppId = appId || 'default-app-id';
@@ -131,7 +130,6 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       setLoading(false);
     }, (err) => {
       console.error('Error loading shared questions:', err);
-      setError('Failed to load shared questions');
       setLoading(false);
     });
 
