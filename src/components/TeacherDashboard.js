@@ -21,6 +21,7 @@ import {
   ChevronsUpDown,
   LayoutDashboard,
   HelpCircle,
+  ClipboardList,
   RefreshCw,
   Upload,
 } from 'lucide-react';
@@ -858,7 +859,7 @@ const TeacherDashboard = () => {
                 : 'text-gray-600 hover:text-gray-900'}`}
               title="Questions - Manage your question bank"
             >
-              <HelpCircle className="w-5 h-5" />
+              <ClipboardList className="w-5 h-5" />
             </button>
           </div>
         </div>

@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   BookOpen,
   HelpCircle,
+  ClipboardList,
   RefreshCw,
   X
 } from 'lucide-react';
@@ -1314,7 +1315,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
               : 'text-gray-600 hover:text-gray-900'}`}
             title="Question Bank - Manage all questions"
           >
-            <HelpCircle className="w-5 h-5" />
+            <ClipboardList className="w-5 h-5" />
           </button>
         </div>
 
