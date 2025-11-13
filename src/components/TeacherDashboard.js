@@ -1239,19 +1239,11 @@ const TeacherDashboard = () => {
         {/* Student Detail */}
         {view === 'student-detail' && selectedStudent && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setView('students')}
-                className="text-blue-600 hover:text-blue-800 flex items-center"
-              >
-                ← Back to Students
-              </button>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
-                </h3>
-                <p className="text-gray-600">ID: {selectedStudent.id}</p>
-              </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
+              </h3>
+              <p className="text-gray-600">ID: {selectedStudent.id}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
