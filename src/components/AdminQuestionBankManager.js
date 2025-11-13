@@ -16,35 +16,75 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
   // Load all teachers
   useEffect(() => {
     const loadTeachers = async () => {
-      try {
-        console.log('[AdminQuestionBankManager] Loading teachers using collectionGroup query');
-        // Use collectionGroup to query all math_whiz_data/profile documents
-        const profilesGroup = collectionGroup(db, 'math_whiz_data');
-        const profilesSnapshot = await getDocs(profilesGroup);
-        
-        console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
-        const teachersList = [];
-        
-        profilesSnapshot.forEach((profileDoc) => {
-          const data = profileDoc.data();
-          // Extract userId from the document path: artifacts/{appId}/users/{userId}/math_whiz_data/profile
-          const userId = profileDoc.ref.parent.parent.id;
+      let retries = 0;
+      const maxRetries = 3;
+      
+      while (retries <= maxRetries) {
+        try {
+          console.log('[AdminQuestionBankManager] Loading teachers using collectionGroup query (attempt', retries + 1, '/', maxRetries + 1, ')');
+          // Use collectionGroup to query all math_whiz_data/profile documents
+          const profilesGroup = collectionGroup(db, 'math_whiz_data');
+          const profilesSnapshot = await getDocs(profilesGroup);
           
-          console.log('[AdminQuestionBankManager] User', userId, 'role:', data.role);
+          console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
+          const teachersList = [];
           
-          if (data.role === 'teacher' || data.role === 'admin') {
-            teachersList.push({
-              id: userId,
-              email: data.email || userId,
-              name: data.name || data.displayName || data.email || userId
+          profilesSnapshot.forEach((profileDoc) => {
+            const data = profileDoc.data();
+            // Extract userId from the document path: artifacts/{appId}/users/{userId}/math_whiz_data/profile
+            const userId = profileDoc.ref.parent.parent.id;
+            
+            console.log('[AdminQuestionBankManager] User', userId, 'role:', data.role);
+            
+            if (data.role === 'teacher' || data.role === 'admin') {
+              teachersList.push({
+                id: userId,
+                email: data.email || userId,
+                name: data.name || data.displayName || data.email || userId
+              });
+            }
+          });
+          
+          console.log('[AdminQuestionBankManager] Successfully loaded', teachersList.length, 'teachers/admins:', teachersList);
+          setAllTeachers(teachersList);
+          return; // Success, exit the retry loop
+        } catch (err) {
+          const errorMessage = err?.message || err?.toString() || 'Unknown error';
+          const errorCode = err?.code?.toLowerCase() || '';
+          
+          // Check if error is retryable
+          const retryableErrors = ['unavailable', 'deadline-exceeded', 'resource-exhausted'];
+          const isRetryable = retryableErrors.some(code => 
+            errorCode.includes(code) || errorMessage.toLowerCase().includes(code)
+          );
+          
+          // Check if this is a missing index error (not retryable)
+          const isMissingIndex = errorMessage.toLowerCase().includes('index') || 
+                                  errorMessage.toLowerCase().includes('requires an index');
+          
+          if (retries === maxRetries || !isRetryable || isMissingIndex) {
+            console.error('[AdminQuestionBankManager] Error loading teachers after', retries + 1, 'attempts:', {
+              error: err,
+              code: err?.code,
+              message: errorMessage
             });
+            
+            // Show user-friendly error message
+            if (isMissingIndex) {
+              console.error('[AdminQuestionBankManager] Missing Firestore index. Please check the console for the index creation link.');
+            }
+            
+            // Set empty array so UI doesn't stay in loading state forever
+            setAllTeachers([]);
+            return;
           }
-        });
-        
-        console.log('[AdminQuestionBankManager] Found', teachersList.length, 'teachers/admins:', teachersList);
-        setAllTeachers(teachersList);
-      } catch (err) {
-        console.error('Error loading teachers:', err);
+          
+          // Retry with exponential backoff
+          retries++;
+          const delay = Math.min(1000 * Math.pow(2, retries - 1), 5000);
+          console.warn('[AdminQuestionBankManager] Retrying teacher load in', delay, 'ms due to:', errorMessage);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
     };
 
@@ -65,7 +105,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       
       // Query without orderBy to avoid index requirements
       const unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
-        console.log(`Loaded ${snapshot.size} questions for teacher ${teacher.name} (${teacher.id})`);
+        console.log(`[AdminQuestionBankManager] Loaded ${snapshot.size} questions for teacher ${teacher.name} (${teacher.id})`);
         const questionsData = snapshot.docs.map(doc => ({
           id: doc.id,
           userId: teacher.id,
@@ -90,7 +130,23 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
           return [...filtered, ...questionsData];
         });
       }, (err) => {
-        console.error(`Error loading questions for teacher ${teacher.id}:`, err);
+        const errorMessage = err?.message || err?.toString() || 'Unknown error';
+        console.error(`[AdminQuestionBankManager] Error loading questions for teacher ${teacher.id}:`, {
+          error: err,
+          code: err?.code,
+          message: errorMessage,
+          teacherId: teacher.id,
+          teacherName: teacher.name
+        });
+        
+        // Check if this is a missing index error
+        if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+          console.warn(`[AdminQuestionBankManager] Missing index for teacher ${teacher.name}'s questions. Please check the console for the index creation link.`);
+        }
+        
+        // Continue loading other teachers' questions even if one fails
+        // Remove this teacher's questions from the list if they were previously loaded
+        setTeacherQuestions(prev => prev.filter(q => q.userId !== teacher.id));
       });
 
       unsubscribes.push(unsubscribe);
@@ -106,8 +162,9 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
     
     // Query without orderBy to avoid index requirements
+    console.log('[AdminQuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
-      console.log(`Loaded ${snapshot.size} shared questions`);
+      console.log(`[AdminQuestionBankManager] Loaded ${snapshot.size} shared questions`);
       const questionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         collection: 'sharedQuestionBank',
@@ -129,7 +186,18 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       setSharedQuestions(questionsData);
       setLoading(false);
     }, (err) => {
-      console.error('Error loading shared questions:', err);
+      const errorMessage = err?.message || err?.toString() || 'Unknown error';
+      console.error('[AdminQuestionBankManager] Error loading shared questions:', {
+        error: err,
+        code: err?.code,
+        message: errorMessage
+      });
+      
+      // Check if this is a missing index error
+      if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+        console.warn('[AdminQuestionBankManager] Missing index for shared questions. Please check the console for the index creation link.');
+      }
+      
       setLoading(false);
     });
 

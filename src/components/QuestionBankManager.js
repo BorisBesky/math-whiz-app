@@ -67,9 +67,9 @@ const QuestionBankManager = ({
     // Try query without orderBy to avoid index issues
     let unsubscribe;
     try {
-      console.log('Loading questions from questionBank for user:', userId);
+      console.log('[QuestionBankManager] Loading questions from questionBank for user:', userId);
       unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
-        console.log(`Loaded ${snapshot.size} questions from questionBank`);
+        console.log(`[QuestionBankManager] Loaded ${snapshot.size} questions from questionBank`);
         const questionsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -85,14 +85,32 @@ const QuestionBankManager = ({
         });
         setQuestions(questionsData);
         setLoading(false);
+        setError(null); // Clear any previous errors
       }, (err) => {
-        console.error('Error loading questions:', err);
-        setError('Failed to load questions: ' + err.message);
+        const errorMessage = err?.message || err?.toString() || 'Unknown error';
+        console.error('[QuestionBankManager] Error loading questions:', {
+          error: err,
+          code: err?.code,
+          message: errorMessage,
+          userId
+        });
+        
+        // Check if this is a missing index error
+        if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+          setError('Database index required. Please check the browser console for the index creation link.');
+        } else {
+          setError('Failed to load questions: ' + errorMessage);
+        }
         setLoading(false);
       });
     } catch (err) {
-      console.error('Error setting up questions listener:', err);
-      setError('Failed to load questions: ' + err.message);
+      const errorMessage = err?.message || err?.toString() || 'Unknown error';
+      console.error('[QuestionBankManager] Error setting up questions listener:', {
+        error: err,
+        message: errorMessage,
+        userId
+      });
+      setError('Failed to set up questions listener: ' + errorMessage);
       setLoading(false);
     }
 
@@ -113,7 +131,9 @@ const QuestionBankManager = ({
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
     
     // Query without orderBy to avoid index requirements
+    console.log('[QuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
+      console.log(`[QuestionBankManager] Loaded ${snapshot.size} shared questions`);
       const questionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         collection: 'sharedQuestionBank',
@@ -134,7 +154,20 @@ const QuestionBankManager = ({
       
       setSharedQuestions(questionsData);
     }, (err) => {
-      console.error('Error loading shared questions:', err);
+      const errorMessage = err?.message || err?.toString() || 'Unknown error';
+      console.error('[QuestionBankManager] Error loading shared questions:', {
+        error: err,
+        code: err?.code,
+        message: errorMessage
+      });
+      
+      // Check if this is a missing index error
+      if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+        setError('Database index required for shared questions. Please check the browser console for the index creation link.');
+      } else {
+        // Don't overwrite existing error, just log it
+        console.warn('[QuestionBankManager] Shared questions failed to load but continuing with other questions');
+      }
     });
 
     return () => unsubscribe();
