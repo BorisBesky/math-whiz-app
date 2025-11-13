@@ -327,7 +327,8 @@ const generateQuizQuestions = async (
   userId = null,
   classId = null,
   answeredQuestionIds = [],
-  appId = null
+  appId = null,
+  questionBankProbability = 0.7 // Default 70% chance for question bank questions
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
@@ -368,8 +369,8 @@ const generateQuizQuestions = async (
     let question = {};
     let useFirestoreQuestion = false;
 
-    // 70% chance to use Firestore question if available, 30% for generated
-    if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < 0.7) {
+    // Use configured probability to select Firestore question if available
+    if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
       const firestoreQ = firestoreQuestions[firestoreQuestionIndex];
       // Check if question text is unique
       if (!usedQuestions.has(firestoreQ.question)) {
@@ -1333,8 +1334,9 @@ const MainAppContent = () => {
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
-    // Get student's classId if enrolled
+    // Get student's classId and class configuration if enrolled
     let studentClassId = null;
+    let questionBankProbability = 0.7; // Default 70%
     const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
     try {
       const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
@@ -1342,6 +1344,22 @@ const MainAppContent = () => {
       const enrollmentSnapshot = await getDocs(enrollmentQuery);
       if (!enrollmentSnapshot.empty) {
         studentClassId = enrollmentSnapshot.docs[0].data().classId;
+        
+        // Fetch class configuration for question bank probability
+        try {
+          const classDocRef = doc(db, 'artifacts', appIdForQuiz, 'classes', studentClassId);
+          const classDoc = await getDoc(classDocRef);
+          if (classDoc.exists()) {
+            const classData = classDoc.data();
+            // Use class-specific probability if set, otherwise use default
+            if (typeof classData.questionBankProbability === 'number') {
+              questionBankProbability = Math.max(0, Math.min(1, classData.questionBankProbability));
+              console.log(`Using class-configured question bank probability: ${questionBankProbability * 100}%`);
+            }
+          }
+        } catch (classErr) {
+          console.warn('Could not fetch class configuration:', classErr);
+        }
       }
     } catch (e) {
       console.warn('Could not fetch student class:', e);
@@ -1400,7 +1418,8 @@ const MainAppContent = () => {
       user.uid,
       studentClassId,
       answeredQuestionIds,
-      appIdForQuiz
+      appIdForQuiz,
+      questionBankProbability
     );
     setCurrentQuiz(newQuestions);
     setQuizState(APP_STATES.IN_PROGRESS);
