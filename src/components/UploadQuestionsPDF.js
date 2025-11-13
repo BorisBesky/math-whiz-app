@@ -14,6 +14,52 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [polling, setPolling] = useState(false);
   const [pendingJobs, setPendingJobs] = useState([]);
   const [checkingJobs, setCheckingJobs] = useState(true);
+  const [currentJobId, setCurrentJobId] = useState(null);
+
+  // Helper function to process query snapshots into filtered and sorted jobs
+  const processJobsSnapshot = useCallback((snapshot, shouldLog = false) => {
+    if (shouldLog) {
+      console.log(`Found ${snapshot.size} completed jobs`);
+    }
+    
+    const jobs = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      
+      if (shouldLog) {
+        console.log(`Job ${docSnap.id}:`, {
+          status: data.status,
+          hasQuestions: !!data.questions,
+          questionsLength: data.questions?.length || 0,
+          imported: data.imported,
+          fileName: data.fileName
+        });
+      }
+      
+      // Only show completed jobs with questions that haven't been imported
+      // If imported field doesn't exist (older records), treat as not imported
+      const isImported = data.imported === true;
+      const hasQuestions = data.questions && Array.isArray(data.questions) && data.questions.length > 0;
+      
+      if (hasQuestions && !isImported) {
+        const createdAt = data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date());
+        jobs.push({
+          id: docSnap.id,
+          ...data,
+          createdAt
+        });
+      }
+    });
+    
+    // Sort by creation date (most recent first)
+    jobs.sort((a, b) => b.createdAt - a.createdAt);
+    
+    if (shouldLog) {
+      console.log(`Found ${jobs.length} pending jobs ready to import`);
+    }
+    
+    return jobs;
+  }, []);
 
   const checkPendingJobs = useCallback(async () => {
     try {
@@ -40,36 +86,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       const snapshot = await getDocs(q);
       console.log(`Found ${snapshot.size} completed jobs for user ${user.uid}`);
       
-      const jobs = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        console.log(`Job ${docSnap.id}:`, {
-          status: data.status,
-          hasQuestions: !!data.questions,
-          questionsLength: data.questions?.length || 0,
-          imported: data.imported,
-          fileName: data.fileName
-        });
-        
-        // Only show completed jobs with questions that haven't been imported
-        // If imported field doesn't exist (older records), treat as not imported
-        const isImported = data.imported === true;
-        const hasQuestions = data.questions && Array.isArray(data.questions) && data.questions.length > 0;
-        
-        if (hasQuestions && !isImported) {
-          const createdAt = data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date());
-          jobs.push({
-            id: docSnap.id,
-            ...data,
-            createdAt
-          });
-        }
-      });
-      
-      // Sort by creation date (most recent first)
-      jobs.sort((a, b) => b.createdAt - a.createdAt);
-
-      console.log(`Found ${jobs.length} pending jobs ready to import`);
+      const jobs = processJobsSnapshot(snapshot, true);
       setPendingJobs(jobs);
     } catch (err) {
       console.error('Error checking pending jobs:', err);
@@ -96,23 +113,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           );
           
           const snapshot = await getDocs(simpleQ);
-          const jobs = [];
-          snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const isImported = data.imported === true;
-            const hasQuestions = data.questions && Array.isArray(data.questions) && data.questions.length > 0;
-            
-            if (hasQuestions && !isImported) {
-              const createdAt = data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date());
-              jobs.push({
-                id: docSnap.id,
-                ...data,
-                createdAt
-              });
-            }
-          });
-          
-          jobs.sort((a, b) => b.createdAt - a.createdAt);
+          const jobs = processJobsSnapshot(snapshot, false);
           setPendingJobs(jobs);
         } catch (fallbackErr) {
           console.error('Fallback query also failed:', fallbackErr);
@@ -121,7 +122,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     } finally {
       setCheckingJobs(false);
     }
-  }, [appId]);
+  }, [appId, processJobsSnapshot]);
 
   // Check for pending/completed jobs on mount
   useEffect(() => {
@@ -132,6 +133,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     try {
       setExtractedQuestions(job.questions);
       setFileName(job.fileName || 'Unknown PDF');
+      setCurrentJobId(job.id);
       setError(null);
     } catch (err) {
       console.error('Error resuming job:', err);
@@ -257,6 +259,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
         const data = text ? JSON.parse(text) : {};
         setExtractedQuestions(data.questions);
         setFileName(data.fileName || file.name);
+        setCurrentJobId(data.jobId || null);
         setUploading(false);
       }
     } catch (err) {
@@ -323,6 +326,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
         if (data.status === 'completed') {
           setExtractedQuestions(data.questions);
           setFileName(data.fileName || file.name);
+          setCurrentJobId(currentJobId);
           setUploading(false);
           setPolling(false);
           // Refresh pending jobs list
@@ -354,31 +358,22 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   };
 
   const handleQuestionsSaved = async () => {
-    // Mark the current job as imported if it was from a pending job
-    if (extractedQuestions && pendingJobs.length > 0) {
+    // Mark the current job as imported if we have a job ID
+    if (currentJobId) {
       try {
         const db = getFirestore();
         const auth = getAuth();
         const user = auth.currentUser;
         
         if (user) {
-          // Find the job that matches the current questions
-          const matchingJob = pendingJobs.find(job => 
-            job.questions && 
-            Array.isArray(job.questions) && 
-            job.questions.length === extractedQuestions.length
-          );
+          const jobRef = doc(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs', currentJobId);
+          await updateDoc(jobRef, { 
+            imported: true, 
+            importedAt: new Date() 
+          });
           
-          if (matchingJob) {
-            const jobRef = doc(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs', matchingJob.id);
-            await updateDoc(jobRef, { 
-              imported: true, 
-              importedAt: new Date() 
-            });
-            
-            // Remove from pending jobs list
-            setPendingJobs(prev => prev.filter(j => j.id !== matchingJob.id));
-          }
+          // Remove from pending jobs list
+          setPendingJobs(prev => prev.filter(j => j.id !== currentJobId));
         }
       } catch (err) {
         console.error('Error marking job as imported:', err);
@@ -388,6 +383,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     setExtractedQuestions(null);
     setFile(null);
     setFileName('');
+    setCurrentJobId(null);
     if (onQuestionsSaved) {
       onQuestionsSaved();
     }
@@ -400,6 +396,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     setExtractedQuestions(null);
     setFile(null);
     setFileName('');
+    setCurrentJobId(null);
     setError(null);
     if (onClose) {
       onClose();

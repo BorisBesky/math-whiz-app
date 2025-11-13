@@ -1,6 +1,7 @@
 const { admin, db } = require("./firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GRADES, TOPICS, VALID_TOPICS_BY_GRADE } = require("./constants");
+const Busboy = require("busboy");
 
 // Helper to get Firestore Timestamp
 const getTimestamp = () => admin.firestore.Timestamp.now();
@@ -37,177 +38,96 @@ const verifyTeacherRole = async (userId, appId) => {
   return true;
 };
 
-// Parse multipart/form-data
+// Parse multipart/form-data using busboy
 const parseMultipartFormData = (event) => {
-  const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
-  
-  console.log('Content-Type header:', contentType);
-  
-  if (!contentType.includes('multipart/form-data')) {
-    throw new Error(`Content-Type must be multipart/form-data, got: ${contentType}`);
-  }
-
-  // Extract boundary - handle both quoted and unquoted boundaries
-  let boundaryMatch = contentType.match(/boundary=([^;,\s]+)/);
-  if (!boundaryMatch) {
-    boundaryMatch = contentType.match(/boundary="([^"]+)"/);
-  }
-  if (!boundaryMatch) {
-    throw new Error(`Missing boundary in Content-Type: ${contentType}`);
-  }
-  const boundary = boundaryMatch[1].trim();
-  console.log('Extracted boundary:', boundary);
-
-  // Get body as buffer
-  let bodyBuffer;
-  if (event.isBase64Encoded) {
-    bodyBuffer = Buffer.from(event.body, 'base64');
-  } else if (typeof event.body === 'string') {
-    // Try binary first, if that fails, use utf8
-    try {
-      bodyBuffer = Buffer.from(event.body, 'binary');
-    } catch (e) {
-      bodyBuffer = Buffer.from(event.body, 'utf8');
-    }
-  } else {
-    bodyBuffer = Buffer.isBuffer(event.body) ? event.body : Buffer.from(event.body);
-  }
-  
-  console.log('Body buffer length:', bodyBuffer.length);
-  console.log('First 100 bytes:', bodyBuffer.slice(0, 100).toString('hex'));
-
-  // Split by boundary - multipart boundaries in body start with -- and end with --
-  // The boundary in Content-Type is without the leading --, but in body it's --boundary
-  const boundaryMarker = `--${boundary}`;
-  const boundaryBuffer = Buffer.from(boundaryMarker);
-  const parts = [];
-  let start = 0;
-
-  while (true) {
-    const index = bodyBuffer.indexOf(boundaryBuffer, start);
-    if (index === -1) break;
+  return new Promise((resolve, reject) => {
+    const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
     
-    if (start > 0) {
-      // Extract part between boundaries (exclude trailing CRLF before boundary)
-      let partEnd = index;
-      // Remove trailing CRLF if present
-      if (partEnd >= 2 && bodyBuffer[partEnd - 2] === 0x0D && bodyBuffer[partEnd - 1] === 0x0A) {
-        partEnd -= 2;
+    console.log('Content-Type header:', contentType);
+    
+    if (!contentType.includes('multipart/form-data')) {
+      reject(new Error(`Content-Type must be multipart/form-data, got: ${contentType}`));
+      return;
+    }
+
+    // Get body as buffer
+    let bodyBuffer;
+    if (event.isBase64Encoded) {
+      bodyBuffer = Buffer.from(event.body, 'base64');
+    } else if (typeof event.body === 'string') {
+      // Try binary first, if that fails, use utf8
+      try {
+        bodyBuffer = Buffer.from(event.body, 'binary');
+      } catch (e) {
+        bodyBuffer = Buffer.from(event.body, 'utf8');
       }
-      const partBuffer = bodyBuffer.slice(start, partEnd);
-      if (partBuffer.length > 0) {
-        parts.push(partBuffer);
-      }
-    }
-    
-    start = index + boundaryBuffer.length;
-    // Skip CRLF after boundary
-    if (bodyBuffer[start] === 0x0D && bodyBuffer[start + 1] === 0x0A) {
-      start += 2;
-    } else if (bodyBuffer[start] === 0x0A) {
-      start += 1;
-    }
-    
-    // Check if this is the final boundary (ends with --)
-    if (start < bodyBuffer.length - 2) {
-      const nextTwo = bodyBuffer.slice(start, start + 2);
-      if (nextTwo.toString() === '--') {
-        break; // Final boundary marker
-      }
-    }
-  }
-
-  const fields = {};
-  let fileData = null;
-  let fileName = null;
-  let fileContentType = null;
-
-  console.log(`Found ${parts.length} parts in multipart data`);
-  
-  for (let i = 0; i < parts.length; i++) {
-    const partBuffer = parts[i];
-    
-    // Find header/body separator (CRLF CRLF or LF LF)
-    let separator = Buffer.from('\r\n\r\n');
-    let separatorIndex = partBuffer.indexOf(separator);
-    
-    if (separatorIndex === -1) {
-      separator = Buffer.from('\n\n');
-      separatorIndex = partBuffer.indexOf(separator);
-    }
-    
-    if (separatorIndex === -1) {
-      console.log(`Part ${i}: No header separator found, skipping`);
-      continue;
-    }
-
-    const headerBuffer = partBuffer.slice(0, separatorIndex);
-    const bodyStart = separatorIndex + separator.length;
-    const bodyBuffer = partBuffer.slice(bodyStart);
-    
-    // Remove trailing CRLF or LF from body
-    let cleanBody = bodyBuffer;
-    if (cleanBody.length >= 2 && cleanBody[cleanBody.length - 2] === 0x0D && cleanBody[cleanBody.length - 1] === 0x0A) {
-      cleanBody = cleanBody.slice(0, -2);
-    } else if (cleanBody.length >= 1 && cleanBody[cleanBody.length - 1] === 0x0A) {
-      cleanBody = cleanBody.slice(0, -1);
-    }
-
-    const headers = headerBuffer.toString('utf8');
-    console.log(`Part ${i} headers:`, headers.substring(0, 200));
-    
-    // Match name="..." but NOT filename="..." - need to match name= specifically before filename=
-    // The format is: Content-Disposition: form-data; name="file"; filename="..."
-    // We want to match name="file" specifically
-    let fieldName = null;
-    
-    // First try to match name="..." that comes before filename=
-    const nameBeforeFilename = headers.match(/;\s*name="([^"]+)"\s*;\s*filename=/);
-    if (nameBeforeFilename) {
-      fieldName = nameBeforeFilename[1];
     } else {
-      // If no filename, just match name="..."
-      const nameMatch = headers.match(/;\s*name="([^"]+)"/);
-      if (nameMatch) {
-        fieldName = nameMatch[1];
-      } else {
-        // Fallback: try to find name= that's not part of filename=
-        const altMatch = headers.match(/(?:^|[^f])name="([^"]+)"/);
-        if (altMatch) {
-          fieldName = altMatch[1];
-        }
-      }
+      bodyBuffer = Buffer.isBuffer(event.body) ? event.body : Buffer.from(event.body);
     }
     
-    if (!fieldName) {
-      console.log(`Part ${i}: No Content-Disposition name found`);
-      continue;
-    }
-    
-    console.log(`Part ${i} field name:`, fieldName);
+    console.log('Body buffer length:', bodyBuffer.length);
 
-    if (fieldName === 'file') {
-      const filenameMatch = headers.match(/filename="([^"]+)"/);
-      fileName = filenameMatch ? filenameMatch[1] : 'upload.pdf';
-      console.log(`File name: ${fileName}`);
+    const fields = {};
+    let fileData = null;
+    let fileName = null;
+    let fileContentType = null;
+
+    // Create a readable stream from the buffer
+    const { Readable } = require('stream');
+    const bufferStream = new Readable();
+    bufferStream.push(bodyBuffer);
+    bufferStream.push(null);
+
+    // Initialize busboy with the content-type header
+    const busboy = Busboy({ headers: { 'content-type': contentType } });
+
+    // Handle regular form fields
+    busboy.on('field', (fieldname, val) => {
+      console.log(`Field [${fieldname}]: ${val.substring(0, 50)}...`);
+      fields[fieldname] = val;
+    });
+
+    // Handle file uploads
+    busboy.on('file', (fieldname, file, info) => {
+      const { filename, encoding, mimeType } = info;
+      console.log(`File [${fieldname}]: filename: ${filename}, encoding: ${encoding}, mimeType: ${mimeType}`);
       
-      const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
-      fileContentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'application/pdf';
-      console.log(`File content type: ${fileContentType}`);
-      console.log(`File data length: ${cleanBody.length}`);
+      fileName = filename || 'upload.pdf';
+      fileContentType = mimeType || 'application/pdf';
+      
+      const chunks = [];
+      file.on('data', (data) => {
+        chunks.push(data);
+      });
+      
+      file.on('end', () => {
+        fileData = Buffer.concat(chunks);
+        console.log(`File [${fieldname}] size: ${fileData.length} bytes`);
+      });
 
-      fileData = cleanBody;
-    } else {
-      // Regular form field
-      fields[fieldName] = cleanBody.toString('utf8');
-      console.log(`Field ${fieldName}: ${fields[fieldName].substring(0, 50)}...`);
-    }
-  }
-  
-  console.log(`Parsed fields:`, Object.keys(fields));
-  console.log(`File data present:`, !!fileData);
+      file.on('error', (err) => {
+        console.error(`File [${fieldname}] error:`, err);
+        reject(err);
+      });
+    });
 
-  return { fields, fileData, fileName, fileContentType };
+    // Handle errors
+    busboy.on('error', (err) => {
+      console.error('Busboy error:', err);
+      reject(err);
+    });
+
+    // Handle completion
+    busboy.on('finish', () => {
+      console.log('Busboy finished parsing');
+      console.log(`Parsed fields:`, Object.keys(fields));
+      console.log(`File data present:`, !!fileData);
+      resolve({ fields, fileData, fileName, fileContentType });
+    });
+
+    // Pipe the buffer stream to busboy
+    bufferStream.pipe(busboy);
+  });
 };
 
 exports.handler = async (event) => {
@@ -310,7 +230,7 @@ exports.handler = async (event) => {
     // Parse multipart form data
     let fields, fileData, fileName, fileContentType;
     try {
-      const parsed = parseMultipartFormData(event);
+      const parsed = await parseMultipartFormData(event);
       fields = parsed.fields;
       fileData = parsed.fileData;
       fileName = parsed.fileName;
