@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   HelpCircle,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +32,7 @@ import { teacherDashboardTutorial } from '../tutorials/teacherDashboardTutorial'
 import { TOPICS } from '../constants/topics';
 import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
+import UploadQuestionsPDF from './UploadQuestionsPDF';
 
 const TeacherDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -56,6 +58,8 @@ const TeacherDashboard = () => {
   const [goalGrade, setGoalGrade] = useState('G3');
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadClassId, setUploadClassId] = useState(null);
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
@@ -911,6 +915,26 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
+            {/* Upload Questions Button */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
+                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+              </div>
+            </div>
+
             {/* Recent Activity */}
             <div className="bg-white border border-gray-200 rounded-lg">
               <div className="p-6 border-b border-gray-200">
@@ -1157,14 +1181,26 @@ const TeacherDashboard = () => {
                 <h2 className="text-xl font-semibold text-gray-900">Your Classes</h2>
                 <p className="text-gray-600">Manage your classes and students</p>
               </div>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                data-tutorial-id="create-class-button"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create Class</span>
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  data-tutorial-id="create-class-button"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Class</span>
+                </button>
+              </div>
             </div>
 
             {/* Classes Grid */}
@@ -1461,6 +1497,22 @@ const TeacherDashboard = () => {
         <CreateClassForm
           onSubmit={handleCreateClass}
           onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      {showUploadModal && (
+        <UploadQuestionsPDF
+          classId={uploadClassId}
+          appId={appId}
+          onClose={() => {
+            setShowUploadModal(false);
+            setUploadClassId(null);
+          }}
+          onQuestionsSaved={() => {
+            // Questions saved successfully
+            setShowUploadModal(false);
+            setUploadClassId(null);
+          }}
         />
       )}
 
