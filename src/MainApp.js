@@ -596,7 +596,7 @@ const getQuestionHistory = async (userId) => {
 };
 
 const MainAppContent = () => {
-  const { startTutorial, shouldShowTutorial } = useTutorial();
+  const { startTutorial } = useTutorial();
   const { user: authUser, logout: authLogout, userRole } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -855,14 +855,6 @@ const MainAppContent = () => {
                 data.lastAskedComplexityByTopic || {}
               );
 
-              // Check if we should show tutorial for first-time visitors
-              if (shouldShowTutorial('mainApp')) {
-                // Small delay to ensure UI is rendered
-                setTimeout(() => {
-                  startTutorial('mainApp', mainAppTutorial);
-                }, 1000);
-              }
-
               if (needsUpdate) {
                 updateDoc(userDocRef, updatePayload);
               }
@@ -990,23 +982,7 @@ const MainAppContent = () => {
       unsubscribeSnapshot();
       unsubscribeEnrollment();
     };
-  }, [shouldShowTutorial, startTutorial]);
-
-  // Tutorial triggers for different views
-  useEffect(() => {
-    if (!userData) return;
-
-    // Small delay to ensure UI is rendered
-    const timer = setTimeout(() => {
-      if (quizState === APP_STATES.DASHBOARD && shouldShowTutorial('dashboard')) {
-        startTutorial('dashboard', dashboardTutorial);
-      } else if (quizState === APP_STATES.STORE && shouldShowTutorial('store')) {
-        startTutorial('store', storeTutorial);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [quizState, userData, shouldShowTutorial, startTutorial]);
+  }, []);
 
   // --- Quiz Logic ---
   const handleTopicSelection = (topic) => {
@@ -2354,6 +2330,7 @@ Answer: [The answer]`;
                   <button
                     onClick={() => handlePurchase(item)}
                     className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                    data-tutorial-id="store-buy-button"
                   >
                     <Coins size={16} /> {STORE_BACKGROUND_COST}
                   </button>

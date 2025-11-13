@@ -58,7 +58,7 @@ const TeacherDashboard = () => {
   const [goalStudentIds, setGoalStudentIds] = useState([]);
 
   const { user, logout } = useAuth();
-  const { startTutorial, shouldShowTutorial } = useTutorial();
+  const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
 
@@ -279,15 +279,19 @@ const TeacherDashboard = () => {
     }
   }, [user, db, classes.length]);
 
-  // Initialize tutorial for first-time visitors
+  // Auto-switch views during tutorial to ensure elements are visible
   useEffect(() => {
-    if (!loading && user && shouldShowTutorial('teacherDashboard')) {
-      // Small delay to ensure UI is rendered
-      setTimeout(() => {
-        startTutorial('teacherDashboard', teacherDashboardTutorial);
-      }, 1000);
+    const currentStep = getCurrentStep();
+    if (currentStep && currentStep.requiredView && currentStep.requiredView !== view) {
+      // Delay to ensure tutorial overlay is ready and DOM is updated
+      // Longer delay for export button which is conditionally rendered
+      const delay = currentStep.targetSelector?.includes('export-button') ? 400 : 200;
+      const timer = setTimeout(() => {
+        setView(currentStep.requiredView);
+      }, delay);
+      return () => clearTimeout(timer);
     }
-  }, [loading, user, shouldShowTutorial, startTutorial]);
+  }, [getCurrentStep, view, tutorialCurrentStep]);
 
   const handleCreateClass = async (classData) => {
     try {
@@ -738,13 +742,14 @@ const TeacherDashboard = () => {
               >
                 <RefreshCw className="w-5 h-5" />
               </button>
-              {view === 'students' && students.length > 0 && (
+              {view === 'students' && (
                 <>
                   <button
                     onClick={exportStudentData}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                    disabled={students.length === 0}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     data-tutorial-id="export-button"
-                    title="Export CSV - Download student data"
+                    title={students.length > 0 ? "Export CSV - Download student data" : "Export CSV - No students to export"}
                   >
                     <Download className="w-5 h-5" />
                   </button>

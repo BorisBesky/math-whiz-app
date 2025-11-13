@@ -27,7 +27,7 @@ export const storeTutorial = {
     {
       title: 'Purchase Items',
       description: 'Click "Buy" on any item to purchase it with your coins. Make sure you have enough coins! Once purchased, you can activate it anytime.',
-      targetSelector: '[data-tutorial-id="store-items"]',
+      targetSelector: '[data-tutorial-id="store-buy-button"]',
       position: 'top',
       action: 'highlight'
     },
