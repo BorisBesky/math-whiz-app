@@ -125,9 +125,14 @@ const parseMultipartFormData = (event) => {
       resolve({ fields, fileData, fileName, fileContentType });
     });
 
+    // Handle errors on bufferStream
+    bufferStream.on('error', (err) => {
+      console.error('Buffer stream error:', err);
+      reject(err);
+    });
+
     // Pipe the buffer stream to busboy
     bufferStream.pipe(busboy);
-  });
 };
 
 exports.handler = async (event) => {
