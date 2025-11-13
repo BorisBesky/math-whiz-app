@@ -16,7 +16,11 @@ import {
   ChevronsUpDown,
   UserPlus,
   Edit,
-  UserCheck
+  UserCheck,
+  LayoutDashboard,
+  BookOpen,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
@@ -1174,70 +1178,88 @@ const AdminPortal = ({ db, onClose, appId }) => {
               <p className="text-gray-600">Student Progress Dashboard</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button
               onClick={fetchStudentData}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Refresh - Reload data"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>Refresh</span>
+              <RefreshCw className="w-5 h-5" />
             </button>
             <button
               onClick={exportStudentData}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={students.length === 0}
+              title="Export CSV - Download data"
             >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <Download className="w-5 h-5" />
             </button>
             {view === 'students' && (
-              <button
-                onClick={handleBulkDelete}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={selectedStudents.size === 0}
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Selected ({selectedStudents.size})</span>
-              </button>
+              <>
+                <button
+                  onClick={handleBulkDelete}
+                  className="relative p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={selectedStudents.size === 0}
+                  title={`Delete Selected - Delete ${selectedStudents.size} selected student(s)`}
+                >
+                  <Trash2 className="w-5 h-5" />
+                  {selectedStudents.size > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {selectedStudents.size}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowBulkClassAssignment(true)}
+                  className="relative p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={selectedStudents.size === 0}
+                  title={`Assign To Class - Assign ${selectedStudents.size} selected student(s) to a class`}
+                >
+                  <Edit className="w-5 h-5" />
+                  {selectedStudents.size > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {selectedStudents.size}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
             {view === 'teachers' && (
               <button
                 onClick={handleBulkDeleteTeachers}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={selectedTeachers.size === 0}
+                title={`Delete Selected - Delete ${selectedTeachers.size} selected teacher(s)`}
               >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Selected ({selectedTeachers.size})</span>
+                <Trash2 className="w-5 h-5" />
+                {selectedTeachers.size > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {selectedTeachers.size}
+                  </span>
+                )}
               </button>
             )}
             {view === 'classes' && (
               <button
                 onClick={handleBulkDeleteClasses}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={selectedClasses.size === 0}
+                title={`Delete Selected - Delete ${selectedClasses.size} selected class(es)`}
               >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Selected ({selectedClasses.size})</span>
-              </button>
-            )}
-            {view === 'students' && (
-              <button
-                onClick={() => setShowBulkClassAssignment(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={selectedStudents.size === 0}
-                title="Assign selected students to a class"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Assign To Class</span>
+                <Trash2 className="w-5 h-5" />
+                {selectedClasses.size > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {selectedClasses.size}
+                  </span>
+                )}
               </button>
             )}
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Close - Exit admin portal"
             >
-              ×
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -1246,35 +1268,42 @@ const AdminPortal = ({ db, onClose, appId }) => {
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setView('overview')}
-            className={`px-6 py-3 font-medium ${view === 'overview' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'overview' 
               ? 'text-blue-600 border-b-2 border-blue-600' 
               : 'text-gray-600 hover:text-gray-900'}`}
+            title="Overview - View dashboard statistics and recent activity"
           >
-            Overview
+            <LayoutDashboard className="w-5 h-5" />
           </button>
           <button
             onClick={() => setView('students')}
-            className={`px-6 py-3 font-medium ${view === 'students' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'students' 
               ? 'text-blue-600 border-b-2 border-blue-600' 
               : 'text-gray-600 hover:text-gray-900'}`}
+            title={`Students - Manage ${students.length} student(s)`}
           >
-            Students ({students.length})
+            <Users className="w-5 h-5" />
+            <span className="ml-2 text-xs font-medium">{students.length}</span>
           </button>
           <button
             onClick={() => setView('teachers')}
-            className={`px-6 py-3 font-medium ${view === 'teachers' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'teachers' 
               ? 'text-blue-600 border-b-2 border-blue-600' 
               : 'text-gray-600 hover:text-gray-900'}`}
+            title={`Teachers - Manage ${teachers.length} teacher(s)`}
           >
-            Teachers ({teachers.length})
+            <GraduationCap className="w-5 h-5" />
+            <span className="ml-2 text-xs font-medium">{teachers.length}</span>
           </button>
           <button
             onClick={() => setView('classes')}
-            className={`px-6 py-3 font-medium ${view === 'classes' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'classes' 
               ? 'text-blue-600 border-b-2 border-blue-600' 
               : 'text-gray-600 hover:text-gray-900'}`}
+            title={`Classes - Manage ${classes.length} class(es)`}
           >
-            Classes ({classes.length})
+            <BookOpen className="w-5 h-5" />
+            <span className="ml-2 text-xs font-medium">{classes.length}</span>
           </button>
         </div>
 

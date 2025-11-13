@@ -19,7 +19,9 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
-
+  LayoutDashboard,
+  HelpCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
@@ -721,68 +723,73 @@ const TeacherDashboard = () => {
                 <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <button
                 onClick={() => startTutorial('teacherDashboard', teacherDashboardTutorial)}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                title="Show Tutorial"
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                title="Help - Show tutorial"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Help</span>
+                <HelpCircle className="w-5 h-5" />
               </button>
               <button
                 onClick={fetchStudentData}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Refresh - Reload student data"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Refresh</span>
+                <RefreshCw className="w-5 h-5" />
               </button>
               {view === 'students' && students.length > 0 && (
                 <>
                   <button
                     onClick={exportStudentData}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                     data-tutorial-id="export-button"
+                    title="Export CSV - Download student data"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Export CSV</span>
+                    <Download className="w-5 h-5" />
                   </button>
                   <button
                     onClick={openGoalsModalForSelected}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={selectedStudents.size === 0}
+                    title={`Set Goals - Set daily goals for ${selectedStudents.size} selected student(s)`}
                   >
-                    <Target className="w-4 h-4" />
-                    <span>Set Goals ({selectedStudents.size})</span>
+                    <Target className="w-5 h-5" />
+                    {selectedStudents.size > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {selectedStudents.size}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={handleBulkDelete}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={selectedStudents.size === 0}
+                    title={`Delete Selected - Delete ${selectedStudents.size} selected student(s)`}
                   >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Selected ({selectedStudents.size})</span>
+                    <Trash2 className="w-5 h-5" />
+                    {selectedStudents.size > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {selectedStudents.size}
+                      </span>
+                    )}
                   </button>
                 </>
               )}
               <a
                 href="/"
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Main App - Go to main application"
               >
-                <Home className="h-4 w-4" />
-                <span>Main App</span>
+                <Home className="w-5 h-5" />
               </a>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 data-tutorial-id="teacher-settings"
+                title="Logout - Sign out of your account"
               >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -795,27 +802,32 @@ const TeacherDashboard = () => {
           <div className="flex border-b border-gray-200" data-tutorial-id="navigation-tabs">
             <button
               onClick={() => setView('overview')}
-              className={`px-6 py-3 font-medium ${view === 'overview' 
+              className={`relative px-6 py-3 flex items-center justify-center ${view === 'overview' 
                 ? 'text-blue-600 border-b-2 border-blue-600' 
                 : 'text-gray-600 hover:text-gray-900'}`}
+              title="Overview - View dashboard statistics and recent activity"
             >
-              Overview
+              <LayoutDashboard className="w-5 h-5" />
             </button>
             <button
               onClick={() => setView('students')}
-              className={`px-6 py-3 font-medium ${view === 'students' 
+              className={`relative px-6 py-3 flex items-center justify-center ${view === 'students' 
                 ? 'text-blue-600 border-b-2 border-blue-600' 
                 : 'text-gray-600 hover:text-gray-900'}`}
+              title={`Students - Manage ${students.length} student(s)`}
             >
-              Students ({students.length})
+              <Users className="w-5 h-5" />
+              <span className="ml-2 text-xs font-medium">{students.length}</span>
             </button>
             <button
               onClick={() => setView('classes')}
-              className={`px-6 py-3 font-medium ${view === 'classes' 
+              className={`relative px-6 py-3 flex items-center justify-center ${view === 'classes' 
                 ? 'text-blue-600 border-b-2 border-blue-600' 
                 : 'text-gray-600 hover:text-gray-900'}`}
+              title={`Classes - Manage ${classes.length} class(es)`}
             >
-              Classes ({classes.length})
+              <BookOpen className="w-5 h-5" />
+              <span className="ml-2 text-xs font-medium">{classes.length}</span>
             </button>
           </div>
         </div>
