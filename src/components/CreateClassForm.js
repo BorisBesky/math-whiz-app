@@ -5,7 +5,8 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    gradeLevel: ''
+    gradeLevel: '',
+    questionBankProbability: 0.7 // Default 70%
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -64,6 +65,14 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
     }
   };
 
+  const handleProbabilityChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      questionBankProbability: value
+    }));
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -119,6 +128,34 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
                 ))}
               </select>
               {errors.gradeLevel && <p className="mt-1 text-sm text-red-600">{errors.gradeLevel}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="questionBankProbability" className="block text-sm font-medium text-gray-700 mb-1">
+                Question Bank Priority
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  id="questionBankProbability"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={formData.questionBankProbability}
+                  onChange={handleProbabilityChange}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+                <span className="font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-16 text-center text-sm">
+                  {Math.round(formData.questionBankProbability * 100)}%
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.questionBankProbability === 0 
+                  ? 'Only generated questions (no uploaded questions)'
+                  : formData.questionBankProbability === 1
+                  ? 'Only uploaded questions (no generated questions)'
+                  : `${Math.round(formData.questionBankProbability * 100)}% uploaded, ${Math.round((1 - formData.questionBankProbability) * 100)}% generated`}
+              </p>
             </div>
 
             <div>

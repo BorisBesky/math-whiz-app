@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy } from 'lucide-react';
+import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy, Upload } from 'lucide-react';
 import EditClassForm from './EditClassForm';
+import UploadQuestionsPDF from './UploadQuestionsPDF';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [students, setStudents] = useState([]);
@@ -12,6 +13,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [invite, setInvite] = useState({ joinCode: '', joinUrl: '', expiresAt: '' });
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
@@ -29,6 +31,11 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           const profileRef = doc(db, 'artifacts', appId, 'users', userId, 'math_whiz_data', 'profile');
           const profileSnap = await getDoc(profileRef);
           const data = profileSnap.exists() ? profileSnap.data() : {};
+
+          // Skip if this user is a teacher or admin
+          if (data.role && data.role !== 'student') {
+            return null;
+          }
 
           const answeredQuestions = Array.isArray(data.answeredQuestions) ? data.answeredQuestions : [];
 
@@ -49,7 +56,10 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           };
         }));
 
-        setStudents(studentsData);
+        // Filter out null entries (teachers/admins)
+        const filteredStudentsData = studentsData.filter(student => student !== null);
+
+        setStudents(filteredStudentsData);
         setLoading(false);
       } catch (err) {
         console.error('Error building student list:', err);
@@ -277,19 +287,33 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                 <h2 className="text-xl font-semibold text-gray-900">Students</h2>
                 <p className="text-gray-600">Manage students enrolled in this class</p>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowInvite(true);
-                  fetchInvite(false);
-                }}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Student</span>
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowInvite(true);
+                    fetchInvite(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Student</span>
+                </button>
+              </div>
             </div>
 
             {students.length === 0 ? (
@@ -457,6 +481,18 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           classData={classData}
           onSubmit={handleEditClass}
           onCancel={() => setShowEditForm(false)}
+        />
+      )}
+
+      {/* Upload Questions Modal */}
+      {showUploadModal && (
+        <UploadQuestionsPDF
+          classId={classData.id}
+          appId={appId}
+          onClose={() => setShowUploadModal(false)}
+          onQuestionsSaved={() => {
+            setShowUploadModal(false);
+          }}
         />
       )}
     </div>

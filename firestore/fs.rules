@@ -19,7 +19,18 @@ service cloud.firestore {
       return request.auth != null && 'admin' in request.auth.token && request.auth.token.admin == true;
     }
 
+    // Collection group rules for math_whiz_data (for collectionGroup queries)
+    match /{path=**}/math_whiz_data/{document} {
+      allow read: if isAdmin();
+    }
+
     match /artifacts/{appId} {
+
+      // Rules for listing users (needed for admin to load all teachers)
+      match /users/{userId} {
+        // Allow admins to list and read user documents
+        allow read: if isAdmin();
+      }
 
       // Rules for user profiles
       match /users/{userId}/math_whiz_data/profile {
@@ -32,6 +43,47 @@ service cloud.firestore {
                               (isTeacher() && (request.auth.uid in resource.data.teacherIds))
                             );
       }
+      
+      // Rules for questionBank collection under users
+      match /users/{userId}/questionBank/{questionId} {
+        // Users can manage their own question bank.
+        // Teachers can manage their own question bank.
+        // Admins can view and manage all question banks.
+        allow read: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isAdmin() ||
+                              (isTeacher() && request.auth.uid == userId)
+                            );
+        allow write: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isAdmin() ||
+                              (isTeacher() && request.auth.uid == userId)
+                            );
+      }
+      
+      // Rules for sharedQuestionBank collection
+      match /sharedQuestionBank/{questionId} {
+        // All authenticated users can read shared questions
+        // Only admins can add/update/delete
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+      }
+      
+      // Rules for PDF processing jobs
+      match /pdfProcessingJobs/{jobId} {
+        // Users can read/write their own jobs
+        // Admins can read/write all jobs
+        // Use request.resource.data.userId for create, resource.data.userId for others
+        allow create: if request.auth != null && (
+                              request.resource.data.userId == request.auth.uid ||
+                              isAdmin() ||
+                              (isTeacher() && request.resource.data.userId == request.auth.uid)
+                            );
+        allow read, update, delete: if request.auth != null && (
+                              resource.data.userId == request.auth.uid ||
+                              isAdmin() ||
+                              (isTeacher() && resource.data.userId == request.auth.uid)
+                            );
 
       // Rules for classes
       match /classes/{classId} {
@@ -43,6 +95,21 @@ service cloud.firestore {
                        isAdmin() ||
                        (isTeacher() && request.resource.data.teacherId == request.auth.uid)
                      );
+        
+        // Rules for questions subcollection under classes
+        match /questions/{questionId} {
+          // Teachers can manage questions in their own classes.
+          // Admins can manage all questions.
+          allow read: if request.auth != null;
+          allow create: if request.auth != null && (
+                         isAdmin() ||
+                         (isTeacher() && get(/databases/$(database)/documents/artifacts/$(appId)/classes/$(classId)).data.teacherId == request.auth.uid)
+                       );
+          allow update, delete: if request.auth != null && (
+                         isAdmin() ||
+                         (isTeacher() && get(/databases/$(database)/documents/artifacts/$(appId)/classes/$(classId)).data.teacherId == request.auth.uid)
+                       );
+        }
       }
 
       // Rules for class enrollments

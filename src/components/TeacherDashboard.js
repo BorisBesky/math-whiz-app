@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { 
   Users, 
   Plus, 
@@ -21,7 +21,9 @@ import {
   ChevronsUpDown,
   LayoutDashboard,
   HelpCircle,
+  ClipboardList,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +33,8 @@ import { teacherDashboardTutorial } from '../tutorials/teacherDashboardTutorial'
 import { TOPICS } from '../constants/topics';
 import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
+import UploadQuestionsPDF from './UploadQuestionsPDF';
+import QuestionBankManager from './QuestionBankManager';
 
 const TeacherDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -47,7 +51,7 @@ const TeacherDashboard = () => {
     totalQuestions: 0,
     averageAccuracy: 0
   });
-  const [view, setView] = useState('overview'); // 'overview', 'students', 'classes', 'student-detail'
+  const [view, setView] = useState('overview'); // 'overview', 'students', 'classes', 'student-detail', 'questions'
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
@@ -56,6 +60,8 @@ const TeacherDashboard = () => {
   const [goalGrade, setGoalGrade] = useState('G3');
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadClassId, setUploadClassId] = useState(null);
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
@@ -215,15 +221,29 @@ const TeacherDashboard = () => {
     try {
       const studentsRef = collection(db, 'artifacts', appId, 'classStudents');
       
-      const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const unsubscribe = onSnapshot(studentsRef, async (snapshot) => {
         const studentCounts = {};
         
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.classId) {
-            studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
+        // Filter enrollments to only count students (not teachers)
+        for (const docSnapshot of snapshot.docs) {
+          const data = docSnapshot.data();
+          if (data.classId && data.studentId) {
+            // Check the user's role
+            const profileRef = doc(db, 'artifacts', appId, 'users', data.studentId, 'math_whiz_data', 'profile');
+            try {
+              const profileSnap = await getDoc(profileRef);
+              if (profileSnap.exists()) {
+                const profileData = profileSnap.data();
+                // Only count users with role 'student'
+                if (profileData.role === 'student') {
+                  studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
+                }
+              }
+            } catch (error) {
+              console.error(`Error checking role for user ${data.studentId}:`, error);
+            }
           }
-        });
+        }
         
         setClassStudentCounts(studentCounts);
         console.log('Student counts loaded:', Object.keys(studentCounts).length);
@@ -846,6 +866,15 @@ const TeacherDashboard = () => {
               <BookOpen className="w-5 h-5" />
               <span className="ml-2 text-xs font-medium">{classes.length}</span>
             </button>
+            <button
+              onClick={() => setView('questions')}
+              className={`relative px-6 py-3 flex items-center justify-center ${view === 'questions' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-gray-900'}`}
+              title="Questions - Manage your question bank"
+            >
+              <ClipboardList className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -908,6 +937,26 @@ const TeacherDashboard = () => {
                   </div>
                   <Trophy className="w-12 h-12 text-orange-600" />
                 </div>
+              </div>
+            </div>
+
+            {/* Upload Questions Button */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
+                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
               </div>
             </div>
 
@@ -1157,14 +1206,26 @@ const TeacherDashboard = () => {
                 <h2 className="text-xl font-semibold text-gray-900">Your Classes</h2>
                 <p className="text-gray-600">Manage your classes and students</p>
               </div>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                data-tutorial-id="create-class-button"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create Class</span>
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  data-tutorial-id="create-class-button"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Class</span>
+                </button>
+              </div>
             </div>
 
             {/* Classes Grid */}
@@ -1233,6 +1294,17 @@ const TeacherDashboard = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Questions View */}
+        {view === 'questions' && (
+          <div>
+            <QuestionBankManager
+              classes={classes}
+              appId={appId}
+              userId={user?.uid}
+            />
           </div>
         )}
 
@@ -1461,6 +1533,22 @@ const TeacherDashboard = () => {
         <CreateClassForm
           onSubmit={handleCreateClass}
           onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      {showUploadModal && (
+        <UploadQuestionsPDF
+          classId={uploadClassId}
+          appId={appId}
+          onClose={() => {
+            setShowUploadModal(false);
+            setUploadClassId(null);
+          }}
+          onQuestionsSaved={() => {
+            // Questions saved successfully
+            setShowUploadModal(false);
+            setUploadClassId(null);
+          }}
         />
       )}
 

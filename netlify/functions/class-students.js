@@ -74,12 +74,35 @@ async function handleGetClassStudents(params, appId, headers) {
     const snapshot = await query.get();
 
     const students = [];
-    snapshot.forEach(doc => {
-      students.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
+    
+    // Filter out teachers and admins by checking their profile role
+    for (const doc of snapshot.docs) {
+      const enrollmentData = doc.data();
+      const studentId = enrollmentData.studentId;
+      
+      // Check the user's role to ensure they're a student
+      const profileRef = db.collection('artifacts').doc(appId)
+        .collection('users').doc(studentId)
+        .collection('math_whiz_data').doc('profile');
+      
+      const profileSnap = await profileRef.get();
+      
+      if (profileSnap.exists) {
+        const profileData = profileSnap.data();
+        // Only include users with role 'student', exclude teachers and admins
+        if (profileData.role === 'student') {
+          students.push({
+            id: doc.id,
+            ...enrollmentData
+          });
+        } else {
+          console.log(`Skipping enrollment for user ${studentId}: role is ${profileData.role}, not student`);
+        }
+      } else {
+        // If no profile exists, skip this enrollment
+        console.log(`Skipping enrollment for user ${studentId}: no profile found`);
+      }
+    }
 
     return {
       statusCode: 200,
