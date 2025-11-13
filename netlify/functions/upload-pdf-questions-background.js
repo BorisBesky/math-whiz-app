@@ -279,8 +279,8 @@ exports.handler = async (event) => {
     });
 
     // Return job ID immediately (background function will process asynchronously)
-    // Process the PDF asynchronously
-    processPDFAsync(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType)
+    // Process the PDF asynchronously with timeout protection
+    processPDFAsyncWithTimeout(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType)
       .catch(error => {
         console.error('Async processing error:', error);
         jobRef.update({
@@ -702,9 +702,12 @@ async function processPDFAsyncWithTimeout(...args) {
   try {
     await Promise.race([processingPromise, timeoutPromise]);
   } catch (error) {
-    // args[0] is expected to be jobId, args[1] is jobRef
+    // Extract jobId, appId from args to construct jobRef
+    // args[0] is jobId, args[2] is appId (not args[1] which is userId)
     const jobId = args[0];
-    const jobRef = args[1];
+    const appId = args[2];
+    const jobRef = db.collection('artifacts').doc(appId)
+      .collection('pdfProcessingJobs').doc(jobId);
     console.error(`Error (possibly timeout) processing PDF for job ${jobId}:`, error);
     await jobRef.update({
       status: 'error',

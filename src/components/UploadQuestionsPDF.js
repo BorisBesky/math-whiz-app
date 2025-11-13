@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, query, where, getDocs, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import QuestionReviewModal from './QuestionReviewModal';
@@ -140,6 +140,32 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     } catch (err) {
       console.error('Error resuming job:', err);
       setError('Failed to load job data');
+    }
+  };
+
+  const handleDiscardJob = async (jobId) => {
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Mark the job as discarded (similar to imported)
+      const jobRef = doc(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs', jobId);
+      await updateDoc(jobRef, { 
+        imported: true, // Use the same flag so it won't show up in pending
+        discarded: true, // Additional flag to distinguish from actual imports
+        discardedAt: new Date() 
+      });
+      
+      // Remove from pending jobs list
+      setPendingJobs(prev => prev.filter(j => j.id !== jobId));
+    } catch (err) {
+      console.error('Error discarding job:', err);
+      setError('Failed to discard job. Please try again.');
     }
   };
 
@@ -467,13 +493,22 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                               {job.totalQuestions || 0} questions • {job.grade === GRADES.G4 ? 'Grade 4' : 'Grade 3'} • {job.createdAt.toLocaleString()}
                             </p>
                           </div>
-                          <button
-                            onClick={() => handleResumeJob(job)}
-                            className="ml-3 px-3 py-1 text-sm font-medium text-white bg-yellow-600 rounded hover:bg-yellow-700 transition-colors flex items-center"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Import
-                          </button>
+                          <div className="flex items-center space-x-2 ml-3">
+                            <button
+                              onClick={() => handleDiscardJob(job.id)}
+                              className="px-2 py-1 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors flex items-center"
+                              title="Discard this job"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleResumeJob(job)}
+                              className="px-3 py-1 text-sm font-medium text-white bg-yellow-600 rounded hover:bg-yellow-700 transition-colors flex items-center"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Import
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

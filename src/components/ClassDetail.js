@@ -32,6 +32,11 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           const profileSnap = await getDoc(profileRef);
           const data = profileSnap.exists() ? profileSnap.data() : {};
 
+          // Skip if this user is a teacher or admin
+          if (data.role && data.role !== 'student') {
+            return null;
+          }
+
           const answeredQuestions = Array.isArray(data.answeredQuestions) ? data.answeredQuestions : [];
 
           return {
@@ -51,7 +56,10 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           };
         }));
 
-        setStudents(studentsData);
+        // Filter out null entries (teachers/admins)
+        const filteredStudentsData = studentsData.filter(student => student !== null);
+
+        setStudents(filteredStudentsData);
         setLoading(false);
       } catch (err) {
         console.error('Error building student list:', err);

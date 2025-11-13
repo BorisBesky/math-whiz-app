@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { 
   Users, 
   Plus, 
@@ -221,15 +221,29 @@ const TeacherDashboard = () => {
     try {
       const studentsRef = collection(db, 'artifacts', appId, 'classStudents');
       
-      const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const unsubscribe = onSnapshot(studentsRef, async (snapshot) => {
         const studentCounts = {};
         
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.classId) {
-            studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
+        // Filter enrollments to only count students (not teachers)
+        for (const docSnapshot of snapshot.docs) {
+          const data = docSnapshot.data();
+          if (data.classId && data.studentId) {
+            // Check the user's role
+            const profileRef = doc(db, 'artifacts', appId, 'users', data.studentId, 'math_whiz_data', 'profile');
+            try {
+              const profileSnap = await getDoc(profileRef);
+              if (profileSnap.exists()) {
+                const profileData = profileSnap.data();
+                // Only count users with role 'student'
+                if (profileData.role === 'student') {
+                  studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
+                }
+              }
+            } catch (error) {
+              console.error(`Error checking role for user ${data.studentId}:`, error);
+            }
           }
-        });
+        }
         
         setClassStudentCounts(studentCounts);
         console.log('Student counts loaded:', Object.keys(studentCounts).length);

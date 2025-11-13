@@ -115,6 +115,7 @@ exports.handler = async (event) => {
 
       // Get user data profile
       mathWhizProfileData = userDoc.data();
+      // Only include users with role 'student', explicitly exclude teachers and admins
       if (mathWhizProfileData.role === 'student') {
         console.log(`Success: Found data in math_whiz_data/profile for ${userId}`);
         studentData = {
@@ -122,6 +123,10 @@ exports.handler = async (event) => {
           ...mathWhizProfileData,
         };
         allStudentsData.push(studentData);
+      } else if (mathWhizProfileData.role === 'teacher' || mathWhizProfileData.role === 'admin') {
+        console.log(`Skipping user ${userId}: role is ${mathWhizProfileData.role}, not student`);
+      } else {
+        console.log(`Skipping user ${userId}: no valid role found (role: ${mathWhizProfileData.role})`);
       }
 
     });
