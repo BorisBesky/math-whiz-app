@@ -113,6 +113,12 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
         if (!q.question || !q.correctAnswer || !q.topic || !q.grade) {
           throw new Error('All questions must have question text, answer, topic, and grade');
         }
+        if (!topicOptions.includes(q.topic)) {
+          throw new Error(`Invalid topic "${q.topic}". Please select a valid topic from the dropdown.`);
+        }
+        if (!gradeOptions.includes(q.grade)) {
+          throw new Error(`Invalid grade "${q.grade}". Please select a valid grade from the dropdown.`);
+        }
       }
 
       // First, save all questions to teacher's global question bank

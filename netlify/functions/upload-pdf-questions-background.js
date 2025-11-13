@@ -580,18 +580,35 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
     if (questionsNeedingOptions.length > 0) {
       console.log(`Generating options for ${questionsNeedingOptions.length} question(s) without options`);
       
-      // Generate options for each question that needs them
-      for (let i = 0; i < questionsNeedingOptions.length; i++) {
-        const question = questionsNeedingOptions[i];
+      // Process questions in batches to avoid timeout while respecting rate limits
+      // Configurable via environment variables with sensible defaults
+      const BATCH_SIZE = parseInt(process.env.PDF_OPTIONS_BATCH_SIZE) || 5; // Process 5 questions concurrently per batch
+      const DELAY_BETWEEN_BATCHES = parseInt(process.env.PDF_OPTIONS_BATCH_DELAY) || 2000; // 2 seconds between batches (in milliseconds)
+      
+      console.log(`Using batch size: ${BATCH_SIZE}, delay between batches: ${DELAY_BETWEEN_BATCHES}ms`);
+      
+      const batches = [];
+      for (let i = 0; i < questionsNeedingOptions.length; i += BATCH_SIZE) {
+        batches.push(questionsNeedingOptions.slice(i, i + BATCH_SIZE));
+      }
+      
+      console.log(`Processing ${batches.length} batch(es) of questions`);
+      
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
         
-        // Add delay between requests to avoid rate limiting (except for first request)
-        if (i > 0) {
-          console.log(`Waiting 2 seconds before generating options for question ${i + 1}...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        // Add delay between batches (except for first batch)
+        if (batchIndex > 0) {
+          console.log(`Waiting ${DELAY_BETWEEN_BATCHES / 1000} seconds before processing batch ${batchIndex + 1}...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
         
-        try {
-          const optionsPrompt = `You are a math teacher creating multiple choice options for a quiz question.
+        // Process all questions in this batch concurrently
+        const batchPromises = batch.map(async (question, indexInBatch) => {
+          const overallIndex = batchIndex * BATCH_SIZE + indexInBatch;
+          
+          try {
+            const optionsPrompt = `You are a math teacher creating multiple choice options for a quiz question.
 
 Question: ${question.question}
 Correct Answer: ${question.correctAnswer}
@@ -609,84 +626,92 @@ Example format: ["option1", "option2", "option3", "option4"]
 
 Do not include any explanation or other text, just the JSON array.`;
 
-          const optionsResult = await model.generateContent(optionsPrompt);
-          const optionsResponse = await optionsResult.response;
-          const optionsText = optionsResponse.text();
+            const optionsResult = await model.generateContent(optionsPrompt);
+            const optionsResponse = await optionsResult.response;
+            const optionsText = optionsResponse.text();
 
-          // Parse the options
-          let generatedOptions = [];
-          try {
-            // Try to extract JSON array
-            const jsonMatch = optionsText.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              generatedOptions = JSON.parse(jsonMatch[0]);
-            } else {
-              // Try parsing the entire response
-              generatedOptions = JSON.parse(optionsText);
+            // Parse the options
+            let generatedOptions = [];
+            try {
+              // Try to extract JSON array
+              const jsonMatch = optionsText.match(/\[[\s\S]*\]/);
+              if (jsonMatch) {
+                generatedOptions = JSON.parse(jsonMatch[0]);
+              } else {
+                // Try parsing the entire response
+                generatedOptions = JSON.parse(optionsText);
+              }
+              
+              // Ensure we have exactly 4 options
+              if (!Array.isArray(generatedOptions) || generatedOptions.length < 4) {
+                throw new Error('Invalid options format');
+              }
+              
+              // Ensure correct answer is included
+              const correctAnswerStr = String(question.correctAnswer).trim();
+              const hasCorrectAnswer = generatedOptions.some(opt => 
+                String(opt).trim() === correctAnswerStr
+              );
+              
+              if (!hasCorrectAnswer) {
+                // Replace one option with the correct answer (preferably the first)
+                generatedOptions[0] = question.correctAnswer;
+              }
+              
+              // Trim and clean options
+              generatedOptions = generatedOptions.slice(0, 4).map(opt => String(opt).trim());
+              
+              // Find the question in validatedQuestions and update it
+              const questionIndex = validatedQuestions.findIndex(q => 
+                q.question === question.question && q.correctAnswer === question.correctAnswer
+              );
+              
+              if (questionIndex !== -1) {
+                validatedQuestions[questionIndex].options = generatedOptions;
+                console.log(`Generated options for question ${questionIndex + 1}:`, generatedOptions);
+              }
+            } catch (parseError) {
+              console.error(`Failed to parse generated options for question ${overallIndex + 1}:`, parseError);
+              console.error('Raw response:', optionsText);
+              // Fallback: create simple options with correct answer
+              const correctAnswerStr = String(question.correctAnswer);
+              const questionIndex = validatedQuestions.findIndex(q => 
+                q.question === question.question && q.correctAnswer === question.correctAnswer
+              );
+              if (questionIndex !== -1) {
+                validatedQuestions[questionIndex].options = [
+                  correctAnswerStr,
+                  'Incorrect',
+                  'Incorrect',
+                  'Incorrect'
+                ];
+              }
             }
-            
-            // Ensure we have exactly 4 options
-            if (!Array.isArray(generatedOptions) || generatedOptions.length < 4) {
-              throw new Error('Invalid options format');
-            }
-            
-            // Ensure correct answer is included
-            const correctAnswerStr = String(question.correctAnswer).trim();
-            const hasCorrectAnswer = generatedOptions.some(opt => 
-              String(opt).trim() === correctAnswerStr
-            );
-            
-            if (!hasCorrectAnswer) {
-              // Replace one option with the correct answer (preferably the first)
-              generatedOptions[0] = question.correctAnswer;
-            }
-            
-            // Trim and clean options
-            generatedOptions = generatedOptions.slice(0, 4).map(opt => String(opt).trim());
-            
-            // Find the question in validatedQuestions and update it
+          } catch (error) {
+            console.error(`Failed to generate options for question ${overallIndex + 1}:`, error);
+            // Fallback: create simple options with correct answer
             const questionIndex = validatedQuestions.findIndex(q => 
               q.question === question.question && q.correctAnswer === question.correctAnswer
             );
-            
             if (questionIndex !== -1) {
-              validatedQuestions[questionIndex].options = generatedOptions;
-              console.log(`Generated options for question ${questionIndex + 1}:`, generatedOptions);
-              
-              // Update progress
-              const progressPercent = 50 + Math.floor((i + 1) / questionsNeedingOptions.length * 40);
-              await jobRef.update({ progress: progressPercent });
+              const correctAnswerStr = String(question.correctAnswer);
+              validatedQuestions[questionIndex].options = [
+                correctAnswerStr,
+                'Incorrect',
+                'Incorrect',
+                'Incorrect'
+              ];
             }
-          } catch (parseError) {
-            console.error(`Failed to parse generated options for question ${i + 1}:`, parseError);
-            console.error('Raw response:', optionsText);
-            // Fallback: create simple options with correct answer
-            const correctAnswerStr = String(question.correctAnswer);
-            validatedQuestions.find(q => 
-              q.question === question.question && q.correctAnswer === question.correctAnswer
-            ).options = [
-              correctAnswerStr,
-              'Incorrect',
-              'Incorrect',
-              'Incorrect'
-            ];
           }
-        } catch (error) {
-          console.error(`Failed to generate options for question ${i + 1}:`, error);
-          // Fallback: create simple options with correct answer
-          const questionIndex = validatedQuestions.findIndex(q => 
-            q.question === question.question && q.correctAnswer === question.correctAnswer
-          );
-          if (questionIndex !== -1) {
-            const correctAnswerStr = String(question.correctAnswer);
-            validatedQuestions[questionIndex].options = [
-              correctAnswerStr,
-              'Incorrect',
-              'Incorrect',
-              'Incorrect'
-            ];
-          }
-        }
+        });
+        
+        // Wait for all questions in this batch to complete
+        await Promise.all(batchPromises);
+        
+        // Update progress after each batch
+        const progressPercent = 50 + Math.floor((batchIndex + 1) / batches.length * 40);
+        await jobRef.update({ progress: progressPercent });
+        console.log(`Completed batch ${batchIndex + 1}/${batches.length} (${progressPercent}% overall)`);
       }
     }
 

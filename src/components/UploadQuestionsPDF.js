@@ -268,11 +268,15 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   };
 
   const pollJobStatus = async (currentJobId, token) => {
-    const maxAttempts = 300; // 5 minutes max (300 * 1 second)
-    let attempts = 0;
+    const maxDuration = 5 * 60 * 1000; // 5 minutes max (in milliseconds)
+    const startTime = Date.now();
+    let currentDelay = 1000; // Start with 1 second
+    const maxDelay = 10000; // Cap at 10 seconds
+    const backoffMultiplier = 1.5; // Increase delay by 50% each time
 
     const poll = async () => {
-      if (attempts >= maxAttempts) {
+      // Check if we've exceeded max duration
+      if (Date.now() - startTime >= maxDuration) {
         setError('Processing timeout. Please try again.');
         setUploading(false);
         setPolling(false);
@@ -305,9 +309,9 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
               throw new Error('Invalid response format');
             }
           } else {
-            // Empty response - continue polling
-            attempts++;
-            setTimeout(poll, 1000);
+            // Empty response - continue polling with exponential backoff
+            currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelay);
+            setTimeout(poll, currentDelay);
             return;
           }
         } else {
@@ -328,15 +332,16 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           setUploading(false);
           setPolling(false);
         } else {
-          // Still processing - poll again in 1 second
-          attempts++;
-          setTimeout(poll, 1000);
+          // Still processing - poll again with exponential backoff
+          currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelay);
+          setTimeout(poll, currentDelay);
         }
       } catch (err) {
         console.error('Polling error:', err);
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
+        // On error, continue polling with exponential backoff
+        if (Date.now() - startTime < maxDuration) {
+          currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelay);
+          setTimeout(poll, currentDelay);
         } else {
           setError('Failed to check processing status');
           setUploading(false);
