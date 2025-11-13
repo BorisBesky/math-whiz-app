@@ -73,12 +73,17 @@ service cloud.firestore {
       match /pdfProcessingJobs/{jobId} {
         // Users can read/write their own jobs
         // Admins can read/write all jobs
-        allow read, write: if request.auth != null && (
+        // Use request.resource.data.userId for create, resource.data.userId for others
+        allow create: if request.auth != null && (
+                              request.resource.data.userId == request.auth.uid ||
+                              isAdmin() ||
+                              (isTeacher() && request.resource.data.userId == request.auth.uid)
+                            );
+        allow read, update, delete: if request.auth != null && (
                               resource.data.userId == request.auth.uid ||
                               isAdmin() ||
                               (isTeacher() && resource.data.userId == request.auth.uid)
                             );
-      }
 
       // Rules for classes
       match /classes/{classId} {
