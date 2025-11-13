@@ -386,7 +386,7 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
     }
 
     // Validate and clean questions
-    const validatedQuestions = questions.map((q, index) => {
+    let validatedQuestions = questions.map((q, index) => {
       if (!q.question || !q.correctAnswer) {
         throw new Error(`Question ${index + 1} is missing required fields`);
       }
@@ -405,6 +405,114 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
         pdfSource: fileName
       };
     });
+
+    // Generate options for questions that don't have them
+    const questionsNeedingOptions = validatedQuestions.filter(q => 
+      !q.options || q.options.length === 0 || q.options.every(opt => !opt || opt.trim() === '')
+    );
+
+    if (questionsNeedingOptions.length > 0) {
+      console.log(`Generating options for ${questionsNeedingOptions.length} question(s) without options`);
+      
+      // Generate options for each question that needs them
+      for (let i = 0; i < questionsNeedingOptions.length; i++) {
+        const question = questionsNeedingOptions[i];
+        
+        try {
+          const optionsPrompt = `You are a math teacher creating multiple choice options for a quiz question.
+
+Question: ${question.question}
+Correct Answer: ${question.correctAnswer}
+Topic: ${question.topic}
+Grade Level: ${question.grade}
+
+Generate 4 multiple choice options (A, B, C, D) where:
+1. One option is the correct answer: "${question.correctAnswer}"
+2. The other 3 options are plausible but incorrect answers that a student might choose
+3. The incorrect options should be similar in format/type to the correct answer
+4. For math questions, make the wrong answers common mistakes or close but incorrect values
+
+Return ONLY a JSON array with exactly 4 options as strings, where one of them matches the correct answer exactly.
+Example format: ["option1", "option2", "option3", "option4"]
+
+Do not include any explanation or other text, just the JSON array.`;
+
+          const optionsResult = await model.generateContent(optionsPrompt);
+          const optionsResponse = await optionsResult.response;
+          const optionsText = optionsResponse.text();
+
+          // Parse the options
+          let generatedOptions = [];
+          try {
+            // Try to extract JSON array
+            const jsonMatch = optionsText.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              generatedOptions = JSON.parse(jsonMatch[0]);
+            } else {
+              // Try parsing the entire response
+              generatedOptions = JSON.parse(optionsText);
+            }
+            
+            // Ensure we have exactly 4 options
+            if (!Array.isArray(generatedOptions) || generatedOptions.length < 4) {
+              throw new Error('Invalid options format');
+            }
+            
+            // Ensure correct answer is included
+            const correctAnswerStr = String(question.correctAnswer).trim();
+            const hasCorrectAnswer = generatedOptions.some(opt => 
+              String(opt).trim() === correctAnswerStr
+            );
+            
+            if (!hasCorrectAnswer) {
+              // Replace one option with the correct answer (preferably the first)
+              generatedOptions[0] = question.correctAnswer;
+            }
+            
+            // Trim and clean options
+            generatedOptions = generatedOptions.slice(0, 4).map(opt => String(opt).trim());
+            
+            // Find the question in validatedQuestions and update it
+            const questionIndex = validatedQuestions.findIndex(q => 
+              q.question === question.question && q.correctAnswer === question.correctAnswer
+            );
+            
+            if (questionIndex !== -1) {
+              validatedQuestions[questionIndex].options = generatedOptions;
+              console.log(`Generated options for question ${questionIndex + 1}:`, generatedOptions);
+            }
+          } catch (parseError) {
+            console.error(`Failed to parse generated options for question ${i + 1}:`, parseError);
+            console.error('Raw response:', optionsText);
+            // Fallback: create simple options with correct answer
+            const correctAnswerStr = String(question.correctAnswer);
+            validatedQuestions.find(q => 
+              q.question === question.question && q.correctAnswer === question.correctAnswer
+            ).options = [
+              correctAnswerStr,
+              'Incorrect',
+              'Incorrect',
+              'Incorrect'
+            ];
+          }
+        } catch (error) {
+          console.error(`Failed to generate options for question ${i + 1}:`, error);
+          // Fallback: create simple options with correct answer
+          const questionIndex = validatedQuestions.findIndex(q => 
+            q.question === question.question && q.correctAnswer === question.correctAnswer
+          );
+          if (questionIndex !== -1) {
+            const correctAnswerStr = String(question.correctAnswer);
+            validatedQuestions[questionIndex].options = [
+              correctAnswerStr,
+              'Incorrect',
+              'Incorrect',
+              'Incorrect'
+            ];
+          }
+        }
+      }
+    }
 
     return {
       statusCode: 200,
