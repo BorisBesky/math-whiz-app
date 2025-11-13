@@ -19,7 +19,18 @@ service cloud.firestore {
       return request.auth != null && 'admin' in request.auth.token && request.auth.token.admin == true;
     }
 
+    // Collection group rules for math_whiz_data (for collectionGroup queries)
+    match /{path=**}/math_whiz_data/{document} {
+      allow read: if isAdmin();
+    }
+
     match /artifacts/{appId} {
+
+      // Rules for listing users (needed for admin to load all teachers)
+      match /users/{userId} {
+        // Allow admins to list and read user documents
+        allow read: if isAdmin();
+      }
 
       // Rules for user profiles
       match /users/{userId}/math_whiz_data/profile {

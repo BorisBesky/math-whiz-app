@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc, deleteDoc, orderBy, setDoc, addDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { BookOpen, Trash2, Users, Filter, X, CheckCircle, ChevronDown, ChevronUp, Share2, User as UserIcon } from 'lucide-react';
 import { TOPICS } from '../constants/topics';
@@ -64,22 +64,42 @@ const QuestionBankManager = ({
     if (!userId || !db) return;
 
     const questionBankRef = collection(db, 'artifacts', currentAppId, 'users', userId, 'questionBank');
-    const q = query(questionBankRef, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const questionsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setQuestions(questionsData);
+    
+    // Try query without orderBy to avoid index issues
+    let unsubscribe;
+    try {
+      console.log('Loading questions from questionBank for user:', userId);
+      unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
+        console.log(`Loaded ${snapshot.size} questions from questionBank`);
+        const questionsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        // Sort client-side if createdAt exists
+        questionsData.sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            const timeA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+            const timeB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+            return timeB - timeA; // desc
+          }
+          return 0;
+        });
+        setQuestions(questionsData);
+        setLoading(false);
+      }, (err) => {
+        console.error('Error loading questions:', err);
+        setError('Failed to load questions: ' + err.message);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error('Error setting up questions listener:', err);
+      setError('Failed to load questions: ' + err.message);
       setLoading(false);
-    }, (err) => {
-      console.error('Error loading questions:', err);
-      setError('Failed to load questions');
-      setLoading(false);
-    });
+    }
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [userId, db, currentAppId, externalQuestions]);
 
   // Load shared questions (only if admin and not provided externally)
@@ -209,16 +229,45 @@ const QuestionBankManager = ({
       return;
     }
 
-    // Default handler for teacher mode
+    // Default handler for teacher mode - create reference documents in class
     try {
       const updates = [];
       for (const questionId of selectedQuestions) {
-        // Get current assignedClasses array from local state
         const question = questionsToShow.find(q => q.id === questionId);
-        const currentAssignedClasses = question?.assignedClasses || [];
+        if (!question) continue;
+
+        // Create a reference document in the class questions subcollection
+        // Use the same questionId to maintain consistency
+        const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', selectedClassForAssignment, 'questions', questionId);
         
+        // Store reference information and essential question data
+        updates.push(
+          setDoc(classQuestionRef, {
+            // Reference information
+            questionBankRef: `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`,
+            teacherId: userId,
+            assignedAt: new Date(),
+            
+            // Essential question data (for querying and display)
+            topic: question.topic,
+            grade: question.grade,
+            question: question.question,
+            correctAnswer: question.correctAnswer,
+            options: question.options,
+            hint: question.hint || '',
+            standard: question.standard || '',
+            concept: question.concept || '',
+            images: question.images || [],
+            source: question.source || 'questionBank',
+            pdfSource: question.pdfSource || '',
+            createdAt: question.createdAt || new Date()
+          }, { merge: true })
+        );
+
+        // Also update the assignedClasses array in the original question for tracking
+        const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
+        const currentAssignedClasses = question?.assignedClasses || [];
         if (!currentAssignedClasses.includes(selectedClassForAssignment)) {
-          const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
           updates.push(
             updateDoc(questionRef, {
               assignedClasses: [...currentAssignedClasses, selectedClassForAssignment]
@@ -242,6 +291,11 @@ const QuestionBankManager = ({
       const question = questionsToShow.find(q => q.id === questionId);
       const currentAssignedClasses = (question?.assignedClasses || []).filter(id => id !== classId);
       
+      // Remove the reference document from class questions subcollection
+      const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
+      await deleteDoc(classQuestionRef);
+      
+      // Update the assignedClasses array in the original question
       if (question?.collection === 'sharedQuestionBank') {
         const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
         await updateDoc(questionRef, {

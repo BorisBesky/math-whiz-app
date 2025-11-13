@@ -646,14 +646,18 @@ const getAnsweredQuestionBankQuestions = async (userId) => {
   return [];
 };
 
-// Fetch questions from Firestore (class questions, teacher questionBank, shared questionBank)
+// Fetch questions from Firestore (class questions, user questionBank, teacher questionBank, shared questionBank)
+// Note: Class questions are stored as reference documents that contain both:
+//   1. Reference info (questionBankRef, teacherId) pointing to the original question
+//   2. Full question data for efficient querying by topic/grade
 const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId) => {
   const questions = [];
   const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
   const answeredSet = new Set(answeredQuestionIds || []);
+  const seenQuestionIds = new Set(); // Track IDs to avoid duplicates
 
   try {
-    // 1. Fetch class questions if classId provided
+    // 1. Fetch class questions if classId provided (highest priority)
     if (classId) {
       try {
         const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', classId, 'questions');
@@ -664,7 +668,8 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
         );
         const classSnapshot = await getDocs(classQuery);
         classSnapshot.forEach(doc => {
-          if (!answeredSet.has(doc.id)) {
+          if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
+            seenQuestionIds.add(doc.id);
             questions.push({
               ...doc.data(),
               questionId: doc.id,
@@ -678,11 +683,37 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
       }
     }
 
-    // 2. Fetch teacher's questionBank (if student has a teacher)
+    // 2. Fetch user's own questionBank (skip if already in class to avoid duplicates)
+    if (userId) {
+      try {
+        const userQuestionBankRef = collection(db, 'artifacts', currentAppId, 'users', userId, 'questionBank');
+        const userQuestionBankQuery = query(
+          userQuestionBankRef,
+          where('topic', '==', topic),
+          where('grade', '==', grade)
+        );
+        const userQuestionBankSnapshot = await getDocs(userQuestionBankQuery);
+        userQuestionBankSnapshot.forEach(doc => {
+          if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
+            seenQuestionIds.add(doc.id);
+            questions.push({
+              ...doc.data(),
+              questionId: doc.id,
+              source: 'questionBank',
+              collection: 'questionBank'
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('Error fetching user questionBank:', err);
+      }
+    }
+
+    // 3. Fetch teacher's questionBank (if student has a teacher)
     // Note: This would require checking if student has a teacher assigned
     // For now, we'll skip this as it requires additional logic to determine teacher
 
-    // 3. Fetch shared questionBank (all students can access)
+    // 4. Fetch shared questionBank (all students can access)
     try {
       const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
       const sharedQuery = query(
@@ -692,7 +723,8 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
       );
       const sharedSnapshot = await getDocs(sharedQuery);
       sharedSnapshot.forEach(doc => {
-        if (!answeredSet.has(doc.id)) {
+        if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
+          seenQuestionIds.add(doc.id);
           questions.push({
             ...doc.data(),
             questionId: doc.id,

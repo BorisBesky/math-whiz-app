@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, onSnapshot, doc, deleteDoc, addDoc, getDocs, getDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, onSnapshot, doc, deleteDoc, addDoc, getDocs, getDoc, updateDoc, orderBy, setDoc, collectionGroup, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import QuestionBankManager from './QuestionBankManager';
 
@@ -18,30 +18,31 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
   useEffect(() => {
     const loadTeachers = async () => {
       try {
-        const usersRef = collection(db, 'artifacts', currentAppId, 'users');
-        const usersSnapshot = await getDocs(usersRef);
+        console.log('[AdminQuestionBankManager] Loading teachers using collectionGroup query');
+        // Use collectionGroup to query all math_whiz_data/profile documents
+        const profilesGroup = collectionGroup(db, 'math_whiz_data');
+        const profilesSnapshot = await getDocs(profilesGroup);
+        
+        console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
         const teachersList = [];
         
-        for (const userDoc of usersSnapshot.docs) {
-          try {
-            const profileRef = doc(db, 'artifacts', currentAppId, 'users', userDoc.id, 'math_whiz_data', 'profile');
-            const profileDoc = await getDoc(profileRef);
-            
-            if (profileDoc.exists()) {
-              const data = profileDoc.data();
-              if (data.role === 'teacher' || data.role === 'admin') {
-                teachersList.push({
-                  id: userDoc.id,
-                  email: data.email || userDoc.id,
-                  name: data.name || data.displayName || data.email || userDoc.id
-                });
-              }
-            }
-          } catch (e) {
-            console.warn(`Could not load profile for user ${userDoc.id}:`, e);
+        profilesSnapshot.forEach((profileDoc) => {
+          const data = profileDoc.data();
+          // Extract userId from the document path: artifacts/{appId}/users/{userId}/math_whiz_data/profile
+          const userId = profileDoc.ref.parent.parent.id;
+          
+          console.log('[AdminQuestionBankManager] User', userId, 'role:', data.role);
+          
+          if (data.role === 'teacher' || data.role === 'admin') {
+            teachersList.push({
+              id: userId,
+              email: data.email || userId,
+              name: data.name || data.displayName || data.email || userId
+            });
           }
-        }
+        });
         
+        console.log('[AdminQuestionBankManager] Found', teachersList.length, 'teachers/admins:', teachersList);
         setAllTeachers(teachersList);
       } catch (err) {
         console.error('Error loading teachers:', err);
@@ -62,9 +63,10 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     // Load questions from all teachers' questionBanks
     allTeachers.forEach(teacher => {
       const questionBankRef = collection(db, 'artifacts', currentAppId, 'users', teacher.id, 'questionBank');
-      const q = query(questionBankRef, orderBy('createdAt', 'desc'));
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      
+      // Query without orderBy to avoid index requirements
+      const unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
+        console.log(`Loaded ${snapshot.size} questions for teacher ${teacher.name} (${teacher.id})`);
         const questionsData = snapshot.docs.map(doc => ({
           id: doc.id,
           userId: teacher.id,
@@ -73,6 +75,16 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
           collection: 'questionBank',
           ...doc.data()
         }));
+
+        // Sort client-side by createdAt
+        questionsData.sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            const timeA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+            const timeB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+            return timeB - timeA; // desc
+          }
+          return 0;
+        });
 
         setTeacherQuestions(prev => {
           const filtered = prev.filter(q => q.userId !== teacher.id);
@@ -93,14 +105,28 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     if (!db) return;
 
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
-    const q = query(sharedRef, orderBy('addedAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    // Query without orderBy to avoid index requirements
+    const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
+      console.log(`Loaded ${snapshot.size} shared questions`);
       const questionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         collection: 'sharedQuestionBank',
         ...doc.data()
       }));
+      
+      // Sort client-side by addedAt or createdAt
+      questionsData.sort((a, b) => {
+        const timeFieldA = a.addedAt || a.createdAt;
+        const timeFieldB = b.addedAt || b.createdAt;
+        if (timeFieldA && timeFieldB) {
+          const timeA = timeFieldA.toDate ? timeFieldA.toDate() : new Date(timeFieldA);
+          const timeB = timeFieldB.toDate ? timeFieldB.toDate() : new Date(timeFieldB);
+          return timeB - timeA; // desc
+        }
+        return 0;
+      });
+      
       setSharedQuestions(questionsData);
       setLoading(false);
     }, (err) => {
@@ -198,6 +224,36 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         const question = [...teacherQuestions, ...sharedQuestions].find(q => q.id === questionId);
         if (!question) continue;
 
+        // Create reference document in class questions subcollection
+        const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
+        updates.push(
+          setDoc(classQuestionRef, {
+            // Reference information
+            questionBankRef: question.collection === 'questionBank' 
+              ? `artifacts/${currentAppId}/users/${question.userId}/questionBank/${questionId}`
+              : `artifacts/${currentAppId}/sharedQuestionBank/${questionId}`,
+            teacherId: question.userId || null,
+            assignedAt: new Date(),
+            isSharedQuestion: question.collection === 'sharedQuestionBank',
+            
+            // Essential question data (for querying and display)
+            topic: question.topic,
+            grade: question.grade,
+            question: question.question,
+            correctAnswer: question.correctAnswer,
+            options: question.options,
+            hint: question.hint || '',
+            standard: question.standard || '',
+            concept: question.concept || '',
+            images: question.images || [],
+            source: question.source || 'questionBank',
+            pdfSource: question.pdfSource || '',
+            createdAt: question.createdAt || new Date(),
+            createdBy: question.createdBy || question.userId
+          }, { merge: true })
+        );
+
+        // Update assignedClasses array in original question
         if (question.collection === 'questionBank') {
           const currentAssignedClasses = question.assignedClasses || [];
           if (!currentAssignedClasses.includes(classId)) {

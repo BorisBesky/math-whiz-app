@@ -1283,6 +1283,17 @@ const TeacherDashboard = () => {
           </div>
         )}
 
+        {/* Questions View */}
+        {view === 'questions' && (
+          <div>
+            <QuestionBankManager
+              classes={classes}
+              appId={appId}
+              userId={user?.uid}
+            />
+          </div>
+        )}
+
         {/* Student Detail */}
         {view === 'student-detail' && selectedStudent && (
           <div className="space-y-6">

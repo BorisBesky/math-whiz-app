@@ -116,40 +116,52 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
         }
       }
 
-      const savePromises = [];
+      // First, save all questions to teacher's global question bank
+      const savedQuestionIds = [];
+      for (const question of questionsToSave) {
+        const questionBankRef = collection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
+        const savedDoc = await addDoc(questionBankRef, {
+          ...question,
+          createdAt: new Date(),
+          createdBy: user.uid,
+          source: 'pdf-upload',
+          pdfSource: fileName,
+          assignedClasses: classId ? [classId] : []
+        });
+        savedQuestionIds.push({ id: savedDoc.id, question });
+      }
 
-      // Save to class if classId provided
+      // If classId provided, create reference documents in the class questions subcollection
       if (classId) {
-        for (const question of questionsToSave) {
-          const questionRef = collection(db, 'artifacts', appId, 'classes', classId, 'questions');
-          savePromises.push(
-            addDoc(questionRef, {
-              ...question,
-              createdAt: new Date(),
-              createdBy: user.uid,
+        const classRefPromises = [];
+        for (const { id: questionId, question } of savedQuestionIds) {
+          const classQuestionRef = doc(db, 'artifacts', appId, 'classes', classId, 'questions', questionId);
+          classRefPromises.push(
+            setDoc(classQuestionRef, {
+              // Reference information
+              questionBankRef: `artifacts/${appId}/users/${user.uid}/questionBank/${questionId}`,
+              teacherId: user.uid,
+              assignedAt: new Date(),
+              
+              // Essential question data (for querying and display)
+              topic: question.topic,
+              grade: question.grade,
+              question: question.question,
+              correctAnswer: question.correctAnswer,
+              options: question.options,
+              hint: question.hint || '',
+              standard: question.standard || '',
+              concept: question.concept || '',
+              images: question.images || [],
               source: 'pdf-upload',
-              pdfSource: fileName
+              pdfSource: fileName,
+              createdAt: new Date(),
+              createdBy: user.uid
             })
           );
         }
+        await Promise.all(classRefPromises);
       }
-
-      // Also save to teacher's global question bank
-      for (const question of questionsToSave) {
-        const questionBankRef = collection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
-        savePromises.push(
-          addDoc(questionBankRef, {
-            ...question,
-            createdAt: new Date(),
-            createdBy: user.uid,
-            source: 'pdf-upload',
-            pdfSource: fileName,
-            classId: classId || null
-          })
-        );
-      }
-
-      await Promise.all(savePromises);
 
       if (onSave) {
         onSave();
