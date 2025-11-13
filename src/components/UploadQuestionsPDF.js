@@ -253,27 +253,11 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           jobId = response.headers.get('X-Job-Id');
         }
         
-        // If still no job ID, try to extract from any header
-        if (!jobId) {
-          const allHeaders = Object.fromEntries(response.headers.entries());
-          console.log('All response headers:', allHeaders);
-          // Try to find job ID in any header
-          for (const [key, value] of Object.entries(allHeaders)) {
-            if (key.toLowerCase().includes('job') || value.includes('_')) {
-              // Might be a job ID pattern
-              const match = value.match(/([^_]+_\d+_[a-z0-9]+)/);
-              if (match) {
-                jobId = match[1];
-                break;
-              }
-            }
-          }
-        }
-        
+        // If still no job ID, fail and log error. The backend must return jobId in the response body or 'X-Job-Id' header.
         if (!jobId) {
           console.error('Response status:', response.status);
           console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-          throw new Error('No job ID received from server. Please check the function logs.');
+          throw new Error('No job ID received from server. The backend must return jobId in the response body or "X-Job-Id" header.');
         }
         
         console.log('Got job ID:', jobId);
