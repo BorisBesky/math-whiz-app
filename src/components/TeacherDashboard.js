@@ -416,6 +416,18 @@ const TeacherDashboard = () => {
     }
   };
 
+  // Sanitize topic name to match MainApp's sanitizeTopicName function
+  const sanitizeTopicName = (topicName) => {
+    if (!topicName || typeof topicName !== 'string') {
+      return 'unknown_topic';
+    }
+    // Replace problematic characters with underscores (same as MainApp.js)
+    return topicName
+      .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
+      .replace(/_+/g, "_") // Replace multiple underscores with single
+      .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
+  };
+
   const calculateTopicProgress = (student, grade) => {
     const progress = grade === 'G3' ? student.progressG3 : student.progressG4;
     const topics = grade === 'G3' 
@@ -423,7 +435,7 @@ const TeacherDashboard = () => {
       : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
     
     return topics.map(topic => {
-      const sanitizedTopic = topic.replace(/[^a-zA-Z0-9]/g, '_');
+      const sanitizedTopic = sanitizeTopicName(topic);
       const topicProgress = progress[sanitizedTopic] || progress[topic] || { correct: 0, incorrect: 0 };
       const goal = student.dailyGoalsByGrade?.[grade]?.[topic] || 4;
       
@@ -1028,12 +1040,20 @@ const TeacherDashboard = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {getSortedStudents().map(student => (
-                      <tr key={student.id} className="hover:bg-gray-50">
+                      <tr 
+                        key={student.id} 
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onDoubleClick={() => {
+                          setSelectedStudent(student);
+                          setView('student-detail');
+                        }}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={selectedStudents.has(student.id)}
                             onChange={() => handleSelectStudent(student.id)}
+                            onDoubleClick={(e) => e.stopPropagation()}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </td>
@@ -1099,6 +1119,7 @@ const TeacherDashboard = () => {
                               setSelectedStudent(student);
                               setView('student-detail');
                             }}
+                            onDoubleClick={(e) => e.stopPropagation()}
                             className="text-blue-600 hover:text-blue-900 inline-flex items-center"
                           >
                             <Eye className="w-4 h-4 mr-1" />
@@ -1106,6 +1127,7 @@ const TeacherDashboard = () => {
                           </button>
                           <button
                             onClick={() => openGoalsModalForStudent(student)}
+                            onDoubleClick={(e) => e.stopPropagation()}
                             className="text-purple-600 hover:text-purple-900 inline-flex items-center"
                           >
                             <Target className="w-4 h-4 mr-1" />
@@ -1329,103 +1351,73 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Recent Questions */}
-            <div className="bg-white border border-gray-200 rounded-lg">
-              <div className="p-6 border-b border-gray-200">
-                <h4 className="font-semibold text-gray-900">Recent Questions (Last 20)</h4>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date/Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Grade
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Topic
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Question
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student Answer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Correct Answer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Result
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {selectedStudent.answeredQuestions
-                      .slice(-20)
-                      .reverse()
-                      .map((question, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatDate(question.timestamp)}
-                            <br />
-                            <span className="text-gray-500">
-                              {formatTime(question.timestamp)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                              {question.grade || 'G3'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {question.topic}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                            {question.question}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            <span className={`font-medium ${
-                              question.isCorrect 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {question.userAnswer || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            <span className="font-medium text-blue-600">
-                              {question.correctAnswer || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              question.isCorrect 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {question.isCorrect ? 'Correct' : 'Incorrect'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {question.timeTaken ? `${question.timeTaken.toFixed(1)}s` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              {selectedStudent.answeredQuestions.length === 0 && (
-                <div className="text-center py-12">
-                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No questions answered yet</p>
+            {/* Today's Questions */}
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const todaysQuestions = selectedStudent.answeredQuestions?.filter(
+                (q) => q.date === today
+              ) || [];
+              
+              return todaysQuestions.length > 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-xl font-bold text-gray-700 mb-4">
+                    Today's Questions:
+                  </h4>
+                  <div className="max-h-60 overflow-y-auto">
+                    {todaysQuestions.map((q, index) => (
+                      <div
+                        key={q.id || index}
+                        className={`p-3 mb-2 rounded-lg border-l-4 ${
+                          q.isCorrect
+                            ? "bg-green-50 border-green-500"
+                            : "bg-red-50 border-red-500"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-semibold text-sm text-gray-600">
+                            {q.topic}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {q.timeTaken ? `${q.timeTaken.toFixed(1)}s` : 'N/A'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-800 mb-1">{q.question}</p>
+                        <div className="text-xs">
+                          <span className="text-gray-600">Your answer: </span>
+                          <span
+                            className={
+                              q.isCorrect
+                                ? "text-green-600 font-semibold"
+                                : "text-red-600 font-semibold"
+                            }
+                          >
+                            {q.userAnswer || 'N/A'}
+                          </span>
+                          {!q.isCorrect && (
+                            <>
+                              <span className="text-gray-600 ml-2">Correct: </span>
+                              <span className="text-green-600 font-semibold">
+                                {q.correctAnswer || 'N/A'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-xl font-bold text-gray-700 mb-4">
+                    Today's Questions:
+                  </h4>
+                  <div className="text-center py-12">
+                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No questions answered today</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
