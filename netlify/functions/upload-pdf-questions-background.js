@@ -388,7 +388,20 @@ async function processPDFAsync(jobId, userId, appId, classId, fileData, fileName
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    // Use environment variable for model name, fallback to stable default
+    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-2.0-flash-exp";
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: modelName });
+    } catch (err) {
+      await jobRef.update({
+        status: 'error',
+        error: `Failed to initialize Gemini model "${modelName}": ${err.message}`,
+        completedAt: getTimestamp()
+      });
+      throw new Error(`Gemini model initialization failed: ${err.message}`);
+    }
 
     // Create prompt for question extraction
     const extractionPrompt = `You are an expert at extracting math quiz questions from PDF documents. 

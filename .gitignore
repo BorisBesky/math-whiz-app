@@ -31,3 +31,5 @@ yarn-error.log*
 .node-version
 .env
 
+.cursor
+
