@@ -4,40 +4,15 @@ import { X, BookOpen } from 'lucide-react';
 const EditClassForm = ({ classData, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     name: classData.name || '',
-    subject: classData.subject || '',
     description: classData.description || '',
-    gradeLevel: classData.gradeLevel || '',
-    period: classData.period || ''
+    gradeLevel: classData.gradeLevel || ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const subjects = [
-    'Mathematics',
-    'Algebra',
-    'Geometry',
-    'Pre-Calculus',
-    'Calculus',
-    'Statistics',
-    'Arithmetic',
-    'Other'
-  ];
-
   const gradeLevels = [
-    'Kindergarten',
-    '1st Grade',
-    '2nd Grade',
-    '3rd Grade',
-    '4th Grade',
-    '5th Grade',
-    '6th Grade',
-    '7th Grade',
-    '8th Grade',
-    '9th Grade',
-    '10th Grade',
-    '11th Grade',
-    '12th Grade',
-    'College'
+    'G3',
+    'G4'
   ];
 
   const validateForm = () => {
@@ -45,10 +20,6 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
     
     if (!formData.name.trim()) {
       newErrors.name = 'Class name is required';
-    }
-    
-    if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
     }
     
     if (!formData.gradeLevel.trim()) {
@@ -133,27 +104,6 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
             </div>
 
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                Subject *
-              </label>
-              <select
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.subject ? 'border-red-300' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select a subject</option>
-                {subjects.map(subject => (
-                  <option key={subject} value={subject}>{subject}</option>
-                ))}
-              </select>
-              {errors.subject && <p className="mt-1 text-sm text-red-600">{errors.subject}</p>}
-            </div>
-
-            <div>
               <label htmlFor="gradeLevel" className="block text-sm font-medium text-gray-700 mb-1">
                 Grade Level *
               </label>
@@ -172,21 +122,6 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
                 ))}
               </select>
               {errors.gradeLevel && <p className="mt-1 text-sm text-red-600">{errors.gradeLevel}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-1">
-                Period/Time
-              </label>
-              <input
-                type="text"
-                id="period"
-                name="period"
-                value={formData.period}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Period 3, 10:00 AM - 11:30 AM"
-              />
             </div>
 
             <div>

@@ -278,7 +278,13 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                 <p className="text-gray-600">Manage students enrolled in this class</p>
               </div>
               <button
-                onClick={() => { setShowInvite(true); fetchInvite(false); }}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowInvite(true);
+                  fetchInvite(false);
+                }}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
               >
                 <Plus className="h-4 w-4" />
@@ -292,7 +298,13 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No students enrolled</h3>
                 <p className="text-gray-600 mb-4">Start by adding students to your class</p>
                 <button
-                  onClick={() => { setShowInvite(true); fetchInvite(false); }}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowInvite(true);
+                    fetchInvite(false);
+                  }}
                   className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
