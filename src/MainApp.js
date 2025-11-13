@@ -2759,7 +2759,7 @@ Answer: [The answer]`;
                 {isAnswered ? (
                   <button
                     onClick={nextQuestion}
-                    className="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 text-sm"
+                    className="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 text-sm min-h-[40px]"
                   >
                     Next Question <ChevronsRight size={18} />
                   </button>
@@ -2767,7 +2767,7 @@ Answer: [The answer]`;
                   <button
                     onClick={checkAnswer}
                     disabled={userAnswer === null || userAnswer === ''}
-                    className="w-full sm:w-auto bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                    className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px]"
                   >
                     Check Answer
                   </button>

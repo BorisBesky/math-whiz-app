@@ -44,6 +44,17 @@ service cloud.firestore {
                               (isTeacher() && request.auth.uid == userId)
                             );
       }
+      
+      // Rules for PDF processing jobs
+      match /pdfProcessingJobs/{jobId} {
+        // Users can read/write their own jobs
+        // Admins can read/write all jobs
+        allow read, write: if request.auth != null && (
+                              resource.data.userId == request.auth.uid ||
+                              isAdmin() ||
+                              (isTeacher() && resource.data.userId == request.auth.uid)
+                            );
+      }
 
       // Rules for classes
       match /classes/{classId} {

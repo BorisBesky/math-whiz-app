@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Upload, X, FileText, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, query, where, getDocs, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import QuestionReviewModal from './QuestionReviewModal';
 
 const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
@@ -9,6 +10,134 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [extractedQuestions, setExtractedQuestions] = useState(null);
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [polling, setPolling] = useState(false);
+  const [pendingJobs, setPendingJobs] = useState([]);
+  const [checkingJobs, setCheckingJobs] = useState(true);
+
+  const checkPendingJobs = useCallback(async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        setCheckingJobs(false);
+        return;
+      }
+
+      const db = getFirestore();
+      const currentAppId = appId || 'default-app-id';
+      const jobsRef = collection(db, 'artifacts', currentAppId, 'pdfProcessingJobs');
+      
+      // Query for completed jobs only (simpler query, no composite index needed)
+      const q = query(
+        jobsRef,
+        where('userId', '==', user.uid),
+        where('status', '==', 'completed'),
+        orderBy('createdAt', 'desc'),
+        limit(10)
+      );
+
+      const snapshot = await getDocs(q);
+      console.log(`Found ${snapshot.size} completed jobs for user ${user.uid}`);
+      
+      const jobs = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        console.log(`Job ${docSnap.id}:`, {
+          status: data.status,
+          hasQuestions: !!data.questions,
+          questionsLength: data.questions?.length || 0,
+          imported: data.imported,
+          fileName: data.fileName
+        });
+        
+        // Only show completed jobs with questions that haven't been imported
+        // If imported field doesn't exist (older records), treat as not imported
+        const isImported = data.imported === true;
+        const hasQuestions = data.questions && Array.isArray(data.questions) && data.questions.length > 0;
+        
+        if (hasQuestions && !isImported) {
+          const createdAt = data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date());
+          jobs.push({
+            id: docSnap.id,
+            ...data,
+            createdAt
+          });
+        }
+      });
+      
+      // Sort by creation date (most recent first)
+      jobs.sort((a, b) => b.createdAt - a.createdAt);
+
+      console.log(`Found ${jobs.length} pending jobs ready to import`);
+      setPendingJobs(jobs);
+    } catch (err) {
+      console.error('Error checking pending jobs:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        stack: err.stack
+      });
+      // If query fails (e.g., missing index), try without orderBy
+      if (err.code === 'failed-precondition') {
+        console.log('Query requires index. Trying simpler query...');
+        try {
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) return;
+          
+          const db = getFirestore();
+          const jobsRef = collection(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs');
+          const simpleQ = query(
+            jobsRef,
+            where('userId', '==', user.uid),
+            where('status', '==', 'completed'),
+            limit(10)
+          );
+          
+          const snapshot = await getDocs(simpleQ);
+          const jobs = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const isImported = data.imported === true;
+            const hasQuestions = data.questions && Array.isArray(data.questions) && data.questions.length > 0;
+            
+            if (hasQuestions && !isImported) {
+              const createdAt = data.createdAt?.toDate?.() || (data.createdAt ? new Date(data.createdAt) : new Date());
+              jobs.push({
+                id: docSnap.id,
+                ...data,
+                createdAt
+              });
+            }
+          });
+          
+          jobs.sort((a, b) => b.createdAt - a.createdAt);
+          setPendingJobs(jobs);
+        } catch (fallbackErr) {
+          console.error('Fallback query also failed:', fallbackErr);
+        }
+      }
+    } finally {
+      setCheckingJobs(false);
+    }
+  }, [appId]);
+
+  // Check for pending/completed jobs on mount
+  useEffect(() => {
+    checkPendingJobs();
+  }, [checkPendingJobs]);
+
+  const handleResumeJob = async (job) => {
+    try {
+      setExtractedQuestions(job.questions);
+      setFileName(job.fileName || 'Unknown PDF');
+      setError(null);
+    } catch (err) {
+      console.error('Error resuming job:', err);
+      setError('Failed to load job data');
+    }
+  };
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
@@ -53,7 +182,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
         formData.append('classId', classId);
       }
 
-      const response = await fetch('/.netlify/functions/upload-pdf-questions', {
+      const response = await fetch('/.netlify/functions/upload-pdf-questions-background', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -62,22 +191,195 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload PDF');
+        let errorMessage = 'Failed to upload PDF';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      setExtractedQuestions(data.questions);
-      setFileName(data.fileName || file.name);
+      // Handle response - check status first
+      if (response.status === 202) {
+        // Background function - try to get job ID from body or header
+        let jobId = null;
+        
+        // First try to get from response body
+        try {
+          const text = await response.text();
+          if (text && text.trim()) {
+            const data = JSON.parse(text);
+            jobId = data.jobId;
+          }
+        } catch (e) {
+          console.warn('Could not parse response body:', e);
+        }
+        
+        // If no job ID from body, try header
+        if (!jobId) {
+          jobId = response.headers.get('X-Job-Id');
+        }
+        
+        // If still no job ID, try to extract from any header
+        if (!jobId) {
+          const allHeaders = Object.fromEntries(response.headers.entries());
+          console.log('All response headers:', allHeaders);
+          // Try to find job ID in any header
+          for (const [key, value] of Object.entries(allHeaders)) {
+            if (key.toLowerCase().includes('job') || value.includes('_')) {
+              // Might be a job ID pattern
+              const match = value.match(/([^_]+_\d+_[a-z0-9]+)/);
+              if (match) {
+                jobId = match[1];
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!jobId) {
+          console.error('Response status:', response.status);
+          console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+          throw new Error('No job ID received from server. Please check the function logs.');
+        }
+        
+        console.log('Got job ID:', jobId);
+        
+        // Background function - start polling
+        setPolling(true);
+        setFileName(file.name);
+        pollJobStatus(jobId, token);
+      } else {
+        // Immediate response (shouldn't happen with background function)
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+        setExtractedQuestions(data.questions);
+        setFileName(data.fileName || file.name);
+        setUploading(false);
+      }
     } catch (err) {
       console.error('Upload error:', err);
       setError(err.message || 'Failed to upload and extract questions from PDF');
-    } finally {
       setUploading(false);
+      setPolling(false);
     }
   };
 
-  const handleQuestionsSaved = () => {
+  const pollJobStatus = async (currentJobId, token) => {
+    const maxAttempts = 300; // 5 minutes max (300 * 1 second)
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setError('Processing timeout. Please try again.');
+        setUploading(false);
+        setPolling(false);
+        return;
+      }
+
+      try {
+        const statusUrl = `/.netlify/functions/upload-pdf-questions-background?jobId=${currentJobId}&appId=${appId || 'default-app-id'}`;
+        const response = await fetch(statusUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to check job status');
+        }
+
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.trim()) {
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              console.error('Failed to parse JSON in polling:', text);
+              throw new Error('Invalid response format');
+            }
+          } else {
+            // Empty response - continue polling
+            attempts++;
+            setTimeout(poll, 1000);
+            return;
+          }
+        } else {
+          throw new Error('Unexpected response format');
+        }
+        
+        setProgress(data.progress || 0);
+
+        if (data.status === 'completed') {
+          setExtractedQuestions(data.questions);
+          setFileName(data.fileName || file.name);
+          setUploading(false);
+          setPolling(false);
+          // Refresh pending jobs list
+          checkPendingJobs();
+        } else if (data.status === 'error') {
+          setError(data.error || 'Processing failed');
+          setUploading(false);
+          setPolling(false);
+        } else {
+          // Still processing - poll again in 1 second
+          attempts++;
+          setTimeout(poll, 1000);
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000);
+        } else {
+          setError('Failed to check processing status');
+          setUploading(false);
+          setPolling(false);
+        }
+      }
+    };
+
+    poll();
+  };
+
+  const handleQuestionsSaved = async () => {
+    // Mark the current job as imported if it was from a pending job
+    if (extractedQuestions && pendingJobs.length > 0) {
+      try {
+        const db = getFirestore();
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        if (user) {
+          // Find the job that matches the current questions
+          const matchingJob = pendingJobs.find(job => 
+            job.questions && 
+            Array.isArray(job.questions) && 
+            job.questions.length === extractedQuestions.length
+          );
+          
+          if (matchingJob) {
+            const jobRef = doc(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs', matchingJob.id);
+            await updateDoc(jobRef, { 
+              imported: true, 
+              importedAt: new Date() 
+            });
+            
+            // Remove from pending jobs list
+            setPendingJobs(prev => prev.filter(j => j.id !== matchingJob.id));
+          }
+        }
+      } catch (err) {
+        console.error('Error marking job as imported:', err);
+      }
+    }
+
     setExtractedQuestions(null);
     setFile(null);
     setFileName('');
@@ -134,6 +436,47 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           </div>
 
           <div className="space-y-4">
+            {/* Pending Jobs Section */}
+            {!checkingJobs && pendingJobs.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <div className="flex items-start">
+                  <Clock className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-2">
+                      Completed Processing ({pendingJobs.length})
+                    </h4>
+                    <p className="text-sm text-yellow-700 mb-3">
+                      You have {pendingJobs.length} completed PDF processing job{pendingJobs.length > 1 ? 's' : ''} ready to import.
+                    </p>
+                    <div className="space-y-2">
+                      {pendingJobs.map((job) => (
+                        <div
+                          key={job.id}
+                          className="flex items-center justify-between bg-white rounded p-2 border border-yellow-300"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {job.fileName || 'Unknown PDF'}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {job.totalQuestions || 0} questions • {job.createdAt.toLocaleString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleResumeJob(job)}
+                            className="ml-3 px-3 py-1 text-sm font-medium text-white bg-yellow-600 rounded hover:bg-yellow-700 transition-colors flex items-center"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Import
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select PDF File
@@ -204,10 +547,10 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                 disabled={!file || uploading}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                {uploading ? (
+                {uploading || polling ? (
                   <>
                     <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                    Processing PDF...
+                    {polling ? `Processing PDF... ${progress}%` : 'Uploading...'}
                   </>
                 ) : (
                   <>
@@ -216,6 +559,14 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                   </>
                 )}
               </button>
+              {polling && progress > 0 && (
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

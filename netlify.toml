@@ -6,6 +6,11 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Function-specific configuration
+# Background Functions can run for up to 15 minutes
+# The upload-pdf-questions-background function is configured as a Background Function
+# by having "-background" suffix in the filename
+
 [[redirects]]
   from = "/admin"
   to = "/index.html"
