@@ -670,3 +670,27 @@ Do not include any explanation or other text, just the JSON array.`;
   }
 };
 
+// Timeout for PDF processing (10 minutes)
+const PDF_PROCESS_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+// Wrap processPDFAsync with timeout logic
+async function processPDFAsyncWithTimeout(...args) {
+  // Helper to wrap the original function in a promise
+  const processingPromise = processPDFAsync(...args);
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('PDF processing timed out after 10 minutes')), PDF_PROCESS_TIMEOUT_MS)
+  );
+  try {
+    await Promise.race([processingPromise, timeoutPromise]);
+  } catch (error) {
+    // args[0] is expected to be jobId, args[1] is jobRef
+    const jobId = args[0];
+    const jobRef = args[1];
+    console.error(`Error (possibly timeout) processing PDF for job ${jobId}:`, error);
+    await jobRef.update({
+      status: 'error',
+      error: error.message || 'Unknown error occurred',
+      completedAt: getTimestamp()
+    });
+  }
+}
