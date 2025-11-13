@@ -464,7 +464,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                               {job.fileName || 'Unknown PDF'}
                             </p>
                             <p className="text-xs text-gray-600">
-                              {job.totalQuestions || 0} questions • {job.grade === GRADES.G4 ? 'Grade 4' : 'Grade 3'} • {job.createdAt.toLocaleString()}
+                              {job.totalQuestions || 0} questions • {job.grade === (GRADES?.G4 ?? 'G4') ? 'Grade 4' : 'Grade 3'} • {job.createdAt.toLocaleString()}
                             </p>
                           </div>
                           <button
