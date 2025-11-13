@@ -41,6 +41,7 @@ import {
   collection,
   query,
   where,
+  getDocs,
 } from "firebase/firestore";
 import { useAuth } from './contexts/AuthContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
@@ -317,12 +318,16 @@ const storeItems = [
 ];
 
 // --- Dynamic Quiz Generation ---
-const generateQuizQuestions = (
+const generateQuizQuestions = async (
   topic,
   dailyGoals,
   questionHistory,
   difficulty,
-  grade = "G3"
+  grade = "G3",
+  userId = null,
+  classId = null,
+  answeredQuestionIds = [],
+  appId = null
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
@@ -347,11 +352,39 @@ const generateQuizQuestions = (
   let attempts = 0;
   const maxAttempts = numQuestions * 10; // Prevent infinite loops
 
+  // Fetch questions from Firestore
+  const firestoreQuestions = await fetchQuestionsFromFirestore(
+    topic,
+    grade,
+    userId,
+    classId,
+    answeredQuestionIds,
+    appId
+  );
+  let firestoreQuestionIndex = 0;
+
   while (questions.length < numQuestions && attempts < maxAttempts) {
     attempts++;
     let question = {};
+    let useFirestoreQuestion = false;
 
-    switch (topic) {
+    // 70% chance to use Firestore question if available, 30% for generated
+    if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < 0.7) {
+      const firestoreQ = firestoreQuestions[firestoreQuestionIndex];
+      // Check if question text is unique
+      if (!usedQuestions.has(firestoreQ.question)) {
+        question = {
+          ...firestoreQ,
+          concept: firestoreQ.topic || firestoreQ.concept || topic,
+        };
+        useFirestoreQuestion = true;
+        firestoreQuestionIndex++;
+      }
+    }
+
+    // If not using Firestore question, generate one
+    if (!useFirestoreQuestion) {
+      switch (topic) {
       case TOPICS.MULTIPLICATION:
         // Use the new pluggable content system for Multiplication
         const multiplicationTopic = content.getTopic('g3', 'multiplication');
@@ -453,12 +486,15 @@ const generateQuizQuestions = (
           correctAnswer: "",
           concept: "Math",
         };
+      }
     }
-    // Use complexity-based mastery to bias selection toward struggled/unseen items
-    const masteryEntry = questionMastery.get(question.question);
 
-    let acceptProb = 0.7; // baseline for unseen questins
-    if (masteryEntry && masteryEntry.count > 0) {
+    // Use complexity-based mastery to bias selection toward struggled/unseen items
+    // Only apply to generated questions, not Firestore questions
+    const masteryEntry = useFirestoreQuestion ? null : questionMastery.get(question.question);
+
+    let acceptProb = 0.7; // baseline for unseen questions
+    if (!useFirestoreQuestion && masteryEntry && masteryEntry.count > 0) {
       // Higher average complexity score = more struggle = higher need
       const avgComplexity = masteryEntry.totalComplexity / masteryEntry.count;
       const need = Math.min(1, avgComplexity); // complexity [0,1] → need [0,1] capped at 1
@@ -470,8 +506,12 @@ const generateQuizQuestions = (
       }
     }
 
-    // Respect uniqueness and probabilistic acceptance based on complexity engine data
-    if (Math.random() <= acceptProb && !usedQuestions.has(question.question)) {
+    // For Firestore questions, always accept if unique. For generated, use probabilistic acceptance
+    const shouldAccept = useFirestoreQuestion 
+      ? !usedQuestions.has(question.question)
+      : Math.random() <= acceptProb && !usedQuestions.has(question.question);
+
+    if (shouldAccept) {
       usedQuestions.add(question.question);
       questions.push(question);
     }
@@ -593,6 +633,83 @@ const getQuestionHistory = async (userId) => {
     return userDoc.data().answeredQuestions;
   }
   return [];
+};
+
+// Fetch answered question bank question IDs from user profile
+const getAnsweredQuestionBankQuestions = async (userId) => {
+  if (!userId) return [];
+  const userDocRef = getUserDocRef(userId);
+  const userDoc = await getDoc(userDocRef);
+  if (userDoc.exists() && userDoc.data().answeredQuestionBankQuestions) {
+    return userDoc.data().answeredQuestionBankQuestions;
+  }
+  return [];
+};
+
+// Fetch questions from Firestore (class questions, teacher questionBank, shared questionBank)
+const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId) => {
+  const questions = [];
+  const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
+  const answeredSet = new Set(answeredQuestionIds || []);
+
+  try {
+    // 1. Fetch class questions if classId provided
+    if (classId) {
+      try {
+        const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', classId, 'questions');
+        const classQuery = query(
+          classQuestionsRef,
+          where('topic', '==', topic),
+          where('grade', '==', grade)
+        );
+        const classSnapshot = await getDocs(classQuery);
+        classSnapshot.forEach(doc => {
+          if (!answeredSet.has(doc.id)) {
+            questions.push({
+              ...doc.data(),
+              questionId: doc.id,
+              source: 'questionBank',
+              collection: 'classQuestions'
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('Error fetching class questions:', err);
+      }
+    }
+
+    // 2. Fetch teacher's questionBank (if student has a teacher)
+    // Note: This would require checking if student has a teacher assigned
+    // For now, we'll skip this as it requires additional logic to determine teacher
+
+    // 3. Fetch shared questionBank (all students can access)
+    try {
+      const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
+      const sharedQuery = query(
+        sharedRef,
+        where('topic', '==', topic),
+        where('grade', '==', grade)
+      );
+      const sharedSnapshot = await getDocs(sharedQuery);
+      sharedSnapshot.forEach(doc => {
+        if (!answeredSet.has(doc.id)) {
+          questions.push({
+            ...doc.data(),
+            questionId: doc.id,
+            source: 'sharedQuestionBank',
+            collection: 'sharedQuestionBank'
+          });
+        }
+      });
+    } catch (err) {
+      console.warn('Error fetching shared questions:', err);
+    }
+
+  } catch (error) {
+    console.error('Error fetching questions from Firestore:', error);
+  }
+
+  return questions;
 };
 
 const MainAppContent = () => {
@@ -1008,6 +1125,22 @@ const MainAppContent = () => {
   const startNewQuiz = async (topic) => {
     setCurrentTopic(topic);
     const answered = await getQuestionHistory(user.uid);
+    const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
+    
+    // Get student's classId if enrolled
+    let studentClassId = null;
+    const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
+    try {
+      const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
+      const enrollmentQuery = query(enrollmentsRef, where('studentId', '==', user.uid));
+      const enrollmentSnapshot = await getDocs(enrollmentQuery);
+      if (!enrollmentSnapshot.empty) {
+        studentClassId = enrollmentSnapshot.docs[0].data().classId;
+      }
+    } catch (e) {
+      console.warn('Could not fetch student class:', e);
+    }
+
     // Adapt and compute per-topic target complexity
     const adapted = adaptAnsweredHistory(answered, user?.uid);
     const lastAsked = lastAskedComplexityByTopic[topic];
@@ -1052,12 +1185,16 @@ const MainAppContent = () => {
       userData?.dailyGoals ||
       {};
 
-    const newQuestions = generateQuizQuestions(
+    const newQuestions = await generateQuizQuestions(
       topic,
       dailyGoalsForGrade,
       answered,
       target,
-      selectedGrade
+      selectedGrade,
+      user.uid,
+      studentClassId,
+      answeredQuestionIds,
+      appIdForQuiz
     );
     setCurrentQuiz(newQuestions);
     setQuizState(APP_STATES.IN_PROGRESS);
@@ -1169,6 +1306,15 @@ const MainAppContent = () => {
 
     // Add question to answered questions array
     updates[`answeredQuestions`] = arrayUnion(questionRecord);
+
+    // Track answered question bank questions
+    if (isCorrect && currentQuestion.questionId) {
+      // Question is from Firestore question bank
+      const currentAnsweredIds = userData?.answeredQuestionBankQuestions || [];
+      if (!currentAnsweredIds.includes(currentQuestion.questionId)) {
+        updates[`answeredQuestionBankQuestions`] = arrayUnion(currentQuestion.questionId);
+      }
+    }
 
     let feedbackMessage;
     let feedbackType = "error";

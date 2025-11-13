@@ -19,13 +19,15 @@ import {
   UserCheck,
   LayoutDashboard,
   BookOpen,
+  HelpCircle,
   RefreshCw,
   X
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
+import AdminQuestionBankManager from './AdminQuestionBankManager';
 
 const AdminPortal = ({ db, onClose, appId }) => {
   const { user } = useAuth();
@@ -41,7 +43,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     totalQuestions: 0,
     averageAccuracy: 0
   });
-  const [view, setView] = useState('overview'); // 'overview', 'students', 'teachers', 'student-detail', 'classes', 'class-detail'
+  const [view, setView] = useState('overview'); // 'overview', 'students', 'teachers', 'student-detail', 'classes', 'class-detail', 'questions'
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
@@ -1305,6 +1307,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
             <BookOpen className="w-5 h-5" />
             <span className="ml-2 text-xs font-medium">{classes.length}</span>
           </button>
+          <button
+            onClick={() => setView('questions')}
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'questions' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-gray-900'}`}
+            title="Question Bank - Manage all questions"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Content */}
@@ -1706,6 +1717,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Question Bank */}
+          {view === 'questions' && (
+            <AdminQuestionBankManager
+              classes={classes}
+              appId={appId}
+            />
           )}
 
           {/* Classes List */}

@@ -33,6 +33,7 @@ import { TOPICS } from '../constants/topics';
 import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
+import QuestionBankManager from './QuestionBankManager';
 
 const TeacherDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -49,7 +50,7 @@ const TeacherDashboard = () => {
     totalQuestions: 0,
     averageAccuracy: 0
   });
-  const [view, setView] = useState('overview'); // 'overview', 'students', 'classes', 'student-detail'
+  const [view, setView] = useState('overview'); // 'overview', 'students', 'classes', 'student-detail', 'questions'
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
@@ -849,6 +850,15 @@ const TeacherDashboard = () => {
             >
               <BookOpen className="w-5 h-5" />
               <span className="ml-2 text-xs font-medium">{classes.length}</span>
+            </button>
+            <button
+              onClick={() => setView('questions')}
+              className={`relative px-6 py-3 flex items-center justify-center ${view === 'questions' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-gray-900'}`}
+              title="Questions - Manage your question bank"
+            >
+              <HelpCircle className="w-5 h-5" />
             </button>
           </div>
         </div>

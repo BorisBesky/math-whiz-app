@@ -37,12 +37,25 @@ service cloud.firestore {
       match /users/{userId}/questionBank/{questionId} {
         // Users can manage their own question bank.
         // Teachers can manage their own question bank.
-        // Admins can manage all question banks.
-        allow read, write: if request.auth != null && (
+        // Admins can view and manage all question banks.
+        allow read: if request.auth != null && (
                               request.auth.uid == userId ||
                               isAdmin() ||
                               (isTeacher() && request.auth.uid == userId)
                             );
+        allow write: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isAdmin() ||
+                              (isTeacher() && request.auth.uid == userId)
+                            );
+      }
+      
+      // Rules for sharedQuestionBank collection
+      match /sharedQuestionBank/{questionId} {
+        // All authenticated users can read shared questions
+        // Only admins can add/update/delete
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
       }
       
       // Rules for PDF processing jobs
