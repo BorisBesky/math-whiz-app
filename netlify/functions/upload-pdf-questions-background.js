@@ -255,6 +255,7 @@ exports.handler = async (event) => {
 
     const appId = fields.appId || 'default-app-id';
     const classId = fields.classId || null; // Optional: can be null for global question bank
+    const grade = fields.grade || GRADES.G3; // Default to Grade 3 if not specified
 
     // Verify teacher role
     await verifyTeacherRole(userId, appId);
@@ -272,13 +273,14 @@ exports.handler = async (event) => {
       progress: 0,
       fileName: fileName,
       classId: classId,
+      grade: grade,
       createdAt: getTimestamp(),
       appId
     });
 
     // Return job ID immediately (background function will process asynchronously)
     // Process the PDF asynchronously
-    processPDFAsync(jobId, userId, appId, classId, fileData, fileName, fileContentType)
+    processPDFAsync(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType)
       .catch(error => {
         console.error('Async processing error:', error);
         jobRef.update({
@@ -348,7 +350,7 @@ exports.handler = async (event) => {
 };
 
 // Async function to process PDF in the background
-async function processPDFAsync(jobId, userId, appId, classId, fileData, fileName, fileContentType) {
+async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType) {
   const jobRef = db.collection('artifacts').doc(appId)
     .collection('pdfProcessingJobs').doc(jobId);
 
@@ -403,6 +405,11 @@ async function processPDFAsync(jobId, userId, appId, classId, fileData, fileName
       throw new Error(`Gemini model initialization failed: ${err.message}`);
     }
 
+    // Get grade-specific topics for the prompt
+    const gradeTopics = VALID_TOPICS_BY_GRADE[grade] || VALID_TOPICS_BY_GRADE[GRADES.G3];
+    const topicsListForPrompt = gradeTopics.join(', ');
+    const gradeLabel = grade === GRADES.G4 ? 'Grade 4' : 'Grade 3';
+
     // Create prompt for question extraction
     const extractionPrompt = `You are an expert at extracting math quiz questions from PDF documents. 
 Analyze this PDF and extract all math questions you find. For each question, provide:
@@ -411,9 +418,11 @@ Analyze this PDF and extract all math questions you find. For each question, pro
 2. The correct answer
 3. Multiple choice options (if applicable, otherwise provide empty array)
 4. A helpful hint (if available)
-5. The math topic (choose from: Multiplication, Division, Fractions, Measurement & Data, Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Addition)
-6. The grade level (G3 or G4)
+5. The math topic (choose ONLY from these ${gradeLabel} topics: ${topicsListForPrompt})
+6. The grade level (${grade})
 7. Any images or graphics associated with the question (describe their content and position)
+
+IMPORTANT: The topic MUST be one of these exact values: ${topicsListForPrompt}
 
 Return the results as a JSON array where each question has this structure:
 {
@@ -421,8 +430,8 @@ Return the results as a JSON array where each question has this structure:
   "correctAnswer": "correct answer",
   "options": ["option1", "option2", "option3", "option4"],
   "hint": "helpful hint or explanation",
-  "topic": "topic name",
-  "grade": "G3" or "G4",
+  "topic": "topic name from the allowed list",
+  "grade": "${grade}",
   "images": [
     {
       "type": "question" | "answer" | "hint",
@@ -490,13 +499,23 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
         throw new Error(`Question ${index + 1} is missing required fields`);
       }
 
+      // Validate topic against grade-specific topics
+      const validTopics = VALID_TOPICS_BY_GRADE[grade] || VALID_TOPICS_BY_GRADE[GRADES.G3];
+      let questionTopic = q.topic || validTopics[0]; // Default to first topic if not specified
+      
+      // Check if the provided topic is valid for this grade
+      if (!validTopics.includes(questionTopic)) {
+        console.warn(`Question ${index + 1} has invalid topic "${questionTopic}" for grade ${grade}. Using default: ${validTopics[0]}`);
+        questionTopic = validTopics[0];
+      }
+
       return {
         question: q.question || '',
         correctAnswer: q.correctAnswer || '',
         options: Array.isArray(q.options) ? q.options : [],
         hint: q.hint || '',
-        topic: q.topic || 'Multiplication',
-        grade: q.grade || 'G3',
+        topic: questionTopic,
+        grade: grade, // Always use the grade specified by the teacher
         standard: q.standard || '',
         concept: q.concept || '',
         images: Array.isArray(q.images) ? q.images : [],
