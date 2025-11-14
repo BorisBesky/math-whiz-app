@@ -713,7 +713,11 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
           
           let classQuestionsCount = 0;
           cachedQuestions.forEach(cachedQuestion => {
-            const questionId = cachedQuestion.questionId || cachedQuestion.id;
+            const questionId = cachedQuestion.questionId;
+            if (!questionId) {
+              console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
+              return;
+            }
             if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
               seenQuestionIds.add(questionId);
               questions.push({
@@ -753,7 +757,6 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
             allFetchedQuestions.push({
               ...doc.data(),
               questionId: doc.id,
-              id: doc.id,
               source: 'questionBank',
               collection: 'classQuestions'
             });
