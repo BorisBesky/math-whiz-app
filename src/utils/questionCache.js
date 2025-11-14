@@ -1,3 +1,4 @@
+/* global __app_id */
 /**
  * Cache utility for class questions from questionBank
  * Uses localStorage with TTL (Time To Live) to cache questions
