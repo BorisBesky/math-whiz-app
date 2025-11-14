@@ -29,6 +29,9 @@ const serializeQuestion = (question) => {
   if (serialized.updatedAt && typeof serialized.updatedAt.toDate === 'function') {
     serialized.updatedAt = serialized.updatedAt.toDate().toISOString();
   }
+  if (serialized.assignedAt && typeof serialized.assignedAt.toDate === 'function') {
+    serialized.assignedAt = serialized.assignedAt.toDate().toISOString();
+  }
   
   return serialized;
 };
@@ -46,6 +49,9 @@ const deserializeQuestion = (question) => {
   }
   if (deserialized.updatedAt && typeof deserialized.updatedAt === 'string') {
     deserialized.updatedAt = new Date(deserialized.updatedAt);
+  }
+  if (deserialized.assignedAt && typeof deserialized.assignedAt === 'string') {
+    deserialized.assignedAt = new Date(deserialized.assignedAt);
   }
   
   return deserialized;
