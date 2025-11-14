@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon } from 'lucide-react';
 import { TOPICS } from '../constants/topics';
+import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionBankManager = ({ 
   classes, 
@@ -352,6 +353,11 @@ const QuestionBankManager = ({
         await updateDoc(questionRef, {
           assignedClasses: currentAssignedClasses
         });
+      }
+      
+      // Clear cache for this class/topic/grade combination
+      if (question?.topic && question?.grade) {
+        clearCachedClassQuestions(classId, question.topic, question.grade, currentAppId);
       }
     } catch (err) {
       console.error('Error unassigning question from class:', err);

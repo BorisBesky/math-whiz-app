@@ -61,6 +61,7 @@ import {
 } from "./utils/complexityEngine";
 import { TOPICS, APP_STATES } from "./constants/topics";
 import content from "./content";
+import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questionCache";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -704,39 +705,82 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
     // 1. Fetch class questions if classId provided (highest priority with retry)
     if (classId) {
       try {
-        console.log(`[fetchQuestionsFromFirestore] Fetching class questions for classId: ${classId}, topic: ${topic}, grade: ${grade}`);
+        // Check cache first
+        const cachedQuestions = getCachedClassQuestions(classId, topic, grade, currentAppId);
         
-        const fetchClassQuestions = async () => {
-          const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', classId, 'questions');
-          const classQuery = query(
-            classQuestionsRef,
-            where('topic', '==', topic),
-            where('grade', '==', grade)
-          );
-          return await getDocs(classQuery);
-        };
-        
-        // Use retry logic for class questions (highest priority)
-        const classSnapshot = await retryWithBackoff(fetchClassQuestions, {
-          maxRetries: 3,
-          initialDelay: 1000
-        });
-        
-        let classQuestionsCount = 0;
-        classSnapshot.forEach(doc => {
-          if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
-            seenQuestionIds.add(doc.id);
-            questions.push({
+        if (cachedQuestions && cachedQuestions.length > 0) {
+          console.log(`[fetchQuestionsFromFirestore] Using cached class questions for classId: ${classId}, topic: ${topic}, grade: ${grade}`);
+          
+          let classQuestionsCount = 0;
+          cachedQuestions.forEach(cachedQuestion => {
+            const questionId = cachedQuestion.questionId || cachedQuestion.id;
+            if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
+              seenQuestionIds.add(questionId);
+              questions.push({
+                ...cachedQuestion,
+                questionId: questionId,
+                source: 'questionBank',
+                collection: 'classQuestions'
+              });
+              classQuestionsCount++;
+            }
+          });
+          
+          console.log(`[fetchQuestionsFromFirestore] Used ${classQuestionsCount} cached class questions (${cachedQuestions.length} total cached, ${cachedQuestions.length - classQuestionsCount} filtered out)`);
+        } else {
+          // Cache miss - fetch from Firestore
+          console.log(`[fetchQuestionsFromFirestore] Cache miss - fetching class questions for classId: ${classId}, topic: ${topic}, grade: ${grade}`);
+          
+          const fetchClassQuestions = async () => {
+            const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', classId, 'questions');
+            const classQuery = query(
+              classQuestionsRef,
+              where('topic', '==', topic),
+              where('grade', '==', grade)
+            );
+            return await getDocs(classQuery);
+          };
+          
+          // Use retry logic for class questions (highest priority)
+          const classSnapshot = await retryWithBackoff(fetchClassQuestions, {
+            maxRetries: 3,
+            initialDelay: 1000
+          });
+          
+          // Store all fetched questions in cache (before filtering)
+          const allFetchedQuestions = [];
+          classSnapshot.forEach(doc => {
+            allFetchedQuestions.push({
               ...doc.data(),
               questionId: doc.id,
+              id: doc.id,
               source: 'questionBank',
               collection: 'classQuestions'
             });
-            classQuestionsCount++;
+          });
+          
+          // Cache the fetched questions
+          if (allFetchedQuestions.length > 0) {
+            setCachedClassQuestions(classId, topic, grade, currentAppId, allFetchedQuestions);
           }
-        });
-        
-        console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions (${classSnapshot.size} total, ${classSnapshot.size - classQuestionsCount} filtered out)`);
+          
+          // Filter and add to questions array
+          let classQuestionsCount = 0;
+          classSnapshot.forEach(doc => {
+            if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
+              seenQuestionIds.add(doc.id);
+              questions.push({
+                ...doc.data(),
+                questionId: doc.id,
+                source: 'questionBank',
+                collection: 'classQuestions'
+              });
+              classQuestionsCount++;
+            }
+          });
+          
+          console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions (${classSnapshot.size} total, ${classSnapshot.size - classQuestionsCount} filtered out)`);
+        }
       } catch (err) {
         const errorMessage = err?.message || err?.toString() || 'Unknown error';
         console.error('[fetchQuestionsFromFirestore] Error fetching class questions:', {
