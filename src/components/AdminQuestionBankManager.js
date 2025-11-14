@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import QuestionBankManager from './QuestionBankManager';
+import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const AdminQuestionBankManager = ({ classes, appId }) => {
   const [teacherQuestions, setTeacherQuestions] = useState([]);
@@ -344,6 +345,20 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       }
 
       await Promise.all(updates);
+      
+      // Clear cache for affected class/topic/grade combinations
+      const affectedCombinations = new Set();
+      for (const questionId of selectedQuestionIds) {
+        const question = [...teacherQuestions, ...sharedQuestions].find(q => q.id === questionId);
+        if (question && question.topic && question.grade) {
+          affectedCombinations.add(`${question.topic}_${question.grade}`);
+        }
+      }
+      
+      affectedCombinations.forEach(combo => {
+        const [topic, grade] = combo.split('_');
+        clearCachedClassQuestions(classId, topic, grade, currentAppId);
+      });
     } catch (err) {
       console.error('Error assigning questions to class:', err);
       throw err;

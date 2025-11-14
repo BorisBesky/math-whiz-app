@@ -3,6 +3,7 @@ import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2 } from 'lucide
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { TOPICS } from '../constants/topics';
+import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel }) => {
   const [editedQuestions, setEditedQuestions] = useState(questions);
@@ -166,6 +167,19 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           );
         }
         await Promise.all(classRefPromises);
+        
+        // Clear cache for affected class/topic/grade combinations
+        const affectedCombinations = new Set();
+        questionsToSave.forEach(question => {
+          if (question.topic && question.grade) {
+            affectedCombinations.add(`${question.topic}_${question.grade}`);
+          }
+        });
+        
+        affectedCombinations.forEach(combo => {
+          const [topic, grade] = combo.split('_');
+          clearCachedClassQuestions(classId, topic, grade, appId);
+        });
       }
 
       if (onSave) {
