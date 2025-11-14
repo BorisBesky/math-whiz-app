@@ -370,7 +370,7 @@ const generateQuizQuestions = async (
     let useFirestoreQuestion = false;
 
     // Use configured probability to select Firestore question if available
-    if (firestoreQuestions.length > 0 && Math.random() < questionBankProbability) {
+    if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
       const firestoreQ = firestoreQuestions[firestoreQuestionIndex];
       // Check if question text is unique
       if (!usedQuestions.has(firestoreQ.question)) {
