@@ -3,6 +3,20 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GRADES, TOPICS, VALID_TOPICS_BY_GRADE } = require("./constants");
 const Busboy = require("busboy");
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const JOB_ID_MAX_LENGTH = 160;
+
+const createJobId = (userId) => `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+const sanitizeJobId = (jobId, userId) => {
+  if (!jobId || typeof jobId !== 'string') return null;
+  const trimmed = jobId.trim();
+  if (!trimmed.startsWith(`${userId}_`)) return null;
+  if (trimmed.length > JOB_ID_MAX_LENGTH) return null;
+  if (!/^[A-Za-z0-9_\-]+$/.test(trimmed)) return null;
+  return trimmed;
+};
+
 // Helper to get Firestore Timestamp
 const getTimestamp = () => admin.firestore.Timestamp.now();
 
@@ -71,6 +85,7 @@ const parseMultipartFormData = (event) => {
     let fileData = null;
     let fileName = null;
     let fileContentType = null;
+    let fileTooLarge = false;
 
     // Create a readable stream from the buffer
     const { Readable } = require('stream');
@@ -79,7 +94,10 @@ const parseMultipartFormData = (event) => {
     bufferStream.push(null);
 
     // Initialize busboy with the content-type header
-    const busboy = Busboy({ headers: { 'content-type': contentType } });
+    const busboy = Busboy({ 
+      headers: { 'content-type': contentType },
+      limits: { fileSize: MAX_UPLOAD_SIZE_BYTES }
+    });
 
     // Handle regular form fields
     busboy.on('field', (fieldname, val) => {
@@ -98,6 +116,12 @@ const parseMultipartFormData = (event) => {
       const chunks = [];
       file.on('data', (data) => {
         chunks.push(data);
+      });
+
+      file.on('limit', () => {
+        console.warn(`File [${fieldname}] exceeded size limit of ${MAX_UPLOAD_SIZE_BYTES} bytes`);
+        fileTooLarge = true;
+        file.resume();
       });
       
       file.on('end', () => {
@@ -122,6 +146,10 @@ const parseMultipartFormData = (event) => {
       console.log('Busboy finished parsing');
       console.log(`Parsed fields:`, Object.keys(fields));
       console.log(`File data present:`, !!fileData);
+      if (fileTooLarge) {
+        reject(new Error('File size exceeds 10MB limit'));
+        return;
+      }
       resolve({ fields, fileData, fileName, fileContentType });
     });
 
@@ -133,6 +161,7 @@ const parseMultipartFormData = (event) => {
 
     // Pipe the buffer stream to busboy
     bufferStream.pipe(busboy);
+  });
 };
 
 exports.handler = async (event) => {
@@ -140,6 +169,7 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Expose-Headers": "X-Job-Id",
     "Content-Type": "application/json",
   };
 
@@ -261,12 +291,13 @@ exports.handler = async (event) => {
     const appId = fields.appId || 'default-app-id';
     const classId = fields.classId || null; // Optional: can be null for global question bank
     const grade = fields.grade || GRADES.G3; // Default to Grade 3 if not specified
+    const providedJobId = sanitizeJobId(fields.jobId, userId);
 
     // Verify teacher role
     await verifyTeacherRole(userId, appId);
 
     // Generate job ID
-    const jobId = `${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const jobId = providedJobId || createJobId(userId);
     
     // Create job document in Firestore with initial status
     const jobRef = db.collection('artifacts').doc(appId)
@@ -286,9 +317,9 @@ exports.handler = async (event) => {
     // Return job ID immediately (background function will process asynchronously)
     // Process the PDF asynchronously with timeout protection
     processPDFAsyncWithTimeout(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType)
-      .catch(error => {
+      .catch(async error => {
         console.error('Async processing error:', error);
-        jobRef.update({
+        await jobRef.update({
           status: 'error',
           error: error.message,
           completedAt: getTimestamp()
@@ -366,8 +397,7 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
     }
 
     // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (fileData.length > maxSize) {
+    if (fileData.length > MAX_UPLOAD_SIZE_BYTES) {
       await jobRef.update({
         status: 'error',
         error: 'File size exceeds 10MB limit',

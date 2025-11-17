@@ -5,6 +5,10 @@ import { getFirestore, collection, query, where, getDocs, orderBy, limit, doc, u
 import QuestionReviewModal from './QuestionReviewModal';
 import { GRADES } from '../constants/topics';
 
+const generateClientJobId = (userId) => {
+  return `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+};
+
 const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -204,11 +208,15 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
 
       const token = await user.getIdToken();
 
+      // Create job ID ahead of time so we can fall back if the response body/header is stripped
+      const clientGeneratedJobId = generateClientJobId(user.uid);
+
       // Create FormData for multipart upload
       const formData = new FormData();
       formData.append('file', file);
       formData.append('appId', appId || 'default-app-id');
       formData.append('grade', selectedGrade);
+      formData.append('jobId', clientGeneratedJobId);
       if (classId) {
         formData.append('classId', classId);
       }
@@ -253,11 +261,10 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           jobId = response.headers.get('X-Job-Id');
         }
         
-        // If still no job ID, fail and log error. The backend must return jobId in the response body or 'X-Job-Id' header.
+        // If still no job ID, fall back to the one we generated client-side
         if (!jobId) {
-          console.error('Response status:', response.status);
-          console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-          throw new Error('No job ID received from server. The backend must return jobId in the response body or "X-Job-Id" header.');
+          jobId = clientGeneratedJobId;
+          console.warn('Server response missing jobId; using client-generated fallback:', jobId);
         }
         
         console.log('Got job ID:', jobId);
@@ -300,7 +307,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       }
 
       try {
-        const statusUrl = `/.netlify/functions/upload-pdf-questions-background?jobId=${currentJobId}&appId=${appId || 'default-app-id'}`;
+        const statusUrl = `/.netlify/functions/upload-pdf-questions-status?jobId=${currentJobId}&appId=${appId || 'default-app-id'}`;
         const response = await fetch(statusUrl, {
           method: 'GET',
           headers: {
