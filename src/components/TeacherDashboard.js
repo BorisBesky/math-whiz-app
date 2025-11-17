@@ -421,6 +421,19 @@ const TeacherDashboard = () => {
   const formatDate = (date) => {
     if (!date) return 'Never';
     try {
+      // Handle YYYY-MM-DD format directly to avoid timezone issues
+      if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = date.split('-');
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return dateObj.toLocaleDateString();
+      }
+      // Handle MM/DD/YYYY format
+      if (date.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+        const [month, day, year] = date.split('/');
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return dateObj.toLocaleDateString();
+      }
+      // Fallback to original parsing
       const parsedDate = new Date(date);
       return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleDateString();
     } catch {
@@ -438,35 +451,72 @@ const TeacherDashboard = () => {
     }
   };
 
-  // Sanitize topic name to match MainApp's sanitizeTopicName function
-  const sanitizeTopicName = (topicName) => {
-    if (!topicName || typeof topicName !== 'string') {
-      return 'unknown_topic';
-    }
-    // Replace problematic characters with underscores (same as MainApp.js)
-    return topicName
-      .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
-      .replace(/_+/g, "_") // Replace multiple underscores with single
-      .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
-  };
+  const calculateTopicProgressForRange = (student, grade, startDate, endDate) => {
+    // Normalize dates for comparison
+    const normalizeDate = (dateStr) => {
+      if (!dateStr) return null;
+      // Handle different date formats
+      if (dateStr.includes('/')) {
+        // MM/DD/YYYY format
+        const [month, day, year] = dateStr.split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+      // Assume YYYY-MM-DD format or already normalized
+      return dateStr;
+    };
 
-  const calculateTopicProgress = (student, grade) => {
-    const progress = grade === 'G3' ? student.progressG3 : student.progressG4;
-    const topics = grade === 'G3' 
+    const normalizedStartDate = normalizeDate(startDate);
+    const normalizedEndDate = normalizeDate(endDate);
+
+    const questionsInRange = student.answeredQuestions?.filter(
+      (q) => {
+        const normalizedQuestionDate = normalizeDate(q.date);
+        return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
+      }
+    ) || [];
+
+    const topics = grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
-    
+      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
+
+    // Count unique active days (days when student answered at least one question)
+    const activeDays = new Set(questionsInRange.map(q => normalizeDate(q.date))).size;
+
     return topics.map(topic => {
-      const sanitizedTopic = sanitizeTopicName(topic);
-      const topicProgress = progress[sanitizedTopic] || progress[topic] || { correct: 0, incorrect: 0 };
+      // Filter questions for this topic
+      const topicQuestions = questionsInRange.filter(q => q.topic === topic);
+
+      // Group by date to calculate per-day averages
+      const questionsByDate = {};
+      topicQuestions.forEach(q => {
+        const date = normalizeDate(q.date);
+        if (!questionsByDate[date]) {
+          questionsByDate[date] = [];
+        }
+        questionsByDate[date].push(q);
+      });
+
+      // Calculate total correct/incorrect across all active days
+      const totalCorrect = topicQuestions.filter(q => q.isCorrect).length;
+      const totalIncorrect = topicQuestions.filter(q => !q.isCorrect).length;
+
+      // Calculate average per active day (only days when this topic was practiced)
+      const topicActiveDays = Object.keys(questionsByDate).length;
+      const averageCorrect = topicActiveDays > 0 ? (totalCorrect / topicActiveDays) : 0;
+      const averageIncorrect = topicActiveDays > 0 ? (totalIncorrect / topicActiveDays) : 0;
+
       const goal = student.dailyGoalsByGrade?.[grade]?.[topic] || 4;
-      
+
       return {
         topic,
-        correct: topicProgress.correct || 0,
-        incorrect: topicProgress.incorrect || 0,
+        totalCorrect,
+        totalIncorrect,
+        averageCorrect: Math.round(averageCorrect * 10) / 10, // Round to 1 decimal
+        averageIncorrect: Math.round(averageIncorrect * 10) / 10,
+        activeDays: topicActiveDays,
+        totalActiveDays: activeDays,
         goal,
-        completed: (topicProgress.correct || 0) >= goal
+        completed: averageCorrect >= goal
       };
     });
   };
@@ -474,7 +524,7 @@ const TeacherDashboard = () => {
   const getTopicsForGrade = (grade) => {
     return grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
+      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
   };
 
   const openGoalsModalForStudent = (student) => {
@@ -1358,16 +1408,21 @@ const TeacherDashboard = () => {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Target className="w-4 h-4 mr-2" />
-                  Grade 3 Progress (Today)
+                  Grade 3 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
                 </h4>
                 <div className="space-y-3">
-                  {calculateTopicProgress(selectedStudent, 'G3').map(topic => (
+                  {calculateTopicProgressForRange(selectedStudent, 'G3', startDate, endDate).map(topic => (
                     <div key={topic.topic} className="flex flex-col">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-600">{topic.topic}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-xs text-gray-500">
-                            {topic.correct}/{topic.goal}
+                            {topic.averageCorrect}/{topic.goal}
+                            {topic.activeDays > 1 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({topic.activeDays}d)
+                              </span>
+                            )}
                           </span>
                           {topic.completed && (
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -1377,7 +1432,7 @@ const TeacherDashboard = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1389,16 +1444,21 @@ const TeacherDashboard = () => {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Target className="w-4 h-4 mr-2" />
-                  Grade 4 Progress (Today)
+                  Grade 4 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
                 </h4>
                 <div className="space-y-3">
-                  {calculateTopicProgress(selectedStudent, 'G4').map(topic => (
+                  {calculateTopicProgressForRange(selectedStudent, 'G4', startDate, endDate).map(topic => (
                     <div key={topic.topic} className="flex flex-col">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-xs text-gray-500">
-                            {topic.correct}/{topic.goal}
+                            {topic.averageCorrect}/{topic.goal}
+                            {topic.activeDays > 1 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({topic.activeDays}d)
+                              </span>
+                            )}
                           </span>
                           {topic.completed && (
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -1408,7 +1468,7 @@ const TeacherDashboard = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1419,8 +1479,27 @@ const TeacherDashboard = () => {
 
             {/* Questions by Date Range */}
             {(() => {
+              // Normalize dates for comparison
+              const normalizeDate = (dateStr) => {
+                if (!dateStr) return null;
+                // Handle different date formats
+                if (dateStr.includes('/')) {
+                  // MM/DD/YYYY format
+                  const [month, day, year] = dateStr.split('/');
+                  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                }
+                // Assume YYYY-MM-DD format or already normalized
+                return dateStr;
+              };
+
+              const normalizedStartDate = normalizeDate(startDate);
+              const normalizedEndDate = normalizeDate(endDate);
+
               const questionsInRange = selectedStudent.answeredQuestions?.filter(
-                (q) => q.date >= startDate && q.date <= endDate
+                (q) => {
+                  const normalizedQuestionDate = normalizeDate(q.date);
+                  return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
+                }
               ) || [];
               
               return (
