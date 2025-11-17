@@ -992,25 +992,6 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Upload Questions Button */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
-                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setUploadClassId(null);
-                    setShowUploadModal(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Questions</span>
-                </button>
-              </div>
-            </div>
 
             {/* Recent Activity */}
             <div className="bg-white border border-gray-200 rounded-lg">
@@ -1260,16 +1241,6 @@ const TeacherDashboard = () => {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => {
-                    setUploadClassId(null);
-                    setShowUploadModal(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Questions</span>
-                </button>
-                <button
                   onClick={() => setShowCreateForm(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   data-tutorial-id="create-class-button"
@@ -1351,7 +1322,27 @@ const TeacherDashboard = () => {
 
         {/* Questions View */}
         {view === 'questions' && (
-          <div>
+          <div className="space-y-6">
+            {/* Upload Questions Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
+                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+              </div>
+            </div>
+
             <QuestionBankManager
               classes={classes}
               appId={appId}
