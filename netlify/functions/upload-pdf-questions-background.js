@@ -590,8 +590,11 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
       const candidateJson = extractJsonCandidate(extractedText);
       
       // Check if JSON appears incomplete (doesn't end with ] or } or has unmatched brackets)
+      // NOTE: This simple bracket counting doesn't account for escaped brackets within strings.
+      // For example, a question containing "What is \[x\]?" would be counted incorrectly,
+      // potentially leading to false positives when detecting incomplete JSON.
       const trimmed = candidateJson.trim();
-      const isIncomplete = isTruncated || 
+      const isIncomplete = isTruncated ||
         (!trimmed.endsWith(']') && !trimmed.endsWith('}')) ||
         (trimmed.split('[').length - 1) !== (trimmed.split(']').length - 1) ||
         (trimmed.split('{').length - 1) !== (trimmed.split('}').length - 1);
@@ -603,8 +606,8 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
         // Count open brackets/braces
         const openBrackets = (repairedJson.match(/\[/g) || []).length;
         const closeBrackets = (repairedJson.match(/\]/g) || []).length;
-        const openBraces = (repairedJson.match(/\{/g) || []).length;
-        const closeBraces = (repairedJson.match(/\}/g) || []).length;
+        let openBraces = (repairedJson.match(/\{/g) || []).length;
+        let closeBraces = (repairedJson.match(/\}/g) || []).length;
         
         // If we're in an array, try to close it
         if (openBrackets > closeBrackets) {
