@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, query, where, getDocs, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import QuestionReviewModal from './QuestionReviewModal';
 import { GRADES } from '../constants/topics';
 
@@ -67,20 +67,27 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     return jobs;
   }, []);
 
-  const checkPendingJobs = useCallback(async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        setCheckingJobs(false);
-        return;
-      }
+  // Set up real-time listener for pending jobs
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      setCheckingJobs(false);
+      return;
+    }
 
-      const db = getFirestore();
-      const currentAppId = appId || 'default-app-id';
-      const jobsRef = collection(db, 'artifacts', currentAppId, 'pdfProcessingJobs');
-      
-      // Query for completed jobs only (simpler query, no composite index needed)
+    const db = getFirestore();
+    const currentAppId = appId || 'default-app-id';
+    const jobsRef = collection(db, 'artifacts', currentAppId, 'pdfProcessingJobs');
+    
+    let unsubscribe = null;
+    let fallbackUnsubscribe = null;
+
+    console.log('Setting up real-time listener for pending jobs...');
+    setCheckingJobs(true);
+
+    // Try query with orderBy first
+    try {
       const q = query(
         jobsRef,
         where('userId', '==', user.uid),
@@ -89,51 +96,93 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
         limit(10)
       );
 
-      const snapshot = await getDocs(q);
-      console.log(`Found ${snapshot.size} completed jobs for user ${user.uid}`);
-      
-      const jobs = processJobsSnapshot(snapshot, true);
-      setPendingJobs(jobs);
-    } catch (err) {
-      console.error('Error checking pending jobs:', err);
-      console.error('Error details:', {
-        message: err.message,
-        code: err.code,
-        stack: err.stack
-      });
-      // If query fails (e.g., missing index), try without orderBy
-      if (err.code === 'failed-precondition') {
-        console.log('Query requires index. Trying simpler query...');
-        try {
-          const auth = getAuth();
-          const user = auth.currentUser;
-          if (!user) return;
-          
-          const db = getFirestore();
-          const jobsRef = collection(db, 'artifacts', appId || 'default-app-id', 'pdfProcessingJobs');
-          const simpleQ = query(
-            jobsRef,
-            where('userId', '==', user.uid),
-            where('status', '==', 'completed'),
-            limit(10)
-          );
-          
-          const snapshot = await getDocs(simpleQ);
-          const jobs = processJobsSnapshot(snapshot, false);
+      // Set up real-time listener
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          console.log(`Real-time update: Found ${snapshot.size} completed jobs for user ${user.uid}`);
+          const jobs = processJobsSnapshot(snapshot, true);
           setPendingJobs(jobs);
-        } catch (fallbackErr) {
-          console.error('Fallback query also failed:', fallbackErr);
+          setCheckingJobs(false);
+        },
+        (err) => {
+          console.error('Error in real-time listener for pending jobs:', err);
+          console.error('Error details:', {
+            message: err.message,
+            code: err.code,
+            stack: err.stack
+          });
+          
+          // If query fails (e.g., missing index), try without orderBy
+          if (err.code === 'failed-precondition') {
+            console.log('Query requires index. Trying simpler query...');
+            try {
+              const simpleQ = query(
+                jobsRef,
+                where('userId', '==', user.uid),
+                where('status', '==', 'completed'),
+                limit(10)
+              );
+              
+              fallbackUnsubscribe = onSnapshot(
+                simpleQ,
+                (snapshot) => {
+                  console.log(`Fallback listener: Found ${snapshot.size} completed jobs`);
+                  const jobs = processJobsSnapshot(snapshot, false);
+                  setPendingJobs(jobs);
+                  setCheckingJobs(false);
+                },
+                (fallbackErr) => {
+                  console.error('Fallback query also failed:', fallbackErr);
+                  setCheckingJobs(false);
+                }
+              );
+            } catch (fallbackErr) {
+              console.error('Error setting up fallback listener:', fallbackErr);
+              setCheckingJobs(false);
+            }
+          } else {
+            setCheckingJobs(false);
+          }
         }
+      );
+    } catch (err) {
+      // If orderBy fails at query construction, use simpler query
+      console.warn('OrderBy query construction failed, using simpler query:', err);
+      try {
+        const simpleQ = query(
+          jobsRef,
+          where('userId', '==', user.uid),
+          where('status', '==', 'completed'),
+          limit(10)
+        );
+        
+        unsubscribe = onSnapshot(
+          simpleQ,
+          (snapshot) => {
+            console.log(`Simple listener: Found ${snapshot.size} completed jobs`);
+            const jobs = processJobsSnapshot(snapshot, false);
+            setPendingJobs(jobs);
+            setCheckingJobs(false);
+          },
+          (snapshotErr) => {
+            console.error('Simple query also failed:', snapshotErr);
+            setCheckingJobs(false);
+          }
+        );
+      } catch (simpleErr) {
+        console.error('Error setting up simple listener:', simpleErr);
+        setCheckingJobs(false);
       }
-    } finally {
-      setCheckingJobs(false);
     }
-  }, [appId, processJobsSnapshot]);
 
-  // Check for pending/completed jobs on mount
-  useEffect(() => {
-    checkPendingJobs();
-  }, [checkPendingJobs]);
+    // Cleanup listeners on unmount
+    return () => {
+      console.log('Cleaning up real-time listener(s) for pending jobs');
+      if (unsubscribe) unsubscribe();
+      if (fallbackUnsubscribe) fallbackUnsubscribe();
+    };
+  }, [appId, processJobsSnapshot]);
 
   const handleResumeJob = async (job) => {
     try {
@@ -349,8 +398,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           setCurrentJobId(currentJobId);
           setUploading(false);
           setPolling(false);
-          // Refresh pending jobs list
-          checkPendingJobs();
+          // Note: Real-time listener will automatically update pendingJobs when job completes
         } else if (data.status === 'error') {
           setError(data.error || 'Processing failed');
           setUploading(false);

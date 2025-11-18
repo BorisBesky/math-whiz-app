@@ -52,6 +52,80 @@ const verifyTeacherRole = async (userId, appId) => {
   return true;
 };
 
+const sanitizeLLMJsonString = (input) => {
+  if (!input) return input;
+  let result = "";
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < input.length; i++) {
+    let char = input[i];
+
+    // Normalize smart quotes
+    if (char === "“" || char === "”") char = '"';
+    if (char === "’") char = "'";
+
+    if (escapeNext) {
+      result += char;
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      result += char;
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      result += char;
+      continue;
+    }
+
+    if (inString) {
+      if (char === "\n") {
+        result += "\\n";
+        continue;
+      }
+      if (char === "\r") {
+        result += "\\r";
+        continue;
+      }
+      if (char === "\t") {
+        result += "\\t";
+        continue;
+      }
+    }
+
+    result += char;
+  }
+
+  // Remove trailing commas before closing braces/brackets
+  result = result.replace(/,\s*(\}|\])/g, "$1");
+  return result;
+};
+
+const extractJsonCandidate = (text) => {
+  if (!text) return text;
+  const jsonMatch =
+    text.match(/```json\s*([\s\S]*?)\s*```/) ||
+    text.match(/```\s*([\s\S]*?)\s*```/) ||
+    text.match(/\[[\s\S]*\]/);
+
+  if (jsonMatch) {
+    return jsonMatch[1] || jsonMatch[0];
+  }
+
+  const firstBracket = text.indexOf("[");
+  const lastBracket = text.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    return text.slice(firstBracket, lastBracket + 1);
+  }
+
+  return text;
+};
+
 // Parse multipart/form-data using busboy
 const parseMultipartFormData = (event) => {
   return new Promise((resolve, reject) => {
@@ -425,12 +499,19 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     // Use environment variable for model name, fallback to stable default
-    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-2.0-flash-exp";
+    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+    console.log('Using Gemini model:', modelName);
+    const maxOutputTokens = parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 65536;
+    console.log('Using maxOutputTokens:', maxOutputTokens);
     let model;
     try {
-      model = genAI.getGenerativeModel({ model: modelName });
+      model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          maxOutputTokens: maxOutputTokens
+        }
+      });
     } catch (err) {
       await jobRef.update({
         status: 'error',
@@ -494,27 +575,89 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
 
     const response = await result.response;
     const extractedText = response.text();
+    
+    // Check if response was truncated
+    const finishReason = response.candidates?.[0]?.finishReason;
+    const isTruncated = finishReason === 'MAX_TOKENS' || finishReason === 'OTHER';
+    
+    if (isTruncated) {
+      console.warn(`Response was truncated (finishReason: ${finishReason}). Attempting to parse partial JSON...`);
+    }
 
     // Parse the extracted JSON
     let questions = [];
     try {
-      // Try to extract JSON from the response (might be wrapped in markdown code blocks)
-      const jsonMatch = extractedText.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       extractedText.match(/```\s*([\s\S]*?)\s*```/) ||
-                       extractedText.match(/\[[\s\S]*\]/);
+      const candidateJson = extractJsonCandidate(extractedText);
       
-      if (jsonMatch) {
-        questions = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      // Check if JSON appears incomplete (doesn't end with ] or } or has unmatched brackets)
+      const trimmed = candidateJson.trim();
+      const isIncomplete = isTruncated || 
+        (!trimmed.endsWith(']') && !trimmed.endsWith('}')) ||
+        (trimmed.split('[').length - 1) !== (trimmed.split(']').length - 1) ||
+        (trimmed.split('{').length - 1) !== (trimmed.split('}').length - 1);
+      
+      if (isIncomplete) {
+        // Try to close the JSON array/object
+        let repairedJson = trimmed;
+        
+        // Count open brackets/braces
+        const openBrackets = (repairedJson.match(/\[/g) || []).length;
+        const closeBrackets = (repairedJson.match(/\]/g) || []).length;
+        const openBraces = (repairedJson.match(/\{/g) || []).length;
+        const closeBraces = (repairedJson.match(/\}/g) || []).length;
+        
+        // If we're in an array, try to close it
+        if (openBrackets > closeBrackets) {
+          // Remove trailing comma if present
+          repairedJson = repairedJson.replace(/,\s*$/, '');
+          // Close any open objects
+          while (openBraces > closeBraces) {
+            repairedJson += '}';
+            closeBraces++;
+          }
+          // Close the array
+          repairedJson += ']';
+        } else if (openBraces > closeBraces) {
+          // Remove trailing comma if present
+          repairedJson = repairedJson.replace(/,\s*$/, '');
+          // Close any open braces
+          while (openBraces > closeBraces) {
+            repairedJson += '}';
+            closeBraces++;
+          }
+        }
+        
+        console.warn("Attempting to repair incomplete JSON...");
+        try {
+          questions = JSON.parse(repairedJson);
+          console.warn(`Successfully parsed repaired JSON with ${questions.length} questions (response was truncated)`);
+        } catch (repairError) {
+          // If repair failed, try original with sanitization
+          console.warn("Repair failed, trying sanitization...");
+          const sanitized = sanitizeLLMJsonString(candidateJson);
+          questions = JSON.parse(sanitized);
+        }
       } else {
-        // Try parsing the entire response as JSON
-        questions = JSON.parse(extractedText);
+        try {
+          questions = JSON.parse(candidateJson);
+        } catch (primaryParseError) {
+          console.warn("Primary JSON parse failed, attempting sanitation...");
+          const sanitized = sanitizeLLMJsonString(candidateJson);
+          questions = JSON.parse(sanitized);
+        }
       }
     } catch (parseError) {
       console.error("Error parsing extracted questions:", parseError);
-      console.error("Raw response:", extractedText);
+      console.error("Raw response length:", extractedText.length);
+      console.error("Raw response preview:", extractedText.substring(0, 500));
+      console.error("Raw response ending:", extractedText.substring(Math.max(0, extractedText.length - 500)));
+      console.error("Finish reason:", finishReason);
+      
       await jobRef.update({
         status: 'error',
-        error: 'Failed to parse extracted questions',
+        error: isTruncated 
+          ? 'Response was truncated by Gemini (too many questions). Please try splitting the PDF into smaller sections.'
+          : 'Failed to parse extracted questions',
         completedAt: getTimestamp()
       });
       return;
