@@ -70,6 +70,19 @@ const TeacherDashboard = () => {
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
 
+  // Utility function to normalize date formats
+  const normalizeDate = (dateStr) => {
+    if (!dateStr) return null;
+    // Handle different date formats
+    if (dateStr.includes('/')) {
+      // MM/DD/YYYY format
+      const [month, day, year] = dateStr.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    // Assume YYYY-MM-DD format or already normalized
+    return dateStr;
+  };
+
   // Debug logging
   useEffect(() => {
     console.log('TeacherDashboard mounted - VERSION 2.0. User:', !!user, 'DB:', !!db, 'AppId:', appId);
@@ -452,19 +465,6 @@ const TeacherDashboard = () => {
   };
 
   const calculateTopicProgressForRange = (student, grade, startDate, endDate) => {
-    // Normalize dates for comparison
-    const normalizeDate = (dateStr) => {
-      if (!dateStr) return null;
-      // Handle different date formats
-      if (dateStr.includes('/')) {
-        // MM/DD/YYYY format
-        const [month, day, year] = dateStr.split('/');
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      }
-      // Assume YYYY-MM-DD format or already normalized
-      return dateStr;
-    };
-
     const normalizedStartDate = normalizeDate(startDate);
     const normalizedEndDate = normalizeDate(endDate);
 
@@ -1470,19 +1470,6 @@ const TeacherDashboard = () => {
 
             {/* Questions by Date Range */}
             {(() => {
-              // Normalize dates for comparison
-              const normalizeDate = (dateStr) => {
-                if (!dateStr) return null;
-                // Handle different date formats
-                if (dateStr.includes('/')) {
-                  // MM/DD/YYYY format
-                  const [month, day, year] = dateStr.split('/');
-                  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                }
-                // Assume YYYY-MM-DD format or already normalized
-                return dateStr;
-              };
-
               const normalizedStartDate = normalizeDate(startDate);
               const normalizedEndDate = normalizeDate(endDate);
 
