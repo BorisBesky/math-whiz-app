@@ -3,6 +3,20 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GRADES, TOPICS, VALID_TOPICS_BY_GRADE } = require("./constants");
 const Busboy = require("busboy");
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const JOB_ID_MAX_LENGTH = 160;
+
+const createJobId = (userId) => `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+const sanitizeJobId = (jobId, userId) => {
+  if (!jobId || typeof jobId !== 'string') return null;
+  const trimmed = jobId.trim();
+  if (!trimmed.startsWith(`${userId}_`)) return null;
+  if (trimmed.length > JOB_ID_MAX_LENGTH) return null;
+  if (!/^[A-Za-z0-9_\-]+$/.test(trimmed)) return null;
+  return trimmed;
+};
+
 // Helper to get Firestore Timestamp
 const getTimestamp = () => admin.firestore.Timestamp.now();
 
@@ -38,6 +52,80 @@ const verifyTeacherRole = async (userId, appId) => {
   return true;
 };
 
+const sanitizeLLMJsonString = (input) => {
+  if (!input) return input;
+  let result = "";
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < input.length; i++) {
+    let char = input[i];
+
+    // Normalize smart quotes
+    if (char === "“" || char === "”") char = '"';
+    if (char === "’") char = "'";
+
+    if (escapeNext) {
+      result += char;
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      result += char;
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      result += char;
+      continue;
+    }
+
+    if (inString) {
+      if (char === "\n") {
+        result += "\\n";
+        continue;
+      }
+      if (char === "\r") {
+        result += "\\r";
+        continue;
+      }
+      if (char === "\t") {
+        result += "\\t";
+        continue;
+      }
+    }
+
+    result += char;
+  }
+
+  // Remove trailing commas before closing braces/brackets
+  result = result.replace(/,\s*(\}|\])/g, "$1");
+  return result;
+};
+
+const extractJsonCandidate = (text) => {
+  if (!text) return text;
+  const jsonMatch =
+    text.match(/```json\s*([\s\S]*?)\s*```/) ||
+    text.match(/```\s*([\s\S]*?)\s*```/) ||
+    text.match(/\[[\s\S]*\]/);
+
+  if (jsonMatch) {
+    return jsonMatch[1] || jsonMatch[0];
+  }
+
+  const firstBracket = text.indexOf("[");
+  const lastBracket = text.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    return text.slice(firstBracket, lastBracket + 1);
+  }
+
+  return text;
+};
+
 // Parse multipart/form-data using busboy
 const parseMultipartFormData = (event) => {
   return new Promise((resolve, reject) => {
@@ -71,6 +159,7 @@ const parseMultipartFormData = (event) => {
     let fileData = null;
     let fileName = null;
     let fileContentType = null;
+    let fileTooLarge = false;
 
     // Create a readable stream from the buffer
     const { Readable } = require('stream');
@@ -79,7 +168,10 @@ const parseMultipartFormData = (event) => {
     bufferStream.push(null);
 
     // Initialize busboy with the content-type header
-    const busboy = Busboy({ headers: { 'content-type': contentType } });
+    const busboy = Busboy({ 
+      headers: { 'content-type': contentType },
+      limits: { fileSize: MAX_UPLOAD_SIZE_BYTES }
+    });
 
     // Handle regular form fields
     busboy.on('field', (fieldname, val) => {
@@ -98,6 +190,12 @@ const parseMultipartFormData = (event) => {
       const chunks = [];
       file.on('data', (data) => {
         chunks.push(data);
+      });
+
+      file.on('limit', () => {
+        console.warn(`File [${fieldname}] exceeded size limit of ${MAX_UPLOAD_SIZE_BYTES} bytes`);
+        fileTooLarge = true;
+        file.resume();
       });
       
       file.on('end', () => {
@@ -122,6 +220,10 @@ const parseMultipartFormData = (event) => {
       console.log('Busboy finished parsing');
       console.log(`Parsed fields:`, Object.keys(fields));
       console.log(`File data present:`, !!fileData);
+      if (fileTooLarge) {
+        reject(new Error('File size exceeds 10MB limit'));
+        return;
+      }
       resolve({ fields, fileData, fileName, fileContentType });
     });
 
@@ -133,6 +235,7 @@ const parseMultipartFormData = (event) => {
 
     // Pipe the buffer stream to busboy
     bufferStream.pipe(busboy);
+  });
 };
 
 exports.handler = async (event) => {
@@ -140,6 +243,7 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Expose-Headers": "X-Job-Id",
     "Content-Type": "application/json",
   };
 
@@ -261,12 +365,13 @@ exports.handler = async (event) => {
     const appId = fields.appId || 'default-app-id';
     const classId = fields.classId || null; // Optional: can be null for global question bank
     const grade = fields.grade || GRADES.G3; // Default to Grade 3 if not specified
+    const providedJobId = sanitizeJobId(fields.jobId, userId);
 
     // Verify teacher role
     await verifyTeacherRole(userId, appId);
 
     // Generate job ID
-    const jobId = `${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const jobId = providedJobId || createJobId(userId);
     
     // Create job document in Firestore with initial status
     const jobRef = db.collection('artifacts').doc(appId)
@@ -286,9 +391,9 @@ exports.handler = async (event) => {
     // Return job ID immediately (background function will process asynchronously)
     // Process the PDF asynchronously with timeout protection
     processPDFAsyncWithTimeout(jobId, userId, appId, classId, grade, fileData, fileName, fileContentType)
-      .catch(error => {
+      .catch(async error => {
         console.error('Async processing error:', error);
-        jobRef.update({
+        await jobRef.update({
           status: 'error',
           error: error.message,
           completedAt: getTimestamp()
@@ -366,8 +471,7 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
     }
 
     // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (fileData.length > maxSize) {
+    if (fileData.length > MAX_UPLOAD_SIZE_BYTES) {
       await jobRef.update({
         status: 'error',
         error: 'File size exceeds 10MB limit',
@@ -395,12 +499,19 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     // Use environment variable for model name, fallback to stable default
-    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-2.0-flash-exp";
+    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+    console.log('Using Gemini model:', modelName);
+    const maxOutputTokens = parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 65536;
+    console.log('Using maxOutputTokens:', maxOutputTokens);
     let model;
     try {
-      model = genAI.getGenerativeModel({ model: modelName });
+      model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          maxOutputTokens: maxOutputTokens
+        }
+      });
     } catch (err) {
       await jobRef.update({
         status: 'error',
@@ -464,27 +575,92 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
 
     const response = await result.response;
     const extractedText = response.text();
+    
+    // Check if response was truncated
+    const finishReason = response.candidates?.[0]?.finishReason;
+    const isTruncated = finishReason === 'MAX_TOKENS' || finishReason === 'OTHER';
+    
+    if (isTruncated) {
+      console.warn(`Response was truncated (finishReason: ${finishReason}). Attempting to parse partial JSON...`);
+    }
 
     // Parse the extracted JSON
     let questions = [];
     try {
-      // Try to extract JSON from the response (might be wrapped in markdown code blocks)
-      const jsonMatch = extractedText.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       extractedText.match(/```\s*([\s\S]*?)\s*```/) ||
-                       extractedText.match(/\[[\s\S]*\]/);
+      const candidateJson = extractJsonCandidate(extractedText);
       
-      if (jsonMatch) {
-        questions = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      // Check if JSON appears incomplete (doesn't end with ] or } or has unmatched brackets)
+      // NOTE: This simple bracket counting doesn't account for escaped brackets within strings.
+      // For example, a question containing "What is \[x\]?" would be counted incorrectly,
+      // potentially leading to false positives when detecting incomplete JSON.
+      const trimmed = candidateJson.trim();
+      const isIncomplete = isTruncated ||
+        (!trimmed.endsWith(']') && !trimmed.endsWith('}')) ||
+        (trimmed.split('[').length - 1) !== (trimmed.split(']').length - 1) ||
+        (trimmed.split('{').length - 1) !== (trimmed.split('}').length - 1);
+      
+      if (isIncomplete) {
+        // Try to close the JSON array/object
+        let repairedJson = trimmed;
+        
+        // Count open brackets/braces
+        const openBrackets = (repairedJson.match(/\[/g) || []).length;
+        const closeBrackets = (repairedJson.match(/\]/g) || []).length;
+        let openBraces = (repairedJson.match(/\{/g) || []).length;
+        let closeBraces = (repairedJson.match(/\}/g) || []).length;
+        
+        // If we're in an array, try to close it
+        if (openBrackets > closeBrackets) {
+          // Remove trailing comma if present
+          repairedJson = repairedJson.replace(/,\s*$/, '');
+          // Close any open objects
+          while (openBraces > closeBraces) {
+            repairedJson += '}';
+            closeBraces++;
+          }
+          // Close the array
+          repairedJson += ']';
+        } else if (openBraces > closeBraces) {
+          // Remove trailing comma if present
+          repairedJson = repairedJson.replace(/,\s*$/, '');
+          // Close any open braces
+          while (openBraces > closeBraces) {
+            repairedJson += '}';
+            closeBraces++;
+          }
+        }
+        
+        console.warn("Attempting to repair incomplete JSON...");
+        try {
+          questions = JSON.parse(repairedJson);
+          console.warn(`Successfully parsed repaired JSON with ${questions.length} questions (response was truncated)`);
+        } catch (repairError) {
+          // If repair failed, try original with sanitization
+          console.warn("Repair failed, trying sanitization...");
+          const sanitized = sanitizeLLMJsonString(candidateJson);
+          questions = JSON.parse(sanitized);
+        }
       } else {
-        // Try parsing the entire response as JSON
-        questions = JSON.parse(extractedText);
+        try {
+          questions = JSON.parse(candidateJson);
+        } catch (primaryParseError) {
+          console.warn("Primary JSON parse failed, attempting sanitation...");
+          const sanitized = sanitizeLLMJsonString(candidateJson);
+          questions = JSON.parse(sanitized);
+        }
       }
     } catch (parseError) {
       console.error("Error parsing extracted questions:", parseError);
-      console.error("Raw response:", extractedText);
+      console.error("Raw response length:", extractedText.length);
+      console.error("Raw response preview:", extractedText.substring(0, 500));
+      console.error("Raw response ending:", extractedText.substring(Math.max(0, extractedText.length - 500)));
+      console.error("Finish reason:", finishReason);
+      
       await jobRef.update({
         status: 'error',
-        error: 'Failed to parse extracted questions',
+        error: isTruncated 
+          ? 'Response was truncated by Gemini (too many questions). Please try splitting the PDF into smaller sections.'
+          : 'Failed to parse extracted questions',
         completedAt: getTimestamp()
       });
       return;

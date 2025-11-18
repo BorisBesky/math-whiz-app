@@ -323,6 +323,20 @@ const QuestionBankManager = ({
       }
 
       await Promise.all(updates);
+
+      // Clear cache for affected class/topic/grade combinations
+      const affectedCombinations = new Set();
+      for (const questionId of selectedQuestions) {
+        const question = questionsToShow.find(q => q.id === questionId);
+        if (question && question.topic && question.grade) {
+          affectedCombinations.add(`${question.topic}_${question.grade}`);
+        }
+      }
+
+      affectedCombinations.forEach(combo => {
+        const [topic, grade] = combo.split('_');
+        clearCachedClassQuestions(selectedClassForAssignment, topic, grade, currentAppId);
+      });
       setShowAssignModal(false);
       setSelectedClassForAssignment('');
       setSelectedQuestions(new Set());

@@ -62,11 +62,26 @@ const TeacherDashboard = () => {
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadClassId, setUploadClassId] = useState(null);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
   const db = getFirestore();
   const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
+
+  // Utility function to normalize date formats
+  const normalizeDate = (dateStr) => {
+    if (!dateStr) return null;
+    // Handle different date formats
+    if (dateStr.includes('/')) {
+      // MM/DD/YYYY format
+      const [month, day, year] = dateStr.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    // Assume YYYY-MM-DD format or already normalized
+    return dateStr;
+  };
 
   // Debug logging
   useEffect(() => {
@@ -419,6 +434,19 @@ const TeacherDashboard = () => {
   const formatDate = (date) => {
     if (!date) return 'Never';
     try {
+      // Handle YYYY-MM-DD format directly to avoid timezone issues
+      if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = date.split('-');
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return dateObj.toLocaleDateString();
+      }
+      // Handle MM/DD/YYYY format
+      if (date.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+        const [month, day, year] = date.split('/');
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return dateObj.toLocaleDateString();
+      }
+      // Fallback to original parsing
       const parsedDate = new Date(date);
       return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleDateString();
     } catch {
@@ -436,35 +464,59 @@ const TeacherDashboard = () => {
     }
   };
 
-  // Sanitize topic name to match MainApp's sanitizeTopicName function
-  const sanitizeTopicName = (topicName) => {
-    if (!topicName || typeof topicName !== 'string') {
-      return 'unknown_topic';
-    }
-    // Replace problematic characters with underscores (same as MainApp.js)
-    return topicName
-      .replace(/[().&\s]/g, "_") // Replace parentheses, periods, ampersands, and spaces
-      .replace(/_+/g, "_") // Replace multiple underscores with single
-      .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
-  };
+  const calculateTopicProgressForRange = (student, grade, startDate, endDate) => {
+    const normalizedStartDate = normalizeDate(startDate);
+    const normalizedEndDate = normalizeDate(endDate);
 
-  const calculateTopicProgress = (student, grade) => {
-    const progress = grade === 'G3' ? student.progressG3 : student.progressG4;
-    const topics = grade === 'G3' 
+    const questionsInRange = student.answeredQuestions?.filter(
+      (q) => {
+        const normalizedQuestionDate = normalizeDate(q.date);
+        return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
+      }
+    ) || [];
+
+    const topics = grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
-    
+      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
+
+    // Count unique active days (days when student answered at least one question)
+    const activeDays = new Set(questionsInRange.map(q => normalizeDate(q.date))).size;
+
     return topics.map(topic => {
-      const sanitizedTopic = sanitizeTopicName(topic);
-      const topicProgress = progress[sanitizedTopic] || progress[topic] || { correct: 0, incorrect: 0 };
+      // Filter questions for this topic
+      const topicQuestions = questionsInRange.filter(q => q.topic === topic);
+
+      // Group by date to calculate per-day averages
+      const questionsByDate = {};
+      topicQuestions.forEach(q => {
+        const date = normalizeDate(q.date);
+        if (!questionsByDate[date]) {
+          questionsByDate[date] = [];
+        }
+        questionsByDate[date].push(q);
+      });
+
+      // Calculate total correct/incorrect across all active days
+      const totalCorrect = topicQuestions.filter(q => q.isCorrect).length;
+      const totalIncorrect = topicQuestions.filter(q => !q.isCorrect).length;
+
+      // Calculate average per active day (only days when this topic was practiced)
+      const topicActiveDays = Object.keys(questionsByDate).length;
+      const averageCorrect = topicActiveDays > 0 ? (totalCorrect / topicActiveDays) : 0;
+      const averageIncorrect = topicActiveDays > 0 ? (totalIncorrect / topicActiveDays) : 0;
+
       const goal = student.dailyGoalsByGrade?.[grade]?.[topic] || 4;
-      
+
       return {
         topic,
-        correct: topicProgress.correct || 0,
-        incorrect: topicProgress.incorrect || 0,
+        totalCorrect,
+        totalIncorrect,
+        averageCorrect: Math.round(averageCorrect * 10) / 10, // Round to 1 decimal
+        averageIncorrect: Math.round(averageIncorrect * 10) / 10,
+        activeDays: topicActiveDays,
+        totalActiveDays: activeDays,
         goal,
-        completed: (topicProgress.correct || 0) >= goal
+        completed: averageCorrect >= goal
       };
     });
   };
@@ -472,7 +524,7 @@ const TeacherDashboard = () => {
   const getTopicsForGrade = (grade) => {
     return grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
+      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
   };
 
   const openGoalsModalForStudent = (student) => {
@@ -940,25 +992,6 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Upload Questions Button */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
-                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setUploadClassId(null);
-                    setShowUploadModal(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Questions</span>
-                </button>
-              </div>
-            </div>
 
             {/* Recent Activity */}
             <div className="bg-white border border-gray-200 rounded-lg">
@@ -1208,16 +1241,6 @@ const TeacherDashboard = () => {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => {
-                    setUploadClassId(null);
-                    setShowUploadModal(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Questions</span>
-                </button>
-                <button
                   onClick={() => setShowCreateForm(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   data-tutorial-id="create-class-button"
@@ -1299,7 +1322,27 @@ const TeacherDashboard = () => {
 
         {/* Questions View */}
         {view === 'questions' && (
-          <div>
+          <div className="space-y-6">
+            {/* Upload Questions Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
+                  <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setUploadClassId(null);
+                    setShowUploadModal(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Questions</span>
+                </button>
+              </div>
+            </div>
+
             <QuestionBankManager
               classes={classes}
               appId={appId}
@@ -1356,16 +1399,21 @@ const TeacherDashboard = () => {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Target className="w-4 h-4 mr-2" />
-                  Grade 3 Progress (Today)
+                  Grade 3 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
                 </h4>
                 <div className="space-y-3">
-                  {calculateTopicProgress(selectedStudent, 'G3').map(topic => (
+                  {calculateTopicProgressForRange(selectedStudent, 'G3', startDate, endDate).map(topic => (
                     <div key={topic.topic} className="flex flex-col">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-600">{topic.topic}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-xs text-gray-500">
-                            {topic.correct}/{topic.goal}
+                            {topic.averageCorrect}/{topic.goal}
+                            {topic.activeDays > 1 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({topic.activeDays}d)
+                              </span>
+                            )}
                           </span>
                           {topic.completed && (
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -1375,7 +1423,7 @@ const TeacherDashboard = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1387,16 +1435,21 @@ const TeacherDashboard = () => {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Target className="w-4 h-4 mr-2" />
-                  Grade 4 Progress (Today)
+                  Grade 4 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
                 </h4>
                 <div className="space-y-3">
-                  {calculateTopicProgress(selectedStudent, 'G4').map(topic => (
+                  {calculateTopicProgressForRange(selectedStudent, 'G4', startDate, endDate).map(topic => (
                     <div key={topic.topic} className="flex flex-col">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-xs text-gray-500">
-                            {topic.correct}/{topic.goal}
+                            {topic.averageCorrect}/{topic.goal}
+                            {topic.activeDays > 1 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({topic.activeDays}d)
+                              </span>
+                            )}
                           </span>
                           {topic.completed && (
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -1406,7 +1459,7 @@ const TeacherDashboard = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1415,70 +1468,135 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Today's Questions */}
+            {/* Questions by Date Range */}
             {(() => {
-              const today = new Date().toISOString().split('T')[0];
-              const todaysQuestions = selectedStudent.answeredQuestions?.filter(
-                (q) => q.date === today
+              const normalizedStartDate = normalizeDate(startDate);
+              const normalizedEndDate = normalizeDate(endDate);
+
+              const questionsInRange = selectedStudent.answeredQuestions?.filter(
+                (q) => {
+                  const normalizedQuestionDate = normalizeDate(q.date);
+                  return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
+                }
               ) || [];
               
-              return todaysQuestions.length > 0 ? (
+              return (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-xl font-bold text-gray-700 mb-4">
-                    Today's Questions:
-                  </h4>
-                  <div className="max-h-60 overflow-y-auto">
-                    {todaysQuestions.map((q, index) => (
-                      <div
-                        key={q.id || index}
-                        className={`p-3 mb-2 rounded-lg border-l-4 ${
-                          q.isCorrect
-                            ? "bg-green-50 border-green-500"
-                            : "bg-red-50 border-red-500"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="font-semibold text-sm text-gray-600">
-                            {q.topic}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {q.timeTaken ? `${q.timeTaken.toFixed(1)}s` : 'N/A'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-800 mb-1">{q.question}</p>
-                        <div className="text-xs">
-                          <span className="text-gray-600">Your answer: </span>
-                          <span
-                            className={
-                              q.isCorrect
-                                ? "text-green-600 font-semibold"
-                                : "text-red-600 font-semibold"
-                            }
-                          >
-                            {q.userAnswer || 'N/A'}
-                          </span>
-                          {!q.isCorrect && (
-                            <>
-                              <span className="text-gray-600 ml-2">Correct: </span>
-                              <span className="text-green-600 font-semibold">
-                                {q.correctAnswer || 'N/A'}
-                              </span>
-                            </>
-                          )}
-                        </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h4 className="text-xl font-bold text-gray-700">
+                      Questions {startDate === endDate ? `for ${formatDate(startDate)}` : `from ${formatDate(startDate)} to ${formatDate(endDate)}`}:
+                    </h4>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">From:</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="border rounded px-2 py-1 text-sm"
+                        />
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">To:</label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="border rounded px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          setStartDate(today);
+                          setEndDate(today);
+                        }}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Today
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-xl font-bold text-gray-700 mb-4">
-                    Today's Questions:
-                  </h4>
-                  <div className="text-center py-12">
-                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No questions answered today</p>
-                  </div>
+                  {questionsInRange.length > 0 ? (
+                    <div className="max-h-96 overflow-y-auto">
+                      {(() => {
+                        // Group questions by date
+                        const questionsByDate = questionsInRange.reduce((groups, question) => {
+                          const date = question.date;
+                          if (!groups[date]) {
+                            groups[date] = [];
+                          }
+                          groups[date].push(question);
+                          return groups;
+                        }, {});
+
+                        // Sort dates in descending order (most recent first)
+                        const sortedDates = Object.keys(questionsByDate).sort((a, b) => new Date(b) - new Date(a));
+
+                        return sortedDates.map(date => (
+                          <div key={date} className="mb-6 last:mb-0">
+                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                              <h5 className="text-lg font-semibold text-gray-800">
+                                {formatDate(date)}
+                              </h5>
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                {questionsByDate[date].length} question{questionsByDate[date].length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              {questionsByDate[date].map((q, index) => (
+                                <div
+                                  key={q.id || `${date}-${index}`}
+                                  className={`p-3 rounded-lg border-l-4 ${
+                                    q.isCorrect
+                                      ? "bg-green-50 border-green-500"
+                                      : "bg-red-50 border-red-500"
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-start mb-1">
+                                    <span className="font-semibold text-sm text-gray-600">
+                                      {q.topic}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {q.timeTaken ? `${q.timeTaken.toFixed(1)}s` : 'N/A'}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-800 mb-1">{q.question}</p>
+                                  <div className="text-xs">
+                                    <span className="text-gray-600">Your answer: </span>
+                                    <span
+                                      className={
+                                        q.isCorrect
+                                          ? "text-green-600 font-semibold"
+                                          : "text-red-600 font-semibold"
+                                      }
+                                    >
+                                      {q.userAnswer || 'N/A'}
+                                    </span>
+                                    {!q.isCorrect && (
+                                      <>
+                                        <span className="text-gray-600 ml-2">Correct: </span>
+                                        <span className="text-green-600 font-semibold">
+                                          {q.correctAnswer || 'N/A'}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">
+                        No questions answered {startDate === endDate ? `on ${formatDate(startDate)}` : `in the selected date range`}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })()}

@@ -3020,7 +3020,7 @@ Answer: [The answer]`;
         <div
           ref={quizContainerRef}
           className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col"
-          style={{ minHeight: 600, height: 600 }}
+          style={{ minHeight: 600 }}
           data-tutorial-id="question-interface"
         >
           <div className="flex justify-between items-center mb-4">
@@ -3070,7 +3070,7 @@ Answer: [The answer]`;
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 items-stretch">
               {currentQuestion.options.map((option, index) => {
                 const isSelected = userAnswer === option;
                 const isCorrect = option === currentQuestion.correctAnswer;
@@ -3101,7 +3101,7 @@ Answer: [The answer]`;
                       }
                     }}
                     disabled={isAnswered}
-                    className={`p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 ${buttonClass}`}
+                    className={`w-full p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 h-auto whitespace-normal break-words overflow-visible ${buttonClass}`}
                   >
                     {formatMathText(option)}
                   </button>
