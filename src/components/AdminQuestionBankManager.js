@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup, deleteField, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import QuestionBankManager from './QuestionBankManager';
 import { clearCachedClassQuestions } from '../utils/questionCache';
@@ -29,6 +29,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
 
           console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
           const teachersList = [];
+          const seenTeacherIds = new Set();
 
           profilesSnapshot.forEach((profileDoc) => {
             const data = profileDoc.data();
@@ -37,7 +38,8 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
 
             console.log('[AdminQuestionBankManager] User', userId, 'role:', data.role);
 
-            if (data.role === 'teacher' || data.role === 'admin') {
+            if ((data.role === 'teacher' || data.role === 'admin') && !seenTeacherIds.has(userId)) {
+              seenTeacherIds.add(userId);
               teachersList.push({
                 id: userId,
                 email: data.email || userId,
@@ -128,7 +130,10 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
 
         setTeacherQuestions(prev => {
           const filtered = prev.filter(q => q.userId !== teacher.id);
-          return [...filtered, ...questionsData];
+          const combined = [...filtered, ...questionsData];
+          // Deduplicate by ID to be safe
+          const uniqueQuestions = Array.from(new Map(combined.map(q => [q.id, q])).values());
+          return uniqueQuestions;
         });
       }, (err) => {
         const errorMessage = err?.message || err?.toString() || 'Unknown error';
@@ -166,10 +171,13 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     console.log('[AdminQuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
       console.log(`[AdminQuestionBankManager] Loaded ${snapshot.size} shared questions`);
+      // Spread doc data first, then override id/collection to ensure
+      // Firestore doc.id is always used for selection and keys, even
+      // if the document contains an "id" field copied from teacher bank.
       const questionsData = snapshot.docs.map(doc => ({
+        ...doc.data(),
         id: doc.id,
-        collection: 'sharedQuestionBank',
-        ...doc.data()
+        collection: 'sharedQuestionBank'
       }));
 
       // Sort client-side by addedAt or createdAt
@@ -184,7 +192,9 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         return 0;
       });
 
-      setSharedQuestions(questionsData);
+      // Deduplicate by ID to prevent duplicate keys in React
+      const uniqueQuestions = Array.from(new Map(questionsData.map(q => [q.id, q])).values());
+      setSharedQuestions(uniqueQuestions);
       setLoading(false);
     }, (err) => {
       const errorMessage = err?.message || err?.toString() || 'Unknown error';
@@ -214,10 +224,14 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       for (const questionId of selectedQuestionIds) {
         const question = teacherQuestions.find(q => q.id === questionId && q.collection === 'questionBank');
         if (question) {
+          // Avoid copying the teacher question's id field into the
+          // shared document data; the shared doc will get its own
+          // Firestore id, which we use for selection and keys.
+          const { id: _ignoreId, ...questionData } = question;
           const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
           adds.push(
             addDoc(sharedRef, {
-              ...question,
+              ...questionData,
               createdBy: question.userId,
               addedBy: currentUser.uid,
               addedAt: new Date(),
@@ -285,31 +299,40 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
 
         // Create reference document in class questions subcollection
         const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
-        updates.push(
-          setDoc(classQuestionRef, {
-            // Reference information
-            questionBankRef: question.collection === 'questionBank'
-              ? `artifacts/${currentAppId}/users/${question.userId}/questionBank/${questionId}`
-              : `artifacts/${currentAppId}/sharedQuestionBank/${questionId}`,
-            teacherId: question.userId || null,
-            assignedAt: new Date(),
-            isSharedQuestion: question.collection === 'sharedQuestionBank',
 
-            // Essential question data (for querying and display)
-            topic: question.topic,
-            grade: question.grade,
-            question: question.question,
-            correctAnswer: question.correctAnswer,
-            options: question.options,
-            hint: question.hint || '',
-            standard: question.standard || '',
-            concept: question.concept || '',
-            images: question.images || [],
-            source: question.source || 'questionBank',
-            pdfSource: question.pdfSource || '',
-            createdAt: question.createdAt || new Date(),
-            createdBy: question.createdBy || question.userId
-          }, { merge: true })
+        const isDrawingQuestion = question.questionType === 'drawing';
+        const classQuestionData = {
+          // Reference information
+          questionBankRef: question.collection === 'questionBank'
+            ? `artifacts/${currentAppId}/users/${question.userId}/questionBank/${questionId}`
+            : `artifacts/${currentAppId}/sharedQuestionBank/${questionId}`,
+          teacherId: question.userId || null,
+          assignedAt: new Date(),
+          isSharedQuestion: question.collection === 'sharedQuestionBank',
+
+          // Essential question data (for querying and display)
+          topic: question.topic,
+          grade: question.grade,
+          question: question.question,
+          questionType: question.questionType || 'multiple-choice',
+          hint: question.hint || '',
+          standard: question.standard || '',
+          concept: question.concept || '',
+          images: question.images || [],
+          source: question.source || 'questionBank',
+          pdfSource: question.pdfSource || '',
+          createdAt: question.createdAt || new Date(),
+          createdBy: question.createdBy || question.userId
+        };
+
+        // Only include correctAnswer and options for non-drawing questions
+        if (!isDrawingQuestion) {
+          classQuestionData.correctAnswer = question.correctAnswer;
+          classQuestionData.options = question.options;
+        }
+
+        updates.push(
+          setDoc(classQuestionRef, classQuestionData, { merge: true })
         );
 
         // Update assignedClasses array in original question
@@ -359,37 +382,116 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
 
   const handleEditQuestion = async (updatedQuestion) => {
     try {
-      const { id, collection: collectionName, userId: questionUserId, ...dataToSave } = updatedQuestion;
+      console.log('[AdminQuestionBankManager] handleEditQuestion called with:', updatedQuestion);
+
+      const { id, collection: collectionName, userId: questionUserId, teacherName, teacherEmail, ...dataToSave } = updatedQuestion;
+
+      console.log('[AdminQuestionBankManager] Extracted fields:', {
+        id,
+        collection: collectionName,
+        userId: questionUserId,
+        questionType: updatedQuestion.questionType,
+        dataToSaveKeys: Object.keys(dataToSave)
+      });
+
+      if (!id) {
+        throw new Error('Question ID is required for editing');
+      }
+
+      if (!collectionName) {
+        console.error('[AdminQuestionBankManager] ERROR: No collection name!', updatedQuestion);
+        throw new Error('Collection is required for editing');
+      }
 
       let questionRef;
       if (collectionName === 'questionBank') {
         questionRef = doc(db, 'artifacts', currentAppId, 'users', questionUserId, 'questionBank', id);
+        console.log('[AdminQuestionBankManager] Using teacher question ref:', questionRef.path);
       } else if (collectionName === 'sharedQuestionBank') {
         questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', id);
+        console.log('[AdminQuestionBankManager] Using shared question ref:', questionRef.path);
       } else {
+        console.error('[AdminQuestionBankManager] Unknown collection:', collectionName);
         throw new Error('Unknown collection for question');
       }
 
-      await updateDoc(questionRef, {
-        ...dataToSave,
+      // Deduplicate assignedClasses
+      const uniqueAssignedClasses = [...new Set(dataToSave.assignedClasses || [])];
+
+      // Clean data to save - ensure we have all required fields
+      const cleanData = {
+        topic: dataToSave.topic,
+        grade: dataToSave.grade,
+        question: dataToSave.question,
+        questionType: dataToSave.questionType || 'multiple-choice',
+        hint: dataToSave.hint || '',
+        standard: dataToSave.standard || '',
+        concept: dataToSave.concept || '',
+        images: dataToSave.images || [],
+        assignedClasses: uniqueAssignedClasses,
+        source: dataToSave.source || 'questionBank',
+        pdfSource: dataToSave.pdfSource || '',
+        createdBy: dataToSave.createdBy || questionUserId,
         updatedAt: new Date()
-      });
+      };
+
+      // Only include correctAnswer and options for non-drawing questions
+      const isDrawingQuestion = cleanData.questionType === 'drawing';
+      if (!isDrawingQuestion) {
+        cleanData.correctAnswer = dataToSave.correctAnswer || '';
+        cleanData.options = dataToSave.options || [];
+      } else {
+        // Explicitly delete fields for drawing questions
+        cleanData.correctAnswer = deleteField();
+        cleanData.options = deleteField();
+      }
+
+      // Preserve createdAt if it exists
+      if (dataToSave.createdAt) {
+        cleanData.createdAt = dataToSave.createdAt;
+      }
+
+      // For shared questions, preserve additional metadata
+      if (collectionName === 'sharedQuestionBank') {
+        if (dataToSave.addedBy) cleanData.addedBy = dataToSave.addedBy;
+        if (dataToSave.addedAt) cleanData.addedAt = dataToSave.addedAt;
+      }
+
+      console.log('[AdminQuestionBankManager] Saving cleaned data:', cleanData);
+
+      // Use setDoc with merge to safely update fields
+      await setDoc(questionRef, cleanData, { merge: true });
+
+      // Verify the update by re-fetching the document
+      const verifyDoc = await getDoc(questionRef);
+      if (verifyDoc.exists()) {
+        console.log('[AdminQuestionBankManager] Verified update in DB:', verifyDoc.data());
+      } else {
+        console.warn('[AdminQuestionBankManager] Could not verify update - document not found');
+      }
 
       // Update class references if needed
-      if (updatedQuestion.assignedClasses && updatedQuestion.assignedClasses.length > 0) {
-        const updates = updatedQuestion.assignedClasses.map(classId => {
+      if (uniqueAssignedClasses.length > 0) {
+        const updates = uniqueAssignedClasses.map(classId => {
           const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', id);
-          return setDoc(classQuestionRef, {
+          const classData = {
             topic: updatedQuestion.topic,
             grade: updatedQuestion.grade,
             question: updatedQuestion.question,
-            correctAnswer: updatedQuestion.correctAnswer,
-            options: updatedQuestion.options,
+            questionType: updatedQuestion.questionType || 'multiple-choice',
             hint: updatedQuestion.hint || '',
             standard: updatedQuestion.standard || '',
             concept: updatedQuestion.concept || '',
             images: updatedQuestion.images || [],
-          }, { merge: true });
+          };
+
+          // Only include correctAnswer and options for non-drawing questions
+          if (!isDrawingQuestion) {
+            classData.correctAnswer = updatedQuestion.correctAnswer;
+            classData.options = updatedQuestion.options;
+          }
+
+          return setDoc(classQuestionRef, classData, { merge: true });
         });
         await Promise.all(updates);
 
@@ -399,7 +501,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
           affectedCombinations.add(`${updatedQuestion.topic}_${updatedQuestion.grade}`);
         }
 
-        updatedQuestion.assignedClasses.forEach(classId => {
+        uniqueAssignedClasses.forEach(classId => {
           affectedCombinations.forEach(combo => {
             const [topic, grade] = combo.split('_');
             clearCachedClassQuestions(classId, topic, grade, currentAppId);

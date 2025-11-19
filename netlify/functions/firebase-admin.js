@@ -33,9 +33,11 @@ if (!admin.apps.length) {
       privateKey: privateKey,
     }),
     databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET, // Add this line
   });
 }
 
 const db = admin.firestore();
+const storage = admin.storage(); 
 
-module.exports = { admin, db };
+module.exports = { admin, db, storage }; // Export storage

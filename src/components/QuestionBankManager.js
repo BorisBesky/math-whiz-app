@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc, deleteField } from 'firebase/firestore';
 import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
 import { TOPICS } from '../constants/topics';
@@ -159,10 +159,13 @@ const QuestionBankManager = ({
     console.log('[QuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
       console.log(`[QuestionBankManager] Loaded ${snapshot.size} shared questions`);
+      // Spread doc data first, then override id/collection to ensure
+      // Firestore doc.id is always used, even if the document
+      // contains an "id" field copied from the teacher question.
       const questionsData = snapshot.docs.map(doc => ({
+        ...doc.data(),
         id: doc.id,
-        collection: 'sharedQuestionBank',
-        ...doc.data()
+        collection: 'sharedQuestionBank'
       }));
 
       // Sort client-side by addedAt or createdAt
@@ -177,7 +180,9 @@ const QuestionBankManager = ({
         return 0;
       });
 
-      setSharedQuestions(questionsData);
+      // Deduplicate by ID to prevent duplicate keys in React
+      const uniqueQuestions = Array.from(new Map(questionsData.map(q => [q.id, q])).values());
+      setSharedQuestions(uniqueQuestions);
     }, (err) => {
       const errorMessage = err?.message || err?.toString() || 'Unknown error';
       console.error('[QuestionBankManager] Error loading shared questions:', {
@@ -336,7 +341,7 @@ const QuestionBankManager = ({
 
         // Also update the assignedClasses array in the original question for tracking
         const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
-        const currentAssignedClasses = question?.assignedClasses || [];
+        const currentAssignedClasses = [...new Set(question?.assignedClasses || [])];
         if (!currentAssignedClasses.includes(selectedClassForAssignment)) {
           updates.push(
             updateDoc(questionRef, {
@@ -459,27 +464,47 @@ const QuestionBankManager = ({
       // Remove id from data to be saved
       const { id, ...dataToSave } = updatedQuestion;
 
-      await updateDoc(questionRef, {
+      // Deduplicate assignedClasses
+      const uniqueAssignedClasses = [...new Set(dataToSave.assignedClasses || [])];
+
+      // Prepare clean data based on question type
+      const isDrawingQuestion = dataToSave.questionType === 'drawing';
+      const cleanData = {
         ...dataToSave,
+        assignedClasses: uniqueAssignedClasses,
         updatedAt: new Date()
-      });
+      };
+
+      // Remove correctAnswer and options for drawing questions
+      if (isDrawingQuestion) {
+        cleanData.correctAnswer = deleteField();
+        cleanData.options = deleteField();
+      }
+
+      await updateDoc(questionRef, cleanData);
 
       // Also update any class references
-      if (updatedQuestion.assignedClasses && updatedQuestion.assignedClasses.length > 0) {
-        const updates = updatedQuestion.assignedClasses.map(classId => {
+      if (uniqueAssignedClasses.length > 0) {
+        const updates = uniqueAssignedClasses.map(classId => {
           const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', updatedQuestion.id);
-          return setDoc(classQuestionRef, {
-            // Update essential data
+          const classData = {
             topic: updatedQuestion.topic,
             grade: updatedQuestion.grade,
             question: updatedQuestion.question,
-            correctAnswer: updatedQuestion.correctAnswer,
-            options: updatedQuestion.options,
+            questionType: updatedQuestion.questionType || 'multiple-choice',
             hint: updatedQuestion.hint || '',
             standard: updatedQuestion.standard || '',
             concept: updatedQuestion.concept || '',
             images: updatedQuestion.images || [],
-          }, { merge: true });
+          };
+
+          // Only include correctAnswer and options for non-drawing questions
+          if (!isDrawingQuestion) {
+            classData.correctAnswer = updatedQuestion.correctAnswer;
+            classData.options = updatedQuestion.options;
+          }
+
+          return setDoc(classQuestionRef, classData, { merge: true });
         });
         await Promise.all(updates);
 
@@ -488,10 +513,8 @@ const QuestionBankManager = ({
         if (updatedQuestion.topic && updatedQuestion.grade) {
           affectedCombinations.add(`${updatedQuestion.topic}_${updatedQuestion.grade}`);
         }
-        // Also clear for old values if they changed (we don't have easy access to old values here without fetching, 
-        // but typically we just clear the new combination)
 
-        updatedQuestion.assignedClasses.forEach(classId => {
+        uniqueAssignedClasses.forEach(classId => {
           affectedCombinations.forEach(combo => {
             const [topic, grade] = combo.split('_');
             clearCachedClassQuestions(classId, topic, grade, currentAppId);
@@ -508,7 +531,9 @@ const QuestionBankManager = ({
 
   const getClassNames = (assignedClasses) => {
     if (!assignedClasses || assignedClasses.length === 0) return [];
-    return assignedClasses.map(classId => {
+    // Deduplicate assignedClasses
+    const uniqueAssignedClasses = [...new Set(assignedClasses)];
+    return uniqueAssignedClasses.map(classId => {
       const classData = classes.find(c => c.id === classId);
       return classData ? { id: classId, name: classData.name } : { id: classId, name: 'Unknown Class' };
     });
@@ -780,7 +805,7 @@ const QuestionBankManager = ({
                                 onChange={() => toggleQuestionSelection(question.id)}
                                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                               />
-                          <div className="flex-1">
+                              <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-900 mb-1">
                                   {question.question}
                                 </p>
@@ -788,13 +813,12 @@ const QuestionBankManager = ({
                                   <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
                                   <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
                                   {question.questionType && (
-                                    <span className={`px-2 py-1 rounded ${
-                                      question.questionType === 'drawing' 
-                                        ? 'bg-purple-100 text-purple-800' 
-                                        : 'bg-blue-100 text-blue-800'
-                                    }`}>
-                                      {question.questionType === 'drawing' ? '✏️ Drawing' : 
-                                       question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                                    <span className={`px-2 py-1 rounded ${question.questionType === 'drawing'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                      }`}>
+                                      {question.questionType === 'drawing' ? '✏️ Drawing' :
+                                        question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
                                     </span>
                                   )}
                                   {question.correctAnswer && question.questionType !== 'drawing' && (
@@ -898,13 +922,12 @@ const QuestionBankManager = ({
                             <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
                             <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
                             {question.questionType && (
-                              <span className={`px-2 py-1 rounded ${
-                                question.questionType === 'drawing' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {question.questionType === 'drawing' ? '✏️ Drawing' : 
-                                 question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                              <span className={`px-2 py-1 rounded ${question.questionType === 'drawing'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                {question.questionType === 'drawing' ? '✏️ Drawing' :
+                                  question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
                               </span>
                             )}
                             {question.correctAnswer && question.questionType !== 'drawing' && (
