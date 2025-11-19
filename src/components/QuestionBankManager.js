@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon } from 'lucide-react';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit } from 'lucide-react';
+import EditQuestionModal from './EditQuestionModal';
 import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
+import 'katex/dist/katex.min.css';
+import renderMathInElement from 'katex/contrib/auto-render';
 
-const QuestionBankManager = ({ 
-  classes, 
-  appId, 
+const QuestionBankManager = ({
+  classes,
+  appId,
   userId,
   // Optional props for admin mode
   questions: externalQuestions = null,
@@ -19,7 +22,8 @@ const QuestionBankManager = ({
   onAssignToClass = null,
   groupingMode = 'source', // 'source' or 'teacher-source'
   viewMode = null, // null for teacher view, 'all'|'teachers'|'shared' for admin
-  showViewModeTabs = false
+  showViewModeTabs = false,
+  onEditQuestion = null // Optional prop for custom edit handling (admin mode)
 }) => {
   const [questions, setQuestions] = useState([]);
   const [sharedQuestions, setSharedQuestions] = useState([]);
@@ -34,9 +38,29 @@ const QuestionBankManager = ({
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState('');
   const [internalViewMode, setInternalViewMode] = useState(viewMode || 'all');
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const questionContainerRef = useRef(null);
 
   const db = getFirestore();
   const currentAppId = appId || 'default-app-id';
+
+  // Auto-render KaTeX when questions change
+  useEffect(() => {
+    if (questionContainerRef.current) {
+      try {
+        renderMathInElement(questionContainerRef.current, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true },
+          ],
+          throwOnError: false,
+        });
+      } catch (e) {
+        console.warn('KaTeX render error:', e);
+      }
+    }
+  }, [questions, sharedQuestions, expandedSources, filterTopic, filterGrade, filterSource, filterTeacher, internalViewMode]);
 
   const topicOptions = [
     TOPICS.MULTIPLICATION,
@@ -64,7 +88,7 @@ const QuestionBankManager = ({
     if (!userId || !db) return;
 
     const questionBankRef = collection(db, 'artifacts', currentAppId, 'users', userId, 'questionBank');
-    
+
     // Try query without orderBy to avoid index issues
     let unsubscribe;
     try {
@@ -95,7 +119,7 @@ const QuestionBankManager = ({
           message: errorMessage,
           userId
         });
-        
+
         // Check if this is a missing index error
         if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
           setError('Database index required. Please check the browser console for the index creation link.');
@@ -130,7 +154,7 @@ const QuestionBankManager = ({
     if (!isAdmin || !db) return;
 
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
-    
+
     // Query without orderBy to avoid index requirements
     console.log('[QuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
@@ -140,7 +164,7 @@ const QuestionBankManager = ({
         collection: 'sharedQuestionBank',
         ...doc.data()
       }));
-      
+
       // Sort client-side by addedAt or createdAt
       questionsData.sort((a, b) => {
         const timeFieldA = a.addedAt || a.createdAt;
@@ -152,7 +176,7 @@ const QuestionBankManager = ({
         }
         return 0;
       });
-      
+
       setSharedQuestions(questionsData);
     }, (err) => {
       const errorMessage = err?.message || err?.toString() || 'Unknown error';
@@ -161,7 +185,7 @@ const QuestionBankManager = ({
         code: err?.code,
         message: errorMessage
       });
-      
+
       // Check if this is a missing index error
       if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
         setError('Database index required for shared questions. Please check the browser console for the index creation link.');
@@ -255,7 +279,7 @@ const QuestionBankManager = ({
   };
 
   const selectAllInSource = (source) => {
-    const sourceQuestions = groupingMode === 'teacher-source' 
+    const sourceQuestions = groupingMode === 'teacher-source'
       ? (groupedQuestions[source]?.questions || [])
       : (groupedQuestions[source] || []);
     const newSelected = new Set(selectedQuestions);
@@ -285,7 +309,7 @@ const QuestionBankManager = ({
         // Create a reference document in the class questions subcollection
         // Use the same questionId to maintain consistency
         const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', selectedClassForAssignment, 'questions', questionId);
-        
+
         // Store reference information and essential question data
         updates.push(
           setDoc(classQuestionRef, {
@@ -293,7 +317,7 @@ const QuestionBankManager = ({
             questionBankRef: `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`,
             teacherId: userId,
             assignedAt: new Date(),
-            
+
             // Essential question data (for querying and display)
             topic: question.topic,
             grade: question.grade,
@@ -350,11 +374,11 @@ const QuestionBankManager = ({
     try {
       const question = questionsToShow.find(q => q.id === questionId);
       const currentAssignedClasses = (question?.assignedClasses || []).filter(id => id !== classId);
-      
+
       // Remove the reference document from class questions subcollection
       const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
       await deleteDoc(classQuestionRef);
-      
+
       // Update the assignedClasses array in the original question
       if (question?.collection === 'sharedQuestionBank') {
         const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
@@ -368,7 +392,7 @@ const QuestionBankManager = ({
           assignedClasses: currentAssignedClasses
         });
       }
-      
+
       // Clear cache for this class/topic/grade combination
       if (question?.topic && question?.grade) {
         clearCachedClassQuestions(classId, question.topic, question.grade, currentAppId);
@@ -379,12 +403,25 @@ const QuestionBankManager = ({
     }
   };
 
-  const handleDeleteQuestions = async () => {
+  const handleDeleteQuestions = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('[QuestionBankManager] handleDeleteQuestions called');
+
     if (selectedQuestions.size === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedQuestions.size} question(s)?`)) return;
+
+    console.log('[QuestionBankManager] Showing confirm dialog');
+    if (!window.confirm(`Are you sure you want to delete ${selectedQuestions.size} question(s)?`)) {
+      console.log('[QuestionBankManager] Delete cancelled by user');
+      return;
+    }
+    console.log('[QuestionBankManager] Delete confirmed');
 
     // Use custom handler if provided (for admin mode)
     if (onDeleteQuestion) {
+      console.log('[QuestionBankManager] Calling onDeleteQuestion (admin mode)');
       await onDeleteQuestion(selectedQuestions);
       setSelectedQuestions(new Set());
       return;
@@ -392,6 +429,7 @@ const QuestionBankManager = ({
 
     // Default handler for teacher mode
     try {
+      console.log('[QuestionBankManager] Deleting questions (teacher mode)');
       const deletes = Array.from(selectedQuestions).map(questionId => {
         const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
         return deleteDoc(questionRef);
@@ -399,9 +437,72 @@ const QuestionBankManager = ({
 
       await Promise.all(deletes);
       setSelectedQuestions(new Set());
+      console.log('[QuestionBankManager] Questions deleted successfully');
     } catch (err) {
       console.error('Error deleting questions:', err);
       setError('Failed to delete questions');
+    }
+  };
+
+  const handleSaveEditedQuestion = async (updatedQuestion) => {
+    try {
+      // Use custom handler if provided (for admin mode)
+      if (onEditQuestion) {
+        await onEditQuestion(updatedQuestion);
+        setEditingQuestion(null);
+        return;
+      }
+
+      // Default handler for teacher mode
+      const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', updatedQuestion.id);
+
+      // Remove id from data to be saved
+      const { id, ...dataToSave } = updatedQuestion;
+
+      await updateDoc(questionRef, {
+        ...dataToSave,
+        updatedAt: new Date()
+      });
+
+      // Also update any class references
+      if (updatedQuestion.assignedClasses && updatedQuestion.assignedClasses.length > 0) {
+        const updates = updatedQuestion.assignedClasses.map(classId => {
+          const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', updatedQuestion.id);
+          return setDoc(classQuestionRef, {
+            // Update essential data
+            topic: updatedQuestion.topic,
+            grade: updatedQuestion.grade,
+            question: updatedQuestion.question,
+            correctAnswer: updatedQuestion.correctAnswer,
+            options: updatedQuestion.options,
+            hint: updatedQuestion.hint || '',
+            standard: updatedQuestion.standard || '',
+            concept: updatedQuestion.concept || '',
+            images: updatedQuestion.images || [],
+          }, { merge: true });
+        });
+        await Promise.all(updates);
+
+        // Clear cache
+        const affectedCombinations = new Set();
+        if (updatedQuestion.topic && updatedQuestion.grade) {
+          affectedCombinations.add(`${updatedQuestion.topic}_${updatedQuestion.grade}`);
+        }
+        // Also clear for old values if they changed (we don't have easy access to old values here without fetching, 
+        // but typically we just clear the new combination)
+
+        updatedQuestion.assignedClasses.forEach(classId => {
+          affectedCombinations.forEach(combo => {
+            const [topic, grade] = combo.split('_');
+            clearCachedClassQuestions(classId, topic, grade, currentAppId);
+          });
+        });
+      }
+
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error('Error updating question:', err);
+      throw err; // Propagate to modal to show error
     }
   };
 
@@ -422,7 +523,7 @@ const QuestionBankManager = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={questionContainerRef}>
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-red-800">{error}</p>
@@ -438,25 +539,22 @@ const QuestionBankManager = ({
           <div className="flex space-x-2">
             <button
               onClick={() => setInternalViewMode('all')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                internalViewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               All Questions
             </button>
             <button
               onClick={() => setInternalViewMode('teachers')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                internalViewMode === 'teachers' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'teachers' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Teacher Questions ({questions.length})
             </button>
             <button
               onClick={() => setInternalViewMode('shared')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                internalViewMode === 'shared' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'shared' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Shared Bank ({sharedQuestions.length})
             </button>
@@ -537,9 +635,21 @@ const QuestionBankManager = ({
           <div className="flex space-x-2">
             {isAdmin && internalViewMode === 'teachers' && onAddToSharedBank && (
               <button
-                onClick={async () => {
-                  await onAddToSharedBank(selectedQuestions);
-                  setSelectedQuestions(new Set());
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!window.confirm(`Are you sure you want to add ${selectedQuestions.size} question(s) to shared bank?`)) {
+                    return;
+                  }
+                  try {
+                    await onAddToSharedBank(selectedQuestions);
+                    setSelectedQuestions(new Set());
+                  } catch (err) {
+                    if (err.message !== 'Cancelled') {
+                      console.error('Error adding to shared bank:', err);
+                      setError('Failed to add questions to shared bank');
+                    }
+                  }
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2"
               >
@@ -549,9 +659,21 @@ const QuestionBankManager = ({
             )}
             {isAdmin && internalViewMode === 'shared' && onRemoveFromSharedBank && (
               <button
-                onClick={async () => {
-                  await onRemoveFromSharedBank(selectedQuestions);
-                  setSelectedQuestions(new Set());
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!window.confirm(`Are you sure you want to remove ${selectedQuestions.size} question(s) from shared bank?`)) {
+                    return;
+                  }
+                  try {
+                    await onRemoveFromSharedBank(selectedQuestions);
+                    setSelectedQuestions(new Set());
+                  } catch (err) {
+                    if (err.message !== 'Cancelled') {
+                      console.error('Error removing from shared bank:', err);
+                      setError('Failed to remove questions from shared bank');
+                    }
+                  }
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center space-x-2"
               >
@@ -567,6 +689,7 @@ const QuestionBankManager = ({
               <span>Assign to Class</span>
             </button>
             <button
+              type="button"
               onClick={handleDeleteQuestions}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center space-x-2"
             >
@@ -589,244 +712,273 @@ const QuestionBankManager = ({
               <p className="text-gray-600">No questions found</p>
             </div>
           ) : sources.length > 0 ? (
-          sources.map(source => {
-            const sourceData = groupedQuestions[source];
-            const sourceQuestions = groupingMode === 'teacher-source' ? sourceData.questions : sourceData;
-            const isExpanded = expandedSources.has(source);
-            const sourceDate = sourceQuestions[0]?.createdAt?.toDate?.() || new Date();
-            
-            return (
-              <div key={source} className="bg-white border border-gray-200 rounded-lg">
-                <div
-                  className="p-4 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
-                  onClick={() => toggleSourceExpansion(source)}
-                >
-                  <div className="flex items-center space-x-3">
-                    {isExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-gray-600" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-600" />
-                    )}
-                    <div>
-                      {groupingMode === 'teacher-source' ? (
-                        <>
-                          <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
-                            <UserIcon className="h-4 w-4" />
-                            <span>{sourceData.teacherName}</span>
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {sourceData.source} • {sourceQuestions.length} question(s) • {sourceDate.toLocaleDateString()}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="font-semibold text-gray-900">{source}</h3>
-                          <p className="text-sm text-gray-600">
-                            {sourceQuestions.length} question(s) • {sourceDate.toLocaleDateString()}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectAllInSource(source);
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    Select All
-                  </button>
-                </div>
-
-                {isExpanded && (
-                  <div className="border-t border-gray-200 divide-y divide-gray-200">
-                    {sourceQuestions.map(question => {
-                      const assignedClasses = getClassNames(question.assignedClasses);
-                      const isSelected = selectedQuestions.has(question.id);
-
-                      return (
-                        <div
-                          key={question.id}
-                          className={`p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleQuestionSelection(question.id)}
-                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900 mb-1">
-                                    {question.question}
-                                  </p>
-                                  <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                                    <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
-                                    <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
-                                    {question.correctAnswer && (
-                                      <span className="px-2 py-1 bg-green-100 rounded">
-                                        Answer: {question.correctAnswer}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {assignedClasses.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {assignedClasses.map(classInfo => (
-                                    <span
-                                      key={classInfo.id}
-                                      className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
-                                    >
-                                      <Users className="h-3 w-3 mr-1" />
-                                      {classInfo.name}
-                                      {!isAdmin && (
-                                        <button
-                                          onClick={() => handleUnassignFromClass(question.id, classInfo.id)}
-                                          className="ml-1 text-blue-600 hover:text-blue-800"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      )}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              {question.options && question.options.length > 0 && (
-                                <div className="mt-2 text-xs text-gray-600">
-                                  <strong>Options:</strong> {question.options.join(', ')}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })
-          ) : null}
-        </div>
-      )}
-
-      {/* Shared Questions (Admin mode, when viewing shared or all) */}
-      {isAdmin && showViewModeTabs && internalViewMode !== 'teachers' && (
-        <div className="space-y-4 mt-6">
-          <h2 className="text-xl font-semibold text-gray-900">Shared Question Bank</h2>
-          {sharedQuestions.filter(q => {
-            if (filterTopic && q.topic !== filterTopic) return false;
-            if (filterGrade && q.grade !== filterGrade) return false;
-            return true;
-          }).length === 0 ? (
-            <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
-              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No shared questions found</p>
-            </div>
-          ) : (
-            <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
-              {sharedQuestions.filter(q => {
-                if (filterTopic && q.topic !== filterTopic) return false;
-                if (filterGrade && q.grade !== filterGrade) return false;
-                return true;
-              }).map(question => {
-              const assignedClasses = getClassNames(question.assignedClasses);
-              const isSelected = selectedQuestions.has(question.id);
+            sources.map(source => {
+              const sourceData = groupedQuestions[source];
+              const sourceQuestions = groupingMode === 'teacher-source' ? sourceData.questions : sourceData;
+              const isExpanded = expandedSources.has(source);
+              const sourceDate = sourceQuestions[0]?.createdAt?.toDate?.() || new Date();
 
               return (
-                <div
-                  key={question.id}
-                  className={`p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleQuestionSelection(question.id)}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 mb-1">
-                        {question.question}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
-                        <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
-                        <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
-                        {question.correctAnswer && (
-                          <span className="px-2 py-1 bg-green-100 rounded">
-                            Answer: {question.correctAnswer}
-                          </span>
+                <div key={source} className="bg-white border border-gray-200 rounded-lg">
+                  <div
+                    className="p-4 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
+                    onClick={() => toggleSourceExpansion(source)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      {isExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-600" />
+                      )}
+                      <div>
+                        {groupingMode === 'teacher-source' ? (
+                          <>
+                            <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                              <UserIcon className="h-4 w-4" />
+                              <span>{sourceData.teacherName}</span>
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {sourceData.source} • {sourceQuestions.length} question(s) • {sourceDate.toLocaleDateString()}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className="font-semibold text-gray-900">{source}</h3>
+                            <p className="text-sm text-gray-600">
+                              {sourceQuestions.length} question(s) • {sourceDate.toLocaleDateString()}
+                            </p>
+                          </>
                         )}
                       </div>
-                      {assignedClasses.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {assignedClasses.map(classInfo => (
-                            <span
-                              key={classInfo.id}
-                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
-                            >
-                              <Users className="h-3 w-3 mr-1" />
-                              {classInfo.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectAllInSource(source);
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      Select All
+                    </button>
                   </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-gray-200 divide-y divide-gray-200">
+                      {sourceQuestions.map(question => {
+                        const assignedClasses = getClassNames(question.assignedClasses);
+                        const isSelected = selectedQuestions.has(question.id);
+
+                        return (
+                          <div
+                            key={question.id}
+                            className={`p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleQuestionSelection(question.id)}
+                                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900 mb-1">
+                                  {question.question}
+                                </p>
+                                <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
+                                  <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
+                                  <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
+                                  {question.correctAnswer && (
+                                    <span className="px-2 py-1 bg-green-100 rounded">
+                                      Answer: {question.correctAnswer}
+                                    </span>
+                                  )}
+                                </div>
+                                {assignedClasses.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {assignedClasses.map(classInfo => (
+                                      <span
+                                        key={classInfo.id}
+                                        className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                                      >
+                                        <Users className="h-3 w-3 mr-1" />
+                                        {classInfo.name}
+                                        {!isAdmin && (
+                                          <button
+                                            onClick={() => handleUnassignFromClass(question.id, classInfo.id)}
+                                            className="ml-1 text-blue-600 hover:text-blue-800"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {question.options && question.options.length > 0 && (
+                                  <div className="text-xs text-gray-600">
+                                    <strong>Options:</strong> {question.options.join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center ml-2">
+                                <button
+                                  onClick={() => setEditingQuestion(question)}
+                                  className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                                  title="Edit Question"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                  }
                 </div>
               );
-              })}
-            </div>
-          )}
+            })
+          ) : null}
         </div>
-      )}
+      )
+      }
+
+      {/* Shared Questions (Admin mode, when viewing shared or all) */}
+      {
+        isAdmin && showViewModeTabs && internalViewMode !== 'teachers' && (
+          <div className="space-y-4 mt-6">
+            <h2 className="text-xl font-semibold text-gray-900">Shared Question Bank</h2>
+            {sharedQuestions.filter(q => {
+              if (filterTopic && q.topic !== filterTopic) return false;
+              if (filterGrade && q.grade !== filterGrade) return false;
+              return true;
+            }).length === 0 ? (
+              <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No shared questions found</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+                {sharedQuestions.filter(q => {
+                  if (filterTopic && q.topic !== filterTopic) return false;
+                  if (filterGrade && q.grade !== filterGrade) return false;
+                  return true;
+                }).map(question => {
+                  const assignedClasses = getClassNames(question.assignedClasses);
+                  const isSelected = selectedQuestions.has(question.id);
+
+                  return (
+                    <div
+                      key={question.id}
+                      className={`p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleQuestionSelection(question.id)}
+                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 mb-1">
+                            {question.question}
+                          </p>
+                          <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
+                            <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
+                            <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
+                            {question.correctAnswer && (
+                              <span className="px-2 py-1 bg-green-100 rounded">
+                                Answer: {question.correctAnswer}
+                              </span>
+                            )}
+                          </div>
+                          {assignedClasses.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {assignedClasses.map(classInfo => (
+                                <span
+                                  key={classInfo.id}
+                                  className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                                >
+                                  <Users className="h-3 w-3 mr-1" />
+                                  {classInfo.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                        </div>
+                        <div className="flex items-center ml-2">
+                          <button
+                            onClick={() => setEditingQuestion(question)}
+                            className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                            title="Edit Question"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )
+      }
 
       {/* Assign to Class Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Questions to Class</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
-              <select
-                value={selectedClassForAssignment}
-                onChange={(e) => setSelectedClassForAssignment(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Select a class</option>
-                {classes.map(classItem => (
-                  <option key={classItem.id} value={classItem.id}>{classItem.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  setShowAssignModal(false);
-                  setSelectedClassForAssignment('');
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAssignToClass}
-                disabled={!selectedClassForAssignment}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Assign
-              </button>
+      {
+        showAssignModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Questions to Class</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                <select
+                  value={selectedClassForAssignment}
+                  onChange={(e) => setSelectedClassForAssignment(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Select a class</option>
+                  {classes.map(classItem => (
+                    <option key={classItem.id} value={classItem.id}>{classItem.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedClassForAssignment('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignToClass}
+                  disabled={!selectedClassForAssignment}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Assign
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+      {/* Edit Question Modal */}
+      {
+        editingQuestion && (
+          <EditQuestionModal
+            question={editingQuestion}
+            onSave={handleSaveEditedQuestion}
+            onCancel={() => setEditingQuestion(null)}
+          />
+        )
+      }
+    </div >
   );
 };
 

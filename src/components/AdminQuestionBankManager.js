@@ -19,24 +19,24 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     const loadTeachers = async () => {
       let retries = 0;
       const maxRetries = 3;
-      
+
       while (retries <= maxRetries) {
         try {
           console.log('[AdminQuestionBankManager] Loading teachers using collectionGroup query (attempt', retries + 1, '/', maxRetries + 1, ')');
           // Use collectionGroup to query all math_whiz_data/profile documents
           const profilesGroup = collectionGroup(db, 'math_whiz_data');
           const profilesSnapshot = await getDocs(profilesGroup);
-          
+
           console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
           const teachersList = [];
-          
+
           profilesSnapshot.forEach((profileDoc) => {
             const data = profileDoc.data();
             // Extract userId from the document path: artifacts/{appId}/users/{userId}/math_whiz_data/profile
             const userId = profileDoc.ref.parent.parent.id;
-            
+
             console.log('[AdminQuestionBankManager] User', userId, 'role:', data.role);
-            
+
             if (data.role === 'teacher' || data.role === 'admin') {
               teachersList.push({
                 id: userId,
@@ -45,41 +45,41 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
               });
             }
           });
-          
+
           console.log('[AdminQuestionBankManager] Successfully loaded', teachersList.length, 'teachers/admins:', teachersList);
           setAllTeachers(teachersList);
           return; // Success, exit the retry loop
         } catch (err) {
           const errorMessage = err?.message || err?.toString() || 'Unknown error';
           const errorCode = err?.code?.toLowerCase() || '';
-          
+
           // Check if error is retryable
           const retryableErrors = ['unavailable', 'deadline-exceeded', 'resource-exhausted'];
-          const isRetryable = retryableErrors.some(code => 
+          const isRetryable = retryableErrors.some(code =>
             errorCode.includes(code) || errorMessage.toLowerCase().includes(code)
           );
-          
+
           // Check if this is a missing index error (not retryable)
-          const isMissingIndex = errorMessage.toLowerCase().includes('index') || 
-                                  errorMessage.toLowerCase().includes('requires an index');
-          
+          const isMissingIndex = errorMessage.toLowerCase().includes('index') ||
+            errorMessage.toLowerCase().includes('requires an index');
+
           if (retries === maxRetries || !isRetryable || isMissingIndex) {
             console.error('[AdminQuestionBankManager] Error loading teachers after', retries + 1, 'attempts:', {
               error: err,
               code: err?.code,
               message: errorMessage
             });
-            
+
             // Show user-friendly error message
             if (isMissingIndex) {
               console.error('[AdminQuestionBankManager] Missing Firestore index. Please check the console for the index creation link.');
             }
-            
+
             // Set empty array so UI doesn't stay in loading state forever
             setAllTeachers([]);
             return;
           }
-          
+
           // Retry with exponential backoff
           retries++;
           const delay = Math.min(1000 * Math.pow(2, retries - 1), 5000);
@@ -103,7 +103,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     // Load questions from all teachers' questionBanks
     allTeachers.forEach(teacher => {
       const questionBankRef = collection(db, 'artifacts', currentAppId, 'users', teacher.id, 'questionBank');
-      
+
       // Query without orderBy to avoid index requirements
       const unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
         console.log(`[AdminQuestionBankManager] Loaded ${snapshot.size} questions for teacher ${teacher.name} (${teacher.id})`);
@@ -139,12 +139,12 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
           teacherId: teacher.id,
           teacherName: teacher.name
         });
-        
+
         // Check if this is a missing index error
         if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
           console.warn(`[AdminQuestionBankManager] Missing index for teacher ${teacher.name}'s questions. Please check the console for the index creation link.`);
         }
-        
+
         // Continue loading other teachers' questions even if one fails
         // Remove this teacher's questions from the list if they were previously loaded
         setTeacherQuestions(prev => prev.filter(q => q.userId !== teacher.id));
@@ -161,7 +161,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
     if (!db) return;
 
     const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
-    
+
     // Query without orderBy to avoid index requirements
     console.log('[AdminQuestionBankManager] Loading shared questions');
     const unsubscribe = onSnapshot(sharedRef, (snapshot) => {
@@ -171,7 +171,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         collection: 'sharedQuestionBank',
         ...doc.data()
       }));
-      
+
       // Sort client-side by addedAt or createdAt
       questionsData.sort((a, b) => {
         const timeFieldA = a.addedAt || a.createdAt;
@@ -183,7 +183,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         }
         return 0;
       });
-      
+
       setSharedQuestions(questionsData);
       setLoading(false);
     }, (err) => {
@@ -193,12 +193,12 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         code: err?.code,
         message: errorMessage
       });
-      
+
       // Check if this is a missing index error
       if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
         console.warn('[AdminQuestionBankManager] Missing index for shared questions. Please check the console for the index creation link.');
       }
-      
+
       setLoading(false);
     });
 
@@ -235,10 +235,6 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
   };
 
   const handleRemoveFromSharedBank = async (selectedQuestionIds) => {
-    if (!window.confirm(`Are you sure you want to remove ${selectedQuestionIds.size} question(s) from shared bank?`)) {
-      throw new Error('Cancelled');
-    }
-
     try {
       const deletes = Array.from(selectedQuestionIds)
         .filter(qId => {
@@ -258,10 +254,6 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
   };
 
   const handleDeleteQuestion = async (selectedQuestionIds) => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedQuestionIds.size} question(s)?`)) {
-      throw new Error('Cancelled');
-    }
-
     try {
       const deletes = [];
       for (const questionId of selectedQuestionIds) {
@@ -296,13 +288,13 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
         updates.push(
           setDoc(classQuestionRef, {
             // Reference information
-            questionBankRef: question.collection === 'questionBank' 
+            questionBankRef: question.collection === 'questionBank'
               ? `artifacts/${currentAppId}/users/${question.userId}/questionBank/${questionId}`
               : `artifacts/${currentAppId}/sharedQuestionBank/${questionId}`,
             teacherId: question.userId || null,
             assignedAt: new Date(),
             isSharedQuestion: question.collection === 'sharedQuestionBank',
-            
+
             // Essential question data (for querying and display)
             topic: question.topic,
             grade: question.grade,
@@ -345,7 +337,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       }
 
       await Promise.all(updates);
-      
+
       // Clear cache for affected class/topic/grade combinations
       const affectedCombinations = new Set();
       for (const questionId of selectedQuestionIds) {
@@ -354,13 +346,68 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
           affectedCombinations.add(`${question.topic}_${question.grade}`);
         }
       }
-      
+
       affectedCombinations.forEach(combo => {
         const [topic, grade] = combo.split('_');
         clearCachedClassQuestions(classId, topic, grade, currentAppId);
       });
     } catch (err) {
       console.error('Error assigning questions to class:', err);
+      throw err;
+    }
+  };
+
+  const handleEditQuestion = async (updatedQuestion) => {
+    try {
+      const { id, collection: collectionName, userId: questionUserId, ...dataToSave } = updatedQuestion;
+
+      let questionRef;
+      if (collectionName === 'questionBank') {
+        questionRef = doc(db, 'artifacts', currentAppId, 'users', questionUserId, 'questionBank', id);
+      } else if (collectionName === 'sharedQuestionBank') {
+        questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', id);
+      } else {
+        throw new Error('Unknown collection for question');
+      }
+
+      await updateDoc(questionRef, {
+        ...dataToSave,
+        updatedAt: new Date()
+      });
+
+      // Update class references if needed
+      if (updatedQuestion.assignedClasses && updatedQuestion.assignedClasses.length > 0) {
+        const updates = updatedQuestion.assignedClasses.map(classId => {
+          const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', id);
+          return setDoc(classQuestionRef, {
+            topic: updatedQuestion.topic,
+            grade: updatedQuestion.grade,
+            question: updatedQuestion.question,
+            correctAnswer: updatedQuestion.correctAnswer,
+            options: updatedQuestion.options,
+            hint: updatedQuestion.hint || '',
+            standard: updatedQuestion.standard || '',
+            concept: updatedQuestion.concept || '',
+            images: updatedQuestion.images || [],
+          }, { merge: true });
+        });
+        await Promise.all(updates);
+
+        // Clear cache
+        const affectedCombinations = new Set();
+        if (updatedQuestion.topic && updatedQuestion.grade) {
+          affectedCombinations.add(`${updatedQuestion.topic}_${updatedQuestion.grade}`);
+        }
+
+        updatedQuestion.assignedClasses.forEach(classId => {
+          affectedCombinations.forEach(combo => {
+            const [topic, grade] = combo.split('_');
+            clearCachedClassQuestions(classId, topic, grade, currentAppId);
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Error updating question:', err);
       throw err;
     }
   };
@@ -386,6 +433,7 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       onRemoveFromSharedBank={handleRemoveFromSharedBank}
       onDeleteQuestion={handleDeleteQuestion}
       onAssignToClass={handleAssignToClass}
+      onEditQuestion={handleEditQuestion}
       groupingMode="teacher-source"
       showViewModeTabs={true}
     />
