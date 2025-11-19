@@ -17,11 +17,17 @@ import { Eraser, Pen, RotateCcw, Trash2 } from 'lucide-react';
 const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) => {
   const canvasRef = useRef(null);
   const currentStrokeRef = useRef(null);
+  const onChangeRef = useRef(onChange);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState('draw'); // 'draw' or 'erase'
   const [strokes, setStrokes] = useState([]);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
+
+  // Keep the onChange ref up to date
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Initialize canvas
   useEffect(() => {
@@ -80,11 +86,11 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) 
     context.globalCompositeOperation = 'source-over';
 
     // Notify parent of changes with base64 image
-    if (onChange) {
+    if (onChangeRef.current) {
       const imageData = canvasRef.current.toDataURL('image/png');
-      onChange(imageData);
+      onChangeRef.current(imageData);
     }
-  }, [strokes, currentStrokeIndex, context, onChange, width, height]);
+  }, [strokes, currentStrokeIndex, context, width, height]);
 
   // Get coordinates from mouse or touch event
   const getCoordinates = (e) => {
@@ -178,8 +184,8 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) 
       context.fillStyle = '#FFFFFF';
       context.fillRect(0, 0, width, height);
     }
-    if (onChange) {
-      onChange(null);
+    if (onChangeRef.current) {
+      onChangeRef.current(null);
     }
   };
 
