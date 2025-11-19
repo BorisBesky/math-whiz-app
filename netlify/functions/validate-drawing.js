@@ -172,7 +172,9 @@ Your response MUST be in the following JSON format:
 
 Be encouraging and constructive in your feedback. If the drawing is correct, praise the student. If incorrect, explain what's wrong and how to improve.
 
-Focus on the geometric properties and mathematical accuracy, not artistic quality.`;
+Focus on the geometric properties and mathematical accuracy, not artistic quality. Don't expect perfection in drawings and accept minor inaccuracies, 
+
+such as angles not being perfectly equal to the expected values. For example if an angle is 60 degrees, a drawing showing greater than 45 and less than 90 should be accepted.`;
 
     // Call Gemini Vision API
     const result = await model.generateContent([prompt, imagePart]);

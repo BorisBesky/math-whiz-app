@@ -311,32 +311,41 @@ const QuestionBankManager = ({
         const question = questionsToShow.find(q => q.id === questionId);
         if (!question) continue;
 
+        const isDrawingQuestion = question.questionType === 'drawing';
+
         // Create a reference document in the class questions subcollection
         // Use the same questionId to maintain consistency
         const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', selectedClassForAssignment, 'questions', questionId);
 
+        const classQuestionData = {
+          // Reference information
+          questionBankRef: `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`,
+          teacherId: userId,
+          assignedAt: new Date(),
+
+          // Essential question data (for querying and display)
+          topic: question.topic,
+          grade: question.grade,
+          question: question.question,
+          questionType: question.questionType || 'multiple-choice',
+          hint: question.hint || '',
+          standard: question.standard || '',
+          concept: question.concept || '',
+          images: question.images || [],
+          source: question.source || 'questionBank',
+          pdfSource: question.pdfSource || '',
+          createdAt: question.createdAt || new Date()
+        };
+
+        // Only include correctAnswer and options for non-drawing questions
+        if (!isDrawingQuestion) {
+          classQuestionData.correctAnswer = question.correctAnswer;
+          classQuestionData.options = question.options;
+        }
+
         // Store reference information and essential question data
         updates.push(
-          setDoc(classQuestionRef, {
-            // Reference information
-            questionBankRef: `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`,
-            teacherId: userId,
-            assignedAt: new Date(),
-
-            // Essential question data (for querying and display)
-            topic: question.topic,
-            grade: question.grade,
-            question: question.question,
-            correctAnswer: question.correctAnswer,
-            options: question.options,
-            hint: question.hint || '',
-            standard: question.standard || '',
-            concept: question.concept || '',
-            images: question.images || [],
-            source: question.source || 'questionBank',
-            pdfSource: question.pdfSource || '',
-            createdAt: question.createdAt || new Date()
-          }, { merge: true })
+          setDoc(classQuestionRef, classQuestionData, { merge: true })
         );
 
         // Also update the assignedClasses array in the original question for tracking

@@ -1536,7 +1536,6 @@ const MainAppContent = () => {
       if (!drawingImageBase64 || !user) return;
       
       setIsValidatingDrawing(true);
-      setIsAnswered(true);
       const timeTaken = (Date.now() - questionStartTime.current) / 1000;
       
       try {
@@ -1623,10 +1622,12 @@ const MainAppContent = () => {
         
         await updateDoc(userDocRef, updates);
         setIsValidatingDrawing(false);
+        setIsAnswered(true);
         
       } catch (error) {
         console.error('Error validating drawing:', error);
         setIsValidatingDrawing(false);
+        setIsAnswered(true);
         setFeedback({
           type: "error",
           message: error.message || "Failed to validate drawing. Please try again."
@@ -3335,13 +3336,16 @@ Answer: [The answer]`;
                     onClick={checkAnswer}
                     disabled={
                       isValidatingDrawing ||
-                      (currentQuestion.questionType === 'drawing' 
-                        ? !drawingImageBase64 
+                      (currentQuestion.questionType === 'drawing'
+                        ? !drawingImageBase64
                         : (userAnswer === null || userAnswer === ''))
                     }
-                    className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px]"
+                    className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2"
                   >
-                    {isValidatingDrawing ? 'Validating...' : 'Check Answer'}
+                    {isValidatingDrawing && (
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    <span>{isValidatingDrawing ? 'Checking drawing...' : 'Check Answer'}</span>
                   </button>
                 )}
               </div>
