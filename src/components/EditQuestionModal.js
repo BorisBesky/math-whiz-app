@@ -107,7 +107,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                 </div>
 
                 {error && (
-                    <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4" role="alert">
                         <p className="text-sm text-red-800">{error}</p>
                     </div>
                 )}
