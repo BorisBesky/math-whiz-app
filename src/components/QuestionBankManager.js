@@ -780,14 +780,24 @@ const QuestionBankManager = ({
                                 onChange={() => toggleQuestionSelection(question.id)}
                                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                               />
-                              <div className="flex-1">
+                          <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-900 mb-1">
                                   {question.question}
                                 </p>
                                 <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
                                   <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
                                   <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
-                                  {question.correctAnswer && (
+                                  {question.questionType && (
+                                    <span className={`px-2 py-1 rounded ${
+                                      question.questionType === 'drawing' 
+                                        ? 'bg-purple-100 text-purple-800' 
+                                        : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {question.questionType === 'drawing' ? '✏️ Drawing' : 
+                                       question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                                    </span>
+                                  )}
+                                  {question.correctAnswer && question.questionType !== 'drawing' && (
                                     <span className="px-2 py-1 bg-green-100 rounded">
                                       Answer: {question.correctAnswer}
                                     </span>
@@ -887,7 +897,17 @@ const QuestionBankManager = ({
                           <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
                             <span className="px-2 py-1 bg-gray-100 rounded">{question.topic}</span>
                             <span className="px-2 py-1 bg-gray-100 rounded">{question.grade}</span>
-                            {question.correctAnswer && (
+                            {question.questionType && (
+                              <span className={`px-2 py-1 rounded ${
+                                question.questionType === 'drawing' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {question.questionType === 'drawing' ? '✏️ Drawing' : 
+                                 question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                              </span>
+                            )}
+                            {question.correctAnswer && question.questionType !== 'drawing' && (
                               <span className="px-2 py-1 bg-green-100 rounded">
                                 Answer: {question.correctAnswer}
                               </span>

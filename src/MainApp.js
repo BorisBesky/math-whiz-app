@@ -51,6 +51,7 @@ import { dashboardTutorial } from './tutorials/dashboardTutorial';
 import { storeTutorial } from './tutorials/storeTutorial';
 import { USER_ROLES } from './utils/userRoles';
 import SketchOverlay from './components/SketchCanvas';
+import DrawingCanvas from './components/DrawingCanvas';
 import NumberPad from './components/NumberPad';
 import { isNumericQuestion, normalizeNumericAnswer } from './utils/answer-helpers';
 import {
@@ -1023,6 +1024,11 @@ const MainAppContent = () => {
   // Sketch overlay state
   const [showSketchOverlay, setShowSketchOverlay] = useState(false);
 
+  // Drawing question state
+  const [drawingImageBase64, setDrawingImageBase64] = useState(null);
+  const [isValidatingDrawing, setIsValidatingDrawing] = useState(false);
+  const [drawingFeedback, setDrawingFeedback] = useState(null);
+
   const [difficulty, setDifficulty] = useState(0.5);
   const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState(
     {}
@@ -1523,13 +1529,119 @@ const MainAppContent = () => {
   };
 
   const checkAnswer = async () => {
+    const currentQuestion = currentQuiz[currentQuestionIndex];
+    
+    // Handle drawing questions differently
+    if (currentQuestion.questionType === 'drawing') {
+      if (!drawingImageBase64 || !user) return;
+      
+      setIsValidatingDrawing(true);
+      setIsAnswered(true);
+      const timeTaken = (Date.now() - questionStartTime.current) / 1000;
+      
+      try {
+        // Call validation endpoint
+        const token = await user.getIdToken();
+        const response = await fetch('/.netlify/functions/validate-drawing', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            question: currentQuestion.question,
+            drawingImageBase64: drawingImageBase64,
+            questionId: currentQuestion.id || `drawing_${Date.now()}`
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to validate drawing');
+        }
+        
+        const result = await response.json();
+        const isCorrect = result.isCorrect;
+        const aiFeedback = result.feedback;
+        const imageUrl = result.imageUrl;
+        
+        setDrawingFeedback(aiFeedback);
+        
+        // Record the drawing question
+        const today = getTodayDateString();
+        const userDocRef = getUserDocRef(user.uid);
+        if (!userDocRef) return;
+        
+        const updates = {};
+        const sanitizedTopic = sanitizeTopicName(currentTopic);
+        
+        const questionRecord = {
+          id: `${Date.now()}_${currentQuestionIndex}`,
+          timestamp: new Date().toISOString(),
+          date: today,
+          topic: currentTopic,
+          grade: selectedGrade,
+          question: currentQuestion.question,
+          userAnswer: 'drawing',
+          isCorrect: isCorrect,
+          timeTaken: timeTaken,
+          questionType: 'drawing',
+          drawingImageUrl: imageUrl,
+          aiFeedback: aiFeedback
+        };
+        
+        updates[`answeredQuestions`] = arrayUnion(questionRecord);
+        
+        // Update progress tracking
+        const allProgress_path = `progress.${today}.all`;
+        const topicProgress_path = `progress.${today}.${sanitizedTopic}`;
+        const gradeAllProgress_path = `progressByGrade.${today}.${selectedGrade}.all`;
+        const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}`;
+        
+        updates[`${allProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+        updates[`${allProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        updates[`${topicProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+        updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        updates[`${gradeAllProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+        updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        updates[`${gradeTopicProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+        updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        
+        if (isCorrect) {
+          setScore(score + 1);
+          updates.coins = increment(1);
+          setFeedback({
+            type: "success",
+            message: "Correct! Well done! 🎉"
+          });
+        } else {
+          setFeedback({
+            type: "error",
+            message: "Not quite right. Try again next time!"
+          });
+        }
+        
+        await updateDoc(userDocRef, updates);
+        setIsValidatingDrawing(false);
+        
+      } catch (error) {
+        console.error('Error validating drawing:', error);
+        setIsValidatingDrawing(false);
+        setFeedback({
+          type: "error",
+          message: error.message || "Failed to validate drawing. Please try again."
+        });
+      }
+      return;
+    }
+    
+    // Handle regular questions (multiple-choice and numeric)
     if (userAnswer === null || !user) return;
 
     setIsAnswered(true);
     const timeTaken = (Date.now() - questionStartTime.current) / 1000; // in seconds
     
     // Normalize answers for numeric questions
-    const currentQuestion = currentQuiz[currentQuestionIndex];
     const normalizedUserAnswer = isNumericQuestion(currentQuestion) 
       ? normalizeNumericAnswer(userAnswer)
       : userAnswer;
@@ -1824,6 +1936,9 @@ const MainAppContent = () => {
     setShowHint(false);
     setFeedback(null);
     setIsAnswered(false);
+    setDrawingImageBase64(null); // Clear drawing
+    setDrawingFeedback(null); // Clear drawing feedback
+    setIsValidatingDrawing(false); // Reset validation state
   };
   const resetQuiz = () => {
     setCurrentQuestionIndex(0);
@@ -3044,8 +3159,42 @@ Answer: [The answer]`;
             {formatMathText(currentQuestion.question)}
           </p>
           
-          {/* Conditionally render number pad or multiple choice */}
-          {isNumericQuestion(currentQuestion) ? (
+          {/* Conditionally render drawing canvas, number pad, or multiple choice */}
+          {currentQuestion.questionType === 'drawing' ? (
+            <div className="mb-6">
+              {!isAnswered ? (
+                <DrawingCanvas
+                  onChange={(imageData) => setDrawingImageBase64(imageData)}
+                  width={600}
+                  height={400}
+                />
+              ) : (
+                <div className="mt-4">
+                  {drawingFeedback && (
+                    <div className={`p-4 rounded-lg border-2 ${
+                      feedback?.type === 'success'
+                        ? 'bg-green-50 border-green-500 text-green-800'
+                        : 'bg-red-50 border-red-500 text-red-800'
+                    }`}>
+                      <p className="font-semibold mb-2">AI Feedback:</p>
+                      <p>{drawingFeedback}</p>
+                    </div>
+                  )}
+                  {drawingImageBase64 && (
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-gray-600 mb-2">Your drawing:</p>
+                      <img 
+                        src={drawingImageBase64} 
+                        alt="Your drawing" 
+                        className="max-w-full h-auto border border-gray-300 rounded-lg mx-auto"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : isNumericQuestion(currentQuestion) ? (
             <div className="mb-6">
               {!isAnswered && (
                 <NumberPad 
@@ -3184,10 +3333,15 @@ Answer: [The answer]`;
                 ) : (
                   <button
                     onClick={checkAnswer}
-                    disabled={userAnswer === null || userAnswer === ''}
+                    disabled={
+                      isValidatingDrawing ||
+                      (currentQuestion.questionType === 'drawing' 
+                        ? !drawingImageBase64 
+                        : (userAnswer === null || userAnswer === ''))
+                    }
                     className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px]"
                   >
-                    Check Answer
+                    {isValidatingDrawing ? 'Validating...' : 'Check Answer'}
                   </button>
                 )}
               </div>
