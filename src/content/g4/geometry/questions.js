@@ -44,19 +44,19 @@ export function generateLinesAndAnglesQuestion(difficulty = 0.5) {
     {
       question: "Two lines that never meet and are always the same distance apart are called:",
       correctAnswer: "parallel",
-      options: ["parallel", "perpendicular", "intersecting", "curved"],
+      options: ["perpendicular", "intersecting", "curved"],
       hint: "Think about train tracks - they run alongside each other but never meet.",
     },
     {
       question: "Two lines that meet at a right angle (90°) are called:",
       correctAnswer: "perpendicular",
-      options: ["parallel", "perpendicular", "intersecting", "curved"],
+      options: ["parallel", "intersecting", "curved"],
       hint: "Think about the corner of a square - the lines meet at a perfect right angle.",
     },
     {
       question: "A line that goes on forever in both directions is called:",
       correctAnswer: "line",
-      options: ["line", "ray", "line segment", "angle"],
+      options: ["ray", "line segment", "angle"],
       hint: "It has no endpoints and continues infinitely in both directions.",
     },
   ];
