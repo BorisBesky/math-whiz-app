@@ -3319,7 +3319,9 @@ Answer: [The answer]`;
                   </span>
                 ) : (
                   <span className="italic text-gray-400">
-                    {isNumericQuestion(currentQuestion) ? 'Enter a number' : 'Select an answer'}
+                    {isNumericQuestion(currentQuestion) ? 'Enter a number' : 
+                    currentQuestion.questionType === 'multiple-choice' ? 'Select an answer' : 
+                    currentQuestion.questionType === 'drawing' ? 'Draw your answer' : ''}
                   </span>
                 )}
               </div>
