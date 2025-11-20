@@ -8,6 +8,11 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const [error, setError] = useState(null);
 
     const gradeOptions = ['G3', 'G4'];
+    const questionTypeOptions = [
+        { value: 'multiple-choice', label: 'Multiple Choice' },
+        { value: 'numeric', label: 'Numeric Answer' },
+        { value: 'drawing', label: 'Drawing (Interactive)' }
+    ];
     const topicOptions = [
         TOPICS.MULTIPLICATION,
         TOPICS.DIVISION,
@@ -84,8 +89,15 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
         setError(null);
 
         try {
-            if (!editedQuestion.question || !editedQuestion.correctAnswer || !editedQuestion.topic || !editedQuestion.grade) {
-                throw new Error('Question text, answer, topic, and grade are required');
+            const isDrawingQuestion = editedQuestion.questionType === 'drawing';
+            
+            if (!editedQuestion.question || !editedQuestion.topic || !editedQuestion.grade) {
+                throw new Error('Question text, topic, and grade are required');
+            }
+            
+            // For non-drawing questions, correctAnswer is required
+            if (!isDrawingQuestion && !editedQuestion.correctAnswer) {
+                throw new Error('Correct answer is required for non-drawing questions');
             }
 
             await onSave(editedQuestion);
@@ -181,9 +193,32 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                         </div>
                     </div>
 
-                    {/* Options */}
+                    {/* Question Type */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
+                        <select
+                            value={editedQuestion.questionType || 'multiple-choice'}
+                            onChange={(e) => handleChange('questionType', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                            {questionTypeOptions.map(type => (
+                                <option key={type.value} value={type.value}>{type.label}</option>
+                            ))}
+                        </select>
+                        {editedQuestion.questionType === 'drawing' && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                Drawing questions allow students to sketch their answers (e.g., "Draw an obtuse triangle"). 
+                                AI will validate their drawings automatically.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Options - Only show for multiple-choice questions */}
+                    {editedQuestion.questionType !== 'drawing' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}
+                            </label>
                         {(editedQuestion.options || []).map((option, index) => (
                             <div key={index} className="flex items-center space-x-2 mb-2">
                                 <input
@@ -202,8 +237,10 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                             <Plus className="h-4 w-4 mr-1" /> Add Option
                         </button>
                     </div>
+                    )}
 
-                    {/* Correct Answer */}
+                    {/* Correct Answer - Only show for non-drawing questions */}
+                    {editedQuestion.questionType !== 'drawing' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
                         <input
@@ -213,6 +250,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         />
                     </div>
+                    )}
 
                     {/* Hint */}
                     <div>

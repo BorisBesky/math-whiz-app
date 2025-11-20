@@ -66,7 +66,10 @@ Stores user profile information and student progress data.
     date: string,              // YYYY-MM-DD format
     timestamp: Date,
     timeSpent: number,         // milliseconds
-    complexity?: number
+    complexity?: number,
+    questionType?: 'multiple-choice' | 'numeric' | 'drawing',  // Type of question answered
+    drawingImageUrl?: string,  // Firebase Storage URL for drawing questions
+    aiFeedback?: string        // AI-generated feedback for drawing questions
   }>,
   
   // Mastery tracking per topic
@@ -212,7 +215,78 @@ Manages the relationship between students and classes (enrollment).
 }
 ```
 
-The application uses Firebase Auth custom claims for authorization:
+### 5. Question Bank Collections
+
+Teachers can create custom questions stored in their personal question banks or in a shared question bank.
+
+**Personal Question Bank Path**: `/artifacts/{appId}/users/{userId}/questionBank/{questionId}`
+
+**Shared Question Bank Path**: `/artifacts/{appId}/sharedQuestionBank/{questionId}`
+
+**Class Questions Path**: `/artifacts/{appId}/classes/{classId}/questions/{questionId}`
+
+#### Question Document Structure
+
+```typescript
+{
+  id: string,                    // Auto-generated question ID
+  question: string,              // Question text
+  questionType?: 'multiple-choice' | 'numeric' | 'drawing',  // Type of question (default: multiple-choice)
+  
+  // For multiple-choice and numeric questions
+  options?: string[],            // Array of answer choices (not used for drawing questions)
+  correctAnswer?: string,        // Correct answer (not used for drawing questions)
+  
+  // Metadata
+  topic: string,                 // Topic/subject area
+  grade: string,                 // Grade level (G3, G4)
+  hint?: string,                 // Optional hint for students
+  standard?: string,             // Learning standard (e.g., "3.OA.C.7")
+  concept?: string,              // Concept name
+  
+  // Source tracking
+  source?: string,               // Source type: 'questionBank', 'sharedQuestionBank', 'generated'
+  pdfSource?: string,            // Name of PDF source if imported
+  userId?: string,               // Creator's user ID (for teacher questions)
+  teacherName?: string,          // Creator's display name
+  teacherEmail?: string,         // Creator's email
+  
+  // Assignment tracking
+  assignedClasses?: string[],    // Array of class IDs where question is assigned
+  
+  // Images and media
+  images?: string[],             // Array of image URLs
+  
+  // Timestamps
+  createdAt: Date,               // When question was created
+  updatedAt?: Date,              // Last modification time
+  addedAt?: Date,                // When added to shared bank (for shared questions)
+}
+```
+
+### 6. Drawing Validation Rate Limits
+
+Track daily usage of AI drawing validation API.
+
+**Path**: `/artifacts/{appId}/users/{userId}/math_whiz_data/profile`
+
+Added to user profile document:
+
+```typescript
+{
+  // ... other user fields ...
+  
+  // Drawing validation rate limiting
+  dailyDrawingValidations?: {
+    [date: string]: {          // YYYY-MM-DD format
+      count: number,           // Number of drawing validations used today
+      lastValidation: Date     // Timestamp of last validation
+    }
+  }
+}
+```
+
+## Authorization
 
 - **Admin Users**: Have `admin: true` custom claim
 - **Teachers**: Have `admin: true` custom claim but `role: 'teacher'` in Firestore profile

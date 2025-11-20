@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, 
-  BarChart3, 
-  Trophy, 
-  Clock, 
+import {
+  Users,
+  BarChart3,
+  Trophy,
+  Clock,
   Download,
   Trash2,
   Eye,
@@ -52,7 +52,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [selectedBulkClass, setSelectedBulkClass] = useState('');
   const [selectedTeachers, setSelectedTeachers] = useState(new Set());
   const [isSelectAllTeachers, setIsSelectAllTeachers] = useState(false);
-  
+
   // Class management states
   const [selectedClasses, setSelectedClasses] = useState(new Set());
   const [isSelectAllClasses, setIsSelectAllClasses] = useState(false);
@@ -62,11 +62,11 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [editingClass, setEditingClass] = useState(null);
   const [selectedClassForDetail, setSelectedClassForDetail] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
-  
+
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [newTeacher, setNewTeacher] = useState({ name: '', email: '' });
-  
+
   // Class assignment states
   const [showClassAssignment, setShowClassAssignment] = useState(false);
   const [selectedStudentForClass, setSelectedStudentForClass] = useState(null);
@@ -86,7 +86,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
       const token = await user.getIdToken();
       console.log('fetchStudentData: calling get-all-students API');
-      
+
       const response = await fetch('/.netlify/functions/get-all-students', {
         method: 'POST',
         headers: {
@@ -101,7 +101,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         const errorData = await response.json();
         throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
-      
+
       const rawStudentData = await response.json();
 
       const today = new Date().toISOString().split('T')[0];
@@ -115,22 +115,22 @@ const AdminPortal = ({ db, onClose, appId }) => {
         const totalStudentQuestions = answeredQuestions.length;
         const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
         const accuracy = totalStudentQuestions > 0 ? (correctAnswers / totalStudentQuestions * 100) : 0;
-        
+
         if (questionsToday.length > 0) {
           activeToday++;
         }
-        
-        const latestActivity = answeredQuestions.length > 0 
+
+        const latestActivity = answeredQuestions.length > 0
           ? new Date(answeredQuestions[answeredQuestions.length - 1].timestamp)
           : null;
-        
+
         const progressG3 = data.progressByGrade?.[today]?.G3 || data.progress?.[today] || {};
         const progressG4 = data.progressByGrade?.[today]?.G4 || {};
-        
+
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
-        const classNames = data.teacherIds?.length > 0 
+        const classNames = data.teacherIds?.length > 0
           ? classes.filter(c => data.teacherIds.includes(c.teacherId)).map(c => c.name).join(', ') || 'Unassigned'
           : 'Unassigned';
 
@@ -162,7 +162,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         totalQuestions: totalQuestions,
         averageAccuracy: averageAccuracy
       });
-      
+
     } catch (error) {
       console.error('Error fetching student data:', error);
       setError(`Failed to fetch student data: ${error.message}`);
@@ -181,7 +181,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       }
 
       const token = await user.getIdToken();
-      
+
       const response = await fetch('/.netlify/functions/get-all-teachers', {
         method: 'POST',
         headers: {
@@ -195,7 +195,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         const errorData = await response.json();
         throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
-      
+
       const teachersList = await response.json();
       setTeachers(teachersList);
     } catch (error) {
@@ -242,7 +242,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
     try {
       const token = await user.getIdToken();
-      
+
       const response = await fetch('/.netlify/functions/create-teacher', {
         method: 'POST',
         headers: {
@@ -263,16 +263,16 @@ const AdminPortal = ({ db, onClose, appId }) => {
       }
 
       console.log('Teacher created successfully:', result);
-      
+
       // Show appropriate message based on reset email status
       const message = `Teacher account created successfully!\n\n` +
         `${result.resetMessage}\n\n` +
         `Teacher Email: ${result.teacherEmail}\n\n` +
         `Instructions: The teacher can now go to the login page and click "Forgot Password" ` +
         `to receive a password reset email, or you can manually send them reset instructions.`;
-      
+
       alert(message);
-      
+
       setNewTeacher({ name: '', email: '' });
       setShowAddTeacher(false);
       fetchTeachers();
@@ -285,23 +285,23 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const deleteTeacher = async (teacher) => {
     const teacherName = teacher.displayName || teacher.name || teacher.email || 'Unknown Teacher';
     const confirmMessage = `Are you sure you want to delete teacher "${teacherName}" (${teacher.email})?\n\nThis will:\n- Remove their account and admin access\n- Delete their profile\n- Prevent them from logging in\n\nThis action cannot be undone.`;
-    
+
     if (window.confirm(confirmMessage)) {
       try {
         // Debug logging
         console.log('Teacher object:', teacher);
         console.log('AppId:', appId);
-        
+
         const requestBody = {
           teacherId: teacher.id,
           teacherUid: teacher.uid,
           appId: appId
         };
-        
+
         console.log('Request body:', requestBody);
-        
+
         const token = await user.getIdToken();
-        
+
         const response = await fetch('/.netlify/functions/delete-teacher', {
           method: 'DELETE',
           headers: {
@@ -337,7 +337,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       // Get auth token for the API call
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
-      
+
       if (!token) {
         throw new Error('User not authenticated');
       }
@@ -357,7 +357,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
           if (response.ok) {
             const enrollments = await response.json();
             const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
-            
+
             if (enrollment) {
               // Remove the enrollment
               const deleteResponse = await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
@@ -383,8 +383,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
         });
 
         // Update local state
-        setStudents(students.map(student => 
-          student.id === selectedStudentForClass.id 
+        setStudents(students.map(student =>
+          student.id === selectedStudentForClass.id
             ? { ...student, class: 'Unassigned', classId: null }
             : student
         ));
@@ -392,7 +392,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         alert('Student successfully unassigned from class');
       } else {
         // Handle assignment to a specific class
-        
+
         // First, remove from current class if enrolled
         if (selectedStudentForClass.classId) {
           const response = await fetch(`/.netlify/functions/class-students?classId=${selectedStudentForClass.classId}&studentId=${selectedStudentForClass.id}&appId=${appId}`, {
@@ -405,7 +405,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
           if (response.ok) {
             const enrollments = await response.json();
             const enrollment = enrollments.find(e => e.studentId === selectedStudentForClass.id && e.classId === selectedStudentForClass.classId);
-            
+
             if (enrollment) {
               await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
                 method: 'DELETE',
@@ -447,15 +447,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
         // Update local state
         const assignedClassName = classes.find(c => c.id === selectedClass)?.name || 'Unassigned';
-        setStudents(students.map(student => 
-          student.id === selectedStudentForClass.id 
+        setStudents(students.map(student =>
+          student.id === selectedStudentForClass.id
             ? { ...student, class: assignedClassName, classId: selectedClass }
             : student
         ));
 
         alert(`Student successfully assigned to ${assignedClassName}`);
       }
-      
+
       setShowClassAssignment(false);
       setSelectedStudentForClass(null);
       setSelectedClass('');
@@ -576,7 +576,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       'Active Today': student.isActiveToday ? 'Yes' : 'No'
     }));
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + Object.keys(csvData[0]).join(",") + "\n"
       + csvData.map(row => Object.values(row).join(",")).join("\n");
 
@@ -595,7 +595,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         // Get auth token for the API call
         const auth = getAuth();
         const token = await auth.currentUser?.getIdToken();
-        
+
         if (token) {
           // Find and remove any class enrollments for this student
           const student = students.find(s => s.id === studentId);
@@ -611,7 +611,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
               if (response.ok) {
                 const enrollments = await response.json();
                 const enrollment = enrollments.find(e => e.studentId === studentId && e.classId === student.classId);
-                
+
                 if (enrollment) {
                   await fetch(`/.netlify/functions/class-students?id=${enrollment.id}&appId=${appId}`, {
                     method: 'DELETE',
@@ -630,14 +630,14 @@ const AdminPortal = ({ db, onClose, appId }) => {
         // Delete the student's profile
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
         await deleteDoc(profileDocRef);
-        
+
         // Update local state
         setStudents(students.filter(s => s.id !== studentId));
         if (selectedStudent?.id === studentId) {
           setSelectedStudent(null);
           setView('students');
         }
-        
+
         alert('Student successfully deleted');
       } catch (error) {
         console.error('Error deleting student:', error);
@@ -668,15 +668,15 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const calculateTopicProgress = (student, grade) => {
     const progress = grade === 'G3' ? student.progressG3 : student.progressG4;
-    const topics = grade === 'G3' 
+    const topics = grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
       : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
-    
+
     return topics.map(topic => {
       const sanitizedTopic = topic.replace(/[^a-zA-Z0-9]/g, '_');
       const topicProgress = progress[sanitizedTopic] || progress[topic] || { correct: 0, incorrect: 0 };
       const goal = student.dailyGoalsByGrade?.[grade]?.[topic] || 4;
-      
+
       return {
         topic,
         correct: topicProgress.correct || 0,
@@ -820,7 +820,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     if (sortField !== field) {
       return <ChevronsUpDown className="w-4 h-4 text-gray-400" />;
     }
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <ChevronUp className="w-4 h-4 text-blue-600" />
       : <ChevronDown className="w-4 h-4 text-blue-600" />;
   };
@@ -861,11 +861,11 @@ const AdminPortal = ({ db, onClose, appId }) => {
       });
 
       await Promise.all(deletePromises);
-      
+
       setStudents(students.filter(s => !selectedStudents.has(s.id)));
       setSelectedStudents(new Set());
       setIsSelectAll(false);
-      
+
       if (selectedStudent && selectedStudents.has(selectedStudent.id)) {
         setSelectedStudent(null);
         setView('students');
@@ -875,7 +875,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       alert('Error deleting students. Please try again.');
     }
   };
-  
+
   const handleSelectTeacher = (teacherId) => {
     const newSelected = new Set(selectedTeachers);
     if (newSelected.has(teacherId)) {
@@ -884,20 +884,20 @@ const AdminPortal = ({ db, onClose, appId }) => {
       newSelected.add(teacherId);
     }
     setSelectedTeachers(newSelected);
-  setIsSelectAllTeachers(newSelected.size === getSortedTeachers().length);
+    setIsSelectAllTeachers(newSelected.size === getSortedTeachers().length);
   };
-  
+
   const handleSelectAllTeachers = () => {
     if (isSelectAllTeachers) {
       setSelectedTeachers(new Set());
       setIsSelectAllTeachers(false);
     } else {
-  const allIds = new Set(getSortedTeachers().map(t => t.id));
+      const allIds = new Set(getSortedTeachers().map(t => t.id));
       setSelectedTeachers(allIds);
       setIsSelectAllTeachers(true);
     }
   };
-  
+
   const handleBulkDeleteTeachers = async () => {
     if (selectedTeachers.size === 0) {
       alert('No teachers selected.');
@@ -925,7 +925,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
         });
         if (!resp.ok) {
           let message = 'Failed to delete teacher';
-          try { const j = await resp.json(); message = j.error || message; } catch {}
+          try { const j = await resp.json(); message = j.error || message; } catch { }
           throw new Error(`${t.email || t.id}: ${message}`);
         }
       }));
@@ -951,7 +951,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
     try {
       const token = await user.getIdToken();
-      
+
       const response = await fetch('/.netlify/functions/classes', {
         method: 'POST',
         headers: {
@@ -972,7 +972,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
       console.log('Class created successfully:', result);
       alert('Class created successfully!');
-      
+
       setNewClass({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
       setShowAddClass(false);
       fetchClasses();
@@ -990,7 +990,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
     try {
       const token = await user.getIdToken();
-      
+
       const response = await fetch(`/.netlify/functions/classes?id=${editingClass.id}&appId=${appId}`, {
         method: 'PUT',
         headers: {
@@ -1015,7 +1015,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
       console.log('Class updated successfully:', result);
       alert('Class updated successfully!');
-      
+
       setEditingClass(null);
       setShowEditClass(false);
       fetchClasses();
@@ -1027,12 +1027,12 @@ const AdminPortal = ({ db, onClose, appId }) => {
 
   const handleDeleteClass = async (classToDelete) => {
     const confirmMessage = `Are you sure you want to delete class "${classToDelete.name}"?\n\nThis will:\n- Remove all student enrollments\n- Delete the class permanently\n\nThis action cannot be undone.`;
-    
+
     if (!window.confirm(confirmMessage)) return;
 
     try {
       const token = await user.getIdToken();
-      
+
       const response = await fetch(`/.netlify/functions/classes?id=${classToDelete.id}&appId=${appId}`, {
         method: 'DELETE',
         headers: {
@@ -1061,7 +1061,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
       alert('No classes selected.');
       return;
     }
-    
+
     const count = selectedClasses.size;
     const confirmMessage = `Are you sure you want to delete ${count} class(es)?\n\nThis will remove all student enrollments and delete the classes permanently. This action cannot be undone.`;
     if (!window.confirm(confirmMessage)) return;
@@ -1073,17 +1073,17 @@ const AdminPortal = ({ db, onClose, appId }) => {
       await Promise.all(selectedIds.map(async (id) => {
         const cls = classes.find(c => c.id === id);
         if (!cls) return;
-        
+
         const resp = await fetch(`/.netlify/functions/classes?id=${id}&appId=${appId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (!resp.ok) {
           let message = 'Failed to delete class';
-          try { const j = await resp.json(); message = j.error || message; } catch {}
+          try { const j = await resp.json(); message = j.error || message; } catch { }
           throw new Error(`${cls.name}: ${message}`);
         }
       }));
@@ -1128,7 +1128,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
-      
+
       if (!token) {
         throw new Error('User not authenticated');
       }
@@ -1170,7 +1170,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-7xl h-full max-h-[90vh] flex flex-col">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -1270,8 +1270,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setView('overview')}
-            className={`relative px-6 py-3 flex items-center justify-center ${view === 'overview' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'overview'
+              ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'}`}
             title="Overview - View dashboard statistics and recent activity"
           >
@@ -1279,8 +1279,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
           </button>
           <button
             onClick={() => setView('students')}
-            className={`relative px-6 py-3 flex items-center justify-center ${view === 'students' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'students'
+              ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'}`}
             title={`Students - Manage ${students.length} student(s)`}
           >
@@ -1289,8 +1289,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
           </button>
           <button
             onClick={() => setView('teachers')}
-            className={`relative px-6 py-3 flex items-center justify-center ${view === 'teachers' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'teachers'
+              ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'}`}
             title={`Teachers - Manage ${teachers.length} teacher(s)`}
           >
@@ -1299,8 +1299,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
           </button>
           <button
             onClick={() => setView('classes')}
-            className={`relative px-6 py-3 flex items-center justify-center ${view === 'classes' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'classes'
+              ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'}`}
             title={`Classes - Manage ${classes.length} class(es)`}
           >
@@ -1309,8 +1309,8 @@ const AdminPortal = ({ db, onClose, appId }) => {
           </button>
           <button
             onClick={() => setView('questions')}
-            className={`relative px-6 py-3 flex items-center justify-center ${view === 'questions' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
+            className={`relative px-6 py-3 flex items-center justify-center ${view === 'questions'
+              ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'}`}
             title="Question Bank - Manage all questions"
           >
@@ -1326,7 +1326,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
               <p>{error}</p>
             </div>
           )}
-          
+
           {/* Overview */}
           {view === 'overview' && (
             <div className="space-y-6">
@@ -1341,7 +1341,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <Users className="w-12 h-12 text-blue-600" />
                   </div>
                 </div>
-                
+
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1351,7 +1351,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <TrendingUp className="w-12 h-12 text-green-600" />
                   </div>
                 </div>
-                
+
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1361,7 +1361,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <BarChart3 className="w-12 h-12 text-purple-600" />
                   </div>
                 </div>
-                
+
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1388,17 +1388,17 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     .slice(0, 10)
                     .map(student => (
                       <div key={student.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 text-sm font-medium">
-                            {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
-                          </span>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 text-sm font-medium">
+                              {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{student.email || `Student ${student.id.slice(0, 8)}`}</p>
+                            <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{student.email || `Student ${student.id.slice(0, 8)}`}</p>
-                          <p className="text-sm text-gray-600">Grade {student.selectedGrade.slice(1)}</p>
-                        </div>
-                      </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-900">{formatDate(student.latestActivity)}</p>
                           <p className="text-sm text-gray-600">{formatTime(student.latestActivity)}</p>
@@ -1429,7 +1429,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('student')}
                         >
@@ -1438,7 +1438,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('student')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('grade')}
                         >
@@ -1447,7 +1447,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('grade')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('class')}
                         >
@@ -1456,7 +1456,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('class')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('questionsToday')}
                         >
@@ -1465,7 +1465,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('questionsToday')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('totalQuestions')}
                         >
@@ -1474,7 +1474,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('totalQuestions')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('accuracy')}
                         >
@@ -1483,7 +1483,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('accuracy')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('coins')}
                         >
@@ -1492,7 +1492,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('coins')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('lastActivity')}
                         >
@@ -1518,19 +1518,19 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-blue-600 text-sm font-medium">
-                                {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {student.email || `Student ${student.id.slice(0, 8)}`}
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <span className="text-blue-600 text-sm font-medium">
+                                  {student.email ? student.email.slice(0, 2).toUpperCase() : student.id.slice(0, 2).toUpperCase()}
+                                </span>
                               </div>
-                              <div className="text-sm text-gray-500">ID: {student.id}</div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.email || `Student ${student.id.slice(0, 8)}`}
+                                </div>
+                                <div className="text-sm text-gray-500">ID: {student.id}</div>
+                              </div>
                             </div>
-                          </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -1539,11 +1539,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-between">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                student.class === 'Unassigned' 
-                                  ? 'bg-gray-100 text-gray-800' 
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${student.class === 'Unassigned'
+                                  ? 'bg-gray-100 text-gray-800'
                                   : 'bg-green-100 text-green-800'
-                              }`}>
+                                }`}>
                                 {student.class}
                               </span>
                               <button
@@ -1646,7 +1645,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('teacher')}
                         >
@@ -1655,7 +1654,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('teacher')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('email')}
                         >
@@ -1664,7 +1663,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('email')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('createdAt')}
                         >
@@ -1754,7 +1753,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('name')}
                         >
@@ -1763,7 +1762,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('name')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('teacher')}
                         >
@@ -1772,7 +1771,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('teacher')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('gradeLevel')}
                         >
@@ -1781,7 +1780,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('gradeLevel')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('subject')}
                         >
@@ -1790,7 +1789,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('subject')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('studentCount')}
                         >
@@ -1799,7 +1798,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                             {getSortIcon('studentCount')}
                           </div>
                         </th>
-                        <th 
+                        <th
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => handleSort('createdAt')}
                         >
@@ -1913,12 +1912,12 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 >
                   ← Back to Students
                 </button>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
-                </h3>
-                <p className="text-gray-600">ID: {selectedStudent.id}</p>
-              </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedStudent.email || `Student ${selectedStudent.id.slice(0, 8)}`}
+                  </h3>
+                  <p className="text-gray-600">ID: {selectedStudent.id}</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1976,7 +1975,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
                             style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
                           ></div>
@@ -2007,7 +2006,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
                             style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
                           ></div>
@@ -2078,11 +2077,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
                               {question.question}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              <span className={`font-medium ${
-                                question.isCorrect 
-                                  ? 'text-green-600' 
+                              <span className={`font-medium ${question.isCorrect
+                                  ? 'text-green-600'
                                   : 'text-red-600'
-                              }`}>
+                                }`}>
                                 {question.userAnswer || 'N/A'}
                               </span>
                             </td>
@@ -2092,11 +2090,10 @@ const AdminPortal = ({ db, onClose, appId }) => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                question.isCorrect 
-                                  ? 'bg-green-100 text-green-800' 
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${question.isCorrect
+                                  ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
-                              }`}>
+                                }`}>
                                 {question.isCorrect ? 'Correct' : 'Incorrect'}
                               </span>
                             </td>
@@ -2122,12 +2119,6 @@ const AdminPortal = ({ db, onClose, appId }) => {
           {view === 'class-detail' && selectedClassForDetail && (
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setView('classes')}
-                  className="text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  ← Back to Classes
-                </button>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
                     {selectedClassForDetail.name}
@@ -2148,9 +2139,9 @@ const AdminPortal = ({ db, onClose, appId }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Teacher:</span>
                       <span className="font-medium">
-                        {teachers.find(t => t.id === selectedClassForDetail.teacherId)?.displayName || 
-                         teachers.find(t => t.id === selectedClassForDetail.teacherId)?.name || 
-                         'Unknown'}
+                        {teachers.find(t => t.id === selectedClassForDetail.teacherId)?.displayName ||
+                          teachers.find(t => t.id === selectedClassForDetail.teacherId)?.name ||
+                          'Unknown'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -2324,7 +2315,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={newTeacher.name}
-                  onChange={(e) => setNewTeacher({...newTeacher, name: e.target.value})}
+                  onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter teacher name"
                 />
@@ -2336,7 +2327,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="email"
                   value={newTeacher.email}
-                  onChange={(e) => setNewTeacher({...newTeacher, email: e.target.value})}
+                  onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter email address"
                 />
@@ -2480,7 +2471,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={newClass.name}
-                  onChange={(e) => setNewClass({...newClass, name: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Math 4A"
                 />
@@ -2491,7 +2482,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 </label>
                 <select
                   value={newClass.teacherId}
-                  onChange={(e) => setNewClass({...newClass, teacherId: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, teacherId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a teacher...</option>
@@ -2509,7 +2500,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={newClass.subject}
-                  onChange={(e) => setNewClass({...newClass, subject: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, subject: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Mathematics"
                 />
@@ -2521,7 +2512,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={newClass.gradeLevel}
-                  onChange={(e) => setNewClass({...newClass, gradeLevel: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, gradeLevel: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 4th Grade"
                 />
@@ -2533,7 +2524,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={newClass.period}
-                  onChange={(e) => setNewClass({...newClass, period: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, period: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 1st Period"
                 />
@@ -2544,7 +2535,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 </label>
                 <textarea
                   value={newClass.description}
-                  onChange={(e) => setNewClass({...newClass, description: e.target.value})}
+                  onChange={(e) => setNewClass({ ...newClass, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Optional class description"
                   rows="3"
@@ -2585,7 +2576,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={editingClass.name}
-                  onChange={(e) => setEditingClass({...editingClass, name: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Math 4A"
                 />
@@ -2596,7 +2587,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 </label>
                 <select
                   value={editingClass.teacherId}
-                  onChange={(e) => setEditingClass({...editingClass, teacherId: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, teacherId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a teacher...</option>
@@ -2614,7 +2605,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={editingClass.subject}
-                  onChange={(e) => setEditingClass({...editingClass, subject: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, subject: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Mathematics"
                 />
@@ -2626,7 +2617,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={editingClass.gradeLevel}
-                  onChange={(e) => setEditingClass({...editingClass, gradeLevel: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, gradeLevel: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 4th Grade"
                 />
@@ -2638,7 +2629,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 <input
                   type="text"
                   value={editingClass.period || ''}
-                  onChange={(e) => setEditingClass({...editingClass, period: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, period: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 1st Period"
                 />
@@ -2649,7 +2640,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 </label>
                 <textarea
                   value={editingClass.description || ''}
-                  onChange={(e) => setEditingClass({...editingClass, description: e.target.value})}
+                  onChange={(e) => setEditingClass({ ...editingClass, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Optional class description"
                   rows="3"
