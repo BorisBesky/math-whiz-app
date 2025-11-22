@@ -434,7 +434,9 @@ const TeacherDashboard = () => {
   const formatDate = (date) => {
     if (!date) return 'Never';
     try {
-      console.log("Formatting date:", date);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Formatting date:", date);
+      }
 
       if (date instanceof Date) {
         if (Number.isNaN(date.getTime())) {
