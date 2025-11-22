@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { USER_ROLES } from '../utils/userRoles';
+import { useAuth } from '../src/contexts/AuthContext';
+import { USER_ROLES } from '../src/utils/userRoles';
 
 const TestUserSetup = () => {
   const { registerWithEmail, user, userRole } = useAuth();
