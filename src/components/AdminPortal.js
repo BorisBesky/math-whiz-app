@@ -63,6 +63,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
   const [editingClass, setEditingClass] = useState(null);
   const [selectedClassForDetail, setSelectedClassForDetail] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
+  const [questionBankReloadKey, setQuestionBankReloadKey] = useState(0);
 
   // Teacher management states
   const [showAddTeacher, setShowAddTeacher] = useState(false);
@@ -1105,7 +1106,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
     }
   };
 
-  const fetchClassStudents = async (classId) => {
+  const fetchClassStudents = useCallback(async (classId) => {
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken();
@@ -1133,7 +1134,34 @@ const AdminPortal = ({ db, onClose, appId }) => {
       setError(`Failed to fetch class students: ${error.message}`);
       setClassStudents([]);
     }
-  };
+  }, [appId]);
+
+  const handleReload = useCallback(() => {
+    switch (view) {
+      case 'overview':
+      case 'students':
+      case 'student-detail':
+        fetchStudentData();
+        break;
+      case 'teachers':
+        fetchTeachers();
+        break;
+      case 'classes':
+        fetchClasses();
+        break;
+      case 'class-detail':
+        fetchClasses();
+        if (selectedClassForDetail) {
+          fetchClassStudents(selectedClassForDetail.id);
+        }
+        break;
+      case 'questions':
+        setQuestionBankReloadKey((key) => key + 1);
+        break;
+      default:
+        fetchStudentData();
+    }
+  }, [view, fetchStudentData, fetchTeachers, fetchClasses, selectedClassForDetail, fetchClassStudents]);
 
   if (loading) {
     return (
@@ -1163,9 +1191,9 @@ const AdminPortal = ({ db, onClose, appId }) => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={fetchStudentData}
+              onClick={handleReload}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Refresh - Reload data"
+              title="Refresh - Reload current view"
             >
               <RefreshCw className="w-5 h-5" />
             </button>
@@ -1702,6 +1730,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
           {/* Question Bank */}
           {view === 'questions' && (
             <AdminQuestionBankManager
+              key={questionBankReloadKey}
               classes={classes}
               appId={appId}
             />

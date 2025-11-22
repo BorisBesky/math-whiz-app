@@ -65,6 +65,8 @@ const TeacherDashboard = () => {
   const [uploadClassId, setUploadClassId] = useState(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [realtimeReloadKey, setRealtimeReloadKey] = useState(0);
+  const [questionBankReloadKey, setQuestionBankReloadKey] = useState(0);
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
@@ -198,6 +200,24 @@ const TeacherDashboard = () => {
     }
   }, [appId, classes, user?.uid]);
 
+  const handleReload = useCallback(() => {
+    switch (view) {
+      case 'overview':
+      case 'students':
+      case 'student-detail':
+        fetchStudentData();
+        break;
+      case 'classes':
+        setRealtimeReloadKey((key) => key + 1);
+        break;
+      case 'questions':
+        setQuestionBankReloadKey((key) => key + 1);
+        break;
+      default:
+        fetchStudentData();
+    }
+  }, [view, fetchStudentData]);
+
   const loadClasses = useCallback(() => {
     if (!user?.uid || !db) {
       console.log('loadClasses: Missing user or db', { user: !!user, db: !!db });
@@ -293,7 +313,7 @@ const TeacherDashboard = () => {
     } else {
       console.log('TeacherDashboard waiting for user/db initialization');
     }
-  }, [user, db, loadClasses, loadStudentCounts]);
+  }, [user, db, loadClasses, loadStudentCounts, realtimeReloadKey]);
 
   useEffect(() => {
     if (classes.length > 0 && user) {
@@ -788,9 +808,9 @@ const TeacherDashboard = () => {
                 <HelpCircle className="w-5 h-5" />
               </button>
               <button
-                onClick={fetchStudentData}
+                onClick={handleReload}
                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Refresh - Reload student data"
+                title="Refresh - Reload current view"
               >
                 <RefreshCw className="w-5 h-5" />
               </button>
@@ -1312,6 +1332,7 @@ const TeacherDashboard = () => {
             </div>
 
             <QuestionBankManager
+              key={questionBankReloadKey}
               classes={classes}
               appId={appId}
               userId={user?.uid}
