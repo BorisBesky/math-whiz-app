@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy, Upload } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
+import { formatDate } from '../utils/common_utils';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [students, setStudents] = useState([]);
@@ -175,19 +176,6 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
     } catch (error) {
       console.error('Error updating class:', error);
       setError('Failed to update class');
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    try {
-      if (date.toDate) {
-        return date.toDate().toLocaleDateString();
-      }
-      const parsedDate = new Date(date);
-      return isNaN(parsedDate.getTime()) ? 'N/A' : parsedDate.toLocaleDateString();
-    } catch {
-      return 'N/A';
     }
   };
 

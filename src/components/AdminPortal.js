@@ -28,6 +28,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
 import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
+import { formatDate, formatTime } from '../utils/common_utils';
 
 const AdminPortal = ({ db, onClose, appId }) => {
   const { user } = useAuth();
@@ -643,26 +644,6 @@ const AdminPortal = ({ db, onClose, appId }) => {
         console.error('Error deleting student:', error);
         alert(`Error deleting student: ${error.message}`);
       }
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    try {
-      const parsedDate = new Date(date);
-      return isNaN(parsedDate.getTime()) ? 'N/A' : parsedDate.toLocaleDateString();
-    } catch {
-      return 'N/A';
-    }
-  };
-
-  const formatTime = (date) => {
-    if (!date) return 'Never';
-    try {
-      const parsedDate = new Date(date);
-      return isNaN(parsedDate.getTime()) ? 'Never' : parsedDate.toLocaleTimeString();
-    } catch {
-      return 'Never';
     }
   };
 
