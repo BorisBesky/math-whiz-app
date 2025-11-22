@@ -26,12 +26,15 @@ import {
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 import { formatDate, formatTime } from '../utils/common_utils';
 
-const AdminPortal = ({ db, onClose, appId }) => {
-  const { user } = useAuth();
+const AdminPortal = ({ db: initialDb, onClose, appId: initialAppId }) => {
+  const { user, logout } = useAuth();
+  const db = initialDb ?? getFirestore();
+  const appId = initialAppId ?? (typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id');
+  const handleClose = onClose || logout || (() => {});
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -1266,7 +1269,7 @@ const AdminPortal = ({ db, onClose, appId }) => {
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
               title="Close - Exit admin portal"
             >

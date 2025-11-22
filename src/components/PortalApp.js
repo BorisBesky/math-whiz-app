@@ -1,0 +1,247 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { BookOpen, History, Layers, ShieldCheck, Users as UsersIcon, LayoutDashboard, UserCog } from 'lucide-react';
+import PortalLayout from './portal/PortalLayout';
+import TeacherDashboard from './TeacherDashboard';
+import AdminPortal from './AdminPortal';
+import { TutorialProvider } from '../contexts/TutorialContext';
+import { useAuth } from '../contexts/AuthContext';
+import { USER_ROLES } from '../utils/userRoles';
+import usePortalClasses from '../hooks/usePortalClasses';
+import usePortalStudents from '../hooks/usePortalStudents';
+import useClassAssignments from '../hooks/useClassAssignments';
+import usePortalTeachers from '../hooks/usePortalTeachers';
+import OverviewSection from './portal/sections/OverviewSection';
+import StudentsSection from './portal/sections/StudentsSection';
+import ClassesSection from './portal/sections/ClassesSection';
+import QuestionBankSection from './portal/sections/QuestionBankSection';
+import TeacherManagementSection from './portal/sections/TeacherManagementSection';
+
+const PortalApp = ({ initialSection }) => {
+  const { user, userRole, loading, logout } = useAuth();
+  const [activeSectionId, setActiveSectionId] = useState(initialSection || 'overview');
+  const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+  const userId = user?.uid || null;
+  const userEmail = user?.email || null;
+
+  const {
+    classes,
+    loading: classesLoading,
+    error: classesError,
+    createClass,
+  } = usePortalClasses({ appId, userRole, userId, userEmail });
+
+  const {
+    students,
+    stats,
+    classCounts,
+    loading: studentsLoading,
+    error: studentsError,
+    refresh: refreshStudents,
+  } = usePortalStudents({ appId, classes });
+
+  const { assignStudentToClass, removeStudentFromClass } = useClassAssignments({ appId });
+  const {
+    teachers,
+    loading: teachersLoading,
+    error: teachersError,
+    createTeacher,
+    deleteTeacher,
+    refresh: refreshTeachers,
+  } = usePortalTeachers({ appId, enabled: userRole === USER_ROLES.ADMIN });
+
+  const sections = useMemo(() => {
+    if (!userRole) {
+      return [];
+    }
+
+    const sharedSections = [
+      {
+        id: 'overview',
+        label: 'Overview',
+        description: 'Key metrics across your roster',
+        icon: LayoutDashboard,
+        render: () => (
+          <OverviewSection
+            stats={stats}
+            loadingStudents={studentsLoading}
+            loadingClasses={classesLoading}
+            studentError={studentsError}
+            classError={classesError}
+          />
+        ),
+      },
+      {
+        id: 'students',
+        label: 'Students',
+        description: 'Track student performance and activity',
+        icon: UsersIcon,
+        render: () => (
+          <StudentsSection
+            students={students}
+            loading={studentsLoading}
+            error={studentsError}
+            onRefresh={refreshStudents}
+          />
+        ),
+      },
+      {
+        id: 'classes',
+        label: 'Classes',
+        description: 'Manage classes, enrollment, and rosters',
+        icon: Layers,
+        render: () => (
+          <ClassesSection
+            classes={classes}
+            classCounts={classCounts}
+            loading={classesLoading}
+            error={classesError}
+            userRole={userRole}
+            onCreateClass={userRole === USER_ROLES.TEACHER ? createClass : undefined}
+            students={students}
+            onAssignStudent={assignStudentToClass}
+            onRemoveStudent={removeStudentFromClass}
+            onRefreshStudents={refreshStudents}
+          />
+        ),
+      },
+      {
+        id: 'question-bank',
+        label: 'Question Bank',
+        description: 'Author, review, and assign questions',
+        icon: BookOpen,
+        render: () => (
+          <QuestionBankSection
+            userRole={userRole}
+            classes={classes}
+            appId={appId}
+            userId={userId}
+          />
+        ),
+      },
+    ];
+
+    if (userRole === USER_ROLES.TEACHER) {
+      return [
+        ...sharedSections,
+        {
+          id: 'legacy-teacher',
+          label: 'Legacy Teacher Dashboard',
+          description: 'Full legacy experience (temporary)',
+          icon: History,
+          render: () => (
+            <TutorialProvider>
+              <TeacherDashboard />
+            </TutorialProvider>
+          ),
+        },
+      ];
+    }
+
+    if (userRole === USER_ROLES.ADMIN) {
+      return [
+        ...sharedSections,
+        {
+          id: 'teachers',
+          label: 'Teachers',
+          description: 'Manage teacher roster and invitations',
+          icon: UserCog,
+          render: () => (
+            <TeacherManagementSection
+              teachers={teachers}
+              loading={teachersLoading}
+              error={teachersError}
+              onCreate={createTeacher}
+              onDelete={deleteTeacher}
+              onRefresh={refreshTeachers}
+            />
+          ),
+        },
+        {
+          id: 'admin',
+          label: 'Admin Console',
+          description: 'Teacher management and advanced controls',
+          icon: ShieldCheck,
+          render: () => (
+            <AdminPortal
+              appId={appId}
+              onClose={logout}
+            />
+          ),
+        },
+      ];
+    }
+
+    return sharedSections;
+  }, [
+    appId,
+    assignStudentToClass,
+    classes,
+    classesError,
+    classesLoading,
+    classCounts,
+    createClass,
+    logout,
+    refreshStudents,
+    removeStudentFromClass,
+    teachers,
+    teachersError,
+    teachersLoading,
+    stats,
+    students,
+    studentsError,
+    studentsLoading,
+    createTeacher,
+    deleteTeacher,
+    refreshTeachers,
+    userId,
+    userRole,
+  ]);
+
+  useEffect(() => {
+    if (sections.length === 0) {
+      return;
+    }
+
+    const activeSectionExists = sections.some((section) => section.id === activeSectionId);
+    if (!activeSectionExists) {
+      setActiveSectionId(sections[0].id);
+    }
+  }, [sections, activeSectionId]);
+
+  if (loading || !userRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white shadow rounded-lg px-6 py-4 text-center">
+          <p className="text-sm text-gray-600">Loading portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (sections.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white shadow rounded-lg px-6 py-4 text-center">
+          <p className="text-sm text-gray-600">You do not have access to this portal.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const activeSection = sections.find((section) => section.id === activeSectionId) || sections[0];
+
+  return (
+    <PortalLayout
+      sections={sections}
+      activeSectionId={activeSection.id}
+      onSectionChange={setActiveSectionId}
+      user={user}
+      roleLabel={userRole === USER_ROLES.ADMIN ? 'Administrator' : 'Teacher'}
+      onLogout={logout}
+    >
+      {activeSection.render()}
+    </PortalLayout>
+  );
+};
+
+export default PortalApp;
