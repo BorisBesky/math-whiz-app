@@ -20,18 +20,19 @@ import {
   LayoutDashboard,
   BookOpen,
   ClipboardList,
-  RefreshCw,
-  X
+  RefreshCw
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 import { formatDate, formatTime } from '../utils/common_utils';
 
-const AdminPortal = ({ db, onClose, appId }) => {
+const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
+  const db = initialDb ?? getFirestore();
+  const appId = initialAppId ?? (typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id');
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -1177,11 +1178,11 @@ const AdminPortal = ({ db, onClose, appId }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-7xl h-full max-h-[90vh] flex flex-col">
+    <div className="h-full flex flex-col bg-gray-50">
+      <div className="flex flex-col h-full">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
             <GraduationCap className="w-8 h-8 text-blue-600" />
             <div>
@@ -1265,13 +1266,6 @@ const AdminPortal = ({ db, onClose, appId }) => {
                 )}
               </button>
             )}
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Close - Exit admin portal"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
 

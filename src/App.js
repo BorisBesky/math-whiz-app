@@ -1,17 +1,15 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { TutorialProvider } from './contexts/TutorialContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainApp from './MainApp';
-import AdminPage from './components/AdminPage';
-import TeacherDashboard from './components/TeacherDashboard';
 import StudentLogin from './components/StudentLogin';
 import TeacherLogin from './components/TeacherLogin';
 import AdminLogin from './components/AdminLogin';
 import LoginPage from './components/LoginPage';
 import { USER_ROLES } from './utils/userRoles';
 import JoinClass from './components/JoinClass';
+import PortalApp from './components/PortalApp';
 
 const App = () => {
   return (
@@ -32,20 +30,26 @@ const App = () => {
         
         {/* Protected routes - role-based access */}
         <Route 
-          path="/admin" 
+          path="/portal"
           element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-              <AdminPage />
+            <ProtectedRoute allowedRoles={[USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
+              <PortalApp />
             </ProtectedRoute>
-          } 
+          }
         />
         <Route 
           path="/teacher" 
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
-              <TutorialProvider>
-                <TeacherDashboard />
-              </TutorialProvider>
+              <PortalApp initialSection="overview" />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+              <PortalApp initialSection="admin" />
             </ProtectedRoute>
           } 
         />

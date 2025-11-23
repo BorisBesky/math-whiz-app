@@ -21,14 +21,22 @@ const ProtectedRoute = ({ children, allowedRoles = [], fallbackPath = '/unauthor
 
   // If no user is authenticated, redirect to appropriate login
   if (!user) {
-    // Determine which login to redirect to based on allowed roles
+    // If multiple roles are allowed, prefer the unified login page
+    if (allowedRoles.length > 1) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // Determine which login to redirect to when exactly one role is allowed
     if (allowedRoles.includes(USER_ROLES.ADMIN)) {
       return <Navigate to="/admin-login" state={{ from: location }} replace />;
-    } else if (allowedRoles.includes(USER_ROLES.TEACHER)) {
+    }
+    if (allowedRoles.includes(USER_ROLES.TEACHER)) {
       return <Navigate to="/teacher-login" state={{ from: location }} replace />;
-    } else if (allowedRoles.includes(USER_ROLES.STUDENT)) {
+    }
+    if (allowedRoles.includes(USER_ROLES.STUDENT)) {
       return <Navigate to="/student-login" state={{ from: location }} replace />;
     }
+
     return <Navigate to="/" replace />;
   }
 
