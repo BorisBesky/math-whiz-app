@@ -68,7 +68,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
     return topics.map(topic => {
       const topicQuestions = questionsInRange.filter(q => q.topic === topic);
-      const correct = topicQuestions.filter(q => q.correct).length;
+      const correct = topicQuestions.filter(q => q.isCorrect).length;
       const total = topicQuestions.length;
       
       // Get goal from student settings or default
