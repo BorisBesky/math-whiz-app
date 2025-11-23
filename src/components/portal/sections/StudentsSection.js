@@ -682,7 +682,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                     type="number"
                     min="0"
                     value={goalTargets[topic] ?? 4}
-                    onChange={(e) => setGoalTargets(prev => ({ ...prev, [topic]: e.target.value }))}
+                    onChange={(e) => setGoalTargets(prev => ({ ...prev, [topic]: parseInt(e.target.value, 10) || 0 }))}
                     className="w-20 border rounded px-2 py-1 text-sm"
                   />
                 </div>
