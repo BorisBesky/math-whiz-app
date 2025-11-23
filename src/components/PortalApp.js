@@ -83,6 +83,7 @@ const PortalApp = ({ initialSection }) => {
             loading={studentsLoading}
             error={studentsError}
             onRefresh={refreshStudents}
+            appId={appId}
           />
         ),
       },
@@ -166,7 +167,6 @@ const PortalApp = ({ initialSection }) => {
           render: () => (
             <AdminPortal
               appId={appId}
-              onClose={logout}
             />
           ),
         },
@@ -182,7 +182,6 @@ const PortalApp = ({ initialSection }) => {
     classesLoading,
     classCounts,
     createClass,
-    logout,
     refreshStudents,
     removeStudentFromClass,
     teachers,
