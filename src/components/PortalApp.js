@@ -4,6 +4,7 @@ import PortalLayout from './portal/PortalLayout';
 import TeacherDashboard from './TeacherDashboard';
 import AdminPortal from './AdminPortal';
 import { TutorialProvider } from '../contexts/TutorialContext';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { USER_ROLES } from '../utils/userRoles';
 import usePortalClasses from '../hooks/usePortalClasses';
@@ -18,6 +19,7 @@ import TeacherManagementSection from './portal/sections/TeacherManagementSection
 
 const PortalApp = ({ initialSection }) => {
   const { user, userRole, loading, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeSectionId, setActiveSectionId] = useState(initialSection || 'overview');
   const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
   const userId = user?.uid || null;
@@ -230,6 +232,17 @@ const PortalApp = ({ initialSection }) => {
 
   const activeSection = sections.find((section) => section.id === activeSectionId) || sections[0];
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Best-effort navigation
+      try { navigate('/login'); } catch (_) {}
+    }
+  };
+
   return (
     <PortalLayout
       sections={sections}
@@ -237,7 +250,7 @@ const PortalApp = ({ initialSection }) => {
       onSectionChange={setActiveSectionId}
       user={user}
       roleLabel={userRole === USER_ROLES.ADMIN ? 'Administrator' : 'Teacher'}
-      onLogout={logout}
+      onLogout={handleLogout}
     >
       {activeSection.render()}
     </PortalLayout>
