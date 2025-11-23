@@ -371,12 +371,6 @@ const StudentLogin = () => {
               >
                 Teacher Login
               </Link>
-              <Link
-                to="/admin-login"
-                className="text-sm text-purple-600 hover:text-purple-500"
-              >
-                Admin Login
-              </Link>
             </div>
           </div>
         </div>

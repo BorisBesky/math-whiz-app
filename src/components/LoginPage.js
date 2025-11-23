@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, GraduationCap, Shield, LogIn, UserPlus } from 'lucide-react';
+import { User, GraduationCap, LogIn, UserPlus } from 'lucide-react';
 
 const LoginPage = () => {
   const [mode, setMode] = useState('signin'); // 'signin' or 'signup'
@@ -72,14 +72,6 @@ const LoginPage = () => {
                   Teacher Sign In
                 </Link>
 
-                {/* Admin Sign In */}
-                <Link
-                  to="/admin-login"
-                  className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
-                >
-                  <Shield size={20} className="mr-3" />
-                  Admin Sign In
-                </Link>
               </div>
             </>
           ) : (
