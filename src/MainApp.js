@@ -316,6 +316,56 @@ const storeItems = [
     id: "bg30",
     name: "Bat",
     url: "https://images4whizkids.s3.us-east-2.amazonaws.com/bat.jpg",
+  },
+  {
+    id: "bg31",
+    name: "Forbidden Forest",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Forbidden%20Forest.jpg"
+  },
+  {
+    id: "bg32",
+    name: "Frozen Black Lake",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Frozen%20Black%20Lake.jpg"
+  },
+  {
+    id: "bg33",
+    name: "Gryffindor common room",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Gryffindor%20common%20room.jpg"
+  },
+  {
+    id: "bg34",
+    name: "Hogsmeade Village",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Hogsmeade%20Village.jpg"
+  },
+  {
+    id: "bg35",
+    name: "Owlery Tower",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Owlery%20Tower.jpg"
+  },
+  {
+    id: "bg36",
+    name: "Quidditch Pitch",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/Quidditch%20Pitch.jpg"
+  },
+  {
+    id: "bg37",
+    name: "hogwarts library 2",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/hogwarts%20library%202.jpg"
+  },
+  {
+    id: "bg38",
+    name: "library",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/library.jpg"
+  },
+  {
+    id: "bg39",
+    name: "outside-hall",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/outside-hall.jpg"
+  },
+  {
+    id: "bg40",
+    name: "viaduct bridge",
+    url: "https://storage.googleapis.com/math-whiz-1a337.firebasestorage.app/store-images/viaduct%20bridge.jpg"
   }
 ];
 
