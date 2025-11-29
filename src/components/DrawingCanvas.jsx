@@ -14,7 +14,7 @@ import { Eraser, Pen, RotateCcw, Trash2 } from 'lucide-react';
  * - Clear canvas
  * - Export to base64 image
  */
-const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) => {
+const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', backgroundImage = null }) => {
   const canvasRef = useRef(null);
   const currentStrokeRef = useRef(null);
   const onChangeRef = useRef(onChange);
@@ -23,11 +23,25 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) 
   const [strokes, setStrokes] = useState([]);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
+  const [bgImageObj, setBgImageObj] = useState(null);
 
   // Keep the onChange ref up to date
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  // Load background image
+  useEffect(() => {
+    if (backgroundImage) {
+      const img = new Image();
+      img.crossOrigin = "anonymous"; // Enable CORS if needed
+      img.src = backgroundImage;
+      img.onload = () => setBgImageObj(img);
+      img.onerror = (e) => console.error("Failed to load background image", e);
+    } else {
+      setBgImageObj(null);
+    }
+  }, [backgroundImage]);
 
   // Initialize canvas
   useEffect(() => {
@@ -51,46 +65,69 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '' }) 
     setContext(ctx);
   }, [width, height]);
 
-  // Redraw canvas whenever strokes change
+  // Redraw canvas whenever strokes change or background image changes
   useEffect(() => {
     if (!context) return;
     
-    // Clear and redraw white background
-    context.fillStyle = '#FFFFFF';
-    context.fillRect(0, 0, width, height);
-    
-    // Draw all strokes up to currentStrokeIndex
+    // Create an offscreen canvas for strokes to handle eraser properly
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = width;
+    offscreenCanvas.height = height;
+    const offCtx = offscreenCanvas.getContext('2d');
+
+    // Draw all strokes up to currentStrokeIndex on offscreen canvas
     const strokesToDraw = currentStrokeIndex >= 0 
       ? strokes.slice(0, currentStrokeIndex + 1)
       : [];
 
     strokesToDraw.forEach(stroke => {
-      context.strokeStyle = stroke.color;
-      context.lineWidth = stroke.width;
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      context.globalCompositeOperation = stroke.mode === 'erase' ? 'destination-out' : 'source-over';
+      offCtx.strokeStyle = stroke.color;
+      offCtx.lineWidth = stroke.width;
+      offCtx.lineCap = 'round';
+      offCtx.lineJoin = 'round';
+      offCtx.globalCompositeOperation = stroke.mode === 'erase' ? 'destination-out' : 'source-over';
 
-      context.beginPath();
+      offCtx.beginPath();
       stroke.points.forEach((point, index) => {
         if (index === 0) {
-          context.moveTo(point.x, point.y);
+          offCtx.moveTo(point.x, point.y);
         } else {
-          context.lineTo(point.x, point.y);
+          offCtx.lineTo(point.x, point.y);
         }
       });
-      context.stroke();
+      offCtx.stroke();
     });
 
-    // Reset composite operation
+    // Clear main canvas
+    context.clearRect(0, 0, width, height);
+    
+    // Draw background (white or image)
+    if (bgImageObj) {
+      // Draw image to fit canvas while maintaining aspect ratio
+      const scale = Math.min(width / bgImageObj.width, height / bgImageObj.height);
+      const x = (width / 2) - (bgImageObj.width / 2) * scale;
+      const y = (height / 2) - (bgImageObj.height / 2) * scale;
+      
+      // Fill white first
+      context.fillStyle = '#FFFFFF';
+      context.fillRect(0, 0, width, height);
+      
+      context.drawImage(bgImageObj, x, y, bgImageObj.width * scale, bgImageObj.height * scale);
+    } else {
+      context.fillStyle = '#FFFFFF';
+      context.fillRect(0, 0, width, height);
+    }
+
+    // Draw strokes from offscreen canvas
     context.globalCompositeOperation = 'source-over';
+    context.drawImage(offscreenCanvas, 0, 0);
 
     // Notify parent of changes with base64 image
     if (onChangeRef.current) {
       const imageData = canvasRef.current.toDataURL('image/png');
       onChangeRef.current(imageData);
     }
-  }, [strokes, currentStrokeIndex, context, width, height]);
+  }, [strokes, currentStrokeIndex, context, width, height, bgImageObj]);
 
   // Get coordinates from mouse or touch event
   const getCoordinates = (e) => {

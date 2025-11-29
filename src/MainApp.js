@@ -3256,9 +3256,20 @@ Answer: [The answer]`;
       ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
 
     // Filter images by type
-    const questionImages = (currentQuestion.images || []).filter(img => !img.type || img.type === 'question' || img.type === 'uploaded');
+    const allQuestionImages = (currentQuestion.images || []).filter(img => !img.type || img.type === 'question' || img.type === 'uploaded');
     const hintImages = (currentQuestion.images || []).filter(img => img.type === 'hint');
     const answerImages = (currentQuestion.images || []).filter(img => img.type === 'answer');
+
+    // Determine if we should use an image as background for drawing
+    let drawingBackgroundImage = null;
+    let displayQuestionImages = allQuestionImages;
+
+    if (currentQuestion.questionType === 'drawing' && allQuestionImages.length > 0) {
+        // Use the first question image as background
+        drawingBackgroundImage = allQuestionImages[0].data || allQuestionImages[0].url;
+        // Remove it from the display list so it doesn't show up twice
+        displayQuestionImages = allQuestionImages.slice(1);
+    }
 
     return (
       <>
@@ -3290,9 +3301,9 @@ Answer: [The answer]`;
           </p>
 
           {/* Question Images */}
-          {questionImages.length > 0 && (
+          {displayQuestionImages.length > 0 && (
             <div className="flex flex-wrap gap-4 mb-6 justify-center">
-              {questionImages.map((img, idx) => (
+              {displayQuestionImages.map((img, idx) => (
                 <div key={idx} className="flex flex-col items-center">
                   <img 
                     src={img.data || img.url} 
@@ -3313,6 +3324,7 @@ Answer: [The answer]`;
                   onChange={(imageData) => setDrawingImageBase64(imageData)}
                   width={600}
                   height={400}
+                  backgroundImage={drawingBackgroundImage}
                 />
               ) : (
                 <div className="mt-4">
