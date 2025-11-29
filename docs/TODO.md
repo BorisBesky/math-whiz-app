@@ -1,26 +1,17 @@
 ## TODOs
 
 ### Math Topics & Content
-- **Add base-2 topic**: Start with binary addition.
-- **3rd grade fractions**: Restore explanation with pizza example.
-- **Store images**: Add more pictures for the store.
-- **Graphical quiz problems**: Explore generating problems with shapes.
-- **Continue insulating individual topics logic**: move hard-coded logic from App.js to individual topic files.
+- **[ ]3rd grade fractions**: Restore explanation with pizza example.
+- **[ ]Store images**: Add more pictures for the store.
+- **[ ]Graphical quiz problems**: Explore generating problems with shapes.
+- **[ ]Addition & Subtraction**: Add more problems and explanations.
+- **[ ]Improve explanations**: Add more detailed explanations for existing topics.
+- **[ ]Add more topics**: such as measurement, time, money, etc.
+- **[ ]Continue insulating individual topics logic**: move hard-coded logic from App.js to individual topic files.
 
 ### Admin Features
-- **Site admin user**
-  - Login to manage all users.
-  - Add/remove students from classes.
-  - Disable, delete, or update user accounts.
-  - View all system records.
+- **[ ] Automate image creation and import flow**: Create scripts to automate image creation and importing for the store.
+
 
 ### Teacher Dashboard
-- [x] Create and manage classes.
-- [x] Remove students from classes.
-- [x] Send invitation links to students.
 - [ ] Send emails and invitation emails to students.
-- [x] View all class records.
-- [x] View class statistics (by topic, student, class, etc.).
-
-### Student Features
-- [x] Student removal from class**: Make sure other students in the class are unaffected.

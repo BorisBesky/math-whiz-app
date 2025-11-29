@@ -3131,6 +3131,12 @@ Answer: [The answer]`;
     const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage =
       ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+
+    // Filter images by type
+    const questionImages = (currentQuestion.images || []).filter(img => !img.type || img.type === 'question' || img.type === 'uploaded');
+    const hintImages = (currentQuestion.images || []).filter(img => img.type === 'hint');
+    const answerImages = (currentQuestion.images || []).filter(img => img.type === 'answer');
+
     return (
       <>
         <div
@@ -3159,6 +3165,22 @@ Answer: [The answer]`;
           <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">
             {formatMathText(currentQuestion.question)}
           </p>
+
+          {/* Question Images */}
+          {questionImages.length > 0 && (
+            <div className="flex flex-wrap gap-4 mb-6 justify-center">
+              {questionImages.map((img, idx) => (
+                <div key={idx} className="flex flex-col items-center">
+                  <img 
+                    src={img.data || img.url} 
+                    alt={img.description || 'Question Image'} 
+                    className="max-w-full h-auto max-h-60 rounded-lg shadow-md border border-gray-200"
+                  />
+                  {img.description && <p className="text-xs text-gray-500 mt-1">{img.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
           
           {/* Conditionally render drawing canvas, number pad, or multiple choice */}
           {currentQuestion.questionType === 'drawing' ? (
@@ -3267,7 +3289,41 @@ Answer: [The answer]`;
               <p>
                 <span className="font-bold">Hint:</span> {currentQuestion.hint}
               </p>
+              {/* Hint Images */}
+              {hintImages.length > 0 && (
+                <div className="flex flex-wrap gap-4 mt-3 justify-center">
+                  {hintImages.map((img, idx) => (
+                    <div key={idx} className="flex flex-col items-center">
+                      <img 
+                        src={img.data || img.url} 
+                        alt={img.description || 'Hint Image'} 
+                        className="max-w-full h-auto max-h-40 rounded shadow-sm border border-yellow-200"
+                      />
+                      {img.description && <p className="text-xs text-yellow-700 mt-1">{img.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Answer Images - Show only when answered */}
+          {isAnswered && answerImages.length > 0 && (
+             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="font-semibold text-blue-800 mb-2">Answer Explanation:</p>
+                <div className="flex flex-wrap gap-4 justify-center">
+                    {answerImages.map((img, idx) => (
+                        <div key={idx} className="flex flex-col items-center">
+                            <img 
+                                src={img.data || img.url} 
+                                alt={img.description || 'Answer Image'} 
+                                className="max-w-full h-auto max-h-60 rounded shadow-md border border-blue-200"
+                            />
+                            {img.description && <p className="text-xs text-blue-600 mt-1">{img.description}</p>}
+                        </div>
+                    ))}
+                </div>
+             </div>
           )}
 
           {/* Bottom layout: two rows, responsive */}

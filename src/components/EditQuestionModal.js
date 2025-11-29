@@ -70,7 +70,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
             const base64String = reader.result;
             setEditedQuestion(prev => ({
                 ...prev,
-                images: [...(prev.images || []), { type: 'uploaded', data: base64String, description: file.name }]
+                images: [...(prev.images || []), { type: 'question', data: base64String, description: file.name }]
             }));
         };
         reader.readAsDataURL(file);
@@ -139,25 +139,61 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     {/* Images */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
-                        <div className="flex flex-wrap gap-2 mb-2">
+                        <div className="space-y-3 mb-2">
                             {(editedQuestion.images || []).map((img, index) => (
-                                <div key={index} className="relative group">
-                                    <img
-                                        src={img.data || img.url}
-                                        alt={img.description || 'Question image'}
-                                        className="h-20 w-20 object-cover rounded border border-gray-200"
-                                    />
+                                <div key={index} className="flex items-start space-x-3 border p-3 rounded-md bg-gray-50">
+                                    <div className="relative group flex-shrink-0">
+                                        <img
+                                            src={img.data || img.url}
+                                            alt={img.description || 'Question image'}
+                                            className="h-24 w-24 object-contain rounded border border-gray-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Image Type</label>
+                                            <select
+                                                value={img.type || 'question'}
+                                                onChange={(e) => {
+                                                    const newImages = [...(editedQuestion.images || [])];
+                                                    newImages[index] = { ...img, type: e.target.value };
+                                                    setEditedQuestion(prev => ({ ...prev, images: newImages }));
+                                                }}
+                                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            >
+                                                <option value="question">Question Image</option>
+                                                <option value="hint">Hint Image</option>
+                                                <option value="answer">Answer Image</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Image description"
+                                                value={img.description || ''}
+                                                onChange={(e) => {
+                                                    const newImages = [...(editedQuestion.images || [])];
+                                                    newImages[index] = { ...img, description: e.target.value };
+                                                    setEditedQuestion(prev => ({ ...prev, images: newImages }));
+                                                }}
+                                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
                                     <button
                                         onClick={() => removeImage(index)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                        title="Remove image"
                                     >
-                                        <X className="h-3 w-3" />
+                                        <Trash2 className="h-5 w-5" />
                                     </button>
                                 </div>
                             ))}
-                            <label className="h-20 w-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                                <ImageIcon className="h-6 w-6 text-gray-400" />
-                                <span className="text-xs text-gray-500 mt-1">Add Image</span>
+                            
+                            <label className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors">
+                                <ImageIcon className="h-5 w-5 mr-2 text-gray-500" />
+                                Add Image
                                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                             </label>
                         </div>
