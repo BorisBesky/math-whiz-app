@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc, deleteField } from 'firebase/firestore';
-import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit } from 'lucide-react';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
 import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
@@ -34,12 +34,18 @@ const QuestionBankManager = ({
   const [filterGrade, setFilterGrade] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterTeacher, setFilterTeacher] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterHasImage, setFilterHasImage] = useState('');
   const [expandedSources, setExpandedSources] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState('');
   const [internalViewMode, setInternalViewMode] = useState(viewMode || 'all');
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [pendingAssignmentQuestions, setPendingAssignmentQuestions] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isRegexMode, setIsRegexMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const questionContainerRef = useRef(null);
 
   const db = getFirestore();
@@ -61,7 +67,12 @@ const QuestionBankManager = ({
         console.warn('KaTeX render error:', e);
       }
     }
-  }, [questions, sharedQuestions, expandedSources, filterTopic, filterGrade, filterSource, filterTeacher, internalViewMode]);
+  }, [questions, sharedQuestions, expandedSources, filterTopic, filterGrade, filterSource, filterTeacher, filterType, filterHasImage, internalViewMode, currentPage, searchQuery, isRegexMode]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterTopic, filterGrade, filterSource, filterTeacher, filterType, filterHasImage, searchQuery, isRegexMode, internalViewMode]);
 
   const topicOptions = [
     TOPICS.MULTIPLICATION,
@@ -247,11 +258,41 @@ const QuestionBankManager = ({
   const filteredQuestions = questionsToShow.filter(q => {
     if (filterTopic && q.topic !== filterTopic) return false;
     if (filterGrade && q.grade !== filterGrade) return false;
+    if (filterType && q.questionType !== filterType) return false;
+    if (filterHasImage) {
+      const hasImage = q.images && q.images.length > 0;
+      if (filterHasImage === 'yes' && !hasImage) return false;
+      if (filterHasImage === 'no' && hasImage) return false;
+    }
     if (filterSource) {
       const source = q.pdfSource || q.source || 'Unknown Source';
       if (source !== filterSource) return false;
     }
     if (isAdmin && filterTeacher && q.userId !== filterTeacher) return false;
+    
+    if (searchQuery) {
+      if (isRegexMode) {
+        try {
+          const regex = new RegExp(searchQuery, 'i');
+          return (
+            regex.test(q.question || '') ||
+            regex.test(q.topic || '') ||
+            regex.test(q.concept || '') ||
+            regex.test(q.standard || '')
+          );
+        } catch (e) {
+          return false;
+        }
+      }
+      const query = searchQuery.toLowerCase();
+      return (
+        (q.question || '').toLowerCase().includes(query) ||
+        (q.topic || '').toLowerCase().includes(query) ||
+        (q.concept || '').toLowerCase().includes(query) ||
+        (q.standard || '').toLowerCase().includes(query)
+      );
+    }
+    
     return true;
   });
 
@@ -263,6 +304,48 @@ const QuestionBankManager = ({
     const bDate = bQuestions[0]?.createdAt?.toDate?.() || new Date(0);
     return bDate - aDate; // Newest first
   });
+
+  // Pagination for Teacher Questions (Sources)
+  const totalPages = Math.ceil(sources.length / itemsPerPage);
+  const paginatedSources = sources.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Filter and Pagination for Shared Questions
+  const filteredSharedQuestions = sharedQuestions.filter(q => {
+    if (filterTopic && q.topic !== filterTopic) return false;
+    if (filterGrade && q.grade !== filterGrade) return false;
+    if (filterType && q.questionType !== filterType) return false;
+    if (filterHasImage) {
+      const hasImage = q.images && q.images.length > 0;
+      if (filterHasImage === 'yes' && !hasImage) return false;
+      if (filterHasImage === 'no' && hasImage) return false;
+    }
+    if (searchQuery) {
+      if (isRegexMode) {
+        try {
+          const regex = new RegExp(searchQuery, 'i');
+          return (
+            regex.test(q.question || '') ||
+            regex.test(q.topic || '') ||
+            regex.test(q.concept || '') ||
+            regex.test(q.standard || '')
+          );
+        } catch (e) {
+          return false;
+        }
+      }
+      const query = searchQuery.toLowerCase();
+      return (
+        (q.question || '').toLowerCase().includes(query) ||
+        (q.topic || '').toLowerCase().includes(query) ||
+        (q.concept || '').toLowerCase().includes(query) ||
+        (q.standard || '').toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
+  const totalSharedPages = Math.ceil(filteredSharedQuestions.length / itemsPerPage);
+  const paginatedSharedQuestions = filteredSharedQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const toggleSourceExpansion = (source) => {
     const newExpanded = new Set(expandedSources);
@@ -625,9 +708,37 @@ const QuestionBankManager = ({
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center space-x-4">
-          <Filter className="h-5 w-5 text-gray-600" />
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search questions by text, topic, concept..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              id="regex-mode"
+              type="checkbox"
+              checked={isRegexMode}
+              onChange={(e) => setIsRegexMode(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="regex-mode" className="ml-2 block text-sm text-gray-900">
+              Use Regular Expressions
+            </label>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <Filter className="h-5 w-5 text-gray-600" />
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
               <select
@@ -652,6 +763,31 @@ const QuestionBankManager = ({
                 {gradeOptions.map(grade => (
                   <option key={grade} value={grade}>{grade}</option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="">All Types</option>
+                <option value="multiple-choice">Multiple Choice</option>
+                <option value="numeric">Numeric</option>
+                <option value="drawing">Drawing</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <select
+                value={filterHasImage}
+                onChange={(e) => setFilterHasImage(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="">All</option>
+                <option value="yes">Has Image</option>
+                <option value="no">No Image</option>
               </select>
             </div>
             {isAdmin && internalViewMode !== 'shared' ? (
@@ -686,6 +822,7 @@ const QuestionBankManager = ({
           </div>
         </div>
       </div>
+    </div>
 
       {/* Bulk Actions */}
       {selectedQuestions.size > 0 && (
@@ -774,13 +911,13 @@ const QuestionBankManager = ({
           {isAdmin && showViewModeTabs && internalViewMode === 'all' && (
             <h2 className="text-xl font-semibold text-gray-900">Teacher Questions</h2>
           )}
-          {sources.length === 0 && (!isAdmin || internalViewMode !== 'all' || sharedQuestions.length === 0) ? (
+          {paginatedSources.length === 0 && (!isAdmin || internalViewMode !== 'all' || sharedQuestions.length === 0) ? (
             <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">No questions found</p>
             </div>
-          ) : sources.length > 0 ? (
-            sources.map(source => {
+          ) : paginatedSources.length > 0 ? (
+            paginatedSources.map(source => {
               const sourceData = groupedQuestions[source];
               const sourceQuestions = groupingMode === 'teacher-source' ? sourceData.questions : sourceData;
               const isExpanded = expandedSources.has(source);
@@ -932,6 +1069,68 @@ const QuestionBankManager = ({
               );
             })
           ) : null}
+          
+          {/* Pagination Controls for Teacher Questions */}
+          {sources.length > itemsPerPage && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, sources.length)}</span> of <span className="font-medium">{sources.length}</span> sources
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          page === currentPage
+                            ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )
       }
@@ -941,22 +1140,15 @@ const QuestionBankManager = ({
         isAdmin && showViewModeTabs && internalViewMode !== 'teachers' && (
           <div className="space-y-4 mt-6">
             <h2 className="text-xl font-semibold text-gray-900">Shared Question Bank</h2>
-            {sharedQuestions.filter(q => {
-              if (filterTopic && q.topic !== filterTopic) return false;
-              if (filterGrade && q.grade !== filterGrade) return false;
-              return true;
-            }).length === 0 ? (
+            {paginatedSharedQuestions.length === 0 ? (
               <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
                 <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">No shared questions found</p>
               </div>
             ) : (
+              <>
               <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
-                {sharedQuestions.filter(q => {
-                  if (filterTopic && q.topic !== filterTopic) return false;
-                  if (filterGrade && q.grade !== filterGrade) return false;
-                  return true;
-                }).map(question => {
+                {paginatedSharedQuestions.map(question => {
                   const assignedClasses = getClassNames(question.assignedClasses);
                   const isSelected = selectedQuestions.has(question.id);
 
@@ -1046,6 +1238,69 @@ const QuestionBankManager = ({
                   );
                 })}
               </div>
+              
+              {/* Pagination Controls for Shared Questions */}
+              {filteredSharedQuestions.length > itemsPerPage && (
+                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg mt-4">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalSharedPages))}
+                      disabled={currentPage === totalSharedPages}
+                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredSharedQuestions.length)}</span> of <span className="font-medium">{filteredSharedQuestions.length}</span> questions
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        {Array.from({ length: totalSharedPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                              page === currentPage
+                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalSharedPages))}
+                          disabled={currentPage === totalSharedPages}
+                          className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                        >
+                          <span className="sr-only">Next</span>
+                          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </div>
         )
