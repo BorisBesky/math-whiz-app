@@ -39,6 +39,7 @@ const QuestionBankManager = ({
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState('');
   const [internalViewMode, setInternalViewMode] = useState(viewMode || 'all');
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const [pendingAssignmentQuestions, setPendingAssignmentQuestions] = useState(new Set());
   const questionContainerRef = useRef(null);
 
   const db = getFirestore();
@@ -293,21 +294,25 @@ const QuestionBankManager = ({
   };
 
   const handleAssignToClass = async () => {
-    if (!selectedClassForAssignment || selectedQuestions.size === 0) return;
+    const questionsToAssign = pendingAssignmentQuestions.size > 0 ? pendingAssignmentQuestions : selectedQuestions;
+    if (!selectedClassForAssignment || questionsToAssign.size === 0) return;
 
     // Use custom handler if provided (for admin mode)
     if (onAssignToClass) {
-      await onAssignToClass(selectedQuestions, selectedClassForAssignment);
+      await onAssignToClass(questionsToAssign, selectedClassForAssignment);
       setShowAssignModal(false);
       setSelectedClassForAssignment('');
-      setSelectedQuestions(new Set());
+      setPendingAssignmentQuestions(new Set());
+      if (questionsToAssign === selectedQuestions) {
+        setSelectedQuestions(new Set());
+      }
       return;
     }
 
     // Default handler for teacher mode - create reference documents in class
     try {
       const updates = [];
-      for (const questionId of selectedQuestions) {
+      for (const questionId of questionsToAssign) {
         const question = questionsToShow.find(q => q.id === questionId);
         if (!question) continue;
 
@@ -364,7 +369,7 @@ const QuestionBankManager = ({
 
       // Clear cache for affected class/topic/grade combinations
       const affectedCombinations = new Set();
-      for (const questionId of selectedQuestions) {
+      for (const questionId of questionsToAssign) {
         const question = questionsToShow.find(q => q.id === questionId);
         if (question && question.topic && question.grade) {
           affectedCombinations.add(`${question.topic}_${question.grade}`);
@@ -377,7 +382,10 @@ const QuestionBankManager = ({
       });
       setShowAssignModal(false);
       setSelectedClassForAssignment('');
-      setSelectedQuestions(new Set());
+      setPendingAssignmentQuestions(new Set());
+      if (questionsToAssign === selectedQuestions) {
+        setSelectedQuestions(new Set());
+      }
     } catch (err) {
       console.error('Error assigning questions to class:', err);
       setError('Failed to assign questions to class');
@@ -386,7 +394,11 @@ const QuestionBankManager = ({
 
   const handleUnassignFromClass = async (questionId, classId) => {
     try {
-      const question = questionsToShow.find(q => q.id === questionId);
+      let question = questionsToShow.find(q => q.id === questionId);
+      if (!question) {
+        question = questions.find(q => q.id === questionId) || sharedQuestions.find(q => q.id === questionId);
+      }
+      
       const currentAssignedClasses = (question?.assignedClasses || []).filter(id => id !== classId);
 
       // Remove the reference document from class questions subcollection
@@ -417,17 +429,19 @@ const QuestionBankManager = ({
     }
   };
 
-  const handleDeleteQuestions = async (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleDeleteQuestions = async (idsToDelete = null) => {
+    // If called from event, idsToDelete might be the event object
+    let targetIds = selectedQuestions;
+    if (idsToDelete && (idsToDelete instanceof Set || Array.isArray(idsToDelete))) {
+      targetIds = idsToDelete instanceof Set ? idsToDelete : new Set(idsToDelete);
     }
+
     console.log('[QuestionBankManager] handleDeleteQuestions called');
 
-    if (selectedQuestions.size === 0) return;
+    if (targetIds.size === 0) return;
 
     console.log('[QuestionBankManager] Showing confirm dialog');
-    if (!window.confirm(`Are you sure you want to delete ${selectedQuestions.size} question(s)?`)) {
+    if (!window.confirm(`Are you sure you want to delete ${targetIds.size} question(s)?`)) {
       console.log('[QuestionBankManager] Delete cancelled by user');
       return;
     }
@@ -436,21 +450,34 @@ const QuestionBankManager = ({
     // Use custom handler if provided (for admin mode)
     if (onDeleteQuestion) {
       console.log('[QuestionBankManager] Calling onDeleteQuestion (admin mode)');
-      await onDeleteQuestion(selectedQuestions);
-      setSelectedQuestions(new Set());
+      await onDeleteQuestion(targetIds);
+      if (targetIds === selectedQuestions) {
+        setSelectedQuestions(new Set());
+      } else {
+        const newSelected = new Set(selectedQuestions);
+        targetIds.forEach(id => newSelected.delete(id));
+        setSelectedQuestions(newSelected);
+      }
       return;
     }
 
     // Default handler for teacher mode
     try {
       console.log('[QuestionBankManager] Deleting questions (teacher mode)');
-      const deletes = Array.from(selectedQuestions).map(questionId => {
+      const deletes = Array.from(targetIds).map(questionId => {
         const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
         return deleteDoc(questionRef);
       });
 
       await Promise.all(deletes);
-      setSelectedQuestions(new Set());
+      
+      if (targetIds === selectedQuestions) {
+        setSelectedQuestions(new Set());
+      } else {
+        const newSelected = new Set(selectedQuestions);
+        targetIds.forEach(id => newSelected.delete(id));
+        setSelectedQuestions(newSelected);
+      }
       console.log('[QuestionBankManager] Questions deleted successfully');
     } catch (err) {
       console.error('Error deleting questions:', err);
@@ -716,7 +743,10 @@ const QuestionBankManager = ({
               </button>
             )}
             <button
-              onClick={() => setShowAssignModal(true)}
+              onClick={() => {
+                setPendingAssignmentQuestions(selectedQuestions);
+                setShowAssignModal(true);
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
             >
               <Users className="h-4 w-4" />
@@ -724,7 +754,11 @@ const QuestionBankManager = ({
             </button>
             <button
               type="button"
-              onClick={handleDeleteQuestions}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDeleteQuestions(selectedQuestions);
+              }}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center space-x-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -845,14 +879,12 @@ const QuestionBankManager = ({
                                       >
                                         <Users className="h-3 w-3 mr-1" />
                                         {classInfo.name}
-                                        {!isAdmin && (
-                                          <button
-                                            onClick={() => handleUnassignFromClass(question.id, classInfo.id)}
-                                            className="ml-1 text-blue-600 hover:text-blue-800"
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </button>
-                                        )}
+                                        <button
+                                          onClick={() => handleUnassignFromClass(question.id, classInfo.id)}
+                                          className="ml-1 text-blue-600 hover:text-blue-800"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
                                       </span>
                                     ))}
                                   </div>
@@ -863,13 +895,30 @@ const QuestionBankManager = ({
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center ml-2">
+                              <div className="flex items-center ml-2 space-x-1">
                                 <button
                                   onClick={() => setEditingQuestion(question)}
                                   className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
                                   title="Edit Question"
                                 >
                                   <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setPendingAssignmentQuestions(new Set([question.id]));
+                                    setShowAssignModal(true);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                                  title="Assign to Class"
+                                >
+                                  <Users className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteQuestions([question.id])}
+                                  className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                  title="Delete Question"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
                             </div>
@@ -954,19 +1003,42 @@ const QuestionBankManager = ({
                                 >
                                   <Users className="h-3 w-3 mr-1" />
                                   {classInfo.name}
+                                  <button
+                                    onClick={() => handleUnassignFromClass(question.id, classInfo.id)}
+                                    className="ml-1 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
                                 </span>
                               ))}
                             </div>
                           )}
 
                         </div>
-                        <div className="flex items-center ml-2">
+                        <div className="flex items-center ml-2 space-x-1">
                           <button
                             onClick={() => setEditingQuestion(question)}
                             className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
                             title="Edit Question"
                           >
                             <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPendingAssignmentQuestions(new Set([question.id]));
+                              setShowAssignModal(true);
+                            }}
+                            className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                            title="Assign to Class"
+                          >
+                            <Users className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuestions([question.id])}
+                            className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                            title="Delete Question"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
