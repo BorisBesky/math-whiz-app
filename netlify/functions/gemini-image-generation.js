@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { admin, db, storage } = require("./firebase-admin");
 const { getStorage } = require("firebase-admin/storage");
+const sharp = require("sharp");
 
 // Helper function to verify Firebase auth token
 const verifyAuthToken = async (authHeader) => {
@@ -295,9 +296,20 @@ exports.handler = async (event) => {
           const fullDescription = typeof descObj === 'string' ? descObj : descObj.fullDescription || descObj.description || '';
           const { buffer, mimeType } = await generateImage(fullDescription);
 
-          // Determine content type and extension
-          const contentType = mimeType || 'image/jpeg';
-          const extension = contentType.includes('png') ? 'png' : 'jpg';
+          // Convert PNG to JPG for storage efficiency
+          let imageBuffer = buffer;
+          const isPng = mimeType && mimeType.includes('png');
+          
+          if (isPng) {
+            // Convert PNG to JPG using sharp
+            imageBuffer = await sharp(buffer)
+              .jpeg({ quality: 90 }) // High quality JPG
+              .toBuffer();
+          }
+
+          // Always use JPG format for storage
+          const contentType = 'image/jpeg';
+          const extension = 'jpg';
           
           // Use shortName for filename, or generate from theme
           const shortName = typeof descObj === 'string' 
@@ -306,7 +318,7 @@ exports.handler = async (event) => {
           const filename = `${shortName}-${timestamp}.${extension}`;
 
           // Upload to Firebase Storage
-          await uploadImageToStorage(bucket, filename, buffer, contentType);
+          await uploadImageToStorage(bucket, filename, imageBuffer, contentType);
 
           // Get public URL
           const bucketName = bucket.name;
