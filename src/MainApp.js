@@ -920,6 +920,17 @@ const MainAppContent = () => {
     loadImages();
   }, []);
 
+  // Sync storeTheme with available themes when storeItems changes
+  useEffect(() => {
+    if (storeItems.length > 0) {
+      const availableThemes = [...new Set(storeItems.map((item) => item.theme).filter(Boolean))];
+      // If current theme doesn't exist in available themes, set to first available theme
+      if (!availableThemes.includes(storeTheme) && availableThemes.length > 0) {
+        setStoreTheme(availableThemes[0]);
+      }
+    }
+  }, [storeItems, storeTheme]);
+
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
     if (quizState === "inProgress" && quizContainerRef.current) {
@@ -2677,11 +2688,18 @@ Answer: [The answer]`;
   };
 
   const renderStore = () => {
-    const themes = [
-      { key: "animals", label: "Animals" },
-      { key: "halloween", label: "Halloween" },
-      { key: "magic", label: "Magic" },
-    ];
+    // Dynamically derive themes from storeItems
+    const uniqueThemes = [...new Set(storeItems.map((item) => item.theme).filter(Boolean))];
+    
+    // Format theme names: capitalize first letter
+    const formatThemeLabel = (theme) => {
+      return theme.charAt(0).toUpperCase() + theme.slice(1);
+    };
+    
+    const themes = uniqueThemes.map((theme) => ({
+      key: theme,
+      label: formatThemeLabel(theme),
+    }));
 
     const filteredItems = storeItems.filter((it) => it.theme === storeTheme);
 

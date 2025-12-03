@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { loadStoreImages, clearStoreImagesCache } from '../utils/storeImages';
+import ImageGenerationModal from './ImageGenerationModal';
 
 const StoreImagesManager = () => {
   const [images, setImages] = useState([]);
@@ -8,6 +9,7 @@ const StoreImagesManager = () => {
   const [error, setError] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState('all');
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get unique themes from images
   const themes = ['all', ...new Set(images.map(img => img.theme).filter(Boolean))];
@@ -55,6 +57,11 @@ const StoreImagesManager = () => {
     fetchImages(true);
   };
 
+  const handleModalSuccess = () => {
+    // Refresh images after successful addition
+    fetchImages(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -64,14 +71,23 @@ const StoreImagesManager = () => {
             Manage background images available in the rewards store
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            Generate Images
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Instructions */}
@@ -187,6 +203,13 @@ const StoreImagesManager = () => {
           </p>
         </div>
       )}
+
+      {/* Image Generation Modal */}
+      <ImageGenerationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 };
