@@ -1,4 +1,4 @@
-const { admin, storage } = require('./firebase-admin');
+const { storage } = require('./firebase-admin');
 
 /**
  * Netlify serverless function to import store images from Firebase Storage
