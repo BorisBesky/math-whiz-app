@@ -94,7 +94,14 @@ exports.handler = async (event, context) => {
 
         // Generate ID from filename or use index
         const sanitizedFilename = filename.replace(/\.[^/.]+$/, '').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
-        const id = imageMeta.id || `bg-${sanitizedFilename}` || `bg-${index}`;
+        let id;
+        if (imageMeta.id && typeof imageMeta.id === 'string' && imageMeta.id.trim() !== '') {
+          id = imageMeta.id.trim();
+        } else if (sanitizedFilename && sanitizedFilename !== '') {
+          id = `bg-${sanitizedFilename}`;
+        } else {
+          id = `bg-fallback-${index}`;
+        }
 
         // Construct public URL (encode special characters in filename)
         const encodedFilename = encodeURIComponent(filename);
