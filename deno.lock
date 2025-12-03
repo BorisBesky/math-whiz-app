@@ -24,7 +24,7 @@
         "npm:katex@~0.16.22",
         "npm:lucide-react@0.525",
         "npm:node-fetch@^2.7.0",
-        "npm:playwright@^1.55.0",
+        "npm:playwright@^1.56.1",
         "npm:postcss@^8.5.6",
         "npm:rc-progress@4",
         "npm:react-dom@^19.1.0",
