@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, History, Layers, ShieldCheck, Users as UsersIcon, LayoutDashboard, UserCog } from 'lucide-react';
+import { BookOpen, History, Layers, ShieldCheck, Users as UsersIcon, LayoutDashboard, UserCog, Image } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
 import TeacherDashboard from './TeacherDashboard';
 import AdminPortal from './AdminPortal';
@@ -16,6 +16,7 @@ import StudentsSection from './portal/sections/StudentsSection';
 import ClassesSection from './portal/sections/ClassesSection';
 import QuestionBankSection from './portal/sections/QuestionBankSection';
 import TeacherManagementSection from './portal/sections/TeacherManagementSection';
+import ImagesSection from './portal/sections/ImagesSection';
 
 const PortalApp = ({ initialSection }) => {
   const { user, userRole, loading, logout } = useAuth();
@@ -157,6 +158,15 @@ const PortalApp = ({ initialSection }) => {
               onDelete={deleteTeacher}
               onRefresh={refreshTeachers}
             />
+          ),
+        },
+        {
+          id: 'images',
+          label: 'Store Images',
+          description: 'Manage background images for rewards store',
+          icon: Image,
+          render: () => (
+            <ImagesSection />
           ),
         },
         {

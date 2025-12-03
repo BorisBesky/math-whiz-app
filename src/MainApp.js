@@ -43,6 +43,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { useAuth } from './contexts/AuthContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -63,6 +64,7 @@ import {
 import { TOPICS, APP_STATES } from "./constants/topics";
 import content from "./content";
 import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questionCache";
+import { loadStoreImages } from "./utils/storeImages";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -94,9 +96,10 @@ if (typeof __firebase_config !== "undefined") {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-// Export db for use in other modules
-export { db };
+// Export db and storage for use in other modules
+export { db, storage };
 
 const DEFAULT_DAILY_GOAL = 4;
 const DAILY_GOAL_BONUS = 10;
@@ -166,248 +169,8 @@ const conceptExplanationFiles = {
 };
 
 // --- Store Items ---
-const storeItems = [
-  {
-    id: "bg1",
-    name: "Silly Giraffe",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_funny_cute_plastic_toy_gira-3.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg2",
-    name: "Cool Lion",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_cool_felt-stitched_toy_lion_w-1.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg3",
-    name: "Playful Monkey",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/A_playful_claymation-style_toy-0.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg4",
-    name: "Happy Hippo",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/Happy_Hippo_A_cheerful_round_h-0.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg5",
-    name: "Zebra Stripes",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/zebra.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg6",
-    name: "Funky Frog",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/frog.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg7",
-    name: "Dapper Dog",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/puppy_hat_and_a_monocle.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg8",
-    name: "Cuddly Cat",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kitten.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg9",
-    name: "Penguin Party",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/penguins.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg10",
-    name: "Bear Hugs",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/polar_bear_cub_with_glasses.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg11",
-    name: "Wacky Walrus",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/walrus.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg12",
-    name: "Jumping Kangaroo",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kangaroo.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg13",
-    name: "Sleepy Sloth",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/sloth.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg14",
-    name: "Clever Fox",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/fox.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg15",
-    name: "Wise Owl",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/owl.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg16",
-    name: "Busy Beaver",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/beaver.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg17",
-    name: "Panda Peace",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/panda.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg18",
-    name: "Koala Cuddles",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/Koala2.jpg",
-    theme: "animals",
-  },
-  {
-    id: "bg19",
-    name: "Raccoon Rascal",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/racoon.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg20",
-    name: "Elephant Smiles",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/elephant.jpeg",
-    theme: "animals",
-  },
-  {
-    id: "bg21",
-    name: "Zombies and Witches Trick or Treat",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/zombie-witches.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg22",
-    name: "Werewolf",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/werewolf.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg23",
-    name: "Trick-or-Treaters",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/tric-or-treaters.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg24",
-    name: "Skeleton Dancing",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/skeleton-dancing.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg25",
-    name: "Scarecrow",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/scarecrow.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg26",
-    name: "Mushroom",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/mushroom.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg27",
-    name: "Kitten Pumpkin",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/kitten-pumpkin.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg28",
-    name: "Gummy Worms",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/gummy-worms.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg29",
-    name: "Ghost",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/ghost.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg30",
-    name: "Bat",
-    url: "https://images4whizkids.s3.us-east-2.amazonaws.com/bat.jpg",
-    theme: "halloween",
-  },
-  {
-    id: "bg31",
-    name: "Forbidden Forest",
-    url: "https://storage.googleapis.com/whiz-store-images/Forbidden%20Forest.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg32",
-    name: "Frozen Black Lake",
-    url: "https://storage.googleapis.com/whiz-store-images/Frozen%20Black%20Lake.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg33",
-    name: "Gryffindor common room",
-    url: "https://storage.googleapis.com/whiz-store-images/Gryffindor%20common%20room..jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg34",
-    name: "Hogsmeade Village",
-    url: "https://storage.googleapis.com/whiz-store-images/Hogsmeade%20Village.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg35",
-    name: "Owlery Tower",
-    url: "https://storage.googleapis.com/whiz-store-images/Owlery%20Tower.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg36",
-    name: "Quidditch Pitch",
-    url: "https://storage.googleapis.com/whiz-store-images/Quidditch%20Pitch.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg37",
-    name: "hogwarts library 2",
-    url: "https://storage.googleapis.com/whiz-store-images/hogwarts%20library%202.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg38",
-    name: "library",
-    url: "https://storage.googleapis.com/whiz-store-images/library.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg39",
-    name: "outside-hall",
-    url: "https://storage.googleapis.com/whiz-store-images/outside-hall.jpg"
-    ,theme: "magic"
-  },
-  {
-    id: "bg40",
-    name: "viaduct bridge",
-    url: "https://storage.googleapis.com/whiz-store-images/viaduct%20bridge.jpg"
-    ,theme: "magic"
-  }
-];
+// Store items are now loaded dynamically from Firebase Storage
+// See MainAppContent component for loading logic
 
 // --- Dynamic Quiz Generation ---
 const generateQuizQuestions = async (
@@ -1088,6 +851,8 @@ const MainAppContent = () => {
     useState(false);
   // Store UI: selected theme tab (animals | halloween | magic)
   const [storeTheme, setStoreTheme] = useState("animals");
+  // Store items loaded dynamically from Firebase Storage
+  const [storeItems, setStoreItems] = useState([]);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
 
@@ -1138,6 +903,22 @@ const MainAppContent = () => {
       (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`
     );
   };
+
+  // Load store images from Firebase Storage on component mount
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const images = await loadStoreImages();
+        setStoreItems(images);
+        console.log(`[MainApp] Loaded ${images.length} store images`);
+      } catch (error) {
+        console.error('[MainApp] Error loading store images:', error);
+        // Set empty array as fallback to prevent crashes
+        setStoreItems([]);
+      }
+    };
+    loadImages();
+  }, []);
 
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
