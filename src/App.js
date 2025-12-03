@@ -49,7 +49,7 @@ const App = () => {
           path="/admin" 
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-              <PortalApp initialSection="admin" />
+              <PortalApp initialSection="overview" />
             </ProtectedRoute>
           } 
         />
