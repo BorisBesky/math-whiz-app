@@ -76,11 +76,11 @@ const updateMetadata = async (bucket, newImages) => {
 };
 
 // Generate image descriptions using Gemini
-const generateDescriptions = async (theme, count) => {
+const generateDescriptions = async (themeDescription, count) => {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const prompt = `Generate ${count} image descriptions for a theme: "${theme}". 
+  const prompt = `Generate ${count} image descriptions for a theme: "${themeDescription}". 
 Each description should be suitable for generating a fun, child-friendly image for a math rewards store background.
 The images should be appropriate for elementary school students (ages 6-12).
 
@@ -92,8 +92,8 @@ For each image, provide:
 Return the descriptions as a JSON array of objects. Example format:
 [
   {
-    "fullDescription": "A playful cartoon giraffe with big expressive eyes wearing a colorful bow tie, standing in a bright sunny savanna with green grass and blue sky in the background",
-    "shortDescription": "A playful cartoon giraffe with a colorful bow tie",
+    "fullDescription": "A playful giraffe with big expressive eyes wearing a colorful bow tie, standing in a bright sunny savanna with green grass and blue sky in the background",
+    "shortDescription": "A playful giraffe with a colorful bow tie",
     "shortName": "cute-giraffe"
   },
   {
@@ -103,7 +103,7 @@ Return the descriptions as a JSON array of objects. Example format:
   }
 ]
 
-Theme: ${theme}
+Theme: ${themeDescription}
 Number of descriptions: ${count}
 
 Return only the JSON array, no additional text.`;
@@ -240,7 +240,7 @@ exports.handler = async (event) => {
       event.headers.authorization || event.headers.Authorization;
     const userId = await verifyAuthToken(authHeader);
 
-    const { action, theme, count, descriptions, selectedIndices, generatedImages } = JSON.parse(event.body);
+    const { action, theme, themeDescription, count, descriptions, selectedIndices, generatedImages } = JSON.parse(event.body);
 
     if (!action) {
       return {
@@ -253,15 +253,15 @@ exports.handler = async (event) => {
     const bucket = getStorage().bucket();
 
     if (action === "generate-descriptions") {
-      if (!theme || !count) {
+      if (!themeDescription || !count) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "Theme and count are required" }),
+          body: JSON.stringify({ error: "Theme description and count are required" }),
         };
       }
 
-      const generatedDescriptions = await generateDescriptions(theme, parseInt(count));
+      const generatedDescriptions = await generateDescriptions(themeDescription, parseInt(count));
 
       return {
         statusCode: 200,

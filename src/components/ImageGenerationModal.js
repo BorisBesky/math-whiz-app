@@ -6,6 +6,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [theme, setTheme] = useState('');
+  const [themeDescription, setThemeDescription] = useState('');
   const [count, setCount] = useState(3);
   const [descriptions, setDescriptions] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
@@ -19,8 +20,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   const handleGenerateDescriptions = async () => {
-    if (!theme.trim() || count < 1 || count > 10) {
-      setError('Please enter a valid theme and count (1-10)');
+    if (!theme.trim() || !themeDescription.trim() || count < 1 || count > 10) {
+      setError('Please enter a valid theme name, theme description, and count (1-10)');
       return;
     }
 
@@ -42,6 +43,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
         body: JSON.stringify({
           action: 'generate-descriptions',
           theme: theme.trim(),
+          themeDescription: themeDescription.trim(),
           count: parseInt(count),
         }),
       });
@@ -199,6 +201,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     // Reset state
     setStep(1);
     setTheme('');
+    setThemeDescription('');
     setCount(3);
     setDescriptions([]);
     setGeneratedImages([]);
@@ -228,7 +231,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
   const canGoNext = () => {
     if (step === 1) {
-      return theme.trim() && count >= 1 && count <= 10;
+      return theme.trim() && themeDescription.trim() && count >= 1 && count <= 10;
     } else if (step === 2) {
       return descriptions.length > 0;
     } else if (step === 3) {
@@ -302,17 +305,33 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image Theme
+                  Theme Name
                 </label>
                 <input
                   type="text"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
-                  placeholder="e.g., animals, space, nature, fantasy"
+                  placeholder="e.g., Safari, Space, Ocean, Fantasy"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter a theme for the images (e.g., "cute animals", "space exploration", "underwater world")
+                  Enter a short theme name for categorization (e.g., "Safari", "Space", "Ocean")
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Theme Description
+                </label>
+                <textarea
+                  value={themeDescription}
+                  onChange={(e) => setThemeDescription(e.target.value)}
+                  placeholder="e.g., Safari animals in playful, colorful settings with bright backgrounds and friendly expressions"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows="3"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Detailed description to guide AI image generation (be specific about style, mood, colors, etc.)
                 </p>
               </div>
 
@@ -482,7 +501,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <h3 className="font-semibold text-blue-900 mb-2">Summary</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>Theme: <strong>{theme}</strong></li>
+                  <li>Theme Name: <strong>{theme}</strong></li>
+                  <li>Theme Description: <strong>{themeDescription}</strong></li>
                   <li>Selected Images: <strong>{selectedIndices.length}</strong></li>
                 </ul>
               </div>
@@ -574,4 +594,5 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default ImageGenerationModal;
+
 
