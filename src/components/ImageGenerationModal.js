@@ -23,15 +23,22 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const [progressMessage, setProgressMessage] = useState('');
   
   const pollIntervalRef = useRef(null);
+  const cancelledRef = useRef(false);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
+      // Cancel any in-flight operations
+      cancelledRef.current = true;
+      
       // Clear any existing polling interval
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
       }
+      
+      // Reset cancellation flag for new session
+      cancelledRef.current = false;
       
       // Reset all state to initial values
       setStep(1);
@@ -65,6 +72,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   // Poll for job status
   const pollJobStatus = async (jobId, onComplete) => {
     try {
+      // Check if operation was cancelled before making the request
+      if (cancelledRef.current) {
+        return;
+      }
+
       const token = await user.getIdToken();
       const response = await fetch(
         `/.netlify/functions/gemini-image-generation-status?jobId=${jobId}&appId=${APP_ID}`,
@@ -81,18 +93,30 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
       const result = await response.json();
       
+      // Check again after async operation completes
+      if (cancelledRef.current) {
+        return;
+      }
+      
       // Update progress
       setProgress(result.progress || 0);
       setProgressMessage(result.message || '');
 
       if (result.status === 'completed') {
         clearInterval(pollIntervalRef.current);
-        onComplete(result);
+        // Check one more time before calling completion callback
+        if (!cancelledRef.current) {
+          onComplete(result);
+        }
       } else if (result.status === 'error') {
         clearInterval(pollIntervalRef.current);
         throw new Error(result.error || 'Job failed');
       }
     } catch (err) {
+      // Don't update state if cancelled
+      if (cancelledRef.current) {
+        return;
+      }
       console.error('Polling error:', err);
       clearInterval(pollIntervalRef.current);
       throw err;
@@ -110,6 +134,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+
+    // Reset cancellation flag for new operation
+    cancelledRef.current = false;
 
     setLoading(true);
     setError(null);
@@ -205,6 +232,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = null;
     }
 
+    // Reset cancellation flag for new operation
+    cancelledRef.current = false;
+
     setGeneratingImages(true);
     setError(null);
     setProgress(0);
@@ -280,6 +310,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = null;
     }
 
+    // Reset cancellation flag for new operation
+    cancelledRef.current = false;
+
     setLoading(true);
     setError(null);
     setProgress(0);
@@ -334,7 +367,10 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleClose = () => {
-    // Clear any polling interval
+    // Cancel any in-flight operations
+    cancelledRef.current = true;
+    
+    // Clear any existing polling interval
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
@@ -358,6 +394,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleBack = () => {
     if (step > 1) {
+      // Cancel any in-flight operations to prevent race conditions
+      cancelledRef.current = true;
+      
       // Clear any existing polling interval
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -371,6 +410,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       setProgressMessage('');
       setError(null);
       setStep(step - 1);
+      
+      // Reset cancellation flag after state update
+      cancelledRef.current = false;
     }
   };
 
