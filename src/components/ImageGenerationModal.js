@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Edit2, Check, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+const APP_ID = 'default-app-id';
+const POLL_INTERVAL = 2000; // Poll every 2 seconds
 
 const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
@@ -16,8 +19,58 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [generatingImages, setGeneratingImages] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  
+  const pollIntervalRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
+
+  // Poll for job status
+  const pollJobStatus = async (jobId, onComplete) => {
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(
+        `/.netlify/functions/gemini-image-generation-status?jobId=${jobId}&appId=${APP_ID}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to check job status');
+      }
+
+      const result = await response.json();
+      
+      // Update progress
+      setProgress(result.progress || 0);
+      setProgressMessage(result.message || '');
+
+      if (result.status === 'completed') {
+        clearInterval(pollIntervalRef.current);
+        onComplete(result);
+      } else if (result.status === 'error') {
+        clearInterval(pollIntervalRef.current);
+        throw new Error(result.error || 'Job failed');
+      }
+    } catch (err) {
+      console.error('Polling error:', err);
+      clearInterval(pollIntervalRef.current);
+      throw err;
+    }
+  };
 
   const handleGenerateDescriptions = async () => {
     if (!theme.trim() || !themeDescription.trim() || count < 1 || count > 10) {
@@ -27,6 +80,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressMessage('Starting...');
 
     try {
       if (!user) {
@@ -50,17 +105,29 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to generate descriptions: ${response.statusText}`);
+        throw new Error(errorData.error || `Failed to start job: ${response.statusText}`);
       }
 
       const result = await response.json();
-      setDescriptions(result.descriptions || []);
-      setStep(2);
+      const jobId = result.jobId;
+
+      // Start polling
+      pollIntervalRef.current = setInterval(async () => {
+        await pollJobStatus(jobId, (completedResult) => {
+          setDescriptions(completedResult.descriptions || []);
+          setStep(2);
+          setLoading(false);
+          setProgress(0);
+          setProgressMessage('');
+        });
+      }, POLL_INTERVAL);
+
     } catch (err) {
       console.error('Error generating descriptions:', err);
       setError(err.message || 'Failed to generate descriptions');
-    } finally {
       setLoading(false);
+      setProgress(0);
+      setProgressMessage('');
     }
   };
 
@@ -101,6 +168,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
     setGeneratingImages(true);
     setError(null);
+    setProgress(0);
+    setProgressMessage('Starting image generation...');
 
     try {
       if (!user) {
@@ -123,18 +192,30 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to generate images: ${response.statusText}`);
+        throw new Error(errorData.error || `Failed to start job: ${response.statusText}`);
       }
 
       const result = await response.json();
-      setGeneratedImages(result.images || []);
-      setSelectedIndices(result.images.map((_, idx) => idx)); // Select all by default
-      setStep(3);
+      const jobId = result.jobId;
+
+      // Start polling
+      pollIntervalRef.current = setInterval(async () => {
+        await pollJobStatus(jobId, (completedResult) => {
+          setGeneratedImages(completedResult.images || []);
+          setSelectedIndices((completedResult.images || []).map((_, idx) => idx));
+          setStep(3);
+          setGeneratingImages(false);
+          setProgress(0);
+          setProgressMessage('');
+        });
+      }, POLL_INTERVAL);
+
     } catch (err) {
       console.error('Error generating images:', err);
       setError(err.message || 'Failed to generate images');
-    } finally {
       setGeneratingImages(false);
+      setProgress(0);
+      setProgressMessage('');
     }
   };
 
@@ -156,6 +237,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressMessage('Adding images to store...');
 
     try {
       if (!user) {
@@ -179,25 +262,39 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to add images to store: ${response.statusText}`);
+        throw new Error(errorData.error || `Failed to start job: ${response.statusText}`);
       }
 
       const result = await response.json();
-      
-      // Close modal and refresh
-      handleClose();
-      if (onSuccess) {
-        onSuccess(result);
-      }
+      const jobId = result.jobId;
+
+      // Start polling
+      pollIntervalRef.current = setInterval(async () => {
+        await pollJobStatus(jobId, (completedResult) => {
+          // Close modal and refresh
+          handleClose();
+          if (onSuccess) {
+            onSuccess(completedResult);
+          }
+        });
+      }, POLL_INTERVAL);
+
     } catch (err) {
       console.error('Error adding images to store:', err);
       setError(err.message || 'Failed to add images to store');
-    } finally {
       setLoading(false);
+      setProgress(0);
+      setProgressMessage('');
     }
   };
 
   const handleClose = () => {
+    // Clear any polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    
     // Reset state
     setStep(1);
     setTheme('');
@@ -209,6 +306,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     setEditingIndex(null);
     setEditValue('');
     setError(null);
+    setProgress(0);
+    setProgressMessage('');
     onClose();
   };
 
@@ -287,6 +386,22 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
             ))}
           </div>
         </div>
+
+        {/* Loading Progress Bar */}
+        {(loading || generatingImages) && progress > 0 && (
+          <div className="px-6 py-3 bg-blue-50 border-b">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-blue-900">{progressMessage}</span>
+              <span className="text-sm font-semibold text-blue-900">{progress}%</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -441,7 +556,10 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
               {generatingImages ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-                  <p className="text-gray-600">Generating images... This may take a moment.</p>
+                  <p className="text-gray-600">Generating images... This may take several minutes.</p>
+                  {progressMessage && (
+                    <p className="text-sm text-gray-500 mt-2">{progressMessage}</p>
+                  )}
                 </div>
               ) : generatedImages.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
@@ -594,5 +712,3 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default ImageGenerationModal;
-
-
