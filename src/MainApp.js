@@ -909,8 +909,13 @@ const MainAppContent = () => {
     const loadImages = async () => {
       try {
         const images = await loadStoreImages();
-        setStoreItems(images);
-        console.log(`[MainApp] Loaded ${images.length} store images`);
+        // Normalize theme names to lowercase for consistency
+        const normalizedImages = images.map(item => ({
+          ...item,
+          theme: item.theme?.toLowerCase()
+        }));
+        setStoreItems(normalizedImages);
+        console.log(`[MainApp] Loaded ${normalizedImages.length} store images`);
       } catch (error) {
         console.error('[MainApp] Error loading store images:', error);
         // Set empty array as fallback to prevent crashes
@@ -923,7 +928,7 @@ const MainAppContent = () => {
   // Sync storeTheme with available themes when storeItems changes
   useEffect(() => {
     if (storeItems.length > 0) {
-      const availableThemes = [...new Set(storeItems.map((item) => item.theme).filter(Boolean))];
+      const availableThemes = [...new Set(storeItems.map((item) => item.theme?.toLowerCase()).filter(Boolean))];
       // If current theme doesn't exist in available themes, set to first available theme
       if (!availableThemes.includes(storeTheme) && availableThemes.length > 0) {
         setStoreTheme(availableThemes[0]);
@@ -2688,8 +2693,8 @@ Answer: [The answer]`;
   };
 
   const renderStore = () => {
-    // Dynamically derive themes from storeItems
-    const uniqueThemes = [...new Set(storeItems.map((item) => item.theme).filter(Boolean))];
+    // Dynamically derive themes from storeItems, normalize to lowercase
+    const uniqueThemes = [...new Set(storeItems.map((item) => item.theme?.toLowerCase()).filter(Boolean))];
     
     // Format theme names: capitalize first letter
     const formatThemeLabel = (theme) => {
@@ -2701,7 +2706,7 @@ Answer: [The answer]`;
       label: formatThemeLabel(theme),
     }));
 
-    const filteredItems = storeItems.filter((it) => it.theme === storeTheme);
+    const filteredItems = storeItems.filter((it) => it.theme?.toLowerCase() === storeTheme);
 
     return (
       <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20" data-tutorial-id="store-container">
@@ -2713,20 +2718,22 @@ Answer: [The answer]`;
         </p>
 
         {/* Theme Tabs */}
-        <div className="flex justify-center gap-3 mb-6" data-tutorial-id="store-tabs">
-          {themes.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setStoreTheme(t.key)}
-              className={`px-4 py-2 rounded-full font-semibold transition ${
-                storeTheme === t.key
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="overflow-x-auto mb-6" data-tutorial-id="store-tabs">
+          <div className="flex justify-center gap-3 min-w-max px-4">
+            {themes.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setStoreTheme(t.key)}
+                className={`px-4 py-2 rounded-full font-semibold transition whitespace-nowrap ${
+                  storeTheme === t.key
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {purchaseFeedback && (
