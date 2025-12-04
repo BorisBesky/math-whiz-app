@@ -24,6 +24,33 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   
   const pollIntervalRef = useRef(null);
 
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Clear any existing polling interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      
+      // Reset all state to initial values
+      setStep(1);
+      setTheme('');
+      setThemeDescription('');
+      setCount(3);
+      setDescriptions([]);
+      setGeneratedImages([]);
+      setSelectedIndices([]);
+      setEditingIndex(null);
+      setEditValue('');
+      setLoading(false);
+      setGeneratingImages(false);
+      setError(null);
+      setProgress(0);
+      setProgressMessage('');
+    }
+  }, [isOpen]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -76,6 +103,12 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     if (!theme.trim() || !themeDescription.trim() || count < 1 || count > 10) {
       setError('Please enter a valid theme name, theme description, and count (1-10)');
       return;
+    }
+
+    // Clear any existing polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
 
     setLoading(true);
@@ -166,6 +199,12 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    // Clear any existing polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
     setGeneratingImages(true);
     setError(null);
     setProgress(0);
@@ -233,6 +272,12 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     if (selectedIndices.length === 0) {
       setError('Please select at least one image to add');
       return;
+    }
+
+    // Clear any existing polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
 
     setLoading(true);
@@ -313,8 +358,19 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      // Clear any existing polling interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      
+      // Reset loading states
+      setLoading(false);
+      setGeneratingImages(false);
+      setProgress(0);
+      setProgressMessage('');
       setError(null);
+      setStep(step - 1);
     }
   };
 
