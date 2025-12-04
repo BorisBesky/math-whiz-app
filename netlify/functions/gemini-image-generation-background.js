@@ -68,25 +68,23 @@ const generateDescriptions = async (themeDescription, count) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `Generate ${count} image descriptions for a theme: "${themeDescription}". 
-Each description should be suitable for generating a fun, child-friendly image for a math rewards store background.
+Each description should be suitable for generating a high-quality image for a math rewards store background.
 The images should be appropriate for elementary school students (ages 6-12).
 
+If the theme description specifies a style (e.g., "realistic", "watercolor", "sketch", "3d render", "pixel art"), strictly adhere to that style in the descriptions.
+If no style is specified, assume a fun, child-friendly style.
+
 For each image, provide:
-1. fullDescription: A detailed 2-3 sentence description that clearly describes what the image should look like (for image generation)
+1. fullDescription: A detailed 2-3 sentence description that clearly describes what the image should look like, INCLUDING THE ART STYLE (for image generation)
 2. shortDescription: A brief 1 sentence description suitable for display in a store (for the store image description field)
 3. shortName: A short, friendly name (2-4 words) suitable for use as a filename (e.g., "cute-giraffe", "happy-lion", "playful-penguin")
 
 Return the descriptions as a JSON array of objects. Example format:
 [
   {
-    "fullDescription": "A playful giraffe with big expressive eyes wearing a colorful bow tie, standing in a bright sunny savanna with green grass and blue sky in the background",
-    "shortDescription": "A playful giraffe with a colorful bow tie",
-    "shortName": "cute-giraffe"
-  },
-  {
-    "fullDescription": "A friendly lion cub playing with a red ball in a sunny savanna setting with acacia trees in the background and warm golden sunlight",
-    "shortDescription": "A friendly lion cub playing with a ball",
-    "shortName": "happy-lion"
+    "fullDescription": "A realistic photograph of a giraffe standing in a savanna with warm sunlight, detailed fur texture and natural lighting",
+    "shortDescription": "A realistic giraffe in the sunlight",
+    "shortName": "realistic-giraffe"
   }
 ]
 
@@ -157,9 +155,10 @@ const generateImage = async (description) => {
     }
   });
 
-  const prompt = `Generate a fun, colorful, child-friendly image based on this description: "${description}". 
-The image should be appropriate for elementary school students (ages 6-12) and suitable as a background for a math rewards store.
-Make it bright, cheerful, and engaging.`;
+  const prompt = `Generate a high-quality image based on this description: "${description}". 
+The image should be suitable for elementary school students (ages 6-12) and suitable as a background for a math rewards store.
+The style should match the description provided by the user. If no specific style is mentioned in the description, default to a fun, colorful, child-friendly style.
+Make it engaging and visually appealing.`;
 
   try {
     const result = await model.generateContent(prompt);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
-import { loadStoreImages, clearStoreImagesCache } from '../utils/storeImages';
+import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles, Edit2, Trash2, X, Save } from 'lucide-react';
+import { loadStoreImages, clearStoreImagesCache, updateStoreImage, deleteStoreImage, deleteStoreTheme } from '../utils/storeImages';
 import ImageGenerationModal from './ImageGenerationModal';
 
 const StoreImagesManager = () => {
@@ -10,24 +10,26 @@ const StoreImagesManager = () => {
   const [selectedTheme, setSelectedTheme] = useState('all');
   const [lastRefresh, setLastRefresh] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  
+  // Editing state
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Get unique themes from images
-  const themes = ['all', ...new Set(images.map(img => img.theme).filter(Boolean))];
+  // Get unique themes from images, case insensitive
+  const availableThemes = [...new Set(images.map(img => (img.theme || '').toLowerCase()).filter(Boolean))].sort();
 
   // Filter images by theme
   const filteredImages = selectedTheme === 'all' 
     ? images 
-    : images.filter(img => img.theme === selectedTheme);
+    : images.filter(img => (img.theme || '').toLowerCase() === selectedTheme);
 
   // Count images by theme
-  const themeCounts = themes.reduce((acc, theme) => {
-    if (theme === 'all') {
-      acc[theme] = images.length;
-    } else {
-      acc[theme] = images.filter(img => img.theme === theme).length;
-    }
+  const themeCounts = availableThemes.reduce((acc, theme) => {
+    acc[theme] = images.filter(img => (img.theme || '').toLowerCase() === theme).length;
     return acc;
-  }, {});
+  }, { all: images.length });
 
   const fetchImages = async (forceRefresh = false) => {
     setLoading(true);
@@ -60,6 +62,86 @@ const StoreImagesManager = () => {
   const handleModalSuccess = () => {
     // Refresh images after successful addition
     fetchImages(true);
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setEditForm({
+      name: item.name,
+      description: item.description || '',
+      theme: (item.theme || '').toLowerCase()
+    });
+    setError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+    setError(null);
+  };
+
+  const handleSaveEdit = async (id) => {
+    if (!editForm.name.trim() || !editForm.theme.trim()) {
+      setError('Name and theme are required');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const normalizedForm = {
+        ...editForm,
+        theme: editForm.theme.toLowerCase()
+      };
+      await updateStoreImage({ id, ...normalizedForm });
+      setEditingId(null);
+      // Optimistic update or refresh
+      fetchImages(true);
+    } catch (err) {
+      console.error('Error updating image:', err);
+      setError(err.message || 'Failed to update image');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.name}"?\n\nThis will permanently delete the image file and metadata.`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await deleteStoreImage(item.id);
+      // Refresh to show changes
+      fetchImages(true);
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      setError(err.message || 'Failed to delete image');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteTheme = async (theme) => {
+    const count = themeCounts[theme] || 0;
+    if (!window.confirm(`Are you sure you want to delete the entire "${theme}" theme?\n\nThis will permanently delete ALL ${count} images in this theme.\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await deleteStoreTheme(theme);
+      // Refresh to show changes
+      if (selectedTheme === theme) {
+        setSelectedTheme('all');
+      }
+      fetchImages(true);
+    } catch (err) {
+      console.error('Error deleting theme:', err);
+      setError(err.message || 'Failed to delete theme');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -131,18 +213,43 @@ const StoreImagesManager = () => {
       {/* Theme Filter */}
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {themes.map(theme => (
-            <button
-              key={theme}
-              onClick={() => setSelectedTheme(theme)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedTheme === theme
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {theme === 'all' ? 'All' : theme.charAt(0).toUpperCase() + theme.slice(1)} ({themeCounts[theme] || 0})
-            </button>
+          <button
+            onClick={() => setSelectedTheme('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedTheme === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All ({images.length})
+          </button>
+          {availableThemes.map(theme => (
+            <div key={theme} className="relative group">
+              <button
+                onClick={() => setSelectedTheme(theme)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors pr-8 ${
+                  selectedTheme === theme
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {theme.charAt(0).toUpperCase() + theme.slice(1)} ({themeCounts[theme] || 0})
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteTheme(theme);
+                }}
+                className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
+                   selectedTheme === theme
+                    ? 'text-blue-200 hover:text-white hover:bg-blue-700'
+                    : 'text-gray-400 hover:text-red-600 hover:bg-gray-200'
+                }`}
+                title={`Delete theme "${theme}"`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -163,30 +270,137 @@ const StoreImagesManager = () => {
           {filteredImages.map((item) => (
             <div
               key={item.id}
-              className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+              className={`border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow relative ${
+                editingId === item.id ? 'ring-2 ring-blue-500' : ''
+              }`}
             >
-              <div className="relative w-full h-48 mb-3 bg-gray-100 rounded-md overflow-hidden">
-                <img
-                  src={item.url}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                {item.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                    {item.theme}
-                  </span>
-                  <span className="text-xs text-gray-500">ID: {item.id}</span>
+              {editingId === item.id ? (
+                // Edit Mode
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold text-gray-900">Edit Image</h4>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleSaveEdit(item.id)}
+                        disabled={actionLoading}
+                        className="p-1 text-green-600 hover:bg-green-50 rounded"
+                        title="Save"
+                      >
+                        <Save className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={actionLoading}
+                        className="p-1 text-gray-500 hover:bg-gray-50 rounded"
+                        title="Cancel"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Theme</label>
+                    <div className="space-y-2">
+                      <select
+                        value={availableThemes.includes(editForm.theme) ? editForm.theme : 'custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'custom') {
+                            setEditForm({ ...editForm, theme: '' });
+                          } else {
+                            setEditForm({ ...editForm, theme: val });
+                          }
+                        }}
+                        className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {availableThemes.map(t => (
+                          <option key={t} value={t}>
+                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                          </option>
+                        ))}
+                        <option value="custom">+ New Theme</option>
+                      </select>
+                      {(!availableThemes.includes(editForm.theme) || editForm.theme === '') && (
+                         <input
+                           type="text"
+                           placeholder="Enter new theme name"
+                           value={editForm.theme}
+                           onChange={(e) => setEditForm({ ...editForm, theme: e.target.value.toLowerCase() })}
+                           className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                           autoFocus
+                         />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      rows="3"
+                      className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // View Mode
+                <>
+                  <div 
+                    className="relative w-full h-48 mb-3 bg-gray-100 rounded-md overflow-hidden group cursor-pointer"
+                    onClick={() => setPreviewImage(item)}
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                    {/* Overlay Actions */}
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-2 bg-white text-gray-700 rounded-full shadow hover:text-blue-600 hover:bg-blue-50"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-2 bg-white text-gray-700 rounded-full shadow hover:text-red-600 hover:bg-red-50"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                    {item.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                        {item.theme}
+                      </span>
+                      <span className="text-xs text-gray-500">ID: {item.id}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -210,6 +424,35 @@ const StoreImagesManager = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
       />
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img
+              src={previewImage.url}
+              alt={previewImage.name}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="mt-4 text-white text-center">
+              <h3 className="text-xl font-bold">{previewImage.name}</h3>
+              {previewImage.description && (
+                <p className="text-gray-300 mt-1 max-w-2xl">{previewImage.description}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

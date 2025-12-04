@@ -140,3 +140,91 @@ export const loadStoreImages = async (forceRefresh = false) => {
   }
 };
 
+/**
+ * Update a store image
+ * @param {Object} image - Image object with id and fields to update
+ * @returns {Promise<Object>} Updated image object
+ */
+export const updateStoreImage = async (image) => {
+  try {
+    const response = await fetch('/.netlify/functions/manage-store-images', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(image),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update image');
+    }
+
+    const data = await response.json();
+    
+    // Clear cache so next load gets fresh data
+    clearStoreImagesCache();
+    
+    return data.image;
+  } catch (error) {
+    console.error('[storeImages] Error updating image:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a store image
+ * @param {string} imageId - ID of image to delete
+ * @returns {Promise<void>}
+ */
+export const deleteStoreImage = async (imageId) => {
+  try {
+    const response = await fetch('/.netlify/functions/manage-store-images', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: imageId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete image');
+    }
+
+    // Clear cache so next load gets fresh data
+    clearStoreImagesCache();
+  } catch (error) {
+    console.error('[storeImages] Error deleting image:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete all store images in a specific theme
+ * @param {string} theme - Theme name to delete
+ * @returns {Promise<void>}
+ */
+export const deleteStoreTheme = async (theme) => {
+  try {
+    const response = await fetch('/.netlify/functions/manage-store-images', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ theme, bulk: true }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete theme');
+    }
+
+    // Clear cache so next load gets fresh data
+    clearStoreImagesCache();
+  } catch (error) {
+    console.error('[storeImages] Error deleting theme:', error);
+    throw error;
+  }
+};
+
