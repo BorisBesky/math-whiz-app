@@ -68,8 +68,8 @@ const generateDescriptions = async (themeDescription, count) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `Generate ${count} image descriptions for a theme: "${themeDescription}". 
-Each description should be suitable for generating a high-quality image for a math rewards store background.
-The images should be appropriate for elementary school students (ages 6-12).
+Each description should be suitable for generating a high-quality image.
+The images should be appropriate for elementary school students (ages 8-12).
 
 If the theme description specifies a style (e.g., "realistic", "watercolor", "sketch", "3d render", "pixel art"), strictly adhere to that style in the descriptions.
 If no style is specified, assume a fun, child-friendly style.
@@ -156,8 +156,8 @@ const generateImage = async (description) => {
   });
 
   const prompt = `Generate a high-quality image based on this description: "${description}". 
-The image should be suitable for elementary school students (ages 6-12) and suitable as a background for a math rewards store.
-The style should match the description provided by the user. If no specific style is mentioned in the description, default to a fun, colorful, child-friendly style.
+The image should be suitable for elementary school students (ages 8-12).
+The style should match the description provided by the user.
 Make it engaging and visually appealing.`;
 
   try {
