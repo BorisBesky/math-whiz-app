@@ -673,8 +673,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
                 {loading || generatingImages ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {step === 1 && 'Generating...'}
-                    {step === 2 && 'Generating Images...'}
+                    {step === 1 ? 'Generating...' : 'Generating Images...'}
                   </>
                 ) : (
                   <>
