@@ -20,6 +20,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [pendingJobs, setPendingJobs] = useState([]);
   const [checkingJobs, setCheckingJobs] = useState(true);
   const [currentJobId, setCurrentJobId] = useState(null);
+  const [pollingJobId, setPollingJobId] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState(GRADES.G3);
 
   // Helper function to process query snapshots into filtered and sorted jobs
@@ -320,6 +321,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
         
         // Background function - start polling
         setPolling(true);
+        setPollingJobId(jobId);
         setFileName(file.name);
         pollJobStatus(jobId, token);
       } else {
@@ -334,6 +336,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     } catch (err) {
       console.error('Upload error:', err);
       setError(err.message || 'Failed to upload and extract questions from PDF');
+      setPollingJobId(null);
       setUploading(false);
       setPolling(false);
     }
@@ -350,6 +353,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       // Check if we've exceeded max duration
       if (Date.now() - startTime >= maxDuration) {
         setError('Processing timeout. Please try again.');
+        setPollingJobId(null);
         setUploading(false);
         setPolling(false);
         return;
@@ -396,11 +400,13 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           setExtractedQuestions(data.questions);
           setFileName(data.fileName || file.name);
           setCurrentJobId(currentJobId);
+          setPollingJobId(null);
           setUploading(false);
           setPolling(false);
           // Note: Real-time listener will automatically update pendingJobs when job completes
-        } else if (data.status === 'error') {
-          setError(data.error || 'Processing failed');
+        } else if (data.status === 'error' || data.status === 'cancelled') {
+          setError(data.status === 'cancelled' ? 'Processing was cancelled' : (data.error || 'Processing failed'));
+          setPollingJobId(null);
           setUploading(false);
           setPolling(false);
         } else {
@@ -416,6 +422,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
           setTimeout(poll, currentDelay);
         } else {
           setError('Failed to check processing status');
+          setPollingJobId(null);
           setUploading(false);
           setPolling(false);
         }
@@ -460,12 +467,33 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    // If there's an active polling job, cancel it in Firestore
+    if (pollingJobId) {
+      try {
+        const db = getFirestore();
+        const currentAppId = appId || 'default-app-id';
+        const jobRef = doc(db, 'artifacts', currentAppId, 'pdfProcessingJobs', pollingJobId);
+        await updateDoc(jobRef, { 
+          status: 'cancelled',
+          cancelledAt: new Date()
+        });
+        console.log('Job cancelled:', pollingJobId);
+      } catch (err) {
+        console.error('Error cancelling job:', err);
+        // Continue with cleanup even if cancellation fails
+      }
+    }
+
     setExtractedQuestions(null);
     setFile(null);
     setFileName('');
     setCurrentJobId(null);
+    setPollingJobId(null);
     setError(null);
+    setUploading(false);
+    setPolling(false);
+    setProgress(0);
     if (onClose) {
       onClose();
     }
@@ -499,7 +527,6 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
             <button
               onClick={handleCancel}
               className="text-gray-400 hover:text-gray-600"
-              disabled={uploading}
             >
               <X className="h-6 w-6" />
             </button>
@@ -635,8 +662,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
               <button
                 type="button"
                 onClick={handleCancel}
-                disabled={uploading}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
               >
                 Cancel
               </button>

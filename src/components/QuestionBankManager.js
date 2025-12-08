@@ -372,8 +372,49 @@ const QuestionBankManager = ({
       ? (groupedQuestions[source]?.questions || [])
       : (groupedQuestions[source] || []);
     const newSelected = new Set(selectedQuestions);
-    sourceQuestions.forEach(q => newSelected.add(q.id));
+    
+    // Check if all questions in this source are already selected
+    const allSelected = sourceQuestions.every(q => selectedQuestions.has(q.id));
+    
+    if (allSelected) {
+      // Deselect all questions in this source
+      sourceQuestions.forEach(q => newSelected.delete(q.id));
+    } else {
+      // Select all questions in this source
+      sourceQuestions.forEach(q => newSelected.add(q.id));
+    }
+    
     setSelectedQuestions(newSelected);
+  };
+  
+  const isAllSelectedInSource = (source) => {
+    const sourceQuestions = groupingMode === 'teacher-source'
+      ? (groupedQuestions[source]?.questions || [])
+      : (groupedQuestions[source] || []);
+    return sourceQuestions.length > 0 && sourceQuestions.every(q => selectedQuestions.has(q.id));
+  };
+
+  const selectAllSharedOnPage = () => {
+    const newSelected = new Set(selectedQuestions);
+    
+    // Check if all shared questions on current page are already selected
+    const allSelected = paginatedSharedQuestions.length > 0 && 
+      paginatedSharedQuestions.every(q => selectedQuestions.has(q.id));
+    
+    if (allSelected) {
+      // Deselect all shared questions on current page
+      paginatedSharedQuestions.forEach(q => newSelected.delete(q.id));
+    } else {
+      // Select all shared questions on current page
+      paginatedSharedQuestions.forEach(q => newSelected.add(q.id));
+    }
+    
+    setSelectedQuestions(newSelected);
+  };
+
+  const isAllSharedOnPageSelected = () => {
+    return paginatedSharedQuestions.length > 0 && 
+      paginatedSharedQuestions.every(q => selectedQuestions.has(q.id));
   };
 
   const handleAssignToClass = async () => {
@@ -956,15 +997,18 @@ const QuestionBankManager = ({
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        selectAllInSource(source);
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                    <label 
+                      className="flex items-center space-x-2 cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Select All
-                    </button>
+                      <input
+                        type="checkbox"
+                        checked={isAllSelectedInSource(source)}
+                        onChange={() => selectAllInSource(source)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700">Select All</span>
+                    </label>
                   </div>
 
                   {isExpanded && (
@@ -1139,7 +1183,20 @@ const QuestionBankManager = ({
       {
         isAdmin && showViewModeTabs && internalViewMode !== 'teachers' && (
           <div className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold text-gray-900">Shared Question Bank</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Shared Question Bank</h2>
+              {paginatedSharedQuestions.length > 0 && (
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAllSharedOnPageSelected()}
+                    onChange={selectAllSharedOnPage}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">Select All on Page</span>
+                </label>
+              )}
+            </div>
             {paginatedSharedQuestions.length === 0 ? (
               <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
                 <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />

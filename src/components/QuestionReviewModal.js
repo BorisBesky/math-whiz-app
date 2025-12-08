@@ -223,12 +223,15 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           {/* Batch Actions */}
           <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-md">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={selectAll}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                {selectedQuestions.size === editedQuestions.length ? 'Deselect All' : 'Select All'}
-              </button>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedQuestions.size === editedQuestions.length && editedQuestions.length > 0}
+                  onChange={selectAll}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">Select All</span>
+              </label>
               <span className="text-sm text-gray-600">
                 {selectedQuestions.size} of {editedQuestions.length} selected
               </span>

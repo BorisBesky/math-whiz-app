@@ -20,6 +20,19 @@ const sanitizeJobId = (jobId, userId) => {
 // Helper to get Firestore Timestamp
 const getTimestamp = () => admin.firestore.Timestamp.now();
 
+// Helper to check if job was cancelled
+const checkJobCancelled = async (jobRef) => {
+  const jobDoc = await jobRef.get();
+  if (!jobDoc.exists) {
+    throw new Error('Job no longer exists');
+  }
+  const status = jobDoc.data().status;
+  if (status === 'cancelled') {
+    throw new Error('Job was cancelled by user');
+  }
+  return false;
+};
+
 // Helper function to verify Firebase auth token
 const verifyAuthToken = async (authHeader) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -493,6 +506,9 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
     // Update progress: Starting PDF extraction
     await jobRef.update({ progress: 10 });
 
+    // Check if job was cancelled before starting PDF extraction
+    await checkJobCancelled(jobRef);
+
     // Convert PDF to base64 for Gemini
     const base64Pdf = fileData.toString('base64');
     const mimeType = 'application/pdf';
@@ -528,15 +544,15 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
 
     // Create prompt for question extraction
     const extractionPrompt = `You are an expert at extracting math quiz questions from PDF documents. 
-Analyze this PDF and extract all math questions you find. For each question, provide:
+Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
 
-1. The question text (including any diagrams, images, or graphics - describe them in detail)
+1. The question text
 2. The correct answer
 3. Multiple choice options (if applicable, otherwise provide empty array)
 4. A helpful hint (if available)
 5. The math topic (choose ONLY from these ${gradeLabel} topics: ${topicsListForPrompt})
 6. The grade level (${grade})
-7. Any images or graphics associated with the question (describe their content and position)
+7. Any images or graphics associated with the question
 
 IMPORTANT: The topic MUST be one of these exact values: ${topicsListForPrompt}
 
@@ -552,7 +568,7 @@ Return the results as a JSON array where each question has this structure:
     {
       "type": "question" | "answer" | "hint",
       "description": "detailed description of the image/graphic",
-      "position": "where in the question this image appears"
+      "position": "page and coordinates of the image box, e.g. {"page=3, box=[x1,y1,x2,y2,x3,y3,x4,y4]}"
     }
   ],
   "standard": "optional standard code",
@@ -669,6 +685,9 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
     // Update progress: Questions extracted
     await jobRef.update({ progress: 50 });
 
+    // Check if job was cancelled after extraction
+    await checkJobCancelled(jobRef);
+
     // Validate questions structure
     if (!Array.isArray(questions)) {
       questions = [questions];
@@ -730,6 +749,9 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
         const batch = batches[batchIndex];
         
+        // Check if job was cancelled before processing each batch
+        await checkJobCancelled(jobRef);
+        
         // Add delay between batches (except for first batch)
         if (batchIndex > 0) {
           console.log(`Waiting ${DELAY_BETWEEN_BATCHES / 1000} seconds before processing batch ${batchIndex + 1}...`);
@@ -753,6 +775,7 @@ Generate 4 multiple choice options (A, B, C, D) where:
 2. The other 3 options are plausible but incorrect answers that a student might choose
 3. The incorrect options should be similar in format/type to the correct answer
 4. For math questions, make the wrong answers common mistakes or close but incorrect values
+5. If the question is asking for numeric answer, only provide the numeric options.
 
 Return ONLY a JSON array with exactly 4 options as strings, where one of them matches the correct answer exactly.
 Example format: ["option1", "option2", "option3", "option4"]
