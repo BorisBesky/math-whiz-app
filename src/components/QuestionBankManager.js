@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc, deleteField } from 'firebase/firestore';
-import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
+import QuestionReviewModal from './QuestionReviewModal';
 import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 import 'katex/dist/katex.min.css';
@@ -45,8 +46,12 @@ const QuestionBankManager = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isRegexMode, setIsRegexMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [importedQuestions, setImportedQuestions] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importedFileName, setImportedFileName] = useState('');
   const itemsPerPage = 10;
   const questionContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const db = getFirestore();
   const currentAppId = appId || 'default-app-id';
@@ -346,6 +351,137 @@ const QuestionBankManager = ({
 
   const totalSharedPages = Math.ceil(filteredSharedQuestions.length / itemsPerPage);
   const paginatedSharedQuestions = filteredSharedQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Export selected questions to JSON
+  const handleExportQuestions = () => {
+    if (selectedQuestions.size === 0) {
+      setError('Please select at least one question to export');
+      return;
+    }
+
+    // Get all questions (from both teacher and shared)
+    const allQuestions = [...questions, ...sharedQuestions];
+    const questionsToExport = allQuestions.filter(q => selectedQuestions.has(q.id));
+
+    if (questionsToExport.length === 0) {
+      setError('No questions found to export');
+      return;
+    }
+
+    // Clean questions for export (remove Firestore-specific fields)
+    const cleanedQuestions = questionsToExport.map(q => {
+      // Extract Firestore-specific fields
+      const { id, createdBy, userId, teacherName, teacherEmail, assignedClasses, collection, ...cleaned } = q;
+      
+      // Convert Firestore Timestamps to ISO strings if present, otherwise keep as-is
+      const cleanedQ = { ...cleaned };
+      if (q.createdAt?.toDate) {
+        cleanedQ.createdAt = q.createdAt.toDate().toISOString();
+      } else if (q.createdAt instanceof Date) {
+        cleanedQ.createdAt = q.createdAt.toISOString();
+      }
+      if (q.updatedAt?.toDate) {
+        cleanedQ.updatedAt = q.updatedAt.toDate().toISOString();
+      } else if (q.updatedAt instanceof Date) {
+        cleanedQ.updatedAt = q.updatedAt.toISOString();
+      }
+      
+      return cleanedQ;
+    });
+
+    // Create JSON blob
+    const jsonData = JSON.stringify(cleanedQuestions, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `questions_export_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setError(null);
+  };
+
+  // Handle file import
+  const handleImportFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.json')) {
+      setError('Please select a JSON file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const jsonData = JSON.parse(e.target.result);
+        
+        // Validate that it's an array
+        if (!Array.isArray(jsonData)) {
+          setError('Invalid JSON format. Expected an array of questions.');
+          return;
+        }
+
+        // Validate questions structure
+        const validatedQuestions = jsonData.map((q, index) => {
+          if (!q.question) {
+            throw new Error(`Question ${index + 1} is missing required field: question`);
+          }
+          if (!q.topic) {
+            throw new Error(`Question ${index + 1} is missing required field: topic`);
+          }
+          if (!q.grade) {
+            throw new Error(`Question ${index + 1} is missing required field: grade`);
+          }
+          
+          // Set defaults
+          return {
+            ...q,
+            questionType: q.questionType || 'multiple-choice',
+            options: q.options || [],
+            hint: q.hint || '',
+            images: q.images || [],
+            source: q.source || 'imported',
+            pdfSource: q.pdfSource || '',
+            standard: q.standard || '',
+            concept: q.concept || ''
+          };
+        });
+
+        setImportedQuestions(validatedQuestions);
+        setImportedFileName(file.name);
+        setShowImportModal(true);
+        setError(null);
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+        setError(`Failed to parse JSON file: ${err.message}`);
+      }
+    };
+
+    reader.onerror = () => {
+      setError('Failed to read file');
+    };
+
+    reader.readAsText(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle save callback from QuestionReviewModal
+  const handleImportSave = () => {
+    setShowImportModal(false);
+    setImportedQuestions(null);
+    setImportedFileName('');
+    setSelectedQuestions(new Set());
+  };
 
   const toggleSourceExpansion = (source) => {
     const newExpanded = new Set(expandedSources);
@@ -864,6 +1000,38 @@ const QuestionBankManager = ({
         </div>
       </div>
     </div>
+
+      {/* Export/Import Actions */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">
+          Question Management
+        </span>
+        <div className="flex space-x-2">
+          <button
+            onClick={handleExportQuestions}
+            disabled={selectedQuestions.size === 0}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={selectedQuestions.size === 0 ? 'Select questions to export' : `Export ${selectedQuestions.size} selected question(s)`}
+          >
+            <Download className="h-4 w-4" />
+            <span>Export Selected</span>
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Import Questions</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
+      </div>
 
       {/* Bulk Actions */}
       {selectedQuestions.size > 0 && (
@@ -1414,9 +1582,27 @@ const QuestionBankManager = ({
           />
         )
       }
+
+      {/* Import Questions Modal */}
+      {showImportModal && importedQuestions && (
+        <QuestionReviewModal
+          questions={importedQuestions}
+          fileName={importedFileName}
+          appId={currentAppId}
+          onSave={handleImportSave}
+          onCancel={() => {
+            setShowImportModal(false);
+            setImportedQuestions(null);
+            setImportedFileName('');
+          }}
+          source="imported"
+        />
+      )}
     </div >
   );
 };
+
+// Import Questions Modal Component
 
 export default QuestionBankManager;
 

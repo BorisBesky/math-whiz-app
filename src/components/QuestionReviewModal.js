@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 
-const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel }) => {
+const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel, source = 'pdf-upload' }) => {
   // Initialize questions with default questionType if missing
   const initializeQuestions = (qs) => {
     return qs.map(q => ({
@@ -168,8 +168,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           ...question,
           createdAt: new Date(),
           createdBy: user.uid,
-          source: 'pdf-upload',
-          pdfSource: fileName,
+          source: source,
+          pdfSource: fileName || '',
           assignedClasses: classId ? [classId] : []
         });
         savedQuestionIds.push({ id: savedDoc.id, question });
@@ -198,8 +198,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
               standard: question.standard || '',
               concept: question.concept || '',
               images: question.images || [],
-              source: 'pdf-upload',
-              pdfSource: fileName,
+              source: source,
+              pdfSource: fileName || '',
               createdAt: new Date(),
               createdBy: user.uid
             })
@@ -238,10 +238,10 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-medium text-gray-900">
-                Review Extracted Questions
+                Review {source === 'imported' ? 'Imported' : 'Extracted'} Questions
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                {fileName} • {editedQuestions.length} question(s) extracted
+                {fileName && `${fileName} • `}{editedQuestions.length} question(s) {source === 'imported' ? 'imported' : 'extracted'}
               </p>
             </div>
             <button
