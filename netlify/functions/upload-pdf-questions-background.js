@@ -547,32 +547,29 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
 Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
 
 1. The question text
-2. The correct answer
-3. Multiple choice options (if applicable, otherwise provide empty array)
-4. A helpful hint (if available)
-5. The math topic (choose ONLY from these ${gradeLabel} topics: ${topicsListForPrompt})
-6. The grade level (${grade})
-7. Any images or graphics associated with the question
+2. Question type: (choose ONLY from these 3: 'multiple-choice', 'numeric', 'drawing')
+   - 'numeric': if the answer is a numeric value (e.g., "5.3", "-1.2", "0.001")
+   - 'drawing': if the user has to draw or mark something on an existing graphic (e.g., "Draw an obtuse triangle", "Mark the point on the number line")
+   - 'multiple-choice': all other questions with answer choices
+3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing')
+   - For 'drawing' questions, you can omit correctAnswer or set it to empty string
+4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
+   - Must provide exactly 4 options for multiple-choice questions
+5. A helpful hint (if available)
+6. The math topic (choose ONLY from these ${gradeLabel} topics: ${topicsListForPrompt})
 
-IMPORTANT: The topic MUST be one of these exact values: ${topicsListForPrompt}
+IMPORTANT: 
+- The topic MUST be one of these exact values: ${topicsListForPrompt}
+- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing' (lowercase, with hyphen)
 
 Return the results as a JSON array where each question has this structure:
 {
-  "question": "question text with image descriptions",
-  "correctAnswer": "correct answer",
-  "options": ["option1", "option2", "option3", "option4"],
+  "question": "question text",
+  "questionType": "multiple-choice" | "numeric" | "drawing",
+  "correctAnswer": "correct answer" (required for multiple-choice and numeric, optional for drawing),
+  "options": ["option1", "option2", "option3", "option4"] (required for multiple-choice, empty array for others),
   "hint": "helpful hint or explanation",
-  "topic": "topic name from the allowed list",
-  "grade": "${grade}",
-  "images": [
-    {
-      "type": "question" | "answer" | "hint",
-      "description": "detailed description of the image/graphic",
-      "position": "page and coordinates of the image box, e.g. {"page=3, box=[x1,y1,x2,y2,x3,y3,x4,y4]}"
-    }
-  ],
-  "standard": "optional standard code",
-  "concept": "optional concept name"
+  "topic": "topic name from the allowed list"
 }
 
 Extract ALL questions from the PDF. Be thorough and accurate.`;
@@ -695,8 +692,32 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
 
     // Validate and clean questions
     let validatedQuestions = questions.map((q, index) => {
-      if (!q.question || !q.correctAnswer) {
-        throw new Error(`Question ${index + 1} is missing required fields`);
+      // Validate required fields
+      if (!q.question) {
+        throw new Error(`Question ${index + 1} is missing question text`);
+      }
+
+      // Process and validate question type
+      let questionType = (q.questionType || '').toLowerCase().trim();
+      const validQuestionTypes = ['multiple-choice', 'numeric', 'drawing'];
+      
+      // Handle variations and normalize question type
+      if (!questionType || !validQuestionTypes.includes(questionType)) {
+        // Try to infer from question content or default
+        const questionLower = q.question.toLowerCase();
+        if (questionLower.includes('draw') || questionLower.includes('sketch') || questionLower.includes('mark')) {
+          questionType = 'drawing';
+        } else {
+          questionType = 'multiple-choice';
+        }
+        console.warn(`Question ${index + 1} has invalid/missing question type "${q.questionType}". Inferred as: ${questionType}`);
+      }
+
+      // Validate correctAnswer based on question type
+      // Drawing questions don't require correctAnswer (AI validates the drawing)
+      // Multiple-choice and numeric questions require correctAnswer
+      if (questionType !== 'drawing' && !q.correctAnswer) {
+        throw new Error(`Question ${index + 1} (${questionType}) is missing required correctAnswer field`);
       }
 
       // Validate topic against grade-specific topics
@@ -709,24 +730,44 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
         questionTopic = validTopics[0];
       }
 
-      return {
-        question: q.question || '',
-        correctAnswer: q.correctAnswer || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        hint: q.hint || '',
+      // Process options based on question type
+      let processedOptions = [];
+      if (questionType === 'multiple-choice') {
+        // Multiple-choice questions need options
+        processedOptions = Array.isArray(q.options) ? q.options.filter(opt => opt && opt.trim() !== '') : [];
+      } else {
+        // Numeric and drawing questions should not have options
+        processedOptions = [];
+      }
+
+      // Build the validated question object
+      const validatedQuestion = {
+        question: q.question.trim() || '',
+        questionType: questionType,
+        hint: (q.hint || '').trim(),
         topic: questionTopic,
         grade: grade, // Always use the grade specified by the teacher
-        standard: q.standard || '',
-        concept: q.concept || '',
-        images: Array.isArray(q.images) ? q.images : [],
+        images: [],
         source: 'pdf-upload',
         pdfSource: fileName
       };
+
+      // Add correctAnswer only for non-drawing questions
+      if (questionType !== 'drawing') {
+        validatedQuestion.correctAnswer = String(q.correctAnswer || '').trim();
+      }
+
+      // Add options only for multiple-choice questions
+      if (questionType === 'multiple-choice') {
+        validatedQuestion.options = processedOptions;
+      }
+
+      return validatedQuestion;
     });
 
     // Generate options for questions that don't have them
     const questionsNeedingOptions = validatedQuestions.filter(q => 
-      !q.options || q.options.length === 0 || q.options.every(opt => !opt || opt.trim() === '')
+      q.questionType === 'multiple-choice' && (!q.options || q.options.length === 0 || q.options.every(opt => !opt || opt.trim() === ''))
     );
 
     if (questionsNeedingOptions.length > 0) {
@@ -823,6 +864,8 @@ Do not include any explanation or other text, just the JSON array.`;
               );
               
               if (questionIndex !== -1) {
+                // shuffle the options
+                generatedOptions = generatedOptions.sort(() => Math.random() - 0.5);
                 validatedQuestions[questionIndex].options = generatedOptions;
                 console.log(`Generated options for question ${questionIndex + 1}:`, generatedOptions);
               }

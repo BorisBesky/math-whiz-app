@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -6,12 +6,33 @@ import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel }) => {
-  const [editedQuestions, setEditedQuestions] = useState(questions);
+  // Initialize questions with default questionType if missing
+  const initializeQuestions = (qs) => {
+    return qs.map(q => ({
+      ...q,
+      questionType: q.questionType || 'multiple-choice',
+      options: q.questionType === 'multiple-choice' ? (q.options || []) : []
+    }));
+  };
+
+  const [editedQuestions, setEditedQuestions] = useState(() => initializeQuestions(questions));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set(questions.map((_, i) => i)));
 
+  // Update editedQuestions when questions prop changes
+  useEffect(() => {
+    const initialized = initializeQuestions(questions);
+    setEditedQuestions(initialized);
+    setSelectedQuestions(new Set(questions.map((_, i) => i)));
+  }, [questions]);
+
   const gradeOptions = ['G3', 'G4'];
+  const questionTypeOptions = [
+    { value: 'multiple-choice', label: 'Multiple Choice' },
+    { value: 'numeric', label: 'Numeric Answer' },
+    { value: 'drawing', label: 'Drawing (Interactive)' }
+  ];
   const topicOptions = [
     TOPICS.MULTIPLICATION,
     TOPICS.DIVISION,
@@ -111,9 +132,26 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
 
       // Validate questions
       for (const q of questionsToSave) {
-        if (!q.question || !q.correctAnswer || !q.topic || !q.grade) {
-          throw new Error('All questions must have question text, answer, topic, and grade');
+        if (!q.question || !q.topic || !q.grade) {
+          throw new Error('All questions must have question text, topic, and grade');
         }
+        
+        // Validate question type
+        const questionType = q.questionType || 'multiple-choice';
+        if (!['multiple-choice', 'numeric', 'drawing'].includes(questionType)) {
+          throw new Error(`Invalid question type "${questionType}". Must be one of: multiple-choice, numeric, drawing`);
+        }
+        
+        // Validate correctAnswer based on question type
+        if (questionType !== 'drawing' && !q.correctAnswer) {
+          throw new Error(`Question type "${questionType}" requires a correct answer`);
+        }
+        
+        // Validate options for multiple-choice questions
+        if (questionType === 'multiple-choice' && (!q.options || q.options.length === 0)) {
+          throw new Error('Multiple choice questions must have at least one option');
+        }
+        
         if (!topicOptions.includes(q.topic)) {
           throw new Error(`Invalid topic "${q.topic}". Please select a valid topic from the dropdown.`);
         }
@@ -153,8 +191,9 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
               topic: question.topic,
               grade: question.grade,
               question: question.question,
+              questionType: question.questionType || 'multiple-choice',
               correctAnswer: question.correctAnswer,
-              options: question.options,
+              options: question.options || [],
               hint: question.hint || '',
               standard: question.standard || '',
               concept: question.concept || '',
@@ -267,6 +306,16 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                     <span className="text-sm font-medium text-gray-700">
                       Question {index + 1}
                     </span>
+                    {question.questionType && (
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        question.questionType === 'drawing' ? 'bg-purple-100 text-purple-800' :
+                        question.questionType === 'numeric' ? 'bg-green-100 text-green-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {question.questionType === 'drawing' ? '✏️ Drawing' :
+                         question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -294,8 +343,38 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                   )}
                 </div>
 
-                {/* Topic and Grade */}
-                <div className="grid grid-cols-2 gap-4 mb-3">
+                {/* Question Type, Topic and Grade */}
+                <div className="grid grid-cols-3 gap-4 mb-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Question Type
+                    </label>
+                    <select
+                      value={question.questionType || 'multiple-choice'}
+                      onChange={(e) => {
+                        const newType = e.target.value;
+                        handleQuestionChange(index, 'questionType', newType);
+                        // Clear options if switching away from multiple-choice
+                        if (newType !== 'multiple-choice') {
+                          handleQuestionChange(index, 'options', []);
+                        }
+                        // Clear correctAnswer if switching to drawing
+                        if (newType === 'drawing') {
+                          handleQuestionChange(index, 'correctAnswer', '');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      {questionTypeOptions.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                    {question.questionType === 'drawing' && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Drawing questions allow students to sketch answers. AI validates automatically.
+                      </p>
+                    )}
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Topic *
@@ -328,49 +407,56 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                   </div>
                 </div>
 
-                {/* Options */}
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Multiple Choice Options
-                  </label>
-                  {question.options && question.options.map((option, optIndex) => (
-                    <div key={optIndex} className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="text"
-                        value={option}
-                        onChange={(e) => handleOptionsChange(index, optIndex, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder={`Option ${optIndex + 1}`}
-                      />
-                      <button
-                        onClick={() => removeOption(index, optIndex)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <XIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => addOption(index)}
-                    className="text-sm text-blue-600 hover:text-blue-800 mt-2"
-                  >
-                    + Add Option
-                  </button>
-                </div>
+                {/* Options - Only show for multiple-choice questions */}
+                {question.questionType === 'multiple-choice' && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Multiple Choice Options *
+                    </label>
+                    {question.options && question.options.map((option, optIndex) => (
+                      <div key={optIndex} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => handleOptionsChange(index, optIndex, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          placeholder={`Option ${optIndex + 1}`}
+                        />
+                        <button
+                          onClick={() => removeOption(index, optIndex)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => addOption(index)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-2"
+                    >
+                      + Add Option
+                    </button>
+                  </div>
+                )}
 
-                {/* Correct Answer */}
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Correct Answer *
-                  </label>
-                  <input
-                    type="text"
-                    value={question.correctAnswer || ''}
-                    onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Enter correct answer"
-                  />
-                </div>
+                {/* Correct Answer - Only show for non-drawing questions */}
+                {question.questionType !== 'drawing' && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Correct Answer *
+                      {question.questionType === 'numeric' && (
+                        <span className="text-xs text-gray-500 ml-2">(Numeric value only, no units)</span>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      value={question.correctAnswer || ''}
+                      onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder={question.questionType === 'numeric' ? 'Enter numeric answer (e.g., 5.3, -1.2)' : 'Enter correct answer'}
+                    />
+                  </div>
+                )}
 
                 {/* Hint */}
                 <div className="mb-3">
