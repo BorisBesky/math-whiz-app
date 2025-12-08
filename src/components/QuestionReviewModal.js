@@ -353,15 +353,20 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                       value={question.questionType || 'multiple-choice'}
                       onChange={(e) => {
                         const newType = e.target.value;
-                        handleQuestionChange(index, 'questionType', newType);
-                        // Clear options if switching away from multiple-choice
-                        if (newType !== 'multiple-choice') {
-                          handleQuestionChange(index, 'options', []);
-                        }
-                        // Clear correctAnswer if switching to drawing
-                        if (newType === 'drawing') {
-                          handleQuestionChange(index, 'correctAnswer', '');
-                        }
+                        const updated = [...editedQuestions];
+                        const currentQuestion = updated[index];
+                        
+                        // Update question type and handle related fields in a single update
+                        updated[index] = {
+                          ...currentQuestion,
+                          questionType: newType,
+                          // Clear options if switching away from multiple-choice
+                          options: newType === 'multiple-choice' ? (currentQuestion.options || []) : [],
+                          // Clear correctAnswer if switching to drawing
+                          correctAnswer: newType === 'drawing' ? '' : currentQuestion.correctAnswer
+                        };
+                        
+                        setEditedQuestions(updated);
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
