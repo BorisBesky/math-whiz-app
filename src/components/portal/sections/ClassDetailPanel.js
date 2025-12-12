@@ -454,7 +454,7 @@ const ClassDetailPanel = ({
               {subtopicTopic && (
                 <div>
                   <label className="text-sm text-gray-700 font-medium mb-2 block">
-                    Select Subtopics (leave empty to allow all):
+                    Select specific subtopics to focus on (leave empty to include all subtopics):
                   </label>
                   <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
                     {(() => {
