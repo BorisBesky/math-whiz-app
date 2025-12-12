@@ -1,6 +1,6 @@
 // Question generation for 4th Grade Measurement & Data topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
-import { generateClockSVG, formatTime12Hour } from '../../../utils/clockGenerator.js';
+import { generateClockSVG } from '../../../utils/clockGenerator.js';
 
 // Helper functions
 function getRandomInt(min, max) {
@@ -332,17 +332,21 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
     minutes = getRandomInt(0, 59);
   }
   
-  // Randomly choose AM or PM
-  const period = Math.random() < 0.5 ? 'AM' : 'PM';
-  
   // Generate clock SVG
   const clockSVG = generateClockSVG(hours, minutes, {
     size: 250,
     showNumbers: true
   });
   
-  // Format correct answer in 12-hour format with AM/PM
-  const correctAnswer = formatTime12Hour(hours, minutes, false, period);
+  // Format correct answer in simple time format (H:MM)
+  const formattedMinutes = minutes.toString().padStart(2, '0');
+  const correctAnswer = `${hours}:${formattedMinutes}`;
+  
+  // Helper function to format time without AM/PM
+  const formatTime = (h, m) => {
+    const fm = m.toString().padStart(2, '0');
+    return `${h}:${fm}`;
+  };
   
   // Generate distractors
   const potentialDistractors = [];
@@ -352,29 +356,24 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   // Convert minutes to approximate hours, always in range 1-12
   const swappedHours = ((Math.floor(minutes / 5) % 12) + 1);
   if (swappedHours >= 1 && swappedHours <= 12 && swappedMinutes !== minutes) {
-    const swappedTime = formatTime12Hour(swappedHours, swappedMinutes, false, period);
-    potentialDistractors.push(swappedTime);
+    potentialDistractors.push(formatTime(swappedHours, swappedMinutes));
   }
   
   // Distractor 2: Off by 5 minutes
   const offBy5 = (minutes + 5) % 60;
-  const offBy5Time = formatTime12Hour(hours, offBy5, false, period);
-  potentialDistractors.push(offBy5Time);
+  potentialDistractors.push(formatTime(hours, offBy5));
   
   // Distractor 3: Off by one hour
   const offByHour = ((hours % 12) + 1) || 12;
-  const offByHourTime = formatTime12Hour(offByHour, minutes, false, period);
-  potentialDistractors.push(offByHourTime);
+  potentialDistractors.push(formatTime(offByHour, minutes));
   
-  // Distractor 4: Wrong AM/PM
-  const wrongPeriod = period === 'AM' ? 'PM' : 'AM';
-  const wrongPeriodTime = formatTime12Hour(hours, minutes, false, wrongPeriod);
-  potentialDistractors.push(wrongPeriodTime);
-  
-  // Distractor 5: Off by 15 minutes
+  // Distractor 4: Off by 15 minutes
   const offBy15 = (minutes + 15) % 60;
-  const offBy15Time = formatTime12Hour(hours, offBy15, false, period);
-  potentialDistractors.push(offBy15Time);
+  potentialDistractors.push(formatTime(hours, offBy15));
+  
+  // Distractor 5: Off by one hour in the other direction
+  const offByHourBack = hours === 1 ? 12 : hours - 1;
+  potentialDistractors.push(formatTime(offByHourBack, minutes));
   
   // Ensure we have enough unique distractors
   const uniqueDistractors = [...new Set(potentialDistractors)].filter(d => d !== correctAnswer);

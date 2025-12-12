@@ -208,7 +208,17 @@ const generateQuizQuestions = async (
   const usedQuestions = new Set(); // Track unique question signatures
   const numQuestions = Math.max(1, dailyGoal);
   let attempts = 0;
-  const maxAttempts = numQuestions * 10; // Prevent infinite loops
+  
+  // Increase max attempts if subtopic restrictions are present (more restrictive = more attempts needed)
+  // Base multiplier of 10, increase to 30 if subtopic restrictions exist
+  const hasSubtopicRestrictions = allowedSubtopicsByTopic && Object.keys(allowedSubtopicsByTopic).length > 0;
+  const baseMultiplier = hasSubtopicRestrictions ? 30 : 10;
+  const maxAttempts = numQuestions * baseMultiplier; // Prevent infinite loops
+  
+  // Track statistics for better error reporting
+  let filteredBySubtopicCount = 0;
+  let consecutiveFilteredCount = 0;
+  const maxConsecutiveFiltered = 50; // Early exit if too many consecutive filtered questions
 
   // Fetch questions from Firestore
   const firestoreQuestions = await fetchQuestionsFromFirestore(
@@ -226,6 +236,16 @@ const generateQuizQuestions = async (
     attempts++;
     let question = {};
     let useFirestoreQuestion = false;
+    
+    // Early exit if too many consecutive questions are filtered (likely no valid questions exist)
+    if (consecutiveFilteredCount >= maxConsecutiveFiltered) {
+      console.warn(
+        `Stopped quiz generation after ${maxConsecutiveFiltered} consecutive questions were filtered by subtopic restrictions. ` +
+        `This may indicate that no valid questions exist for the current subtopic restrictions. ` +
+        `Generated ${questions.length} out of ${numQuestions} requested questions for ${topic}.`
+      );
+      break;
+    }
 
     // Use configured probability to select Firestore question if available
     if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
@@ -369,6 +389,8 @@ const generateQuizQuestions = async (
     const subtopicAllowed = isSubtopicAllowed(question, topic, allowedSubtopicsByTopic);
     if (!subtopicAllowed) {
       // Skip this question if subtopic is not allowed
+      filteredBySubtopicCount++;
+      consecutiveFilteredCount++;
       continue;
     }
 
@@ -380,14 +402,35 @@ const generateQuizQuestions = async (
     if (shouldAccept) {
       usedQuestions.add(question.question);
       questions.push(question);
+      // Reset consecutive filtered count when we successfully accept a question
+      consecutiveFilteredCount = 0;
     }
   }
 
-  // If we couldn't generate enough unique questions, log a warning
+  // If we couldn't generate enough unique questions, log a detailed warning
   if (questions.length < numQuestions) {
-    console.warn(
+    const warningParts = [
       `Could only generate ${questions.length} unique questions out of ${numQuestions} requested for ${topic}`
-    );
+    ];
+    
+    if (attempts >= maxAttempts) {
+      warningParts.push(`(reached maximum attempts limit: ${maxAttempts})`);
+    }
+    
+    if (filteredBySubtopicCount > 0) {
+      warningParts.push(
+        `${filteredBySubtopicCount} question${filteredBySubtopicCount > 1 ? 's were' : ' was'} filtered out due to subtopic restrictions`
+      );
+    }
+    
+    if (hasSubtopicRestrictions && questions.length === 0) {
+      warningParts.push(
+        `No valid questions found matching the subtopic restrictions. ` +
+        `Consider reviewing the Focus settings for this student.`
+      );
+    }
+    
+    console.warn(warningParts.join('. ') + '.');
   }
 
   return questions;

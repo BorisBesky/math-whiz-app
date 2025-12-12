@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle } from 'lucide-react';
 import { formatDate } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { TOPICS } from '../../../constants/topics';
@@ -18,6 +18,10 @@ const ClassDetailPanel = ({
   const db = getFirestore();
   
   const [enrollments, setEnrollments] = useState({});
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+  const [enrollmentError, setEnrollmentError] = useState(null);
+  const [failedStudentIds, setFailedStudentIds] = useState(new Set());
+  const [enrollmentReloadTrigger, setEnrollmentReloadTrigger] = useState(0);
   const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
   const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
   const [subtopicGrade, setSubtopicGrade] = useState('G3');
@@ -49,13 +53,20 @@ const ClassDetailPanel = ({
   useEffect(() => {
     if (!classId || roster.length === 0) {
       setEnrollments({});
+      setEnrollmentError(null);
+      setFailedStudentIds(new Set());
       return;
     }
 
     const loadEnrollments = async () => {
       setLoadingEnrollments(true);
+      setEnrollmentError(null);
+      setFailedStudentIds(new Set());
+      
       try {
         const enrollmentData = {};
+        const failedIds = new Set();
+        
         await Promise.all(
           roster.map(async (student) => {
             const enrollmentId = `${classId}__${student.id}`;
@@ -74,27 +85,52 @@ const ClassDetailPanel = ({
               }
             } catch (err) {
               console.error(`Error loading enrollment for student ${student.id}:`, err);
+              failedIds.add(student.id);
+              // Still set empty data so UI doesn't break
               enrollmentData[student.id] = {
                 allowedSubtopicsByTopic: {},
               };
             }
           })
         );
+        
         setEnrollments(enrollmentData);
+        setFailedStudentIds(failedIds);
+        
+        // Set error if any students failed to load
+        if (failedIds.size > 0) {
+          const failedCount = failedIds.size;
+          const totalCount = roster.length;
+          setEnrollmentError(
+            `Failed to load enrollment data for ${failedCount} of ${totalCount} student${failedCount > 1 ? 's' : ''}. ` +
+            `Focus settings may not work correctly for affected students.`
+          );
+        }
       } catch (error) {
         console.error('Error loading enrollments:', error);
+        setEnrollmentError(
+          `Failed to load enrollment data. Focus buttons may not work correctly. ` +
+          `Error: ${error.message || 'Unknown error'}`
+        );
+        // Set empty enrollments to prevent UI crashes
+        setEnrollments({});
       } finally {
         setLoadingEnrollments(false);
       }
     };
 
     loadEnrollments();
-  }, [classId, roster, db, appId]);
+  }, [classId, roster, db, appId, enrollmentReloadTrigger]);
 
   const getTopicsForGrade = (grade) => {
     return grade === 'G3'
       ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
       : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
+  };
+
+  const handleRetryEnrollments = () => {
+    // Trigger reload by incrementing the reload trigger
+    setEnrollmentReloadTrigger(prev => prev + 1);
   };
 
   const handleOpenSubtopicsModal = (student) => {
@@ -328,6 +364,33 @@ const ClassDetailPanel = ({
             </div>
           )}
 
+          {enrollmentError && (
+            <div className="mb-4 text-sm rounded-md px-4 py-3 bg-yellow-50 text-yellow-800 border border-yellow-200 flex items-start justify-between">
+              <div className="flex items-start flex-1">
+                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium mb-1">Enrollment Data Loading Issue</p>
+                  <p>{enrollmentError}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleRetryEnrollments}
+                disabled={loadingEnrollments}
+                className="ml-4 px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${loadingEnrollments ? 'animate-spin' : ''}`} />
+                Retry
+              </button>
+            </div>
+          )}
+
+          {loadingEnrollments && !enrollmentError && (
+            <div className="mb-4 text-sm rounded-md px-4 py-2 bg-blue-50 text-blue-800 border border-blue-200 flex items-center">
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Loading enrollment data...
+            </div>
+          )}
+
           {roster.length === 0 ? (
             <div className="border border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
               No students have been added to this class yet.
@@ -366,8 +429,19 @@ const ClassDetailPanel = ({
                             <button
                               type="button"
                               onClick={() => handleOpenSubtopicsModal(student)}
-                              className="inline-flex items-center text-purple-600 hover:text-purple-800 text-xs font-medium"
-                              title="Set Focus Subtopics"
+                              disabled={failedStudentIds.has(student.id) || loadingEnrollments}
+                              className={`inline-flex items-center text-xs font-medium ${
+                                failedStudentIds.has(student.id) || loadingEnrollments
+                                  ? 'text-gray-400 cursor-not-allowed opacity-50'
+                                  : 'text-purple-600 hover:text-purple-800'
+                              }`}
+                              title={
+                                failedStudentIds.has(student.id)
+                                  ? 'Enrollment data failed to load. Click Retry above to reload.'
+                                  : loadingEnrollments
+                                  ? 'Loading enrollment data...'
+                                  : 'Set Focus Subtopics'
+                              }
                             >
                               <Target className="h-4 w-4 mr-1" />
                               Focus

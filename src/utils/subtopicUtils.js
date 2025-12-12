@@ -1,6 +1,5 @@
 // Utility functions for working with subtopics
 import { content } from '../content/index.js';
-import { TOPICS } from '../constants/topics';
 
 /**
  * Get subtopics for a topic by topic name and grade
