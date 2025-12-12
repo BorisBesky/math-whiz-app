@@ -18,7 +18,6 @@ const ClassDetailPanel = ({
   const db = getFirestore();
   
   const [enrollments, setEnrollments] = useState({});
-  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
   const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
   const [subtopicGrade, setSubtopicGrade] = useState('G3');
