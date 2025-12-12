@@ -1,5 +1,6 @@
 // Question generation for 4th Grade Measurement & Data topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+import { generateClockSVG, formatTime12Hour } from '../../../utils/clockGenerator.js';
 
 // Helper functions
 function getRandomInt(min, max) {
@@ -18,6 +19,7 @@ export function generateQuestion(difficulty = 0.5) {
     { generator: generateWeightCapacityConversionQuestion, minDifficulty: 0.2, maxDifficulty: 0.9 },
     { generator: generateTimeConversionQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
     { generator: generateAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    { generator: generateClockReadingQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
   ];
   
   // Filter available questions based on difficulty
@@ -293,6 +295,108 @@ export function generateDataInterpretationQuestion(difficulty = 0.5) {
   };
 }
 
+/**
+ * Generates a clock reading question with an analog clock SVG
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ * @returns {Object} Question object with clock image and time reading question
+ */
+export function generateClockReadingQuestion(difficulty = 0.5) {
+  let hours, minutes;
+  
+  // Difficulty-based time selection
+  if (difficulty < 0.4) {
+    // Easy: On-the-hour or quarter hours
+    const easyTimes = [
+      // On-the-hour
+      [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0],
+      [7, 0], [8, 0], [9, 0], [10, 0], [11, 0], [12, 0],
+      // Quarter hours
+      [1, 15], [2, 15], [3, 15], [4, 15], [5, 15], [6, 15],
+      [7, 15], [8, 15], [9, 15], [10, 15], [11, 15], [12, 15],
+      [1, 30], [2, 30], [3, 30], [4, 30], [5, 30], [6, 30],
+      [7, 30], [8, 30], [9, 30], [10, 30], [11, 30], [12, 30],
+      [1, 45], [2, 45], [3, 45], [4, 45], [5, 45], [6, 45],
+      [7, 45], [8, 45], [9, 45], [10, 45], [11, 45], [12, 45],
+    ];
+    const selected = easyTimes[getRandomInt(0, easyTimes.length - 1)];
+    hours = selected[0];
+    minutes = selected[1];
+  } else if (difficulty < 0.7) {
+    // Medium: 5-minute intervals
+    hours = getRandomInt(1, 12);
+    const minuteOptions = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+    minutes = minuteOptions[getRandomInt(0, minuteOptions.length - 1)];
+  } else {
+    // Hard: Any minute
+    hours = getRandomInt(1, 12);
+    minutes = getRandomInt(0, 59);
+  }
+  
+  // Randomly choose AM or PM
+  const period = Math.random() < 0.5 ? 'AM' : 'PM';
+  
+  // Generate clock SVG
+  const clockSVG = generateClockSVG(hours, minutes, {
+    size: 250,
+    showNumbers: true
+  });
+  
+  // Format correct answer in 12-hour format with AM/PM
+  const correctAnswer = formatTime12Hour(hours, minutes, false, period);
+  
+  // Generate distractors
+  const potentialDistractors = [];
+  
+  // Distractor 1: Swap hour and minute (common mistake)
+  const swappedMinutes = hours * 5; // Convert hour to approximate minutes
+  const swappedHours = Math.floor(minutes / 5) || 12; // Convert minutes to approximate hours
+  if (swappedHours >= 1 && swappedHours <= 12 && swappedMinutes !== minutes) {
+    const swappedTime = formatTime12Hour(swappedHours, swappedMinutes, false, period);
+    potentialDistractors.push(swappedTime);
+  }
+  
+  // Distractor 2: Off by 5 minutes
+  const offBy5 = (minutes + 5) % 60;
+  const offBy5Time = formatTime12Hour(hours, offBy5, false, period);
+  potentialDistractors.push(offBy5Time);
+  
+  // Distractor 3: Off by one hour
+  const offByHour = ((hours % 12) + 1) || 12;
+  const offByHourTime = formatTime12Hour(offByHour, minutes, false, period);
+  potentialDistractors.push(offByHourTime);
+  
+  // Distractor 4: Wrong AM/PM
+  const wrongPeriod = period === 'AM' ? 'PM' : 'AM';
+  const wrongPeriodTime = formatTime12Hour(hours, minutes, false, wrongPeriod);
+  potentialDistractors.push(wrongPeriodTime);
+  
+  // Distractor 5: Off by 15 minutes
+  const offBy15 = (minutes + 15) % 60;
+  const offBy15Time = formatTime12Hour(hours, offBy15, false, period);
+  potentialDistractors.push(offBy15Time);
+  
+  // Ensure we have enough unique distractors
+  const uniqueDistractors = [...new Set(potentialDistractors)].filter(d => d !== correctAnswer);
+  
+  return {
+    question: "What time is shown on the clock?",
+    correctAnswer: correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, uniqueDistractors)),
+    hint: "Look at where the hour hand and minute hand are pointing. The hour hand is shorter and the minute hand is longer.",
+    standard: "4.MD.A.1",
+    concept: "Measurement & Data 4th",
+    grade: "G4",
+    subtopic: "clock reading",
+    images: [
+      {
+        type: 'question',
+        data: clockSVG,
+        description: 'Analog clock showing the time'
+      }
+    ]
+  };
+}
+
 const measurementDataQuestions = {
   generateQuestion,
   generateLengthConversionQuestion,
@@ -301,6 +405,7 @@ const measurementDataQuestions = {
   generateAreaPerimeterQuestion,
   generateAngleQuestion,
   generateDataInterpretationQuestion,
+  generateClockReadingQuestion,
 };
 
 export default measurementDataQuestions;

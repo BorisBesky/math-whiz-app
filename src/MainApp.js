@@ -65,6 +65,7 @@ import { TOPICS, APP_STATES } from "./constants/topics";
 import content from "./content";
 import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questionCache";
 import { loadStoreImages } from "./utils/storeImages";
+import { isSubtopicAllowed } from "./utils/subtopicUtils";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -183,7 +184,8 @@ const generateQuizQuestions = async (
   classId = null,
   answeredQuestionIds = [],
   appId = null,
-  questionBankProbability = 0.7 // Default 70% chance for question bank questions
+  questionBankProbability = 0.7, // Default 70% chance for question bank questions
+  allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
@@ -215,7 +217,8 @@ const generateQuizQuestions = async (
     userId,
     classId,
     answeredQuestionIds,
-    appId
+    appId,
+    allowedSubtopicsByTopic
   );
   let firestoreQuestionIndex = 0;
 
@@ -360,6 +363,13 @@ const generateQuizQuestions = async (
           `Question: ${question.question}, avgComplexity: ${avgComplexity}, totalComplexity: ${masteryEntry.totalComplexity}, need: ${need}, acceptProb: ${acceptProb}`
         );
       }
+    }
+
+    // Check subtopic restrictions
+    const subtopicAllowed = isSubtopicAllowed(question, topic, allowedSubtopicsByTopic);
+    if (!subtopicAllowed) {
+      // Skip this question if subtopic is not allowed
+      continue;
     }
 
     // For Firestore questions, always accept if unique. For generated, use probabilistic acceptance
@@ -548,7 +558,7 @@ const retryWithBackoff = async (fn, options = {}) => {
 // Note: Class questions are stored as reference documents that contain both:
 //   1. Reference info (questionBankRef, teacherId) pointing to the original question
 //   2. Full question data for efficient querying by topic/grade
-const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId) => {
+const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId, allowedSubtopicsByTopic = null) => {
   const questions = [];
   const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
   const answeredSet = new Set(answeredQuestionIds || []);
@@ -571,6 +581,10 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
             if (!questionId) {
               console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
               return;
+            }
+            // Check subtopic restrictions
+            if (!isSubtopicAllowed(cachedQuestion, topic, allowedSubtopicsByTopic)) {
+              return; // Skip this question
             }
             if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
               seenQuestionIds.add(questionId);
@@ -624,10 +638,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
           // Filter and add to questions array
           let classQuestionsCount = 0;
           classSnapshot.forEach(doc => {
+            const questionData = doc.data();
+            // Check subtopic restrictions
+            if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+              return; // Skip this question
+            }
             if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
               seenQuestionIds.add(doc.id);
               questions.push({
-                ...doc.data(),
+                ...questionData,
                 questionId: doc.id,
                 source: 'questionBank',
                 collection: 'classQuestions'
@@ -689,10 +708,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
         
         let userQuestionsCount = 0;
         userQuestionBankSnapshot.forEach(doc => {
+          const questionData = doc.data();
+          // Check subtopic restrictions
+          if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+            return; // Skip this question
+          }
           if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
             seenQuestionIds.add(doc.id);
             questions.push({
-              ...doc.data(),
+              ...questionData,
               questionId: doc.id,
               source: 'questionBank',
               collection: 'questionBank'
@@ -747,10 +771,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
       
       let sharedQuestionsCount = 0;
       sharedSnapshot.forEach(doc => {
+        const questionData = doc.data();
+        // Check subtopic restrictions
+        if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+          return; // Skip this question
+        }
         if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
           seenQuestionIds.add(doc.id);
           questions.push({
-            ...doc.data(),
+            ...questionData,
             questionId: doc.id,
             source: 'sharedQuestionBank',
             collection: 'sharedQuestionBank'
@@ -1276,16 +1305,23 @@ const MainAppContent = () => {
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
-    // Get student's classId and class configuration if enrolled
+    // Get student's classId, class configuration, and enrollment subtopic restrictions
     let studentClassId = null;
     let questionBankProbability = 0.7; // Default 70%
+    let allowedSubtopicsByTopic = null;
     const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
     try {
       const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
       const enrollmentQuery = query(enrollmentsRef, where('studentId', '==', user.uid));
       const enrollmentSnapshot = await getDocs(enrollmentQuery);
       if (!enrollmentSnapshot.empty) {
-        studentClassId = enrollmentSnapshot.docs[0].data().classId;
+        const enrollmentData = enrollmentSnapshot.docs[0].data();
+        studentClassId = enrollmentData.classId;
+        
+        // Get subtopic restrictions from enrollment
+        if (enrollmentData.allowedSubtopicsByTopic) {
+          allowedSubtopicsByTopic = enrollmentData.allowedSubtopicsByTopic;
+        }
         
         // Fetch class configuration for question bank probability
         try {
@@ -1301,6 +1337,26 @@ const MainAppContent = () => {
           }
         } catch (classErr) {
           console.warn('Could not fetch class configuration:', classErr);
+        }
+      } else {
+        // Try using deterministic enrollment ID as fallback
+        // This handles cases where query might fail but enrollment exists
+        try {
+          // We need classId first, so try to get it from userData
+          if (userData?.classId) {
+            const enrollmentId = `${userData.classId}__${user.uid}`;
+            const enrollmentRef = doc(db, 'artifacts', appIdForQuiz, 'classStudents', enrollmentId);
+            const enrollmentDoc = await getDoc(enrollmentRef);
+            if (enrollmentDoc.exists()) {
+              const enrollmentData = enrollmentDoc.data();
+              studentClassId = enrollmentData.classId;
+              if (enrollmentData.allowedSubtopicsByTopic) {
+                allowedSubtopicsByTopic = enrollmentData.allowedSubtopicsByTopic;
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn('Could not fetch enrollment via fallback:', fallbackErr);
         }
       }
     } catch (e) {
@@ -1361,7 +1417,8 @@ const MainAppContent = () => {
       studentClassId,
       answeredQuestionIds,
       appIdForQuiz,
-      questionBankProbability
+      questionBankProbability,
+      allowedSubtopicsByTopic
     );
     setCurrentQuiz(newQuestions);
     setQuizState(APP_STATES.IN_PROGRESS);
