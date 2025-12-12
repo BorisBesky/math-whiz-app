@@ -103,7 +103,7 @@ export function generateClockSVG(hours, minutes, options = {}) {
  */
 export function formatTime12Hour(hours, minutes, is24Hour = false, period = null) {
   let displayHours = hours;
-  let displayPeriod = period || 'AM';
+  let displayPeriod;
 
   if (is24Hour) {
     if (hours === 0) {
