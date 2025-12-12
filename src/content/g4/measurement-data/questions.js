@@ -349,7 +349,8 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   
   // Distractor 1: Swap hour and minute (common mistake)
   const swappedMinutes = hours * 5; // Convert hour to approximate minutes
-  const swappedHours = Math.floor(minutes / 5) || 12; // Convert minutes to approximate hours
+  // Convert minutes to approximate hours, always in range 1-12
+  const swappedHours = ((Math.floor(minutes / 5) % 12) + 1);
   if (swappedHours >= 1 && swappedHours <= 12 && swappedMinutes !== minutes) {
     const swappedTime = formatTime12Hour(swappedHours, swappedMinutes, false, period);
     potentialDistractors.push(swappedTime);
