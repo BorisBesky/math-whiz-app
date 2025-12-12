@@ -1341,23 +1341,9 @@ const MainAppContent = () => {
       } else {
         // Try using deterministic enrollment ID as fallback
         // This handles cases where query might fail but enrollment exists
-        try {
-          // We need classId first, so try to get it from userData
-          if (userData?.classId) {
-            const enrollmentId = `${userData.classId}__${user.uid}`;
-            const enrollmentRef = doc(db, 'artifacts', appIdForQuiz, 'classStudents', enrollmentId);
-            const enrollmentDoc = await getDoc(enrollmentRef);
-            if (enrollmentDoc.exists()) {
-              const enrollmentData = enrollmentDoc.data();
-              studentClassId = enrollmentData.classId;
-              if (enrollmentData.allowedSubtopicsByTopic) {
-                allowedSubtopicsByTopic = enrollmentData.allowedSubtopicsByTopic;
-              }
-            }
-          }
-        } catch (fallbackErr) {
-          console.warn('Could not fetch enrollment via fallback:', fallbackErr);
-        }
+        // Fallback logic removed: userData.classId is not present in user schema.
+        // (No fallback available; student is not enrolled in any class.)
+        // Optionally, handle this case as needed (e.g., show a message or prompt).
       }
     } catch (e) {
       console.warn('Could not fetch student class:', e);
