@@ -65,6 +65,7 @@ import { TOPICS, APP_STATES } from "./constants/topics";
 import content from "./content";
 import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questionCache";
 import { loadStoreImages } from "./utils/storeImages";
+import { isSubtopicAllowed } from "./utils/subtopicUtils";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -183,7 +184,8 @@ const generateQuizQuestions = async (
   classId = null,
   answeredQuestionIds = [],
   appId = null,
-  questionBankProbability = 0.7 // Default 70% chance for question bank questions
+  questionBankProbability = 0.7, // Default 70% chance for question bank questions
+  allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
@@ -206,7 +208,17 @@ const generateQuizQuestions = async (
   const usedQuestions = new Set(); // Track unique question signatures
   const numQuestions = Math.max(1, dailyGoal);
   let attempts = 0;
-  const maxAttempts = numQuestions * 10; // Prevent infinite loops
+  
+  // Increase max attempts if subtopic restrictions are present (more restrictive = more attempts needed)
+  // Base multiplier of 10, increase to 30 if subtopic restrictions exist
+  const hasSubtopicRestrictions = allowedSubtopicsByTopic && Object.keys(allowedSubtopicsByTopic).length > 0;
+  const baseMultiplier = hasSubtopicRestrictions ? 30 : 10;
+  const maxAttempts = numQuestions * baseMultiplier; // Prevent infinite loops
+  
+  // Track statistics for better error reporting
+  let filteredBySubtopicCount = 0;
+  let consecutiveFilteredCount = 0;
+  const maxConsecutiveFiltered = 50; // Early exit if too many consecutive filtered questions
 
   // Fetch questions from Firestore
   const firestoreQuestions = await fetchQuestionsFromFirestore(
@@ -215,7 +227,8 @@ const generateQuizQuestions = async (
     userId,
     classId,
     answeredQuestionIds,
-    appId
+    appId,
+    allowedSubtopicsByTopic
   );
   let firestoreQuestionIndex = 0;
 
@@ -223,6 +236,16 @@ const generateQuizQuestions = async (
     attempts++;
     let question = {};
     let useFirestoreQuestion = false;
+    
+    // Early exit if too many consecutive questions are filtered (likely no valid questions exist)
+    if (consecutiveFilteredCount >= maxConsecutiveFiltered) {
+      console.warn(
+        `Stopped quiz generation after ${maxConsecutiveFiltered} consecutive questions were filtered by subtopic restrictions. ` +
+        `This may indicate that no valid questions exist for the current subtopic restrictions. ` +
+        `Generated ${questions.length} out of ${numQuestions} requested questions for ${topic}.`
+      );
+      break;
+    }
 
     // Use configured probability to select Firestore question if available
     if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
@@ -362,6 +385,15 @@ const generateQuizQuestions = async (
       }
     }
 
+    // Check subtopic restrictions
+    const subtopicAllowed = isSubtopicAllowed(question, topic, allowedSubtopicsByTopic);
+    if (!subtopicAllowed) {
+      // Skip this question if subtopic is not allowed
+      filteredBySubtopicCount++;
+      consecutiveFilteredCount++;
+      continue;
+    }
+
     // For Firestore questions, always accept if unique. For generated, use probabilistic acceptance
     const shouldAccept = useFirestoreQuestion 
       ? !usedQuestions.has(question.question)
@@ -370,14 +402,35 @@ const generateQuizQuestions = async (
     if (shouldAccept) {
       usedQuestions.add(question.question);
       questions.push(question);
+      // Reset consecutive filtered count when we successfully accept a question
+      consecutiveFilteredCount = 0;
     }
   }
 
-  // If we couldn't generate enough unique questions, log a warning
+  // If we couldn't generate enough unique questions, log a detailed warning
   if (questions.length < numQuestions) {
-    console.warn(
+    const warningParts = [
       `Could only generate ${questions.length} unique questions out of ${numQuestions} requested for ${topic}`
-    );
+    ];
+    
+    if (attempts >= maxAttempts) {
+      warningParts.push(`(reached maximum attempts limit: ${maxAttempts})`);
+    }
+    
+    if (filteredBySubtopicCount > 0) {
+      warningParts.push(
+        `${filteredBySubtopicCount} question${filteredBySubtopicCount > 1 ? 's were' : ' was'} filtered out due to subtopic restrictions`
+      );
+    }
+    
+    if (hasSubtopicRestrictions && questions.length === 0) {
+      warningParts.push(
+        `No valid questions found matching the subtopic restrictions. ` +
+        `Consider reviewing the Focus settings for this student.`
+      );
+    }
+    
+    console.warn(warningParts.join('. ') + '.');
   }
 
   return questions;
@@ -548,7 +601,7 @@ const retryWithBackoff = async (fn, options = {}) => {
 // Note: Class questions are stored as reference documents that contain both:
 //   1. Reference info (questionBankRef, teacherId) pointing to the original question
 //   2. Full question data for efficient querying by topic/grade
-const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId) => {
+const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId, allowedSubtopicsByTopic = null) => {
   const questions = [];
   const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
   const answeredSet = new Set(answeredQuestionIds || []);
@@ -571,6 +624,10 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
             if (!questionId) {
               console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
               return;
+            }
+            // Check subtopic restrictions
+            if (!isSubtopicAllowed(cachedQuestion, topic, allowedSubtopicsByTopic)) {
+              return; // Skip this question
             }
             if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
               seenQuestionIds.add(questionId);
@@ -624,10 +681,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
           // Filter and add to questions array
           let classQuestionsCount = 0;
           classSnapshot.forEach(doc => {
+            const questionData = doc.data();
+            // Check subtopic restrictions
+            if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+              return; // Skip this question
+            }
             if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
               seenQuestionIds.add(doc.id);
               questions.push({
-                ...doc.data(),
+                ...questionData,
                 questionId: doc.id,
                 source: 'questionBank',
                 collection: 'classQuestions'
@@ -689,10 +751,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
         
         let userQuestionsCount = 0;
         userQuestionBankSnapshot.forEach(doc => {
+          const questionData = doc.data();
+          // Check subtopic restrictions
+          if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+            return; // Skip this question
+          }
           if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
             seenQuestionIds.add(doc.id);
             questions.push({
-              ...doc.data(),
+              ...questionData,
               questionId: doc.id,
               source: 'questionBank',
               collection: 'questionBank'
@@ -747,10 +814,15 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
       
       let sharedQuestionsCount = 0;
       sharedSnapshot.forEach(doc => {
+        const questionData = doc.data();
+        // Check subtopic restrictions
+        if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+          return; // Skip this question
+        }
         if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
           seenQuestionIds.add(doc.id);
           questions.push({
-            ...doc.data(),
+            ...questionData,
             questionId: doc.id,
             source: 'sharedQuestionBank',
             collection: 'sharedQuestionBank'
@@ -1276,16 +1348,23 @@ const MainAppContent = () => {
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
-    // Get student's classId and class configuration if enrolled
+    // Get student's classId, class configuration, and enrollment subtopic restrictions
     let studentClassId = null;
     let questionBankProbability = 0.7; // Default 70%
+    let allowedSubtopicsByTopic = null;
     const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
     try {
       const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
       const enrollmentQuery = query(enrollmentsRef, where('studentId', '==', user.uid));
       const enrollmentSnapshot = await getDocs(enrollmentQuery);
       if (!enrollmentSnapshot.empty) {
-        studentClassId = enrollmentSnapshot.docs[0].data().classId;
+        const enrollmentData = enrollmentSnapshot.docs[0].data();
+        studentClassId = enrollmentData.classId;
+        
+        // Get subtopic restrictions from enrollment
+        if (enrollmentData.allowedSubtopicsByTopic) {
+          allowedSubtopicsByTopic = enrollmentData.allowedSubtopicsByTopic;
+        }
         
         // Fetch class configuration for question bank probability
         try {
@@ -1302,6 +1381,12 @@ const MainAppContent = () => {
         } catch (classErr) {
           console.warn('Could not fetch class configuration:', classErr);
         }
+      } else {
+        // Try using deterministic enrollment ID as fallback
+        // This handles cases where query might fail but enrollment exists
+        // Fallback logic removed: userData.classId is not present in user schema.
+        // (No fallback available; student is not enrolled in any class.)
+        // Optionally, handle this case as needed (e.g., show a message or prompt).
       }
     } catch (e) {
       console.warn('Could not fetch student class:', e);
@@ -1361,7 +1446,8 @@ const MainAppContent = () => {
       studentClassId,
       answeredQuestionIds,
       appIdForQuiz,
-      questionBankProbability
+      questionBankProbability,
+      allowedSubtopicsByTopic
     );
     setCurrentQuiz(newQuestions);
     setQuizState(APP_STATES.IN_PROGRESS);

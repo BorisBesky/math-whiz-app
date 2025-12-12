@@ -20,6 +20,7 @@ export const measurementData = {
     'length conversion',
     'weight and capacity conversion',
     'time conversion',
+    'clock reading',
     'area',
     'perimeter',
     'angles',
@@ -31,6 +32,7 @@ export const measurementData = {
   objectives: [
     'Convert between different units of measurement',
     'Solve problems involving measurement and conversion',
+    'Read and interpret analog clocks',
     'Find area and perimeter of rectangles',
     'Understand angle measurement and classification',
     'Create and interpret line plots',
