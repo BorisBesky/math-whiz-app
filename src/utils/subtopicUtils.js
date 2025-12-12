@@ -10,25 +10,28 @@ import { TOPICS } from '../constants/topics';
  */
 export const getSubtopicsForTopic = (topicName, grade) => {
   try {
-    // Map topic names to topic IDs in the content system
-    const topicIdMap = {
-      [TOPICS.MULTIPLICATION]: 'multiplication',
-      [TOPICS.DIVISION]: 'division',
-      [TOPICS.FRACTIONS]: 'fractions',
-      [TOPICS.MEASUREMENT_DATA]: 'measurement-data',
-      [TOPICS.OPERATIONS_ALGEBRAIC_THINKING]: 'operations-algebraic-thinking',
-      [TOPICS.BASE_TEN]: 'base-ten',
-      [TOPICS.FRACTIONS_4TH]: 'fractions',
-      [TOPICS.MEASUREMENT_DATA_4TH]: 'measurement-data',
-      [TOPICS.GEOMETRY]: 'geometry',
-      [TOPICS.BINARY_ADDITION]: 'binary-addition',
-    };
-
     const gradeId = grade.toLowerCase(); // Convert G3 -> g3, G4 -> g4
-    const topicId = topicIdMap[topicName];
+
+    // Attempt to find the topicId by matching topicName to the display name in content
+    const topicsForGrade = content.getTopicsForGrade
+      ? content.getTopicsForGrade(gradeId)
+      : (content[gradeId] || {});
+
+    // topicsForGrade is expected to be an object: { [topicId]: { displayName, ... } }
+    let topicId = null;
+    for (const [id, topicObj] of Object.entries(topicsForGrade)) {
+      // Try to match by displayName or name property
+      if (
+        (topicObj.displayName && topicObj.displayName === topicName) ||
+        (topicObj.name && topicObj.name === topicName)
+      ) {
+        topicId = id;
+        break;
+      }
+    }
 
     if (!topicId) {
-      console.warn(`[getSubtopicsForTopic] Unknown topic: ${topicName}`);
+      console.warn(`[getSubtopicsForTopic] Unknown topic: ${topicName} for grade: ${gradeId}`);
       return [];
     }
 
