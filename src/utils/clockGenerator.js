@@ -88,8 +88,8 @@ export function generateClockSVG(hours, minutes, options = {}) {
   
   svg += `</svg>`;
 
-  // Convert to base64 data URI
-  const base64 = btoa(unescape(encodeURIComponent(svg)));
+  // Convert to base64 data URI (modern, safe for Unicode)
+  const base64 = btoa(encodeURIComponent(svg).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
   return `data:image/svg+xml;base64,${base64}`;
 }
 
