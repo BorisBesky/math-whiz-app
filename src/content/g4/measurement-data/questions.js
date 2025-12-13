@@ -41,20 +41,19 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     questionTypes = Object.values(subtopicToGenerator);
   }
   
-  // If no valid question types after filtering, return null or fallback
-  if (questionTypes.length === 0) {
-    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
-    return null;
-  }
-  
   // Filter available questions based on difficulty
   const available = questionTypes.filter(
     q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
   );
-  
+
   // If no questions available for this difficulty, use all question types (relax difficulty constraint)
   const candidates = available.length > 0 ? available : questionTypes;
-  
+
+  // If still no valid question types, return null
+  if (candidates.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
   // Randomly select from available types
   const selected = candidates[getRandomInt(0, candidates.length - 1)];
   return selected.generator(difficulty);
