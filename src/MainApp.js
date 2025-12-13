@@ -191,14 +191,22 @@ const generateQuizQuestions = async (
   const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);
 
+  // Helper function to generate a unique signature for a question
+  // Uses question text + correct answer to handle cases where questions have same text but different answers (e.g., clock reading)
+  const getQuestionSignature = (q) => {
+    return `${q.question}|||${q.correctAnswer ?? ''}`;
+  };
+
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
   const questionMastery = new Map();
 
   ranked.forEach((r) => {
-    if (!questionMastery.has(r.question)) {
-      questionMastery.set(r.question, { totalComplexity: 0, count: 0 });
+    // Use question signature (question + correctAnswer) as key to match lookup logic
+    const questionSig = getQuestionSignature(r);
+    if (!questionMastery.has(questionSig)) {
+      questionMastery.set(questionSig, { totalComplexity: 0, count: 0 });
     }
-    const entry = questionMastery.get(r.question);
+    const entry = questionMastery.get(questionSig);
     entry.totalComplexity += r.complexityScore || 0;
     entry.count += 1;
   });
@@ -250,8 +258,9 @@ const generateQuizQuestions = async (
     // Use configured probability to select Firestore question if available
     if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
       const firestoreQ = firestoreQuestions[firestoreQuestionIndex];
-      // Check if question text is unique
-      if (!usedQuestions.has(firestoreQ.question)) {
+      // Check if question is unique using signature
+      const questionSig = getQuestionSignature(firestoreQ);
+      if (!usedQuestions.has(questionSig)) {
         question = {
           ...firestoreQ,
           concept: firestoreQ.topic || firestoreQ.concept || topic,
@@ -332,9 +341,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Measurement & Data
         const measurementDataTopic = content.getTopic('g4', 'measurement-data');
         if (measurementDataTopic) {
-          question = measurementDataTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = measurementDataTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.MEASUREMENT_DATA_4TH;
+          if (question) {
+            question.concept = TOPICS.MEASUREMENT_DATA_4TH;
+          }
         }
         break;
 
@@ -368,9 +383,17 @@ const generateQuizQuestions = async (
       }
     }
 
+    // Skip if question generation failed (e.g., no valid subtopics)
+    if (!question || !question.question) {
+      attempts++;
+      continue;
+    }
+
     // Use complexity-based mastery to bias selection toward struggled/unseen items
     // Only apply to generated questions, not Firestore questions
-    const masteryEntry = useFirestoreQuestion ? null : questionMastery.get(question.question);
+    // Use question signature for mastery lookup to handle questions with same text but different answers
+    const questionSigForMastery = getQuestionSignature(question);
+    const masteryEntry = useFirestoreQuestion ? null : questionMastery.get(questionSigForMastery);
 
     let acceptProb = 0.7; // baseline for unseen questions
     if (!useFirestoreQuestion && masteryEntry && masteryEntry.count > 0) {
@@ -394,13 +417,16 @@ const generateQuizQuestions = async (
       continue;
     }
 
+    // Generate unique signature for this question
+    const questionSig = getQuestionSignature(question);
+    
     // For Firestore questions, always accept if unique. For generated, use probabilistic acceptance
     const shouldAccept = useFirestoreQuestion 
-      ? !usedQuestions.has(question.question)
-      : Math.random() <= acceptProb && !usedQuestions.has(question.question);
+      ? !usedQuestions.has(questionSig)
+      : Math.random() <= acceptProb && !usedQuestions.has(questionSig);
 
     if (shouldAccept) {
-      usedQuestions.add(question.question);
+      usedQuestions.add(questionSig);
       questions.push(question);
       // Reset consecutive filtered count when we successfully accept a question
       consecutiveFilteredCount = 0;
