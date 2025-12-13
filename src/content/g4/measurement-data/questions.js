@@ -38,13 +38,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
       .map(([_, config]) => config);
   } else {
     // Default: all question types
-    questionTypes = [
-      { generator: generateLengthConversionQuestion, minDifficulty: 0.0, maxDifficulty: 0.8 },
-      { generator: generateWeightCapacityConversionQuestion, minDifficulty: 0.2, maxDifficulty: 0.9 },
-      { generator: generateTimeConversionQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
-      { generator: generateAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
-      { generator: generateClockReadingQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
-    ];
+    questionTypes = Object.values(subtopicToGenerator);
   }
   
   // If no valid question types after filtering, return null or fallback
