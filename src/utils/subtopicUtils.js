@@ -69,9 +69,10 @@ export const isSubtopicAllowed = (question, topicName, allowedSubtopicsByTopic) 
     return false;
   }
 
-  // If question has no subtopic field, allow it (backward compatibility)
+  // If question has no subtopic field and restrictions exist, reject it
+  // (Backward compatibility only applies when no restrictions exist)
   if (!question.subtopic) {
-    return true;
+    return false;
   }
 
   // Normalize subtopic names for comparison (case-insensitive, trim whitespace)
