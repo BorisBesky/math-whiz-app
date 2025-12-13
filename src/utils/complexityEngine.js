@@ -171,6 +171,7 @@ export function adaptAnsweredHistory(answeredQuestions) {
     return {
       questionId: q.id || `${q.topic}|${q.question?.slice(0, 40) || 'unknown'}`,
       question: q.question,
+      correctAnswer: q.correctAnswer,
       signature: q.signature,
       topic: q.topic,
       isCorrect: !!q.isCorrect,

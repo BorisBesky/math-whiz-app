@@ -191,14 +191,22 @@ const generateQuizQuestions = async (
   const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);
 
+  // Helper function to generate a unique signature for a question
+  // Uses question text + correct answer to handle cases where questions have same text but different answers (e.g., clock reading)
+  const getQuestionSignature = (q) => {
+    return `${q.question}|||${q.correctAnswer}`;
+  };
+
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
   const questionMastery = new Map();
 
   ranked.forEach((r) => {
-    if (!questionMastery.has(r.question)) {
-      questionMastery.set(r.question, { totalComplexity: 0, count: 0 });
+    // Use question signature (question + correctAnswer) as key to match lookup logic
+    const questionSig = getQuestionSignature(r);
+    if (!questionMastery.has(questionSig)) {
+      questionMastery.set(questionSig, { totalComplexity: 0, count: 0 });
     }
-    const entry = questionMastery.get(r.question);
+    const entry = questionMastery.get(questionSig);
     entry.totalComplexity += r.complexityScore || 0;
     entry.count += 1;
   });
@@ -206,11 +214,6 @@ const generateQuizQuestions = async (
   const dailyGoal = dailyGoals?.[topic] || DEFAULT_DAILY_GOAL;
   const questions = [];
   const usedQuestions = new Set(); // Track unique question signatures
-  // Helper function to generate a unique signature for a question
-  // Uses question text + correct answer to handle cases where questions have same text but different answers (e.g., clock reading)
-  const getQuestionSignature = (q) => {
-    return `${q.question}|||${q.correctAnswer}`;
-  };
   const numQuestions = Math.max(1, dailyGoal);
   let attempts = 0;
   
