@@ -16,15 +16,16 @@ export const getSubtopicsForTopic = (topicName, grade) => {
       ? content.getTopicsForGrade(gradeId)
       : (content[gradeId] || {});
 
-    // topicsForGrade is expected to be an object: { [topicId]: { displayName, ... } }
+    // topicsForGrade is an array of topic objects, not an object with topicIds as keys
     let topicId = null;
-    for (const [id, topicObj] of Object.entries(topicsForGrade)) {
+    const topicsArray = Array.isArray(topicsForGrade) ? topicsForGrade : Object.values(topicsForGrade);
+    for (const topicObj of topicsArray) {
       // Try to match by displayName or name property
       if (
         (topicObj.displayName && topicObj.displayName === topicName) ||
         (topicObj.name && topicObj.name === topicName)
       ) {
-        topicId = id;
+        topicId = topicObj.id; // Use the actual topic.id, not array index
         break;
       }
     }
