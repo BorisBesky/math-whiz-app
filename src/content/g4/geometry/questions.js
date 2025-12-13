@@ -9,28 +9,67 @@ function getRandomInt(min, max) {
 /**
  * Generates a random geometry question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
+ * @param {string[]} allowedSubtopics - Optional array of allowed subtopic names. If provided, only questions from these subtopics will be generated.
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion(difficulty = 0.5) {
-  // Define question types with minimum and maximum difficulty thresholds
-  const questionTypes = [
-    { generator: generateLinesAndAnglesQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
-    { generator: generatePointsLinesRaysQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
-    { generator: generateShapeClassificationQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
-    { generator: generateLineSymmetryQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
-    { generator: generateTriangleClassificationBySidesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    { generator: generateTriangleClassificationByAnglesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
-    { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
-  ];
+export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
+  // Map subtopic names to generators
+  const subtopicToGenerator = {
+    'lines and angles': { generator: generateLinesAndAnglesQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'points lines rays': { generator: generatePointsLinesRaysQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'classify shapes': { generator: generateShapeClassificationQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    'symmetry': { generator: generateLineSymmetryQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    'triangles': [
+      { generator: generateTriangleClassificationBySidesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+      { generator: generateTriangleClassificationByAnglesQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    ],
+    'quadrilaterals': { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+  };
+  
+  // Normalize subtopic names for comparison
+  const normalize = (str) => str.toLowerCase().trim();
+  
+  // If allowed subtopics are specified, filter to only those generators
+  let questionTypes = [];
+  if (allowedSubtopics && allowedSubtopics.length > 0) {
+    const normalizedAllowed = allowedSubtopics.map(normalize);
+    Object.entries(subtopicToGenerator).forEach(([subtopic, config]) => {
+      if (normalizedAllowed.includes(normalize(subtopic))) {
+        // Handle arrays (like triangles which has multiple generators)
+        if (Array.isArray(config)) {
+          questionTypes.push(...config);
+        } else {
+          questionTypes.push(config);
+        }
+      }
+    });
+  } else {
+    // Default: all question types
+    Object.values(subtopicToGenerator).forEach(config => {
+      if (Array.isArray(config)) {
+        questionTypes.push(...config);
+      } else {
+        questionTypes.push(config);
+      }
+    });
+  }
   
   // Filter available questions based on difficulty
   const available = questionTypes.filter(
     q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
   );
-  
+
+  // If no questions available for this difficulty, use all question types (relax difficulty constraint)
+  const candidates = available.length > 0 ? available : questionTypes;
+
+  // If still no valid question types, return null
+  if (candidates.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
   // Randomly select from available types
-  const selected = available[getRandomInt(0, available.length - 1)];
+  const selected = candidates[getRandomInt(0, candidates.length - 1)];
   return selected.generator(difficulty);
 }
 

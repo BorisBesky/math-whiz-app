@@ -277,32 +277,56 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Multiplication
         const multiplicationTopic = content.getTopic('g3', 'multiplication');
         if (multiplicationTopic) {
-          question = multiplicationTopic.generateQuestion(difficulty);
-          question.concept = TOPICS.MULTIPLICATION;
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = multiplicationTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+          if (question) {
+            question.concept = TOPICS.MULTIPLICATION;
+          }
         }
         break;
       case TOPICS.DIVISION:
         // Use the new pluggable content system for Division
         const divisionTopic = content.getTopic('g3', 'division');
         if (divisionTopic) {
-          question = divisionTopic.generateQuestion(difficulty);
-          question.concept = TOPICS.DIVISION;
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = divisionTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+          if (question) {
+            question.concept = TOPICS.DIVISION;
+          }
         }
         break;
       case TOPICS.FRACTIONS:
         // Use the new pluggable content system for G3 Fractions
         const g3FractionsTopic = content.getTopic('g3', 'fractions');
         if (g3FractionsTopic) {
-          question = g3FractionsTopic.generateQuestion(difficulty);
-          question.concept = TOPICS.FRACTIONS;
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = g3FractionsTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+          if (question) {
+            question.concept = TOPICS.FRACTIONS;
+          }
         }
         break;
       case TOPICS.MEASUREMENT_DATA:
         // Use the new pluggable content system for G3 Measurement & Data
         const g3MeasurementDataTopic = content.getTopic('g3', 'measurement-data');
         if (g3MeasurementDataTopic) {
-          question = g3MeasurementDataTopic.generateQuestion(difficulty);
-          question.concept = TOPICS.MEASUREMENT_DATA;
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = g3MeasurementDataTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+          if (question) {
+            question.concept = TOPICS.MEASUREMENT_DATA;
+          }
         }
         break;
 
@@ -311,9 +335,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Operations & Algebraic Thinking
         const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
         if (oaTopic) {
-          question = oaTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = oaTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
+          if (question) {
+            question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
+          }
         } 
         break;
 
@@ -321,9 +351,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Base Ten
         const baseTenTopic = content.getTopic('g4', 'base-ten');
         if (baseTenTopic) {
-          question = baseTenTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = baseTenTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.BASE_TEN;
+          if (question) {
+            question.concept = TOPICS.BASE_TEN;
+          }
         }
         break;
 
@@ -331,9 +367,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Fractions
         const fractionsTopic = content.getTopic('g4', 'fractions');
         if (fractionsTopic) {
-          question = fractionsTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = fractionsTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.FRACTIONS_4TH;
+          if (question) {
+            question.concept = TOPICS.FRACTIONS_4TH;
+          }
         }
         break;
 
@@ -357,9 +399,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Geometry
         const geometryTopic = content.getTopic('g4', 'geometry');
         if (geometryTopic) {
-          question = geometryTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = geometryTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.GEOMETRY;
+          if (question) {
+            question.concept = TOPICS.GEOMETRY;
+          }
         }
         break;
 
@@ -367,9 +415,15 @@ const generateQuizQuestions = async (
         // Use the new pluggable content system for Binary Addition
         const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
         if (binaryAdditionTopic) {
-          question = binaryAdditionTopic.generateQuestion(difficulty);
+          // Get allowed subtopics for this topic if restrictions exist
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
+            ? allowedSubtopicsByTopic[topic]
+            : null;
+          question = binaryAdditionTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           // Ensure the concept field matches the old TOPICS constant for compatibility
-          question.concept = TOPICS.BINARY_ADDITION;
+          if (question) {
+            question.concept = TOPICS.BINARY_ADDITION;
+          }
         }
         break;
 

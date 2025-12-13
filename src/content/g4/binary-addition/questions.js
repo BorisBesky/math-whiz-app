@@ -35,25 +35,49 @@ function addBinary(bin1, bin2) {
 /**
  * Generates a random Binary Addition question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
+ * @param {string[]} allowedSubtopics - Optional array of allowed subtopic names. If provided, only questions from these subtopics will be generated.
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion(difficulty = 0.5) {
-  // Define question types with minimum and maximum difficulty thresholds
-  const questionTypes = [
-    { generator: generateBinaryToDecimalQuestion, minDifficulty: 0.0, maxDifficulty: 0.6 },
-    { generator: generateBinaryPlaceValueQuestion, minDifficulty: 0.2, maxDifficulty: 0.7 },
-    { generator: generateDecimalToBinaryQuestion, minDifficulty: 0.3, maxDifficulty: 0.8 },
-    { generator: generateBinaryComparisonQuestion, minDifficulty: 0.4, maxDifficulty: 0.9 },
-    { generator: generateBinaryAdditionQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
-  ];
+export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
+  // Map subtopic names to generators
+  const subtopicToGenerator = {
+    'binary to decimal conversion': { generator: generateBinaryToDecimalQuestion, minDifficulty: 0.0, maxDifficulty: 0.6 },
+    'decimal to binary conversion': { generator: generateDecimalToBinaryQuestion, minDifficulty: 0.3, maxDifficulty: 0.8 },
+    'binary addition': { generator: generateBinaryAdditionQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'place value in binary': { generator: generateBinaryPlaceValueQuestion, minDifficulty: 0.2, maxDifficulty: 0.7 },
+    'comparing binary numbers': { generator: generateBinaryComparisonQuestion, minDifficulty: 0.4, maxDifficulty: 0.9 },
+  };
+  
+  // Normalize subtopic names for comparison
+  const normalize = (str) => str.toLowerCase().trim();
+  
+  // If allowed subtopics are specified, filter to only those generators
+  let questionTypes;
+  if (allowedSubtopics && allowedSubtopics.length > 0) {
+    const normalizedAllowed = allowedSubtopics.map(normalize);
+    questionTypes = Object.entries(subtopicToGenerator)
+      .filter(([subtopic]) => normalizedAllowed.includes(normalize(subtopic)))
+      .map(([_, config]) => config);
+  } else {
+    // Default: all question types
+    questionTypes = Object.values(subtopicToGenerator);
+  }
   
   // Filter available questions based on difficulty
   const available = questionTypes.filter(
     q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
   );
-  
+
+  // If no questions available for this difficulty, use all question types (relax difficulty constraint)
+  const candidates = available.length > 0 ? available : questionTypes;
+
+  // If still no valid question types, return null
+  if (candidates.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
   // Randomly select from available types
-  const selected = available[getRandomInt(0, available.length - 1)];
+  const selected = candidates[getRandomInt(0, candidates.length - 1)];
   return selected.generator(difficulty);
 }
 

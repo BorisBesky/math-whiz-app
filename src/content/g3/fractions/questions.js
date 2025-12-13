@@ -14,23 +14,54 @@ function getSimplifiedFraction(num, den) {
   return simplifiedDen === 1 ? simplifiedNum.toString() : `${simplifiedNum}/${simplifiedDen}`;
 }
 
-export function generateQuestion(difficulty = 0.5) {
-  const fractionQuestionType = getRandomInt(1, 1 + Math.floor(4 * difficulty));
-
-  switch (fractionQuestionType) {
-    case 1: // Equivalent Fractions
-      return generateEquivalentFractionsQuestion(difficulty);
-    case 2: // Fraction Addition
-      return generateFractionAdditionQuestion(difficulty);
-    case 3: // Fraction Subtraction
-      return generateFractionSubtractionQuestion(difficulty);
-    case 4: // Fraction Comparison
-      return generateFractionComparisonQuestion(difficulty);
-    case 5: // Fraction Simplification
-      return generateFractionSimplificationQuestion(difficulty);
-    default:
-      return generateEquivalentFractionsQuestion(difficulty);
+/**
+ * Generates a random Fractions question for 3rd grade
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ * @param {string[]} allowedSubtopics - Optional array of allowed subtopic names. If provided, only questions from these subtopics will be generated.
+ * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
+ */
+export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
+  // Map subtopic names to generators
+  const subtopicToGenerator = {
+    'equivalent fractions': { generator: generateEquivalentFractionsQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'comparison': { generator: generateFractionComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'addition': { generator: generateFractionAdditionQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'subtraction': { generator: generateFractionSubtractionQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'simplification': { generator: generateFractionSimplificationQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+  };
+  
+  // Normalize subtopic names for comparison
+  const normalize = (str) => str.toLowerCase().trim();
+  
+  // If allowed subtopics are specified, filter to only those generators
+  let questionTypes;
+  if (allowedSubtopics && allowedSubtopics.length > 0) {
+    const normalizedAllowed = allowedSubtopics.map(normalize);
+    questionTypes = Object.entries(subtopicToGenerator)
+      .filter(([subtopic]) => normalizedAllowed.includes(normalize(subtopic)))
+      .map(([_, config]) => config);
+  } else {
+    // Default: all question types
+    questionTypes = Object.values(subtopicToGenerator);
   }
+
+  // If still no valid question types, return null
+  if (questionTypes.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
+  
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+
+  // If no questions available for this difficulty, use all question types (relax difficulty constraint)
+  const candidates = available.length > 0 ? available : questionTypes;
+
+  // Randomly select from available types
+  const selected = candidates[getRandomInt(0, candidates.length - 1)];
+  return selected.generator(difficulty);
 }
 
 export function generateEquivalentFractionsQuestion(difficulty = 0.5) {

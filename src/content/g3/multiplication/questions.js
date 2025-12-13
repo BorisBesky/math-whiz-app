@@ -7,11 +7,10 @@ function getRandomInt(min, max) {
 }
 
 /**
- * Generates a random Multiplication question for 3rd grade
+ * Generates a basic multiplication question
  * @param {number} difficulty - Difficulty level from 0 to 1
- * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion(difficulty = 0.5) {
+function generateBasicMultiplicationQuestion(difficulty = 0.5) {
   const m1 = getRandomInt(2, 2 + Math.floor(10 * difficulty));
   const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
   const mAnswer = m1 * m2;
@@ -32,6 +31,56 @@ export function generateQuestion(difficulty = 0.5) {
     grade: "G3",
     subtopic: "basic multiplication",
   };
+}
+
+/**
+ * Generates a random Multiplication question for 3rd grade
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ * @param {string[]} allowedSubtopics - Optional array of allowed subtopic names. If provided, only questions from these subtopics will be generated.
+ * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
+ */
+export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
+  // Map subtopic names to generators
+  const subtopicToGenerator = {
+    'basic multiplication': { generator: generateBasicMultiplicationQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'skip counting': { generator: generateSkipCountingQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'arrays and groups': { generator: generateArrayQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'word problems': { generator: generateEqualGroupsQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'fact families': { generator: generateFactFamilyQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+  };
+  
+  // Normalize subtopic names for comparison
+  const normalize = (str) => str.toLowerCase().trim();
+  
+  // If allowed subtopics are specified, filter to only those generators
+  let questionTypes;
+  if (allowedSubtopics && allowedSubtopics.length > 0) {
+    const normalizedAllowed = allowedSubtopics.map(normalize);
+    questionTypes = Object.entries(subtopicToGenerator)
+      .filter(([subtopic]) => normalizedAllowed.includes(normalize(subtopic)))
+      .map(([_, config]) => config);
+  } else {
+    // Default: all question types
+    questionTypes = Object.values(subtopicToGenerator);
+  }
+
+  // If still no valid question types, return null
+  if (questionTypes.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
+  
+  // Filter available questions based on difficulty
+  const available = questionTypes.filter(
+    q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
+  );
+
+  // If no questions available for this difficulty, use all question types (relax difficulty constraint)
+  const candidates = available.length > 0 ? available : questionTypes;
+
+  // Randomly select from available types
+  const selected = candidates[getRandomInt(0, candidates.length - 1)];
+  return selected.generator(difficulty);
 }
 
 /**

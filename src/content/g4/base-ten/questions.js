@@ -14,30 +14,81 @@ function getRandomIntUniqueDigits(count) {
   return Array.from(digits);
 }
 
+// Wrapper functions to force addition or subtraction for subtopic filtering
+function generateAdditionArithmeticQuestion(difficulty = 0.5) {
+  return generateMultiDigitArithmeticQuestion(difficulty, 'addition');
+}
+
+function generateSubtractionArithmeticQuestion(difficulty = 0.5) {
+  return generateMultiDigitArithmeticQuestion(difficulty, 'subtraction');
+}
+
 /**
  * Generates a random Base Ten question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
+ * @param {string[]} allowedSubtopics - Optional array of allowed subtopic names. If provided, only questions from these subtopics will be generated.
  * @returns {Object} Question object with question, options, correctAnswer, hint, standard, etc.
  */
-export function generateQuestion(difficulty = 0.5) {
-  // Define question types with minimum and maximum difficulty thresholds
-  const questionTypes = [
-    { generator: generatePlaceValueQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
-    { generator: generateComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
-    { generator: generateRoundingQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
-    { generator: generateMultiDigitArithmeticQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    { generator: generateAdditionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    { generator: generateSubtractionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    { generator: generateMultiStepWordProblemQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
-  ];
+export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
+  // Map subtopic names to generators
+  const subtopicToGenerator = {
+    'place value': { generator: generatePlaceValueQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'rounding': { generator: generateRoundingQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    'addition': [
+      { generator: generateAdditionArithmeticQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+      { generator: generateAdditionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    ],
+    'subtraction': [
+      { generator: generateSubtractionArithmeticQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+      { generator: generateSubtractionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    ],
+    'comparison': { generator: generateComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'multi-step word problems': { generator: generateMultiStepWordProblemQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+  };
+  
+  // Normalize subtopic names for comparison
+  const normalize = (str) => str.toLowerCase().trim();
+  
+  // If allowed subtopics are specified, filter to only those generators
+  let questionTypes = [];
+  if (allowedSubtopics && allowedSubtopics.length > 0) {
+    const normalizedAllowed = allowedSubtopics.map(normalize);
+    Object.entries(subtopicToGenerator).forEach(([subtopic, config]) => {
+      if (normalizedAllowed.includes(normalize(subtopic))) {
+        // Handle arrays (like addition/subtraction which have multiple generators)
+        if (Array.isArray(config)) {
+          questionTypes.push(...config);
+        } else {
+          questionTypes.push(config);
+        }
+      }
+    });
+  } else {
+    // Default: all question types
+    Object.values(subtopicToGenerator).forEach(config => {
+      if (Array.isArray(config)) {
+        questionTypes.push(...config);
+      } else {
+        questionTypes.push(config);
+      }
+    });
+  }
   
   // Filter available questions based on difficulty
   const available = questionTypes.filter(
     q => difficulty >= q.minDifficulty && difficulty <= q.maxDifficulty
   );
-  
+
+  // If no questions available for this difficulty, use all question types (relax difficulty constraint)
+  const candidates = available.length > 0 ? available : questionTypes;
+
+  // If still no valid question types, return null
+  if (candidates.length === 0) {
+    console.warn('[generateQuestion] No valid question types found for allowed subtopics:', allowedSubtopics);
+    return null;
+  }
   // Randomly select from available types
-  const selected = available[getRandomInt(0, available.length - 1)];
+  const selected = candidates[getRandomInt(0, candidates.length - 1)];
   return selected.generator(difficulty);
 }
 
@@ -121,13 +172,13 @@ export function generateRoundingQuestion(difficulty = 0.5) {
  * Generates a multi-digit arithmetic question
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateMultiDigitArithmeticQuestion(difficulty = 0.5) {
+export function generateMultiDigitArithmeticQuestion(difficulty = 0.5, forceOperation = null) {
   // Scale number range by difficulty
   const minNum = 1000 + Math.floor(difficulty * 9000);
   const maxNum = 10000 + Math.floor(difficulty * 990000);
   const num1 = getRandomInt(minNum, maxNum);
   const num2 = getRandomInt(minNum, maxNum);
-  const isAddition = Math.random() < 0.5;
+  const isAddition = forceOperation === 'addition' ? true : forceOperation === 'subtraction' ? false : Math.random() < 0.5;
   
   let question, answer, hint;
   
