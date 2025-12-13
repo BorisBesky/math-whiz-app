@@ -194,7 +194,7 @@ const generateQuizQuestions = async (
   // Helper function to generate a unique signature for a question
   // Uses question text + correct answer to handle cases where questions have same text but different answers (e.g., clock reading)
   const getQuestionSignature = (q) => {
-    return `${q.question}|||${q.correctAnswer}`;
+    return `${q.question}|||${q.correctAnswer ?? ''}`;
   };
 
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
