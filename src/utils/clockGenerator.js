@@ -10,6 +10,7 @@
  * @param {Object} options - Optional configuration
  * @param {number} options.size - Clock size in pixels (default: 200)
  * @param {boolean} options.showNumbers - Whether to show hour numbers (default: true)
+ * @param {boolean} options.showOnlyCardinalNumbers - Whether to show only 12, 3, 6, 9 (default: false)
  * @param {string} options.faceColor - Clock face color (default: '#ffffff')
  * @param {string} options.borderColor - Clock border color (default: '#333333')
  * @param {string} options.hourHandColor - Hour hand color (default: '#000000')
@@ -21,6 +22,7 @@ export function generateClockSVG(hours, minutes, options = {}) {
   const {
     size = 200,
     showNumbers = true,
+    showOnlyCardinalNumbers = false,
     faceColor = '#ffffff',
     borderColor = '#333333',
     hourHandColor = '#000000',
@@ -70,10 +72,15 @@ export function generateClockSVG(hours, minutes, options = {}) {
     // Hour numbers
     if (showNumbers) {
       const hourNumber = i === 0 ? 12 : i;
-      const numberRadius = radius - markerLength - 15;
-      const numberX = center + numberRadius * Math.cos(rad);
-      const numberY = center + numberRadius * Math.sin(rad);
-      svg += `<text x="${numberX}" y="${numberY}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${size * 0.08}" font-weight="bold" fill="${borderColor}">${hourNumber}</text>`;
+      // If showOnlyCardinalNumbers is true, only show 12, 3, 6, 9
+      const shouldShowNumber = !showOnlyCardinalNumbers || hourNumber === 12 || hourNumber === 3 || hourNumber === 6 || hourNumber === 9;
+      
+      if (shouldShowNumber) {
+        const numberRadius = radius - markerLength - 15;
+        const numberX = center + numberRadius * Math.cos(rad);
+        const numberY = center + numberRadius * Math.sin(rad);
+        svg += `<text x="${numberX}" y="${numberY}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${size * 0.08}" font-weight="bold" fill="${borderColor}">${hourNumber}</text>`;
+      }
     }
   }
   

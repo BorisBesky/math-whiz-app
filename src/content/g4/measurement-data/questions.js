@@ -366,9 +366,11 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   }
   
   // Generate clock SVG
+  // For harder questions (difficulty > 0.5), only show cardinal numbers (12, 3, 6, 9)
   const clockSVG = generateClockSVG(hours, minutes, {
     size: 250,
-    showNumbers: true
+    showNumbers: true,
+    showOnlyCardinalNumbers: difficulty > 0.5
   });
   
   // Format correct answer in simple time format (H:MM)
