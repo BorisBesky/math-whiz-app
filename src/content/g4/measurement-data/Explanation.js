@@ -85,16 +85,53 @@ const MeasurementDataExplanation = () => {
       background: '#4ecdc4',
       border: '1px solid #26a69a',
     },
-    linePlot: {
-      fontFamily: 'monospace',
+    linePlotContainer: {
+      margin: '30px auto',
+      maxWidth: '500px',
+      padding: '20px 20px 40px 20px',
       background: '#f8f9fa',
-      padding: '15px',
-      borderRadius: '8px',
-      whiteSpace: 'pre-line',
+      borderRadius: '15px',
+      boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)',
+    },
+    linePlot: {
+      display: 'flex',
+      justifyContent: 'space-around',
+      alignItems: 'flex-end',
+      borderBottom: '3px solid #333',
+      height: '120px',
+      position: 'relative',
+      padding: '0 10px',
+    },
+    linePlotColumn: {
+      display: 'flex',
+      flexDirection: 'column-reverse',
+      alignItems: 'center',
+      flex: 1,
+      position: 'relative',
+    },
+    linePlotTick: {
+      width: '3px',
+      height: '15px',
+      background: '#333',
+      position: 'absolute',
+      bottom: '-9px',
+    },
+    linePlotLabel: {
+      position: 'absolute',
+      bottom: '-35px',
+      fontWeight: 'bold',
+      fontSize: '1.1em',
+      whiteSpace: 'nowrap',
+    },
+    linePlotX: {
+      color: '#e17055',
+      fontWeight: 'bold',
+      fontSize: '1.8em',
+      marginBottom: '-5px',
     },
     angleGrid: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
       gap: '20px',
       textAlign: 'center',
     },
@@ -110,6 +147,42 @@ const MeasurementDataExplanation = () => {
   const gridSquares = Array.from({ length: 24 }, (_, index) => (
     <div key={index} style={styles.gridSquare}></div>
   ));
+
+  const AngleSVG = ({ angle, size = 100, stroke = '#9c27b0', arcStroke = '#e91e63' }) => {
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const rayLength = size * 0.4;
+    const angleRad = (angle * Math.PI) / 180;
+    const ray2X = centerX + rayLength * Math.cos(angleRad);
+    const ray2Y = centerY - rayLength * Math.sin(angleRad);
+    const arcRadius = size * 0.15;
+    const arcEndX = centerX + arcRadius * Math.cos(angleRad);
+    const arcEndY = centerY - arcRadius * Math.sin(angleRad);
+    const largeArcFlag = angle > 180 ? 1 : 0;
+    
+    // For 360 degrees, the path doesn't render well as a single arc
+    // We'll show a full circle instead
+    if (angle === 360) {
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={centerX} cy={centerY} r="3" fill="#333" />
+          <line x1={centerX} y1={centerY} x2={centerX + rayLength} y2={centerY} stroke={stroke} strokeWidth="2" />
+          <circle cx={centerX} cy={centerY} r={arcRadius} fill="none" stroke={arcStroke} strokeWidth="2" />
+        </svg>
+      );
+    }
+
+    const pathData = `M ${centerX + arcRadius} ${centerY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} 0 ${arcEndX} ${arcEndY}`;
+
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={centerX} cy={centerY} r="3" fill="#333" />
+        <line x1={centerX} y1={centerY} x2={centerX + rayLength} y2={centerY} stroke={stroke} strokeWidth="2" />
+        <line x1={centerX} y1={centerY} x2={ray2X} y2={ray2Y} stroke={stroke} strokeWidth="2" />
+        <path d={pathData} fill="none" stroke={arcStroke} strokeWidth="2" />
+      </svg>
+    );
+  };
 
   return (
     <div style={styles.container}>
@@ -220,12 +293,33 @@ const MeasurementDataExplanation = () => {
         <strong>Plant Heights (in inches):</strong>
         <br/>2¼, 2½, 2¼, 2¾, 2½, 2¼, 2¾, 2½
         <br/><br/>
-        <div style={styles.linePlot}>
-{`X         X         X
-X    X    X    X    X
-X    X    X    X    X
-─────┼─────┼─────┼─────
-2¼   2½   2¾   3`}
+        <div style={styles.linePlotContainer}>
+          <div style={styles.linePlot}>
+            <div style={styles.linePlotColumn}>
+              <div style={styles.linePlotLabel}>2¼</div>
+              <div style={styles.linePlotTick}></div>
+              <div style={styles.linePlotX}>X</div>
+              <div style={styles.linePlotX}>X</div>
+              <div style={styles.linePlotX}>X</div>
+            </div>
+            <div style={styles.linePlotColumn}>
+              <div style={styles.linePlotLabel}>2½</div>
+              <div style={styles.linePlotTick}></div>
+              <div style={styles.linePlotX}>X</div>
+              <div style={styles.linePlotX}>X</div>
+              <div style={styles.linePlotX}>X</div>
+            </div>
+            <div style={styles.linePlotColumn}>
+              <div style={styles.linePlotLabel}>2¾</div>
+              <div style={styles.linePlotTick}></div>
+              <div style={styles.linePlotX}>X</div>
+              <div style={styles.linePlotX}>X</div>
+            </div>
+            <div style={styles.linePlotColumn}>
+              <div style={styles.linePlotLabel}>3</div>
+              <div style={styles.linePlotTick}></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -236,16 +330,31 @@ X    X    X    X    X
         <div style={styles.angleGrid}>
           <div>
             <strong>Right Angle</strong><br/>
+            <AngleSVG angle={90} /><br/>
             90°<br/>
             Like a corner of a book!
           </div>
           <div>
+            <strong>Acute Angle</strong><br/>
+            <AngleSVG angle={45} /><br/>
+            Less than 90°<br/>
+            Like open scissors!
+          </div>
+          <div>
+            <strong>Obtuse Angle</strong><br/>
+            <AngleSVG angle={135} /><br/>
+            Between 90° and 180°<br/>
+            Like a reclining chair!
+          </div>
+          <div>
             <strong>Straight Angle</strong><br/>
+            <AngleSVG angle={180} /><br/>
             180°<br/>
             Like a straight line!
           </div>
           <div>
             <strong>Full Turn</strong><br/>
+            <AngleSVG angle={360} /><br/>
             360°<br/>
             Like spinning in a circle!
           </div>

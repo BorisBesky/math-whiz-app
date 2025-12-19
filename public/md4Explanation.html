@@ -76,6 +76,50 @@
             margin: 15px 0;
             border: 2px solid #26a69a;
         }
+        .line-plot-container {
+            margin: 30px auto;
+            max-width: 500px;
+            padding: 20px 20px 40px 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .line-plot {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            border-bottom: 3px solid #333;
+            height: 120px;
+            position: relative;
+            padding: 0 10px;
+        }
+        .line-plot-column {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+        .line-plot-tick {
+            width: 3px;
+            height: 15px;
+            background: #333;
+            position: absolute;
+            bottom: -9px;
+        }
+        .line-plot-label {
+            position: absolute;
+            bottom: -35px;
+            font-weight: bold;
+            font-size: 1.1em;
+            white-space: nowrap;
+        }
+        .line-plot-x {
+            color: #e17055;
+            font-weight: bold;
+            font-size: 1.8em;
+            margin-bottom: -5px;
+        }
     </style>
 </head>
 <body>
@@ -211,12 +255,33 @@
             <strong>Plant Heights (in inches):</strong>
             <br>2¼, 2½, 2¼, 2¾, 2½, 2¼, 2¾, 2½
             <br><br>
-            <div style="font-family: monospace; background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                X         X         X<br>
-                X    X    X    X    X<br>
-                X    X    X    X    X<br>
-                ─────┼─────┼─────┼─────<br>
-                2¼   2½   2¾   3
+            <div class="line-plot-container">
+                <div class="line-plot">
+                    <div class="line-plot-column">
+                        <div class="line-plot-label">2¼</div>
+                        <div class="line-plot-tick"></div>
+                        <div class="line-plot-x">X</div>
+                        <div class="line-plot-x">X</div>
+                        <div class="line-plot-x">X</div>
+                    </div>
+                    <div class="line-plot-column">
+                        <div class="line-plot-label">2½</div>
+                        <div class="line-plot-tick"></div>
+                        <div class="line-plot-x">X</div>
+                        <div class="line-plot-x">X</div>
+                        <div class="line-plot-x">X</div>
+                    </div>
+                    <div class="line-plot-column">
+                        <div class="line-plot-label">2¾</div>
+                        <div class="line-plot-tick"></div>
+                        <div class="line-plot-x">X</div>
+                        <div class="line-plot-x">X</div>
+                    </div>
+                    <div class="line-plot-column">
+                        <div class="line-plot-label">3</div>
+                        <div class="line-plot-tick"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
