@@ -449,7 +449,7 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
   // Define possible values (whole number + fraction)
   const wholeNumbers = [1, 2, 3];
   const fractions = [];
-  for (let i = 0; i <= denominator; i++) {
+  for (let i = 0; i < denominator; i++) {
     fractions.push(i);
   }
   
@@ -463,32 +463,22 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
   // Count occurrences of each value
   const counts = {};
   dataPoints.forEach(point => {
-    const key = `${point.whole} ${point.numerator}/${point.denominator}`;
+    const key = point.numerator === 0 
+      ? `${point.whole}` 
+      : `${point.whole} ${point.numerator}/${point.denominator}`;
     counts[key] = (counts[key] || 0) + 1;
   });
   
   // Find statistics
   const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
   const mostCommon = sortedKeys[0];
-  const mostCommonCount = counts[mostCommon];
-  
-  // Calculate total measurement (for sum questions)
-  let totalWholes = 0;
-  let totalNumerators = 0;
-  dataPoints.forEach(point => {
-    totalWholes += point.whole;
-    totalNumerators += point.numerator;
-  });
-  const totalCarry = Math.floor(totalNumerators / denominator);
-  totalWholes += totalCarry;
-  totalNumerators = totalNumerators % denominator;
   
   const questionTypes = ['count', 'mostCommon', 'howMany'];
   const questionType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
   
   // Format data description for the question
   const dataDescription = Object.entries(counts)
-    .map(([key, count]) => `${key}: ${count} data points`)
+    .map(([key, count]) => `${key}: ${count} measurements`)
     .join('\n');
   
   if (questionType === 'count') {
