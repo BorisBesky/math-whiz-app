@@ -22,10 +22,12 @@ export const geometry = {
   // Topic metadata
   subtopics: [
     'lines and angles',
+    'points lines rays',
     'classify shapes',
     'symmetry',
     'triangles',
-    'quadrilaterals'
+    'quadrilaterals',
+    'angle measurement'
   ],
   
   // Learning objectives
@@ -34,7 +36,8 @@ export const geometry = {
     'Classify triangles by their sides and angles',
     'Classify quadrilaterals by their properties',
     'Identify lines of symmetry in shapes',
-    'Recognize parallel and perpendicular lines'
+    'Recognize parallel and perpendicular lines',
+    'Measure and classify angles (acute, right, obtuse, straight)'
   ]
 };
 

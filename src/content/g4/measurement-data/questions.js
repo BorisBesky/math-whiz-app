@@ -24,6 +24,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'perimeter': { generator: (diff) => generateAreaPerimeterQuestion(diff, 'perimeter'), minDifficulty: 0.5, maxDifficulty: 1.0 },
     'angles': { generator: generateAngleQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
     'data interpretation': { generator: generateDataInterpretationQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+    'line plots': { generator: generateLinePlotQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -432,6 +433,118 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   };
 }
 
+/**
+ * Generates a line plot question with fraction measurements
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateLinePlotQuestion(difficulty = 0.5) {
+  // Generate data points using fractions
+  const denominators = [2, 4, 8];
+  const denominator = denominators[getRandomInt(0, denominators.length - 1)];
+  
+  // Create data points
+  const dataPoints = [];
+  const numPoints = 6 + Math.floor(difficulty * 4);
+  
+  // Define possible values (whole number + fraction)
+  const wholeNumbers = [1, 2, 3];
+  const fractions = [];
+  for (let i = 0; i <= denominator; i++) {
+    fractions.push(i);
+  }
+  
+  // Generate random data points
+  for (let i = 0; i < numPoints; i++) {
+    const whole = wholeNumbers[getRandomInt(0, wholeNumbers.length - 1)];
+    const numerator = fractions[getRandomInt(0, fractions.length - 1)];
+    dataPoints.push({ whole, numerator, denominator });
+  }
+  
+  // Count occurrences of each value
+  const counts = {};
+  dataPoints.forEach(point => {
+    const key = `${point.whole} ${point.numerator}/${point.denominator}`;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  
+  // Find statistics
+  const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const mostCommon = sortedKeys[0];
+  const mostCommonCount = counts[mostCommon];
+  
+  // Calculate total measurement (for sum questions)
+  let totalWholes = 0;
+  let totalNumerators = 0;
+  dataPoints.forEach(point => {
+    totalWholes += point.whole;
+    totalNumerators += point.numerator;
+  });
+  const totalCarry = Math.floor(totalNumerators / denominator);
+  totalWholes += totalCarry;
+  totalNumerators = totalNumerators % denominator;
+  
+  const questionTypes = ['count', 'mostCommon', 'howMany'];
+  const questionType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
+  
+  // Format data description for the question
+  const dataDescription = Object.entries(counts)
+    .map(([key, count]) => `${key}: ${count} data points`)
+    .join('\n');
+  
+  if (questionType === 'count') {
+    const targetValue = sortedKeys[getRandomInt(0, Math.min(2, sortedKeys.length - 1))];
+    const correctAnswer = counts[targetValue].toString();
+    const potentialDistractors = [
+      (counts[targetValue] + 1).toString(),
+      (counts[targetValue] - 1).toString(),
+      (numPoints).toString(),
+    ];
+    
+    return {
+      question: `Line Plot Data:\n${dataDescription}\n\nHow many data points are at ${targetValue}?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: "Count the X marks above the given value on the number line.",
+      standard: "4.MD.B.4",
+      concept: "Measurement & Data 4th",
+      grade: "G4",
+      subtopic: "line plots",
+    };
+  } else if (questionType === 'mostCommon') {
+    const correctAnswer = mostCommon;
+    const wrongOptions = sortedKeys.filter(k => k !== mostCommon).slice(0, 3);
+    
+    return {
+      question: `Line Plot Data:\n${dataDescription}\n\nWhich measurement appears most frequently?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, wrongOptions)),
+      hint: "Look for the value with the most X marks above it.",
+      standard: "4.MD.B.4",
+      concept: "Measurement & Data 4th",
+      grade: "G4",
+      subtopic: "line plots",
+    };
+  } else {
+    const correctAnswer = numPoints.toString();
+    const potentialDistractors = [
+      (numPoints + 2).toString(),
+      (numPoints - 1).toString(),
+      (sortedKeys.length).toString(),
+    ];
+    
+    return {
+      question: `Line Plot Data:\n${dataDescription}\n\nHow many total measurements are shown on the line plot?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: "Add up all the X marks on the line plot.",
+      standard: "4.MD.B.4",
+      concept: "Measurement & Data 4th",
+      grade: "G4",
+      subtopic: "line plots",
+    };
+  }
+}
+
 const measurementDataQuestions = {
   generateQuestion,
   generateLengthConversionQuestion,
@@ -441,6 +554,7 @@ const measurementDataQuestions = {
   generateAngleQuestion,
   generateDataInterpretationQuestion,
   generateClockReadingQuestion,
+  generateLinePlotQuestion,
 };
 
 export default measurementDataQuestions;

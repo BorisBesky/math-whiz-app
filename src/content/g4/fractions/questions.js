@@ -44,6 +44,8 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'subtraction': { generator: generateFractionSubtractionQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'comparison': { generator: generateFractionComparisonQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'decimal notation': { generator: generateDecimalNotationQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    'multiplication': { generator: generateFractionMultiplicationQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    'mixed numbers': { generator: generateMixedNumbersQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -282,6 +284,144 @@ export function generateDecimalNotationQuestion(difficulty = 0.5) {
   }
 }
 
+/**
+ * Generates a fraction multiplication question (multiplying fraction by whole number)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateFractionMultiplicationQuestion(difficulty = 0.5) {
+  // Scale values by difficulty
+  const maxDenom = 6 + Math.floor(difficulty * 6);
+  const denominator = getRandomInt(2, maxDenom);
+  const numerator = getRandomInt(1, denominator - 1);
+  const wholeNumber = getRandomInt(2, 4 + Math.floor(difficulty * 4));
+  
+  const resultNumerator = numerator * wholeNumber;
+  const simplifiedResult = simplifyFraction(resultNumerator, denominator);
+  
+  const potentialDistractors = [
+    simplifyFraction(numerator + wholeNumber, denominator),
+    simplifyFraction(resultNumerator + 1, denominator),
+    simplifyFraction(resultNumerator, denominator + 1),
+  ];
+
+  return {
+    question: `What is ${wholeNumber} × ${numerator}/${denominator}?`,
+    correctAnswer: simplifiedResult,
+    options: shuffle(generateUniqueOptions(simplifiedResult, potentialDistractors)),
+    hint: "To multiply a fraction by a whole number, multiply the numerator by the whole number and keep the same denominator.",
+    standard: "4.NF.B.4.a",
+    concept: "Fractions 4th",
+    grade: "G4",
+    subtopic: "multiplication",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a mixed numbers question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMixedNumbersQuestion(difficulty = 0.5) {
+  const questionTypes = ['toImproper', 'toMixed', 'addMixed'];
+  const questionType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
+  
+  if (questionType === 'toImproper') {
+    // Convert mixed number to improper fraction
+    const wholeNumber = getRandomInt(1, 3 + Math.floor(difficulty * 3));
+    const denominator = getRandomInt(2, 6 + Math.floor(difficulty * 4));
+    const numerator = getRandomInt(1, denominator - 1);
+    
+    const improperNumerator = wholeNumber * denominator + numerator;
+    const correctAnswer = `${improperNumerator}/${denominator}`;
+    
+    const potentialDistractors = [
+      `${improperNumerator + 1}/${denominator}`,
+      `${wholeNumber + numerator}/${denominator}`,
+      `${improperNumerator}/${denominator + 1}`,
+    ];
+    
+    return {
+      question: `Convert ${wholeNumber} ${numerator}/${denominator} to an improper fraction.`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: "Multiply the whole number by the denominator, then add the numerator. Put the result over the same denominator.",
+      standard: "4.NF.B.3.b",
+      concept: "Fractions 4th",
+      grade: "G4",
+      subtopic: "mixed numbers",
+      difficultyRange: { min: 0.5, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  } else if (questionType === 'toMixed') {
+    // Convert improper fraction to mixed number
+    const denominator = getRandomInt(2, 6 + Math.floor(difficulty * 4));
+    const wholeNumber = getRandomInt(1, 3 + Math.floor(difficulty * 3));
+    const remainder = getRandomInt(1, denominator - 1);
+    const improperNumerator = wholeNumber * denominator + remainder;
+    
+    const correctAnswer = `${wholeNumber} ${remainder}/${denominator}`;
+    
+    const potentialDistractors = [
+      `${wholeNumber + 1} ${remainder}/${denominator}`,
+      `${wholeNumber} ${remainder + 1}/${denominator}`,
+      `${wholeNumber - 1} ${remainder}/${denominator}`,
+    ];
+    
+    return {
+      question: `Convert ${improperNumerator}/${denominator} to a mixed number.`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: "Divide the numerator by the denominator. The quotient is the whole number, and the remainder becomes the new numerator.",
+      standard: "4.NF.B.3.b",
+      concept: "Fractions 4th",
+      grade: "G4",
+      subtopic: "mixed numbers",
+      difficultyRange: { min: 0.5, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  } else {
+    // Add two mixed numbers with same denominator
+    const denominator = getRandomInt(3, 6 + Math.floor(difficulty * 3));
+    const whole1 = getRandomInt(1, 3);
+    const num1 = getRandomInt(1, denominator - 1);
+    const whole2 = getRandomInt(1, 3);
+    const num2 = getRandomInt(1, denominator - 1);
+    
+    let resultWhole = whole1 + whole2;
+    let resultNum = num1 + num2;
+    
+    // Handle carrying
+    if (resultNum >= denominator) {
+      resultWhole += 1;
+      resultNum -= denominator;
+    }
+    
+    const correctAnswer = resultNum === 0 
+      ? `${resultWhole}` 
+      : `${resultWhole} ${resultNum}/${denominator}`;
+    
+    const potentialDistractors = [
+      `${resultWhole + 1} ${resultNum}/${denominator}`,
+      `${resultWhole} ${resultNum + 1}/${denominator}`,
+      `${whole1 + whole2} ${num1 + num2}/${denominator}`,
+    ];
+    
+    return {
+      question: `What is ${whole1} ${num1}/${denominator} + ${whole2} ${num2}/${denominator}?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: "Add the whole numbers together. Then add the fractions. If the fraction sum is greater than 1, carry over to the whole number.",
+      standard: "4.NF.B.3.c",
+      concept: "Fractions 4th",
+      grade: "G4",
+      subtopic: "mixed numbers",
+      difficultyRange: { min: 0.5, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  }
+}
+
 const fractionsQuestions = {
   generateQuestion,
   generateEquivalentFractionsQuestion,
@@ -289,6 +429,8 @@ const fractionsQuestions = {
   generateFractionSubtractionQuestion,
   generateFractionComparisonQuestion,
   generateDecimalNotationQuestion,
+  generateFractionMultiplicationQuestion,
+  generateMixedNumbersQuestion,
   simplifyFraction,
   gcd,
 };

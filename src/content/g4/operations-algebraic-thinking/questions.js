@@ -19,6 +19,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'multiplicative comparison': { generator: generateMultiplicativeComparisonQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
     'prime vs composite': { generator: generatePrimeCompositeQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'factors': { generator: generateFactorsQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
+    'multiples': { generator: generateMultiplesQuestion, minDifficulty: 0.3, maxDifficulty: 1.0 },
     'number patterns': [
       { generator: generateNumberPatternQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
       { generator: generateSequenceCompletionQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
@@ -200,6 +201,111 @@ export function generateFactorsQuestion(difficulty = 0.5) {
     difficultyRange: { min: 0.3, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
+}
+
+/**
+ * Generates a multiples question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiplesQuestion(difficulty = 0.5) {
+  const questionTypes = ['identify', 'find', 'common'];
+  const questionType = questionTypes[getRandomInt(0, Math.min(2, Math.floor(difficulty * 3)))];
+  
+  if (questionType === 'identify') {
+    // Identify which number is a multiple
+    const base = getRandomInt(2, 9);
+    const multiplier = getRandomInt(2, 12);
+    const correctAnswer = (base * multiplier).toString();
+    
+    // Generate non-multiples as distractors
+    const potentialDistractors = [];
+    for (let i = 0; potentialDistractors.length < 3 && i < 20; i++) {
+      const nonMultiple = base * multiplier + getRandomInt(1, base - 1);
+      if (nonMultiple % base !== 0 && !potentialDistractors.includes(nonMultiple.toString())) {
+        potentialDistractors.push(nonMultiple.toString());
+      }
+    }
+    
+    return {
+      question: `Which of these is a multiple of ${base}?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: `A multiple of ${base} can be divided by ${base} with no remainder. Think: ${base}, ${base * 2}, ${base * 3}, ${base * 4}...`,
+      standard: "4.OA.B.4",
+      concept: "Operations & Algebraic Thinking",
+      grade: "G4",
+      subtopic: "multiples",
+      difficultyRange: { min: 0.3, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  } else if (questionType === 'find') {
+    // Find the nth multiple
+    const base = getRandomInt(3, 9);
+    const nth = getRandomInt(4, 10);
+    const correctAnswer = (base * nth).toString();
+    
+    const potentialDistractors = [
+      (base * (nth + 1)).toString(),
+      (base * (nth - 1)).toString(),
+      (base + nth).toString(),
+    ];
+    
+    const ordinals = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+    const ordinal = nth <= 10 ? ordinals[nth] : `${nth}th`;
+    
+    return {
+      question: `What is the ${ordinal} multiple of ${base}?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: `List the multiples of ${base}: ${base}, ${base * 2}, ${base * 3}... and count to the ${ordinal} one.`,
+      standard: "4.OA.B.4",
+      concept: "Operations & Algebraic Thinking",
+      grade: "G4",
+      subtopic: "multiples",
+      difficultyRange: { min: 0.3, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  } else {
+    // Find common multiples
+    const num1 = getRandomInt(2, 6);
+    let num2 = getRandomInt(2, 6);
+    while (num2 === num1) {
+      num2 = getRandomInt(2, 6);
+    }
+    
+    // Find the least common multiple
+    const lcm = (num1 * num2) / gcd(num1, num2);
+    const correctAnswer = lcm.toString();
+    
+    const potentialDistractors = [
+      (num1 * num2).toString(),
+      (num1 + num2).toString(),
+      (lcm * 2).toString(),
+    ];
+    
+    return {
+      question: `What is the least common multiple (LCM) of ${num1} and ${num2}?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      hint: `List multiples of ${num1} (${num1}, ${num1 * 2}, ${num1 * 3}...) and multiples of ${num2} (${num2}, ${num2 * 2}, ${num2 * 3}...). Find the smallest number that appears in both lists!`,
+      standard: "4.OA.B.4",
+      concept: "Operations & Algebraic Thinking",
+      grade: "G4",
+      subtopic: "multiples",
+      difficultyRange: { min: 0.3, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  }
+}
+
+// GCD helper for LCM calculation
+function gcd(a, b) {
+  while (b !== 0) {
+    const temp = b;
+    b = a % b;
+    a = temp;
+  }
+  return a;
 }
 
 /**
@@ -574,6 +680,7 @@ const operationsAlgebraicThinkingQuestions = {
   generateMultiplicativeComparisonQuestion,
   generatePrimeCompositeQuestion,
   generateFactorsQuestion,
+  generateMultiplesQuestion,
   generateNumberPatternQuestion,
   generateSequenceCompletionQuestion,
   generatePatternRuleQuestion,

@@ -202,6 +202,64 @@ const FractionsExplanation = () => {
           <div>³⁄₄ = 0.75</div>
         </div>
       </div>
+      
+      <div style={styles.example}>
+        <strong>Converting Fractions to Decimals:</strong>
+        <br/>• ¹⁄₁₀ = 1 ÷ 10 = 0.1 (one tenth)
+        <br/>• ⁵⁄₁₀₀ = 5 ÷ 100 = 0.05 (five hundredths)
+        <br/>• ²⁵⁄₁₀₀ = 25 ÷ 100 = 0.25 (twenty-five hundredths)
+      </div>
+      
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span><strong>Decimal Trick:</strong> For tenths, put one digit after the decimal point. For hundredths, put two digits!
+      </div>
+
+      <h2 style={styles.h2}>🔄 Mixed Numbers</h2>
+      <p>A mixed number has a whole number AND a fraction together!</p>
+      
+      <div style={styles.fractionVisual}>
+        <div style={styles.flexContainer}>
+          <div>
+            <div style={styles.fraction}>2³⁄₄</div>
+            <p>Two and three-fourths</p>
+          </div>
+          <div style={styles.equals}>=</div>
+          <div>
+            <p>🍕🍕 + 🍕🍕🍕 (of 🍕🍕🍕🍕)</p>
+            <p>2 whole pizzas + ³⁄₄ of another</p>
+          </div>
+        </div>
+      </div>
+      
+      <div style={styles.example}>
+        <strong>Converting Mixed Numbers to Improper Fractions:</strong>
+        <br/>Convert 2³⁄₄ to an improper fraction:
+        <br/>• Multiply whole number by denominator: 2 × 4 = 8
+        <br/>• Add the numerator: 8 + 3 = 11
+        <br/>• Put over the same denominator: ¹¹⁄₄
+        <br/>• So 2³⁄₄ = ¹¹⁄₄ ✓
+      </div>
+      
+      <div style={styles.example}>
+        <strong>Converting Improper Fractions to Mixed Numbers:</strong>
+        <br/>Convert ¹¹⁄₄ to a mixed number:
+        <br/>• Divide: 11 ÷ 4 = 2 remainder 3
+        <br/>• The quotient (2) is the whole number
+        <br/>• The remainder (3) is the new numerator
+        <br/>• So ¹¹⁄₄ = 2³⁄₄ ✓
+      </div>
+      
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🎯</span><strong>Mixed Number Tip:</strong> An improper fraction has a numerator BIGGER than the denominator (like ⁷⁄₄). A mixed number shows this more clearly (1³⁄₄).
+      </div>
+      
+      <div style={styles.example}>
+        <strong>Adding Mixed Numbers:</strong>
+        <br/>1²⁄₅ + 2¹⁄₅ = ?
+        <br/>• Add the whole numbers: 1 + 2 = 3
+        <br/>• Add the fractions: ²⁄₅ + ¹⁄₅ = ³⁄₅
+        <br/>• Combine: 3³⁄₅ ✓
+      </div>
 
       <div style={styles.fractionVisual}>
         <span style={styles.emoji}>🎉</span><strong>You're a Fraction Master!</strong> Fractions help us understand parts of wholes - just like sharing treats with friends!
