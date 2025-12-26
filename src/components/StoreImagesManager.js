@@ -469,8 +469,7 @@ const StoreImagesManager = () => {
             <img
               src={previewImage.url}
               alt={previewImage.name}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-white"
-              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-white cursor-pointer"
             />
             <div className="mt-4 text-white text-center">
               <h3 className="text-xl font-bold">{previewImage.name}</h3>

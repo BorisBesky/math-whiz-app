@@ -1430,6 +1430,21 @@ const MainAppContent = () => {
 
   const startNewQuiz = async (topic) => {
     setCurrentTopic(topic);
+    
+    // Clear any paused quiz for this topic
+    if (user && userData?.pausedQuizzes?.[topic]) {
+      const userDocRef = getUserDocRef(user.uid);
+      if (userDocRef) {
+        try {
+          await updateDoc(userDocRef, {
+            [`pausedQuizzes.${topic}`]: null,
+          });
+        } catch (e) {
+          console.warn('Could not clear paused quiz:', e);
+        }
+      }
+    }
+    
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
