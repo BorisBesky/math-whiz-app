@@ -16,13 +16,12 @@ test.describe('Sketch Overlay', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
     await page.goto('/');
-    
-    // Wait for app to load
-    await page.waitForLoadState('networkidle');
-    
-    // Select a topic to enter quiz mode
-    // Wait for topic selection to be available
-    await page.waitForSelector('text=Choose a topic', { timeout: 10000 });
+
+    // Firebase keeps long-lived connections open; avoid waiting for "networkidle".
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for topic selection UI to be available
+    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
     
     // Click on the first available topic (Multiplication for 3rd grade)
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
@@ -447,21 +446,29 @@ test.describe('Sketch Overlay', () => {
     // Close overlay
     await page.click('.sketch-control-btn.close-btn');
     
-    // Verify quiz is still functional - answer options should be clickable
-    const answerButtons = page.locator('button:has-text("10"), button:has-text("11"), button:has-text("12")');
-    await expect(answerButtons.first()).toBeVisible();
+    // Verify quiz is still functional - interact with either multiple-choice options
+    // (dynamic text) or numeric keypad (stable digits).
+    const optionButtons = page.locator('[data-tutorial-id="question-interface"] button.text-left');
+
+    if (await optionButtons.count()) {
+      await optionButtons.first().click();
+    } else {
+      await page.getByRole('button', { name: '1' }).click();
+    }
+
+    await expect(page.locator('[data-tutorial-id="question-interface"]')).toContainText(/Selected:|Your answer/);
   });
 });
 
 test.describe('Sketch Overlay - Mobile', () => {
-  test.use({ viewport: { width: 375, height: 667 } });
+  test.use({ viewport: { width: 375, height: 667 }, hasTouch: true });
   
   test('should position controls at bottom on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Navigate to quiz
-    await page.waitForSelector('text=Choose a topic', { timeout: 10000 });
+    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });
@@ -483,10 +490,10 @@ test.describe('Sketch Overlay - Mobile', () => {
 
   test('should handle touch events for drawing', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Navigate to quiz
-    await page.waitForSelector('text=Choose a topic', { timeout: 10000 });
+    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });

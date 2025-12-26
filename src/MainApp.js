@@ -1,6 +1,6 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import "katex/dist/katex.min.css";
 import renderMathInElement from "katex/contrib/auto-render";
 import {
@@ -188,7 +188,7 @@ const generateQuizQuestions = async (
   allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
-  const adapted = adaptAnsweredHistory(questionHistory);
+  const adapted = adaptAnsweredHistory(questionHistory, userId);
   const ranked = rankQuestionsByComplexity(adapted);
 
   // Helper function to generate a unique signature for a question
@@ -976,6 +976,24 @@ const MainAppContent = () => {
   const { startTutorial } = useTutorial();
   const { user: authUser, logout: authLogout, userRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const appBasePath = location.pathname.startsWith('/app') ? '/app' : '';
+  const encodeTopicForPath = useCallback((topic) => encodeURIComponent(topic), []);
+  const decodeTopicFromPath = useCallback((topicParam) => {
+    try {
+      return decodeURIComponent(topicParam || '');
+    } catch {
+      return topicParam || '';
+    }
+  }, []);
+  const navigateApp = useCallback(
+    (to, options) => {
+      const normalized = to.startsWith('/') ? to : `/${to}`;
+      navigate(`${appBasePath}${normalized}`, options);
+    },
+    [navigate, appBasePath]
+  );
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
@@ -992,12 +1010,8 @@ const MainAppContent = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalReactComponent, setModalReactComponent] = useState(null);
-
-  const [showResumeModal, setShowResumeModal] = useState(false);
-  const [topicToResume, setTopicToResume] = useState(null);
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
     useState(false);
@@ -1030,9 +1044,6 @@ const MainAppContent = () => {
   const [showStoryAnswer, setShowStoryAnswer] = useState(false);
   const [storyData, setStoryData] = useState(null);
 
-  // Sketch overlay state
-  const [showSketchOverlay, setShowSketchOverlay] = useState(false);
-
   // Drawing question state
   const [drawingImageBase64, setDrawingImageBase64] = useState(null);
   const [isValidatingDrawing, setIsValidatingDrawing] = useState(false);
@@ -1045,11 +1056,6 @@ const MainAppContent = () => {
 
   const questionStartTime = useRef(null);
   const quizContainerRef = useRef(null);
-  const modalHistoryPushedRef = useRef(false);
-  const resumeModalHistoryPushedRef = useRef(false);
-  const quizHistoryPushedRef = useRef(false);
-  const storeHistoryPushedRef = useRef(false);
-  const dashboardHistoryPushedRef = useRef(false);
 
   // Utility: convert simple a/b patterns to TeX fractions for display
   const formatMathText = (text) => {
@@ -1095,7 +1101,7 @@ const MainAppContent = () => {
 
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
-    if (quizState === "inProgress" && quizContainerRef.current) {
+    if (quizState === APP_STATES.IN_PROGRESS && quizContainerRef.current) {
       try {
         renderMathInElement(quizContainerRef.current, {
           delimiters: [
@@ -1111,6 +1117,25 @@ const MainAppContent = () => {
       }
     }
   }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered]);
+
+  // Keep quizState in sync with the current route (used by tutorial + KaTeX effect)
+  useEffect(() => {
+    const effectivePath = location.pathname.startsWith('/app')
+      ? location.pathname.slice('/app'.length) || '/'
+      : location.pathname;
+
+    if (effectivePath.startsWith('/quiz/')) {
+      setQuizState(APP_STATES.IN_PROGRESS);
+    } else if (effectivePath.startsWith('/results/')) {
+      setQuizState(APP_STATES.RESULTS);
+    } else if (effectivePath.startsWith('/store')) {
+      setQuizState(APP_STATES.STORE);
+    } else if (effectivePath.startsWith('/dashboard')) {
+      setQuizState(APP_STATES.DASHBOARD);
+    } else {
+      setQuizState(APP_STATES.TOPIC_SELECTION);
+    }
+  }, [location.pathname]);
 
   const updateDifficulty = (score, numQuestions) => {
     const newDifficulty = Math.min(
@@ -1408,7 +1433,7 @@ const MainAppContent = () => {
   }, []);
 
   // --- Quiz Logic ---
-  const handleTopicSelection = (topic) => {
+  const handleTopicSelection = async (topic) => {
     const { availableTopics } = getTopicAvailability(userData, selectedGrade);
 
     if (!availableTopics.includes(topic)) {
@@ -1421,11 +1446,12 @@ const MainAppContent = () => {
     }
 
     if (userData?.pausedQuizzes?.[topic]) {
-      setTopicToResume(topic);
-      setShowResumeModal(true);
-    } else {
-      startNewQuiz(topic);
+      navigateApp(`/resume/${encodeTopicForPath(topic)}`);
+      return;
     }
+
+    await startNewQuiz(topic);
+    navigateApp(`/quiz/${encodeTopicForPath(topic)}`);
   };
 
   const startNewQuiz = async (topic) => {
@@ -1550,10 +1576,8 @@ const MainAppContent = () => {
       allowedSubtopicsByTopic
     );
     setCurrentQuiz(newQuestions);
-    setQuizState(APP_STATES.IN_PROGRESS);
     questionStartTime.current = Date.now();
     resetQuiz();
-    setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for new quiz
     // Reset story state
     setStoryData(null);
@@ -1561,15 +1585,15 @@ const MainAppContent = () => {
     setShowStoryAnswer(false);
   };
 
-  const resumePausedQuiz = () => {
-    const pausedData = userData.pausedQuizzes[topicToResume];
-    setCurrentTopic(topicToResume);
+  const resumePausedQuiz = (topic) => {
+    const pausedData = userData?.pausedQuizzes?.[topic];
+    if (!pausedData) return;
+
+    setCurrentTopic(topic);
     setCurrentQuiz(pausedData.questions);
     setCurrentQuestionIndex(pausedData.index);
     setScore(pausedData.score);
-    setQuizState(APP_STATES.IN_PROGRESS);
     questionStartTime.current = Date.now();
-    setShowResumeModal(false);
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
     // Reset story state
     setStoryData(null);
@@ -1588,95 +1612,30 @@ const MainAppContent = () => {
     await updateDoc(userDocRef, {
       [`pausedQuizzes.${currentTopic}`]: pausedQuizData,
     });
-    setQuizState(APP_STATES.TOPIC_SELECTION);
     // Reset story UI state
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
   }, [user, currentQuiz, currentQuestionIndex, score, currentTopic]);
 
-  // Keep users inside the app when using the browser back button by mapping it to in-app states
+  // Pause/persist quiz when navigating away from /quiz/* (but not when going to results)
+  const lastPathRef = useRef(location.pathname);
   useEffect(() => {
-    if (showModal && !modalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'modal' }, '');
-      modalHistoryPushedRef.current = true;
-    } else if (!showModal) {
-      modalHistoryPushedRef.current = false;
+    const prev = lastPathRef.current;
+    const next = location.pathname;
+    const stripBase = (p) => (p.startsWith('/app') ? p.slice('/app'.length) || '/' : p);
+    const prevPath = stripBase(prev);
+    const nextPath = stripBase(next);
+    const wasQuiz = prevPath.startsWith('/quiz/');
+    const isQuiz = nextPath.startsWith('/quiz/');
+    const goingToResults = nextPath.startsWith('/results/');
+
+    if (wasQuiz && !isQuiz && !goingToResults) {
+      pauseQuiz();
     }
-  }, [showModal]);
 
-  useEffect(() => {
-    if (showResumeModal && !resumeModalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'resume-modal' }, '');
-      resumeModalHistoryPushedRef.current = true;
-    } else if (!showResumeModal) {
-      resumeModalHistoryPushedRef.current = false;
-    }
-  }, [showResumeModal]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.IN_PROGRESS && !quizHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'quiz' }, '');
-      quizHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.IN_PROGRESS) {
-      quizHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.STORE && !storeHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'store' }, '');
-      storeHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.STORE) {
-      storeHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.DASHBOARD && !dashboardHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'dashboard' }, '');
-      dashboardHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.DASHBOARD) {
-      dashboardHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (showModal) {
-        setShowModal(false);
-        if (modalTitle === "✨ A Fun Story Problem!") {
-          setShowStoryHint(false);
-          setShowStoryAnswer(false);
-        }
-        setModalReactComponent(null);
-        setGeneratedContent("");
-        return;
-      }
-
-      if (showResumeModal) {
-        setShowResumeModal(false);
-        return;
-      }
-
-      if (quizState === APP_STATES.STORE) {
-        setQuizState(APP_STATES.TOPIC_SELECTION);
-        return;
-      }
-
-      if (quizState === APP_STATES.DASHBOARD) {
-        setQuizState(APP_STATES.TOPIC_SELECTION);
-        return;
-      }
-
-      if (quizState === APP_STATES.IN_PROGRESS) {
-        pauseQuiz();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [showModal, showResumeModal, quizState, modalTitle, pauseQuiz]);
+    lastPathRef.current = next;
+  }, [location.pathname, pauseQuiz]);
 
   const handleAnswer = (option) => {
     if (isAnswered) return;
@@ -2086,7 +2045,7 @@ const MainAppContent = () => {
       [`pausedQuizzes.${currentTopic}`]: null,
     });
     updateDifficulty(score, currentQuiz.length);
-    setQuizState(APP_STATES.RESULTS);
+    navigateApp(`/results/${encodeTopicForPath(currentTopic)}`);
   };
 
   const resetQuestionState = () => {
@@ -2105,7 +2064,7 @@ const MainAppContent = () => {
     resetQuestionState();
   };
   const returnToTopics = () => {
-    setQuizState(APP_STATES.TOPIC_SELECTION);
+    navigateApp('/');
     setCurrentTopic(null);
     setCurrentQuiz([]);
     // Reset story state
@@ -2370,8 +2329,8 @@ const MainAppContent = () => {
       setModalTitle(`✨ Understanding ${concept}`);
       setModalReactComponent(() => ReactComponent);
       setGeneratedContent(null);
-      setShowModal(true);
       setIsGenerating(false);
+      navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
     } else {
       // Fall back to the legacy iframe system
       const explanationFile = conceptExplanationFiles[concept];
@@ -2382,8 +2341,8 @@ const MainAppContent = () => {
         setGeneratedContent(
           `<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`
         );
-        setShowModal(true);
         setIsGenerating(false);
+        navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
       } else {
         // Fallback: show modal with basic explanation
         setModalTitle(`✨ What is ${concept}?`);
@@ -2391,8 +2350,8 @@ const MainAppContent = () => {
         setGeneratedContent(
           "<p>Sorry, no detailed explanation is available for this concept yet!</p>"
         );
-        setShowModal(true);
         setIsGenerating(false);
+        navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
       }
     }
   };
@@ -2436,10 +2395,11 @@ Question: [The question]
 Hint: [The hint]
 Answer: [The answer]`;
     setModalTitle(`✨ A Fun Story Problem!`);
-    setShowModal(true);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
     setStoryData(null);
+
+    navigateApp(`/results/${encodeTopicForPath(currentTopic)}/story`);
 
     // Pass explicit flag to avoid modalTitle timing issues
     await callGeminiAPI(prompt, { parseAsStory: true });
@@ -2505,7 +2465,7 @@ Answer: [The answer]`;
         
         {/* Store */}
         <button
-          onClick={() => setQuizState(APP_STATES.STORE)}
+          onClick={() => navigateApp('/store')}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Store"
           data-tutorial-id="store-button"
@@ -2515,7 +2475,7 @@ Answer: [The answer]`;
         
         {/* Dashboard */}
         <button
-          onClick={() => setQuizState("dashboard")}
+          onClick={() => navigateApp('/dashboard')}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Dashboard"
           data-tutorial-id="dashboard-button"
@@ -3359,7 +3319,10 @@ Answer: [The answer]`;
               {currentTopic}
             </h2>
             <button
-              onClick={pauseQuiz}
+              onClick={async () => {
+                await pauseQuiz();
+                navigateApp('/');
+              }}
               className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"
             >
               <Pause size={20} /> Pause
@@ -3548,7 +3511,7 @@ Answer: [The answer]`;
                 <Sparkles size={18} /> Learn About This
               </button>
               <button
-                onClick={() => setShowSketchOverlay(true)}
+                onClick={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/sketch`)}
                 className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition text-sm"
               >
                 <PenTool size={18} /> Sketch
@@ -3730,14 +3693,13 @@ Answer: [The answer]`;
   };
 
   const renderModal = () => {
-    if (!showModal) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
           <div className="flex-shrink-0">
             <button
               onClick={() => {
-                setShowModal(false);
+                navigate(-1);
                 // Reset story state when modal is closed
                 if (modalTitle === "✨ A Fun Story Problem!") {
                   setShowStoryHint(false);
@@ -3827,8 +3789,54 @@ Answer: [The answer]`;
     );
   };
 
-  const renderResumeModal = () => {
-    if (!showResumeModal) return null;
+  const QuizRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+    const prevLocationRef = useRef();
+
+    useEffect(() => {
+      prevLocationRef.current = location.pathname;
+    });
+
+    useEffect(() => {
+      if (!t) return;
+      if (currentTopic !== t) setCurrentTopic(t);
+
+      // Check if we're coming from the resume route
+      const comingFromResume = prevLocationRef.current?.includes(`/resume/${encodeTopicForPath(t)}`);
+
+      if (!currentQuiz || currentQuiz.length === 0) {
+        if (userData?.pausedQuizzes?.[t] && !comingFromResume) {
+          navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
+        } else if (!comingFromResume) {
+          startNewQuiz(t);
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t]);
+
+    return renderQuiz();
+  };
+
+  const ResultsRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+
+    useEffect(() => {
+      if (t && currentTopic !== t) setCurrentTopic(t);
+      if (!currentQuiz || currentQuiz.length === 0) {
+        navigateApp('/', { replace: true });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t]);
+
+    return renderResults();
+  };
+
+  const ResumeModalRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
@@ -3836,18 +3844,23 @@ Answer: [The answer]`;
             Paused Quiz Found!
           </h3>
           <p className="text-gray-600 mb-8">
-            Do you want to continue your quiz on "{topicToResume}" or start a
-            new one?
+            Do you want to continue your quiz on "{t}" or start a new one?
           </p>
           <div className="flex flex-col gap-4">
             <button
-              onClick={resumePausedQuiz}
+              onClick={() => {
+                resumePausedQuiz(t);
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`);
+              }}
               className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
             >
               <Play size={20} /> Resume Paused Quiz
             </button>
             <button
-              onClick={() => startNewQuiz(topicToResume)}
+              onClick={async () => {
+                await startNewQuiz(t);
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`);
+              }}
               className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
             >
               Start New Quiz
@@ -3858,21 +3871,43 @@ Answer: [The answer]`;
     );
   };
 
-  const renderContent = () => {
-    switch (quizState) {
-      case APP_STATES.TOPIC_SELECTION:
-        return renderTopicSelection();
-      case APP_STATES.IN_PROGRESS:
-        return renderQuiz();
-      case APP_STATES.RESULTS:
-        return renderResults();
-      case APP_STATES.DASHBOARD:
-        return renderDashboard();
-      case APP_STATES.STORE:
-        return renderStore();
-      default:
-        return renderTopicSelection();
-    }
+  const ExplainModalRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+    useEffect(() => {
+      if (t && currentTopic !== t) setCurrentTopic(t);
+      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+        navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}` , { replace: true });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t]);
+    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
+    return renderModal();
+  };
+
+  const StoryModalRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+    useEffect(() => {
+      if (t && currentTopic !== t) setCurrentTopic(t);
+      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+        navigateApp(`/results/${encodeTopicForPath(t || currentTopic)}` , { replace: true });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t]);
+    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
+    return renderModal();
+  };
+
+  const SketchOverlayRoute = () => {
+    const { topic: topicParam } = useParams();
+    const t = decodeTopicFromPath(topicParam);
+    return (
+      <SketchOverlay
+        isVisible={true}
+        onClose={() => navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}`)}
+      />
+    );
   };
 
   const activeBgUrl =
@@ -3901,17 +3936,26 @@ Answer: [The answer]`;
       <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-0"></div>
       <div className="relative z-10 w-full">
         {renderHeader()}
-        {renderModal()}
-        {renderResumeModal()}
-        <SketchOverlay 
-          isVisible={showSketchOverlay} 
-          onClose={() => setShowSketchOverlay(false)} 
-        />
         <div className="flex justify-center p-4">
           <div className="w-full max-w-6xl">
-            {renderContent()}
+            <Routes>
+              <Route path="dashboard" element={renderDashboard()} />
+              <Route path="store" element={renderStore()} />
+              <Route path="results/:topic/*" element={<ResultsRoute />} />
+              <Route path="quiz/:topic/*" element={<QuizRoute />} />
+              <Route path="" element={renderTopicSelection()} />
+              <Route path="*" element={renderTopicSelection()} />
+            </Routes>
           </div>
         </div>
+
+        {/* Overlays (modals + sketch) are all route-driven */}
+        <Routes>
+          <Route path="resume/:topic" element={<ResumeModalRoute />} />
+          <Route path="quiz/:topic/explain" element={<ExplainModalRoute />} />
+          <Route path="quiz/:topic/sketch" element={<SketchOverlayRoute />} />
+          <Route path="results/:topic/story" element={<StoryModalRoute />} />
+        </Routes>
         <TutorialOverlay />
       </div>
     </div>

@@ -7,7 +7,7 @@ test.describe('Teacher logout redirect', () => {
 
     // Navigate to the teacher signup page
     await page.goto('/teacher-login?mode=signup');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Fill in sign up form
     await page.fill('input[name="email"]', email);
@@ -17,11 +17,9 @@ test.describe('Teacher logout redirect', () => {
     // Click Create Account
     await page.click('button:has-text("Create Account")');
 
-    // Wait for navigation to teacher portal (or to the portal layout overview)
-    await page.waitForSelector('text=Overview', { timeout: 15000 });
-
-    // Confirm we are on a teacher page
-    await expect(page.locator('text=Overview')).toBeVisible();
+    // Confirm we are on the teacher portal overview
+    const overviewHeading = page.getByRole('heading', { name: 'Overview' });
+    await expect(overviewHeading).toBeVisible({ timeout: 30000 });
 
     // Click Sign out
     const signOutButton = page.locator('button:has-text("Sign out")');

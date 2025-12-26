@@ -16,7 +16,8 @@ const App = () => {
     <AuthProvider>
       <Routes>
         {/* Public routes - accessible to everyone */}
-        <Route path="/" element={<MainApp />} />
+        {/* MainApp owns its internal navigation via routes under / */}
+        <Route path="/*" element={<MainApp />} />
         
         {/* Login/Signup page */}
         <Route path="/login" element={<LoginPage />} />
@@ -56,7 +57,7 @@ const App = () => {
         
         {/* Main app is accessible to all authenticated users */}
         <Route 
-          path="/app" 
+          path="/app/*" 
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
               <MainApp />
