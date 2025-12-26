@@ -1021,6 +1021,8 @@ const MainAppContent = () => {
   const [storeItems, setStoreItems] = useState([]);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
+  // Prevent repeated quiz initialization loops when resuming/starting
+  const quizInitInProgressRef = useRef(false);
 
   // Navigate to login page for anonymous users to upgrade their account
   const handleUserClick = () => {
@@ -1087,7 +1089,6 @@ const MainAppContent = () => {
     };
     loadImages();
   }, []);
-
   // Sync storeTheme with available themes when storeItems changes
   useEffect(() => {
     if (storeItems.length > 0) {
@@ -1577,7 +1578,9 @@ const MainAppContent = () => {
     );
     setCurrentQuiz(newQuestions);
     questionStartTime.current = Date.now();
-    resetQuiz();
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    resetQuestionState();
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for new quiz
     // Reset story state
     setStoryData(null);
@@ -1603,6 +1606,11 @@ const MainAppContent = () => {
 
   const pauseQuiz = useCallback(async () => {
     if (!user) return;
+
+    if (!currentTopic || !currentQuiz || currentQuiz.length === 0) {
+      return;
+    }
+
     const userDocRef = getUserDocRef(user.uid);
     const pausedQuizData = {
       questions: currentQuiz,
@@ -1612,6 +1620,16 @@ const MainAppContent = () => {
     await updateDoc(userDocRef, {
       [`pausedQuizzes.${currentTopic}`]: pausedQuizData,
     });
+
+    // Optimistically update local state to avoid race conditions
+    setUserData(prev => ({
+      ...prev,
+      pausedQuizzes: {
+        ...prev?.pausedQuizzes,
+        [currentTopic]: pausedQuizData
+      }
+    }));
+
     // Reset story UI state
     setStoryData(null);
     setShowStoryHint(false);
@@ -2055,19 +2073,17 @@ const MainAppContent = () => {
     setFeedback(null);
     setIsAnswered(false);
     setDrawingImageBase64(null); // Clear drawing
-    setDrawingFeedback(null); // Clear drawing feedback
-    setIsValidatingDrawing(false); // Reset validation state
   };
-  const resetQuiz = () => {
-    setCurrentQuestionIndex(0);
-    setScore(0);
-    resetQuestionState();
-  };
-  const returnToTopics = () => {
+
+  const returnToTopics = async () => {
+    // Pause quiz before leaving if we have an active quiz
+    if (currentTopic && currentQuiz?.length > 0) {
+      await pauseQuiz();
+    }
+
     navigateApp('/');
-    setCurrentTopic(null);
-    setCurrentQuiz([]);
-    // Reset story state
+    // Don't clear state immediately to avoid triggering QuizRoute logic during unmount
+    // State will be reset when starting a new quiz or resuming
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
@@ -3285,7 +3301,9 @@ Answer: [The answer]`;
   };
 
   const renderQuiz = () => {
-    if (currentQuiz.length === 0) return null;
+    if (currentQuiz.length === 0) {
+      return null;
+    }
     const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage =
       ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
@@ -3792,28 +3810,52 @@ Answer: [The answer]`;
   const QuizRoute = () => {
     const { topic: topicParam } = useParams();
     const t = decodeTopicFromPath(topicParam);
-    const prevLocationRef = useRef();
-
-    useEffect(() => {
-      prevLocationRef.current = location.pathname;
-    });
+    const fromResumeModal = location.state?.fromResumeModal;
+    const cameFromResume =
+      fromResumeModal ||
+      lastPathRef.current?.includes(`/resume/${encodeTopicForPath(t)}`);
+    const pausedQuizData = userData?.pausedQuizzes?.[t];
+    const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
 
     useEffect(() => {
       if (!t) return;
       if (currentTopic !== t) setCurrentTopic(t);
 
-      // Check if we're coming from the resume route
-      const comingFromResume = prevLocationRef.current?.includes(`/resume/${encodeTopicForPath(t)}`);
+      console.log('[Resume] QuizRoute effect', {
+        topic: t,
+        cameFromResume,
+        fromResumeModal,
+        lastPath: lastPathRef.current,
+        pausedExists: !!pausedQuizData,
+        pausedQuestions: pausedQuizData?.questions?.length,
+        currentQuizLength: currentQuiz?.length,
+        initInProgress: quizInitInProgressRef.current,
+      });
 
-      if (!currentQuiz || currentQuiz.length === 0) {
-        if (userData?.pausedQuizzes?.[t] && !comingFromResume) {
-          navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
-        } else if (!comingFromResume) {
-          startNewQuiz(t);
-        }
+      // If we have no questions loaded, decide where to pull them from
+      if ((!currentQuiz || currentQuiz.length === 0) && !quizInitInProgressRef.current) {
+        quizInitInProgressRef.current = true;
+
+        (async () => {
+          try {
+            if (pausedQuizData && hasPausedQuestions && !cameFromResume) {
+              navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
+              return;
+            }
+
+            if (cameFromResume && pausedQuizData && hasPausedQuestions) {
+              resumePausedQuiz(t);
+              return;
+            }
+
+            // Either came from resume with empty paused data, or no paused data at all
+          } finally {
+            quizInitInProgressRef.current = false;
+          }
+        })();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t]);
+    }, [t, currentQuiz, userData, cameFromResume]);
 
     return renderQuiz();
   };
@@ -3836,6 +3878,8 @@ Answer: [The answer]`;
   const ResumeModalRoute = () => {
     const { topic: topicParam } = useParams();
     const t = decodeTopicFromPath(topicParam);
+    const pausedQuizData = userData?.pausedQuizzes?.[t];
+    const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
@@ -3849,8 +3893,14 @@ Answer: [The answer]`;
           <div className="flex flex-col gap-4">
             <button
               onClick={() => {
-                resumePausedQuiz(t);
-                navigateApp(`/quiz/${encodeTopicForPath(t)}`);
+                if (hasPausedQuestions) {
+                  resumePausedQuiz(t);
+                } else {
+                  startNewQuiz(t);
+                }
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
               }}
               className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
             >
@@ -3858,8 +3908,11 @@ Answer: [The answer]`;
             </button>
             <button
               onClick={async () => {
+                console.log('[Resume] Start new button clicked', { topic: t });
                 await startNewQuiz(t);
-                navigateApp(`/quiz/${encodeTopicForPath(t)}`);
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
               }}
               className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
             >
