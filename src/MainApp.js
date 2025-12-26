@@ -1,5 +1,5 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "katex/dist/katex.min.css";
 import renderMathInElement from "katex/contrib/auto-render";
@@ -1045,6 +1045,11 @@ const MainAppContent = () => {
 
   const questionStartTime = useRef(null);
   const quizContainerRef = useRef(null);
+  const modalHistoryPushedRef = useRef(false);
+  const resumeModalHistoryPushedRef = useRef(false);
+  const quizHistoryPushedRef = useRef(false);
+  const storeHistoryPushedRef = useRef(false);
+  const dashboardHistoryPushedRef = useRef(false);
 
   // Utility: convert simple a/b patterns to TeX fractions for display
   const formatMathText = (text) => {
@@ -1557,7 +1562,7 @@ const MainAppContent = () => {
     setShowStoryAnswer(false);
   };
 
-  const pauseQuiz = async () => {
+  const pauseQuiz = useCallback(async () => {
     if (!user) return;
     const userDocRef = getUserDocRef(user.uid);
     const pausedQuizData = {
@@ -1573,7 +1578,90 @@ const MainAppContent = () => {
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
-  };
+  }, [user, currentQuiz, currentQuestionIndex, score, currentTopic]);
+
+  // Keep users inside the app when using the browser back button by mapping it to in-app states
+  useEffect(() => {
+    if (showModal && !modalHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'modal' }, '');
+      modalHistoryPushedRef.current = true;
+    } else if (!showModal) {
+      modalHistoryPushedRef.current = false;
+    }
+  }, [showModal]);
+
+  useEffect(() => {
+    if (showResumeModal && !resumeModalHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'resume-modal' }, '');
+      resumeModalHistoryPushedRef.current = true;
+    } else if (!showResumeModal) {
+      resumeModalHistoryPushedRef.current = false;
+    }
+  }, [showResumeModal]);
+
+  useEffect(() => {
+    if (quizState === APP_STATES.IN_PROGRESS && !quizHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'quiz' }, '');
+      quizHistoryPushedRef.current = true;
+    } else if (quizState !== APP_STATES.IN_PROGRESS) {
+      quizHistoryPushedRef.current = false;
+    }
+  }, [quizState]);
+
+  useEffect(() => {
+    if (quizState === APP_STATES.STORE && !storeHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'store' }, '');
+      storeHistoryPushedRef.current = true;
+    } else if (quizState !== APP_STATES.STORE) {
+      storeHistoryPushedRef.current = false;
+    }
+  }, [quizState]);
+
+  useEffect(() => {
+    if (quizState === APP_STATES.DASHBOARD && !dashboardHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'dashboard' }, '');
+      dashboardHistoryPushedRef.current = true;
+    } else if (quizState !== APP_STATES.DASHBOARD) {
+      dashboardHistoryPushedRef.current = false;
+    }
+  }, [quizState]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showModal) {
+        setShowModal(false);
+        if (modalTitle === "✨ A Fun Story Problem!") {
+          setShowStoryHint(false);
+          setShowStoryAnswer(false);
+        }
+        setModalReactComponent(null);
+        setGeneratedContent("");
+        return;
+      }
+
+      if (showResumeModal) {
+        setShowResumeModal(false);
+        return;
+      }
+
+      if (quizState === APP_STATES.STORE) {
+        setQuizState(APP_STATES.TOPIC_SELECTION);
+        return;
+      }
+
+      if (quizState === APP_STATES.DASHBOARD) {
+        setQuizState(APP_STATES.TOPIC_SELECTION);
+        return;
+      }
+
+      if (quizState === APP_STATES.IN_PROGRESS) {
+        pauseQuiz();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showModal, showResumeModal, quizState, modalTitle, pauseQuiz]);
 
   const handleAnswer = (option) => {
     if (isAnswered) return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles, Edit2, Trash2, X, Save } from 'lucide-react';
 import { loadStoreImages, clearStoreImagesCache, updateStoreImage, deleteStoreImage, deleteStoreTheme } from '../utils/storeImages';
 import ImageGenerationModal from './ImageGenerationModal';
@@ -16,6 +16,7 @@ const StoreImagesManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+  const modalHistoryPushedRef = useRef(false);
 
   // Get unique themes from images, case insensitive
   const availableThemes = [...new Set(images.map(img => (img.theme || '').toLowerCase()).filter(Boolean))].sort();
@@ -54,6 +55,33 @@ const StoreImagesManager = () => {
   useEffect(() => {
     fetchImages();
   }, []);
+
+  // Map browser back button to closing modals instead of leaving the app
+  useEffect(() => {
+    const modalOpen = isModalOpen || !!previewImage;
+
+    if (modalOpen && !modalHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'store-modal' }, '');
+      modalHistoryPushedRef.current = true;
+    } else if (!modalOpen) {
+      modalHistoryPushedRef.current = false;
+    }
+  }, [isModalOpen, previewImage]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (previewImage) {
+        setPreviewImage(null);
+        return;
+      }
+      if (isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isModalOpen, previewImage]);
 
   const handleRefresh = () => {
     fetchImages(true);

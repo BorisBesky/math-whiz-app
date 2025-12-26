@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { 
   Users, 
@@ -67,6 +67,7 @@ const TeacherDashboard = () => {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [realtimeReloadKey, setRealtimeReloadKey] = useState(0);
   const [questionBankReloadKey, setQuestionBankReloadKey] = useState(0);
+  const modalHistoryPushedRef = useRef(false);
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
@@ -91,6 +92,37 @@ const TeacherDashboard = () => {
     console.log('TeacherDashboard mounted - VERSION 2.0. User:', !!user, 'DB:', !!db, 'AppId:', appId);
     console.log('No fetchTeachers calls should appear after this message');
   }, [user, db, appId]);
+
+  // Ensure browser back closes dashboard modals instead of leaving the app
+  useEffect(() => {
+    const modalOpen = showGoalsModal || showUploadModal || showCreateForm;
+
+    if (modalOpen && !modalHistoryPushedRef.current) {
+      window.history.pushState({ mwView: 'dashboard-modal' }, '');
+      modalHistoryPushedRef.current = true;
+    } else if (!modalOpen) {
+      modalHistoryPushedRef.current = false;
+    }
+  }, [showGoalsModal, showUploadModal, showCreateForm]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showGoalsModal) {
+        setShowGoalsModal(false);
+        return;
+      }
+      if (showUploadModal) {
+        setShowUploadModal(false);
+        return;
+      }
+      if (showCreateForm) {
+        setShowCreateForm(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showGoalsModal, showUploadModal, showCreateForm]);
 
   const fetchStudentData = useCallback(async () => {
     if (!user?.uid) {
