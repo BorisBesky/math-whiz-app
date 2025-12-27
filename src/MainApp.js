@@ -1165,64 +1165,19 @@ const MainAppContent = () => {
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
     if (quizState === APP_STATES.IN_PROGRESS && quizContainerRef.current) {
-      // Use requestAnimationFrame to ensure DOM has updated before rendering math
-      requestAnimationFrame(() => {
-        // Double-check container still exists after frame
-        if (!quizContainerRef.current) return;
-        
-        try {
-          renderMathInElement(quizContainerRef.current, {
-            delimiters: [
-              { left: "$$", right: "$$", display: true },
-              { left: "\\(", right: "\\)", display: false },
-              { left: "\\[", right: "\\]", display: true },
-            ],
-            throwOnError: false,
-          });
-          
-          // If feedback div exists and contains LaTeX, ensure it's processed
-          // Use a second requestAnimationFrame to ensure feedback is fully rendered
-          requestAnimationFrame(() => {
-            if (!quizContainerRef.current) return;
-            const feedbackDivAfter = quizContainerRef.current.querySelector('[class*="bg-green-100"], [class*="bg-red-100"]');
-            if (feedbackDivAfter) {
-              const feedbackTextCheck = feedbackDivAfter.textContent || '';
-              const hasUnrenderedLatex = /\\\(|\\\[|\$\$|\\frac/.test(feedbackTextCheck) && !feedbackDivAfter.querySelector('.katex');
-              if (hasUnrenderedLatex) {
-                // Re-render math specifically in the feedback div
-                renderMathInElement(feedbackDivAfter, {
-                  delimiters: [
-                    { left: "$$", right: "$$", display: true },
-                    { left: "\\(", right: "\\)", display: false },
-                    { left: "\\[", right: "\\]", display: true },
-                  ],
-                  throwOnError: false,
-                });
-              }
-            }
-            
-            // If question text has unrendered LaTeX, re-render it
-            const questionPAfter = quizContainerRef.current.querySelector('p.text-lg, p.text-xl');
-            if (questionPAfter) {
-              const questionTextAfter = questionPAfter.textContent || '';
-              const questionHasUnrenderedLatex = /\\\(|\\\[|\$\$|\\frac/.test(questionTextAfter) && !questionPAfter.querySelector('.katex');
-              if (questionHasUnrenderedLatex) {
-                renderMathInElement(questionPAfter, {
-                  delimiters: [
-                    { left: "$$", right: "$$", display: true },
-                    { left: "\\(", right: "\\)", display: false },
-                    { left: "\\[", right: "\\]", display: true },
-                  ],
-                  throwOnError: false,
-                });
-              }
-            }
-          });
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.warn("KaTeX render error:", e);
-        }
-      });
+      try {
+        renderMathInElement(quizContainerRef.current, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "\\[", right: "\\]", display: true },
+          ],
+          throwOnError: false,
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("KaTeX render error:", e);
+      }
     }
   }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered, feedback]);
 
