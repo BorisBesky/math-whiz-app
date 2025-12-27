@@ -972,6 +972,75 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
   return questions;
 };
 
+// --- Helper Functions for Topic Encoding ---
+const encodeTopicForPath = (topic) => encodeURIComponent(topic);
+const decodeTopicFromPath = (topicParam) => {
+  try {
+    return decodeURIComponent(topicParam || '');
+  } catch {
+    return topicParam || '';
+  }
+};
+
+const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) => {
+  const { topic: topicParam } = useParams();
+  const t = decodeTopicFromPath(topicParam);
+  const pausedQuizData = userData?.pausedQuizzes?.[t];
+  const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
+  const [isStarting, setIsStarting] = useState(false);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+      <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-4">
+          Paused Quiz Found!
+        </h3>
+        <p className="text-gray-600 mb-8">
+          Do you want to continue your quiz on "{t}" or start a new one?
+        </p>
+        <div className="flex flex-col gap-4">
+          <button
+            disabled={isStarting}
+            onClick={() => {
+              if (hasPausedQuestions) {
+                resumePausedQuiz(t);
+              } else {
+                startNewQuiz(t);
+              }
+              navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                state: { fromResumeModal: true },
+              });
+            }}
+            className={`w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <Play size={20} /> Resume Paused Quiz
+          </button>
+          <button
+            disabled={isStarting}
+            onClick={async () => {
+              if (isStarting) return;
+              setIsStarting(true);
+              console.log('[Resume] Start new button clicked', { topic: t });
+              try {
+                await startNewQuiz(t);
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
+              } catch (error) {
+                console.error('[Resume] Error starting new quiz:', error);
+                setIsStarting(false);
+              }
+            }}
+            className={`w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {isStarting ? 'Starting...' : 'Start New Quiz'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MainAppContent = () => {
   const { startTutorial } = useTutorial();
   const { user: authUser, logout: authLogout, userRole } = useAuth();
@@ -979,14 +1048,7 @@ const MainAppContent = () => {
   const location = useLocation();
 
   const appBasePath = location.pathname.startsWith('/app') ? '/app' : '';
-  const encodeTopicForPath = useCallback((topic) => encodeURIComponent(topic), []);
-  const decodeTopicFromPath = useCallback((topicParam) => {
-    try {
-      return decodeURIComponent(topicParam || '');
-    } catch {
-      return topicParam || '';
-    }
-  }, []);
+  
   const navigateApp = useCallback(
     (to, options) => {
       const normalized = to.startsWith('/') ? to : `/${to}`;
@@ -1117,7 +1179,7 @@ const MainAppContent = () => {
         console.warn("KaTeX render error:", e);
       }
     }
-  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered]);
+  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered, feedback]);
 
   // Keep quizState in sync with the current route (used by tutorial + KaTeX effect)
   useEffect(() => {
@@ -1456,22 +1518,26 @@ const MainAppContent = () => {
   };
 
   const startNewQuiz = async (topic) => {
+    console.log('[startNewQuiz] Starting new quiz for topic:', topic);
     setCurrentTopic(topic);
     
     // Clear any paused quiz for this topic
     if (user && userData?.pausedQuizzes?.[topic]) {
+      console.log('[startNewQuiz] Clearing paused quiz');
       const userDocRef = getUserDocRef(user.uid);
       if (userDocRef) {
         try {
           await updateDoc(userDocRef, {
             [`pausedQuizzes.${topic}`]: null,
           });
+          console.log('[startNewQuiz] Paused quiz cleared');
         } catch (e) {
           console.warn('Could not clear paused quiz:', e);
         }
       }
     }
     
+    console.log('[startNewQuiz] Fetching history');
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
@@ -1563,6 +1629,7 @@ const MainAppContent = () => {
       userData?.dailyGoals ||
       {};
 
+    console.log('[startNewQuiz] Generating questions');
     const newQuestions = await generateQuizQuestions(
       topic,
       dailyGoalsForGrade,
@@ -1576,6 +1643,7 @@ const MainAppContent = () => {
       questionBankProbability,
       allowedSubtopicsByTopic
     );
+    console.log('[startNewQuiz] Questions generated:', newQuestions?.length);
     setCurrentQuiz(newQuestions);
     questionStartTime.current = Date.now();
     setCurrentQuestionIndex(0);
@@ -1586,6 +1654,7 @@ const MainAppContent = () => {
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
+    console.log('[startNewQuiz] Quiz setup complete');
   };
 
   const resumePausedQuiz = (topic) => {
@@ -1906,7 +1975,7 @@ const MainAppContent = () => {
         }
       }
     } else {
-      feedbackMessage = `Not quite. The correct answer is ${currentQuiz[currentQuestionIndex].correctAnswer}.`;
+      feedbackMessage = `Not quite. The correct answer is ${formatMathText(currentQuiz[currentQuestionIndex].correctAnswer)}.`;
     }
 
     // Handle progress updates based on whether we're resetting or not
@@ -3352,7 +3421,10 @@ Answer: [The answer]`;
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
-          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">
+          <p 
+            key={`${currentQuestionIndex}-${isAnswered}`}
+            className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]"
+          >
             {formatMathText(currentQuestion.question)}
           </p>
 
@@ -3427,7 +3499,7 @@ Answer: [The answer]`;
                       normalizeNumericAnswer(userAnswer) === normalizeNumericAnswer(currentQuestion.correctAnswer)
                         ? "text-green-600"
                         : "text-red-600"
-                    }>{userAnswer}</span>
+                    }>{formatMathText(userAnswer)}</span>
                   </p>
                 </div>
               )}
@@ -3454,7 +3526,7 @@ Answer: [The answer]`;
                 }
                 return (
                   <button
-                    key={index}
+                    key={`${index}-${isAnswered}`}
                     onClick={() => handleAnswer(option)}
                     onDoubleClick={() => {
                       if (!isAnswered) {
@@ -3875,54 +3947,7 @@ Answer: [The answer]`;
     return renderResults();
   };
 
-  const ResumeModalRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-    const pausedQuizData = userData?.pausedQuizzes?.[t];
-    const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            Paused Quiz Found!
-          </h3>
-          <p className="text-gray-600 mb-8">
-            Do you want to continue your quiz on "{t}" or start a new one?
-          </p>
-          <div className="flex flex-col gap-4">
-            <button
-              onClick={() => {
-                if (hasPausedQuestions) {
-                  resumePausedQuiz(t);
-                } else {
-                  startNewQuiz(t);
-                }
-                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
-                  state: { fromResumeModal: true },
-                });
-              }}
-              className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-            >
-              <Play size={20} /> Resume Paused Quiz
-            </button>
-            <button
-              onClick={async () => {
-                console.log('[Resume] Start new button clicked', { topic: t });
-                await startNewQuiz(t);
-                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
-                  state: { fromResumeModal: true },
-                });
-              }}
-              className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
-            >
-              Start New Quiz
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const ExplainModalRoute = () => {
     const { topic: topicParam } = useParams();
@@ -4004,7 +4029,7 @@ Answer: [The answer]`;
 
         {/* Overlays (modals + sketch) are all route-driven */}
         <Routes>
-          <Route path="resume/:topic" element={<ResumeModalRoute />} />
+          <Route path="resume/:topic" element={<ResumeModal userData={userData} startNewQuiz={startNewQuiz} resumePausedQuiz={resumePausedQuiz} navigateApp={navigateApp} />} />
           <Route path="quiz/:topic/explain" element={<ExplainModalRoute />} />
           <Route path="quiz/:topic/sketch" element={<SketchOverlayRoute />} />
           <Route path="results/:topic/story" element={<StoryModalRoute />} />
