@@ -3904,8 +3904,8 @@ Answer: [The answer]`;
 
       // If we have no questions loaded, decide where to pull them from
       if ((!currentQuiz || currentQuiz.length === 0) && !quizInitInProgressRef.current) {
+        // Set flag immediately (synchronously) to prevent race conditions
         quizInitInProgressRef.current = true;
-
         (async () => {
           try {
             if (pausedQuizData && hasPausedQuestions && !cameFromResume) {
