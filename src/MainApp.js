@@ -3925,7 +3925,7 @@ Answer: [The answer]`;
         })();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t, currentQuiz, userData, cameFromResume]);
+    }, [t, currentQuiz, userData, cameFromResume, navigateApp, resumePausedQuiz]);
 
     return renderQuiz();
   };
