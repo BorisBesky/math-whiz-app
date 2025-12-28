@@ -17,7 +17,6 @@ const fieldMap = {
 
 const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [selectedStudents, setSelectedStudents] = useState(new Set());
-  const [isSelectAll, setIsSelectAll] = useState(false);
   const [sortField, setSortField] = useState('questionsToday');
   const [sortDirection, setSortDirection] = useState('desc');
   const [showGoalsModal, setShowGoalsModal] = useState(false);
@@ -27,6 +26,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const db = getFirestore();
 
@@ -101,6 +102,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       setSortField(field);
       setSortDirection('asc');
     }
+    setCurrentPage(1); // Reset to first page when sorting changes
   };
 
   const getSortedStudents = useCallback(() => {
@@ -146,17 +148,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       newSelected.add(studentId);
     }
     setSelectedStudents(newSelected);
-    setIsSelectAll(newSelected.size === students.length && students.length > 0);
-  };
-
-  const handleSelectAll = () => {
-    if (isSelectAll) {
-      setSelectedStudents(new Set());
-      setIsSelectAll(false);
-    } else {
-      setSelectedStudents(new Set(students.map(s => s.id)));
-      setIsSelectAll(true);
-    }
   };
 
   // Actions
@@ -209,7 +200,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
       await batch.commit();
       setSelectedStudents(new Set());
-      setIsSelectAll(false);
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Error deleting students:', error);
@@ -285,6 +275,66 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   };
 
   const sortedStudents = getSortedStudents();
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = sortedStudents.slice(startIndex, endIndex);
+
+  // Check if all students on current page are selected
+  const isCurrentPageSelected = paginatedStudents.length > 0 && 
+    paginatedStudents.every(student => selectedStudents.has(student.id));
+
+  const handleSelectAll = () => {
+    const currentPageIds = paginatedStudents.map(s => s.id);
+    const allCurrentPageSelected = currentPageIds.every(id => selectedStudents.has(id));
+    
+    const newSelected = new Set(selectedStudents);
+    
+    if (allCurrentPageSelected) {
+      // Deselect all on current page
+      currentPageIds.forEach(id => newSelected.delete(id));
+    } else {
+      // Select all on current page
+      currentPageIds.forEach(id => newSelected.add(id));
+    }
+    
+    setSelectedStudents(newSelected);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
 
   // Render Student Detail View
   if (viewingStudent) {
@@ -598,9 +648,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
               <th className="px-4 py-3 text-left">
                 <input
                   type="checkbox"
-                  checked={isSelectAll}
+                  checked={isCurrentPageSelected}
                   onChange={handleSelectAll}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  title={`Select all ${paginatedStudents.length} students on this page`}
                 />
               </th>
               <th 
@@ -677,7 +728,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                 </td>
               </tr>
             ) : (
-              sortedStudents.map((student) => (
+              paginatedStudents.map((student) => (
                 <tr 
                   key={student.id} 
                   className="hover:bg-gray-50 cursor-pointer"
@@ -750,6 +801,69 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {sortedStudents.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border border-gray-200 rounded-lg">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span>Show</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>per page</span>
+            <span className="ml-4">
+              Showing {startIndex + 1} to {Math.min(endIndex, sortedStudents.length)} of {sortedStudents.length} students
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            
+            {getPageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="px-2 text-gray-500">...</span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-3 py-1 rounded border transition-colors ${
+                    currentPage === page
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              )
+            ))}
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Goals Modal */}
       {showGoalsModal && (
