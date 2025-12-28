@@ -188,7 +188,7 @@ const generateQuizQuestions = async (
   allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
 ) => {
   // Use existing complexity engine instead of rebuilding scoring logic
-  const adapted = adaptAnsweredHistory(questionHistory, userId);
+  const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);
 
   // Helper function to generate a unique signature for a question
