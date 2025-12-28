@@ -1912,6 +1912,15 @@ const MainAppContent = () => {
         
         updates[`answeredQuestions`] = arrayUnion(questionRecord);
         
+        // Track answered question bank questions to avoid repeating them
+        if (isCorrect && currentQuestion.questionId) {
+          // Question is from Firestore question bank
+          const currentAnsweredIds = userData?.answeredQuestionBankQuestions || [];
+          if (!currentAnsweredIds.includes(currentQuestion.questionId)) {
+            updates[`answeredQuestionBankQuestions`] = arrayUnion(currentQuestion.questionId);
+          }
+        }
+        
         // Update progress tracking
         const allProgress_path = `progress.${today}.all`;
         const topicProgress_path = `progress.${today}.${sanitizedTopic}`;
