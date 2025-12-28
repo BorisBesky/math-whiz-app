@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { 
-  RefreshCw, Download, Target, Trash2, Eye, 
+  BarChart3, RefreshCw, Download, Target, Trash2, Eye, 
   ChevronUp, ChevronDown, CheckCircle, X
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
@@ -290,16 +290,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   if (viewingStudent) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={() => setViewingStudent(null)}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ChevronDown className="w-5 h-5 rotate-90 mr-1" />
-            Back to Students
-          </button>
-        </div>
-
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
@@ -435,6 +425,110 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           </div>
         </div>
+
+        {/* Questions by Date Range */}
+        {(() => {
+          const normalizedStartDate = normalizeDate(startDate);
+          const normalizedEndDate = normalizeDate(endDate);
+
+          const questionsInRange = viewingStudent.answeredQuestions?.filter(
+            (q) => {
+              const normalizedQuestionDate = normalizeDate(q.date);
+              return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
+            }
+          ) || [];
+          
+          return (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h4 className="text-xl font-bold text-gray-700">
+                  Questions {startDate === endDate ? `for ${formatDate(startDate)}` : `from ${formatDate(startDate)} to ${formatDate(endDate)}`}:
+                </h4>
+              </div>
+              {questionsInRange.length > 0 ? (
+                <div className="max-h-96 overflow-y-auto">
+                  {(() => {
+                    // Group questions by date
+                    const questionsByDate = questionsInRange.reduce((groups, question) => {
+                      const date = question.date;
+                      if (!groups[date]) {
+                        groups[date] = [];
+                      }
+                      groups[date].push(question);
+                      return groups;
+                    }, {});
+
+                    // Sort dates in descending order (most recent first)
+                    const sortedDates = Object.keys(questionsByDate).sort((a, b) => new Date(b) - new Date(a));
+
+                    return sortedDates.map(date => (
+                      <div key={date} className="mb-6 last:mb-0">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                          <h5 className="text-lg font-semibold text-gray-800">
+                            {formatDate(date)}
+                          </h5>
+                          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {questionsByDate[date].length} question{questionsByDate[date].length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {questionsByDate[date].map((q, index) => (
+                            <div
+                              key={q.id || `${date}-${index}`}
+                              className={`p-3 rounded-lg border-l-4 ${
+                                q.isCorrect
+                                  ? "bg-green-50 border-green-500"
+                                  : "bg-red-50 border-red-500"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="font-semibold text-sm text-gray-600">
+                                  {q.topic}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {q.timeTaken ? `${q.timeTaken.toFixed(1)}s` : 'N/A'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-800 mb-1">{q.question}</p>
+                              <div className="text-xs">
+                                <span className="text-gray-600">Your answer: </span>
+                                <span
+                                  className={
+                                    q.isCorrect
+                                      ? "text-green-600 font-semibold"
+                                      : "text-red-600 font-semibold"
+                                  }
+                                >
+                                  {q.userAnswer || 'N/A'}
+                                </span>
+                                {!q.isCorrect && (
+                                  <>
+                                    <span className="text-gray-600 ml-2">Correct: </span>
+                                    <span className="text-green-600 font-semibold">
+                                      {q.correctAnswer || 'N/A'}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">
+                    No questions answered {startDate === endDate ? `on ${formatDate(startDate)}` : `in the selected date range`}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+            })()}
+        
       </div>
     );
   }
