@@ -3883,9 +3883,7 @@ Answer: [The answer]`;
     const { topic: topicParam } = useParams();
     const t = decodeTopicFromPath(topicParam);
     const fromResumeModal = location.state?.fromResumeModal;
-    const cameFromResume =
-      fromResumeModal ||
-      lastPathRef.current?.includes(`/resume/${encodeTopicForPath(t)}`);
+    const cameFromResume = !!fromResumeModal;
     const pausedQuizData = userData?.pausedQuizzes?.[t];
     const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
 
