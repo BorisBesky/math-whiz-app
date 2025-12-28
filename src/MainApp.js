@@ -1140,6 +1140,22 @@ const MainAppContent = () => {
     );
   };
 
+  const resumePausedQuiz = useCallback((topic) => {
+    const pausedData = userData?.pausedQuizzes?.[topic];
+    if (!pausedData) return;
+
+    setCurrentTopic(topic);
+    setCurrentQuiz(pausedData.questions);
+    setCurrentQuestionIndex(pausedData.index);
+    setScore(pausedData.score);
+    questionStartTime.current = Date.now();
+    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
+    // Reset story state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
+  }, [userData]);
+
   // Load store images from Firebase Storage on component mount
   useEffect(() => {
     const loadImages = async () => {
@@ -1208,6 +1224,107 @@ const MainAppContent = () => {
       setQuizState(APP_STATES.TOPIC_SELECTION);
     }
   }, [location.pathname]);
+
+  // Handle routing logic (Quiz, Results, Modals) to avoid component-in-component re-mounting issues
+  useEffect(() => {
+    const effectivePath = location.pathname.startsWith('/app')
+      ? location.pathname.slice('/app'.length) || '/'
+      : location.pathname;
+
+    // 1. Quiz Route Logic
+    if (effectivePath.startsWith('/quiz/')) {
+      const parts = effectivePath.split('/');
+      // /quiz/:topic or /quiz/:topic/explain or /quiz/:topic/sketch
+      const topicParam = parts[2];
+      if (topicParam) {
+        const t = decodeTopicFromPath(topicParam);
+        
+        // Sync topic
+        if (currentTopic !== t) setCurrentTopic(t);
+
+        // Handle Explain/Sketch sub-routes
+        const isExplain = parts[3] === 'explain';
+        const isSketch = parts[3] === 'sketch';
+
+        if (isExplain) {
+          if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+            navigateApp(`/quiz/${encodeTopicForPath(t)}`, { replace: true });
+          }
+        } else if (!isSketch) {
+          // Main Quiz Route Logic
+          const fromResumeModal = location.state?.fromResumeModal;
+          const cameFromResume = !!fromResumeModal;
+          const pausedQuizData = userData?.pausedQuizzes?.[t];
+          const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
+
+          // Check if we have questions for the CORRECT topic
+          // We need to check both currentTopic AND that currentQuiz questions match the topic
+          // Note: currentTopic may be stale (set by setCurrentTopic but not yet applied)
+          // So we also check if currentQuiz[0] has a matching topic/concept if available
+          const quizMatchesTopic = currentQuiz && currentQuiz.length > 0 && (
+            currentTopic === t || 
+            // Fallback: check if the first question's topic matches (for generated questions)
+            currentQuiz[0]?.topic === t ||
+            currentQuiz[0]?.concept === t
+          );
+
+          // If quiz matches topic, clear the init flag (quiz was loaded successfully)
+          if (quizMatchesTopic && quizInitInProgressRef.current) {
+            quizInitInProgressRef.current = false;
+          }
+
+          // If we have no questions loaded for this topic and not currently loading, decide where to pull them from
+          if (!quizMatchesTopic && !quizInitInProgressRef.current) {
+            quizInitInProgressRef.current = true;
+
+            (async () => {
+              try {
+                if (pausedQuizData && hasPausedQuestions && !cameFromResume) {
+                  navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
+                  return;
+                }
+
+                if (cameFromResume && pausedQuizData && hasPausedQuestions) {
+                  resumePausedQuiz(t);
+                  return;
+                }
+                
+                // If we get here with no quiz for this topic and didn't come from resume,
+                // it means direct URL navigation without quiz data - redirect to topic selection
+                // The user should select a topic to start a quiz properly
+                if (!quizMatchesTopic && !hasPausedQuestions) {
+                  navigateApp('/', { replace: true });
+                }
+              } finally {
+                quizInitInProgressRef.current = false;
+              }
+            })();
+          }
+        }
+      }
+    } 
+    // 2. Results Route Logic
+    else if (effectivePath.startsWith('/results/')) {
+      const parts = effectivePath.split('/');
+      const topicParam = parts[2];
+      if (topicParam) {
+        const t = decodeTopicFromPath(topicParam);
+        if (t && currentTopic !== t) setCurrentTopic(t);
+        
+        // Handle Story sub-route
+        const isStory = parts[3] === 'story';
+        if (isStory) {
+           if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+            navigateApp(`/results/${encodeTopicForPath(t)}`, { replace: true });
+          }
+        } else {
+          if (!currentQuiz || currentQuiz.length === 0) {
+            navigateApp('/', { replace: true });
+          }
+        }
+      }
+    }
+  }, [location.pathname, location.state, currentQuiz, userData, currentTopic, navigateApp, resumePausedQuiz, modalTitle, modalReactComponent, generatedContent, storyData, isGenerating]);
 
   const updateDifficulty = (score, numQuestions) => {
     const newDifficulty = Math.min(
@@ -1517,11 +1634,18 @@ const MainAppContent = () => {
       return;
     }
 
-    if (userData?.pausedQuizzes?.[topic]) {
+    // Only show resume modal if there are actually paused questions for this topic
+    const pausedQuizData = userData?.pausedQuizzes?.[topic];
+    const hasPausedQuestions = pausedQuizData && (pausedQuizData.questions || []).length > 0;
+    
+    if (hasPausedQuestions) {
       navigateApp(`/resume/${encodeTopicForPath(topic)}`);
       return;
     }
 
+    // Set flag before starting quiz to prevent useEffect from interfering
+    // The flag will be cleared by the useEffect once it sees the quiz is properly loaded
+    quizInitInProgressRef.current = true;
     await startNewQuiz(topic);
     navigateApp(`/quiz/${encodeTopicForPath(topic)}`);
   };
@@ -1664,22 +1788,6 @@ const MainAppContent = () => {
     setShowStoryHint(false);
     setShowStoryAnswer(false);
     console.log('[startNewQuiz] Quiz setup complete');
-  };
-
-  const resumePausedQuiz = (topic) => {
-    const pausedData = userData?.pausedQuizzes?.[topic];
-    if (!pausedData) return;
-
-    setCurrentTopic(topic);
-    setCurrentQuiz(pausedData.questions);
-    setCurrentQuestionIndex(pausedData.index);
-    setScore(pausedData.score);
-    questionStartTime.current = Date.now();
-    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
-    // Reset story state
-    setStoryData(null);
-    setShowStoryHint(false);
-    setShowStoryAnswer(false);
   };
 
   const pauseQuiz = useCallback(async () => {
@@ -3792,6 +3900,7 @@ Answer: [The answer]`;
   };
 
   const renderModal = () => {
+    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
@@ -3888,133 +3997,6 @@ Answer: [The answer]`;
     );
   };
 
-  const QuizRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-    const fromResumeModal = location.state?.fromResumeModal;
-    const cameFromResume = !!fromResumeModal;
-    const pausedQuizData = userData?.pausedQuizzes?.[t];
-    const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
-
-    useEffect(() => {
-      if (!t) return;
-      if (currentTopic !== t) setCurrentTopic(t);
-
-      console.log('[Resume] QuizRoute effect', {
-        topic: t,
-        cameFromResume,
-        fromResumeModal,
-        lastPath: lastPathRef.current,
-        pausedExists: !!pausedQuizData,
-        pausedQuestions: pausedQuizData?.questions?.length,
-        currentQuizLength: currentQuiz?.length,
-        initInProgress: quizInitInProgressRef.current,
-      });
-
-      // If we have no questions loaded, decide where to pull them from
-      if ((!currentQuiz || currentQuiz.length === 0) && !quizInitInProgressRef.current) {
-        quizInitInProgressRef.current = true;
-
-        (async () => {
-          try {
-            if (pausedQuizData && hasPausedQuestions && !cameFromResume) {
-              navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
-              return;
-            }
-
-            if (cameFromResume && pausedQuizData && hasPausedQuestions) {
-              resumePausedQuiz(t);
-              return;
-            }
-
-            // Either came from resume with empty paused data, or no paused data at all
-          } finally {
-            quizInitInProgressRef.current = false;
-          }
-        })();
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t, currentQuiz, userData, cameFromResume, navigateApp, resumePausedQuiz]);
-
-    return renderQuiz();
-  };
-
-  const ResultsRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-
-    useEffect(() => {
-      if (t && currentTopic !== t) setCurrentTopic(t);
-      if (!currentQuiz || currentQuiz.length === 0) {
-        navigateApp('/', { replace: true });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t]);
-
-    return renderResults();
-  };
-
-
-
-  const ExplainModalRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-    
-    // Update current topic when URL parameter changes
-    useEffect(() => {
-      if (t && currentTopic !== t) setCurrentTopic(t);
-      // ESLint thinks these are outer scope values, but they're actually state from parent component
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t, currentTopic, setCurrentTopic]);
-    
-    // Redirect if no modal content is available
-    useEffect(() => {
-      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
-        navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}`, { replace: true });
-      }
-      // ESLint thinks these are outer scope values, but they're actually state from parent component
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalTitle, modalReactComponent, generatedContent, storyData, isGenerating, navigateApp, t, currentTopic]);
-    
-    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
-    return renderModal();
-  };
-
-  const StoryModalRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-    
-    // Update current topic when URL parameter changes
-    useEffect(() => {
-      if (t && currentTopic !== t) setCurrentTopic(t);
-      // ESLint thinks these are outer scope values, but they're actually state from parent component
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t, currentTopic, setCurrentTopic]);
-    
-    // Redirect if no modal content is available
-    useEffect(() => {
-      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
-        navigateApp(`/results/${encodeTopicForPath(t || currentTopic)}`, { replace: true });
-      }
-      // ESLint thinks these are outer scope values, but they're actually state from parent component
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modalTitle, modalReactComponent, generatedContent, storyData, isGenerating, navigateApp, t, currentTopic]);
-    
-    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
-    return renderModal();
-  };
-
-  const SketchOverlayRoute = () => {
-    const { topic: topicParam } = useParams();
-    const t = decodeTopicFromPath(topicParam);
-    return (
-      <SketchOverlay
-        isVisible={true}
-        onClose={() => navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}`)}
-      />
-    );
-  };
-
   const activeBgUrl =
     userData?.activeBackground && userData.activeBackground !== "default"
       ? storeItems.find((item) => item.id === userData.activeBackground)?.url
@@ -4046,8 +4028,8 @@ Answer: [The answer]`;
             <Routes>
               <Route path="dashboard" element={renderDashboard()} />
               <Route path="store" element={renderStore()} />
-              <Route path="results/:topic/*" element={<ResultsRoute />} />
-              <Route path="quiz/:topic/*" element={<QuizRoute />} />
+              <Route path="results/:topic/*" element={renderResults()} />
+              <Route path="quiz/:topic/*" element={renderQuiz()} />
               <Route path="" element={renderTopicSelection()} />
               <Route path="*" element={renderTopicSelection()} />
             </Routes>
@@ -4057,9 +4039,14 @@ Answer: [The answer]`;
         {/* Overlays (modals + sketch) are all route-driven */}
         <Routes>
           <Route path="resume/:topic" element={<ResumeModal userData={userData} startNewQuiz={startNewQuiz} resumePausedQuiz={resumePausedQuiz} navigateApp={navigateApp} />} />
-          <Route path="quiz/:topic/explain" element={<ExplainModalRoute />} />
-          <Route path="quiz/:topic/sketch" element={<SketchOverlayRoute />} />
-          <Route path="results/:topic/story" element={<StoryModalRoute />} />
+          <Route path="quiz/:topic/explain" element={renderModal()} />
+          <Route path="quiz/:topic/sketch" element={
+            <SketchOverlay
+              isVisible={true}
+              onClose={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}`)}
+            />
+          } />
+          <Route path="results/:topic/story" element={renderModal()} />
         </Routes>
         <TutorialOverlay />
       </div>
