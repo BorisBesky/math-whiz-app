@@ -3952,13 +3952,23 @@ Answer: [The answer]`;
   const ExplainModalRoute = () => {
     const { topic: topicParam } = useParams();
     const t = decodeTopicFromPath(topicParam);
+    
+    // Update current topic when URL parameter changes
     useEffect(() => {
       if (t && currentTopic !== t) setCurrentTopic(t);
-      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
-        navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}` , { replace: true });
-      }
+      // ESLint thinks these are outer scope values, but they're actually state from parent component
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t]);
+    }, [t, currentTopic, setCurrentTopic]);
+    
+    // Redirect if no modal content is available
+    useEffect(() => {
+      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+        navigateApp(`/quiz/${encodeTopicForPath(t || currentTopic)}`, { replace: true });
+      }
+      // ESLint thinks these are outer scope values, but they're actually state from parent component
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalTitle, modalReactComponent, generatedContent, storyData, isGenerating, navigateApp, t, currentTopic]);
+    
     if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
     return renderModal();
   };
@@ -3966,13 +3976,23 @@ Answer: [The answer]`;
   const StoryModalRoute = () => {
     const { topic: topicParam } = useParams();
     const t = decodeTopicFromPath(topicParam);
+    
+    // Update current topic when URL parameter changes
     useEffect(() => {
       if (t && currentTopic !== t) setCurrentTopic(t);
-      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
-        navigateApp(`/results/${encodeTopicForPath(t || currentTopic)}` , { replace: true });
-      }
+      // ESLint thinks these are outer scope values, but they're actually state from parent component
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t]);
+    }, [t, currentTopic, setCurrentTopic]);
+    
+    // Redirect if no modal content is available
+    useEffect(() => {
+      if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+        navigateApp(`/results/${encodeTopicForPath(t || currentTopic)}`, { replace: true });
+      }
+      // ESLint thinks these are outer scope values, but they're actually state from parent component
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalTitle, modalReactComponent, generatedContent, storyData, isGenerating, navigateApp, t, currentTopic]);
+    
     if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
     return renderModal();
   };
