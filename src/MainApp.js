@@ -1047,14 +1047,16 @@ const MainAppContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const appBasePath = location.pathname.startsWith('/app') ? '/app' : '';
-  
+  // Determine base app path once per mount; remains constant ("/app" or "").
+  const appBasePathRef = useRef(location.pathname.startsWith('/app') ? '/app' : '');
+  const appBasePath = appBasePathRef.current;
+
   const navigateApp = useCallback(
     (to, options) => {
       const normalized = to.startsWith('/') ? to : `/${to}`;
-      navigate(`${appBasePath}${normalized}`, options);
+      navigate(`${appBasePathRef.current}${normalized}`, options);
     },
-    [navigate, appBasePath]
+    [navigate]
   );
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
