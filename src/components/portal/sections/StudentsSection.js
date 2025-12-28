@@ -678,7 +678,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
               </tr>
             ) : (
               sortedStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50">
+                <tr 
+                  key={student.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onDoubleClick={() => setViewingStudent(student)}
+                  title="Double-click to view details"
+                >
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"

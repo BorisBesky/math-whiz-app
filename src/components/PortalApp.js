@@ -66,6 +66,7 @@ const PortalApp = ({ initialSection }) => {
         render: () => (
           <OverviewSection
             stats={stats}
+            students={students}
             loadingStudents={studentsLoading}
             loadingClasses={classesLoading}
             studentError={studentsError}
