@@ -1001,19 +1001,27 @@ const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) 
         <div className="flex flex-col gap-4">
           <button
             disabled={isStarting}
-            onClick={() => {
-              if (hasPausedQuestions) {
-                resumePausedQuiz(t);
-              } else {
-                startNewQuiz(t);
+            onClick={async () => {
+              if (isStarting) return;
+              setIsStarting(true);
+              console.log('[Resume] Resume paused button clicked', { topic: t, hasPausedQuestions });
+              try {
+                if (hasPausedQuestions) {
+                  resumePausedQuiz(t);
+                } else {
+                  await startNewQuiz(t);
+                }
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
+              } catch (error) {
+                console.error('[Resume] Error resuming quiz:', error);
+                setIsStarting(false);
               }
-              navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
-                state: { fromResumeModal: true },
-              });
             }}
             className={`w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Play size={20} /> Resume Paused Quiz
+            <Play size={20} /> {isStarting ? 'Resuming...' : 'Resume Paused Quiz'}
           </button>
           <button
             disabled={isStarting}
