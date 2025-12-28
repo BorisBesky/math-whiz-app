@@ -33,3 +33,7 @@ yarn-error.log*
 
 .cursor
 .github
+
+/test-results
+/playwright-report
+

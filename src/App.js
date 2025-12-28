@@ -16,12 +16,10 @@ const App = () => {
     <AuthProvider>
       <Routes>
         {/* Public routes - accessible to everyone */}
-        <Route path="/" element={<MainApp />} />
-        
         {/* Login/Signup page */}
         <Route path="/login" element={<LoginPage />} />
-  {/* Public join route for students with invite code */}
-  <Route path="/join" element={<JoinClass />} />
+        {/* Public join route for students with invite code */}
+        <Route path="/join" element={<JoinClass />} />
         
         {/* Authentication routes */}
         <Route path="/student-login" element={<StudentLogin />} />
@@ -56,13 +54,17 @@ const App = () => {
         
         {/* Main app is accessible to all authenticated users */}
         <Route 
-          path="/app" 
+          path="/app/*" 
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
               <MainApp />
             </ProtectedRoute>
           } 
         />
+        
+        {/* Wildcard route - must be last to avoid intercepting specific routes */}
+        {/* MainApp owns its internal navigation via routes under / */}
+        <Route path="/*" element={<MainApp />} />
       </Routes>
     </AuthProvider>
   );

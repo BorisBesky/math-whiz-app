@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { 
   Users, 
@@ -36,14 +36,15 @@ import CreateClassForm from './CreateClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
 import QuestionBankManager from './QuestionBankManager';
 import { formatDate, formatTime } from '../utils/common_utils';
+import { useSearchParams } from 'react-router-dom';
 
 const TeacherDashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [classStudentCounts, setClassStudentCounts] = useState({});
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({
@@ -57,17 +58,31 @@ const TeacherDashboard = () => {
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [goalGrade, setGoalGrade] = useState('G3');
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadClassId, setUploadClassId] = useState(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [realtimeReloadKey, setRealtimeReloadKey] = useState(0);
   const [questionBankReloadKey, setQuestionBankReloadKey] = useState(0);
-  const modalHistoryPushedRef = useRef(false);
+
+  const activeModal = searchParams.get('modal');
+  const showGoalsModal = activeModal === 'goals';
+  const showUploadModal = activeModal === 'upload';
+  const showCreateForm = activeModal === 'create-class';
+
+  const openModal = (modalName) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('modal', modalName);
+    setSearchParams(next);
+  };
+
+  const closeModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('modal');
+    setSearchParams(next);
+  };
 
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
@@ -93,36 +108,7 @@ const TeacherDashboard = () => {
     console.log('No fetchTeachers calls should appear after this message');
   }, [user, db, appId]);
 
-  // Ensure browser back closes dashboard modals instead of leaving the app
-  useEffect(() => {
-    const modalOpen = showGoalsModal || showUploadModal || showCreateForm;
-
-    if (modalOpen && !modalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'dashboard-modal' }, '');
-      modalHistoryPushedRef.current = true;
-    } else if (!modalOpen) {
-      modalHistoryPushedRef.current = false;
-    }
-  }, [showGoalsModal, showUploadModal, showCreateForm]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (showGoalsModal) {
-        setShowGoalsModal(false);
-        return;
-      }
-      if (showUploadModal) {
-        setShowUploadModal(false);
-        return;
-      }
-      if (showCreateForm) {
-        setShowCreateForm(false);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [showGoalsModal, showUploadModal, showCreateForm]);
+  // Modals are URL-driven via search params; browser back naturally closes them.
 
   const fetchStudentData = useCallback(async () => {
     if (!user?.uid) {
@@ -389,7 +375,7 @@ const TeacherDashboard = () => {
         teacherEmail: user.email,
         createdAt: new Date()
       });
-      setShowCreateForm(false);
+      closeModal();
     } catch (error) {
       console.error('Error creating class:', error);
       setError('Failed to create class');
@@ -557,7 +543,7 @@ const TeacherDashboard = () => {
     setGoalGrade(grade);
     setGoalTargets(current);
     setGoalStudentIds([student.id]);
-    setShowGoalsModal(true);
+    openModal('goals');
   };
 
   const openGoalsModalForSelected = () => {
@@ -569,7 +555,7 @@ const TeacherDashboard = () => {
     setGoalGrade(grade);
     setGoalTargets(current);
     setGoalStudentIds(ids);
-    setShowGoalsModal(true);
+    openModal('goals');
   };
 
   const handleGoalGradeChange = (grade) => {
@@ -609,7 +595,7 @@ const TeacherDashboard = () => {
         return { ...s, dailyGoalsByGrade: nextGoals };
       }));
 
-      setShowGoalsModal(false);
+      closeModal();
       setGoalStudentIds([]);
     } catch (e) {
       console.error('Failed to save goals', e);
@@ -776,7 +762,7 @@ const TeacherDashboard = () => {
       await logout();
       setSelectedClass(null);
       setSelectedStudent(null);
-      setShowCreateForm(false);
+      closeModal();
       // Redirect to unified login page regardless of current route
       window.location.assign('/login');
     } catch (error) {
@@ -1261,7 +1247,7 @@ const TeacherDashboard = () => {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowCreateForm(true)}
+                  onClick={() => openModal('create-class')}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   data-tutorial-id="create-class-button"
                 >
@@ -1329,7 +1315,7 @@ const TeacherDashboard = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No classes yet</h3>
                 <p className="text-gray-600 mb-4">Get started by creating your first class</p>
                 <button
-                  onClick={() => setShowCreateForm(true)}
+                  onClick={() => openModal('create-class')}
                   className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
@@ -1353,7 +1339,7 @@ const TeacherDashboard = () => {
                 <button
                   onClick={() => {
                     setUploadClassId(null);
-                    setShowUploadModal(true);
+                    openModal('upload');
                   }}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
@@ -1631,7 +1617,7 @@ const TeacherDashboard = () => {
           <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Set Daily Goals</h3>
-              <button onClick={() => setShowGoalsModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+              <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">✕</button>
             </div>
             <div className="mb-4 flex items-center space-x-4">
               <label className="text-sm text-gray-700">Grade:</label>
@@ -1660,7 +1646,7 @@ const TeacherDashboard = () => {
               ))}
             </div>
             <div className="mt-6 text-right space-x-2">
-              <button onClick={() => setShowGoalsModal(false)} className="px-4 py-2 rounded border">Cancel</button>
+              <button onClick={closeModal} className="px-4 py-2 rounded border">Cancel</button>
               <button onClick={saveGoals} className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700">Save</button>
             </div>
           </div>
@@ -1671,7 +1657,7 @@ const TeacherDashboard = () => {
       {showCreateForm && (
         <CreateClassForm
           onSubmit={handleCreateClass}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={closeModal}
         />
       )}
 
@@ -1680,12 +1666,12 @@ const TeacherDashboard = () => {
           classId={uploadClassId}
           appId={appId}
           onClose={() => {
-            setShowUploadModal(false);
+            closeModal();
             setUploadClassId(null);
           }}
           onQuestionsSaved={() => {
             // Questions saved successfully
-            setShowUploadModal(false);
+            closeModal();
             setUploadClassId(null);
           }}
         />

@@ -1,22 +1,50 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles, Edit2, Trash2, X, Save } from 'lucide-react';
 import { loadStoreImages, clearStoreImagesCache, updateStoreImage, deleteStoreImage, deleteStoreTheme } from '../utils/storeImages';
 import ImageGenerationModal from './ImageGenerationModal';
+import { useSearchParams } from 'react-router-dom';
 
 const StoreImagesManager = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState('all');
   const [lastRefresh, setLastRefresh] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const isModalOpen = searchParams.get('modal') === 'generate';
+  const previewImageId = searchParams.get('preview');
+  const previewImage = previewImageId
+    ? images.find((img) => img.id === previewImageId) || null
+    : null;
   
   // Editing state
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
-  const modalHistoryPushedRef = useRef(false);
+
+  const openGenerateModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('modal', 'generate');
+    setSearchParams(next);
+  };
+
+  const closeGenerateModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('modal');
+    setSearchParams(next);
+  };
+
+  const openPreview = (item) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('preview', item.id);
+    setSearchParams(next);
+  };
+
+  const closePreview = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('preview');
+    setSearchParams(next);
+  };
 
   // Get unique themes from images, case insensitive
   const availableThemes = [...new Set(images.map(img => (img.theme || '').toLowerCase()).filter(Boolean))].sort();
@@ -56,32 +84,7 @@ const StoreImagesManager = () => {
     fetchImages();
   }, []);
 
-  // Map browser back button to closing modals instead of leaving the app
-  useEffect(() => {
-    const modalOpen = isModalOpen || !!previewImage;
-
-    if (modalOpen && !modalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'store-modal' }, '');
-      modalHistoryPushedRef.current = true;
-    } else if (!modalOpen) {
-      modalHistoryPushedRef.current = false;
-    }
-  }, [isModalOpen, previewImage]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (previewImage) {
-        setPreviewImage(null);
-        return;
-      }
-      if (isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [isModalOpen, previewImage]);
+  // Modals are URL-driven via search params; browser back naturally closes them.
 
   const handleRefresh = () => {
     fetchImages(true);
@@ -183,7 +186,7 @@ const StoreImagesManager = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setIsModalOpen(true)}
+              onClick={openGenerateModal}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Sparkles className="w-4 h-4" />
@@ -251,7 +254,7 @@ const StoreImagesManager = () => {
           >
             All ({images.length})
           </button>
-          {availableThemes.map(theme => (
+          {availableThemes.map((theme) => (
             <div key={theme} className="relative group">
               <button
                 onClick={() => setSelectedTheme(theme)}
@@ -387,7 +390,7 @@ const StoreImagesManager = () => {
                 <>
                   <div 
                     className="relative w-full h-48 mb-3 bg-gray-100 rounded-md overflow-hidden group cursor-pointer"
-                    onClick={() => setPreviewImage(item)}
+                    onClick={() => openPreview(item)}
                   >
                     <img
                       src={item.url}
@@ -449,7 +452,7 @@ const StoreImagesManager = () => {
       {/* Image Generation Modal */}
       <ImageGenerationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeGenerateModal}
         onSuccess={handleModalSuccess}
       />
 
@@ -457,11 +460,11 @@ const StoreImagesManager = () => {
       {previewImage && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
-          onClick={() => setPreviewImage(null)}
+          onClick={closePreview}
         >
           <div className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center">
             <button
-              onClick={() => setPreviewImage(null)}
+              onClick={closePreview}
               className="absolute -top-10 right-0 text-white hover:text-gray-300"
             >
               <X className="w-8 h-8" />

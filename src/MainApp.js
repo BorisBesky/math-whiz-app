@@ -1,6 +1,6 @@
 /* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import "katex/dist/katex.min.css";
 import renderMathInElement from "katex/contrib/auto-render";
 import {
@@ -972,10 +972,99 @@ const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answer
   return questions;
 };
 
+// --- Helper Functions for Topic Encoding ---
+const encodeTopicForPath = (topic) => encodeURIComponent(topic);
+const decodeTopicFromPath = (topicParam) => {
+  try {
+    return decodeURIComponent(topicParam || '');
+  } catch {
+    return topicParam || '';
+  }
+};
+
+const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) => {
+  const { topic: topicParam } = useParams();
+  const t = decodeTopicFromPath(topicParam);
+  const pausedQuizData = userData?.pausedQuizzes?.[t];
+  const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
+  const [isStarting, setIsStarting] = useState(false);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+      <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-4">
+          Paused Quiz Found!
+        </h3>
+        <p className="text-gray-600 mb-8">
+          Do you want to continue your quiz on "{t}" or start a new one?
+        </p>
+        <div className="flex flex-col gap-4">
+          <button
+            disabled={isStarting}
+            onClick={async () => {
+              if (isStarting) return;
+              setIsStarting(true);
+              console.log('[Resume] Resume paused button clicked', { topic: t, hasPausedQuestions });
+              try {
+                if (hasPausedQuestions) {
+                  resumePausedQuiz(t);
+                } else {
+                  await startNewQuiz(t);
+                }
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
+              } catch (error) {
+                console.error('[Resume] Error resuming quiz:', error);
+                setIsStarting(false);
+              }
+            }}
+            className={`w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <Play size={20} /> {isStarting ? 'Resuming...' : 'Resume Paused Quiz'}
+          </button>
+          <button
+            disabled={isStarting}
+            onClick={async () => {
+              if (isStarting) return;
+              setIsStarting(true);
+              console.log('[Resume] Start new button clicked', { topic: t });
+              try {
+                await startNewQuiz(t);
+                navigateApp(`/quiz/${encodeTopicForPath(t)}`, {
+                  state: { fromResumeModal: true },
+                });
+              } catch (error) {
+                console.error('[Resume] Error starting new quiz:', error);
+                setIsStarting(false);
+              }
+            }}
+            className={`w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {isStarting ? 'Starting...' : 'Start New Quiz'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MainAppContent = () => {
   const { startTutorial } = useTutorial();
   const { user: authUser, logout: authLogout, userRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine base app path once per mount; remains constant ("/app" or "").
+  const appBasePathRef = useRef(location.pathname.startsWith('/app') ? '/app' : '');
+
+  const navigateApp = useCallback(
+    (to, options) => {
+      const normalized = to.startsWith('/') ? to : `/${to}`;
+      navigate(`${appBasePathRef.current}${normalized}`, options);
+    },
+    [navigate]
+  );
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
@@ -992,12 +1081,8 @@ const MainAppContent = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalReactComponent, setModalReactComponent] = useState(null);
-
-  const [showResumeModal, setShowResumeModal] = useState(false);
-  const [topicToResume, setTopicToResume] = useState(null);
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [storyCreatedForCurrentQuiz, setStoryCreatedForCurrentQuiz] =
     useState(false);
@@ -1007,6 +1092,8 @@ const MainAppContent = () => {
   const [storeItems, setStoreItems] = useState([]);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
+  // Prevent repeated quiz initialization loops when resuming/starting
+  const quizInitInProgressRef = useRef(false);
 
   // Navigate to login page for anonymous users to upgrade their account
   const handleUserClick = () => {
@@ -1030,9 +1117,6 @@ const MainAppContent = () => {
   const [showStoryAnswer, setShowStoryAnswer] = useState(false);
   const [storyData, setStoryData] = useState(null);
 
-  // Sketch overlay state
-  const [showSketchOverlay, setShowSketchOverlay] = useState(false);
-
   // Drawing question state
   const [drawingImageBase64, setDrawingImageBase64] = useState(null);
   const [isValidatingDrawing, setIsValidatingDrawing] = useState(false);
@@ -1045,11 +1129,6 @@ const MainAppContent = () => {
 
   const questionStartTime = useRef(null);
   const quizContainerRef = useRef(null);
-  const modalHistoryPushedRef = useRef(false);
-  const resumeModalHistoryPushedRef = useRef(false);
-  const quizHistoryPushedRef = useRef(false);
-  const storeHistoryPushedRef = useRef(false);
-  const dashboardHistoryPushedRef = useRef(false);
 
   // Utility: convert simple a/b patterns to TeX fractions for display
   const formatMathText = (text) => {
@@ -1060,6 +1139,22 @@ const MainAppContent = () => {
       (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`
     );
   };
+
+  const resumePausedQuiz = useCallback((topic) => {
+    const pausedData = userData?.pausedQuizzes?.[topic];
+    if (!pausedData) return;
+
+    setCurrentTopic(topic);
+    setCurrentQuiz(pausedData.questions);
+    setCurrentQuestionIndex(pausedData.index);
+    setScore(pausedData.score);
+    questionStartTime.current = Date.now();
+    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
+    // Reset story state
+    setStoryData(null);
+    setShowStoryHint(false);
+    setShowStoryAnswer(false);
+  }, [userData]);
 
   // Load store images from Firebase Storage on component mount
   useEffect(() => {
@@ -1081,7 +1176,6 @@ const MainAppContent = () => {
     };
     loadImages();
   }, []);
-
   // Sync storeTheme with available themes when storeItems changes
   useEffect(() => {
     if (storeItems.length > 0) {
@@ -1095,7 +1189,7 @@ const MainAppContent = () => {
 
   // Auto-render KaTeX inside the quiz container when content changes
   useEffect(() => {
-    if (quizState === "inProgress" && quizContainerRef.current) {
+    if (quizState === APP_STATES.IN_PROGRESS && quizContainerRef.current) {
       try {
         renderMathInElement(quizContainerRef.current, {
           delimiters: [
@@ -1110,7 +1204,127 @@ const MainAppContent = () => {
         console.warn("KaTeX render error:", e);
       }
     }
-  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered]);
+  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered, feedback]);
+
+  // Keep quizState in sync with the current route (used by tutorial + KaTeX effect)
+  useEffect(() => {
+    const effectivePath = location.pathname.startsWith('/app')
+      ? location.pathname.slice('/app'.length) || '/'
+      : location.pathname;
+
+    if (effectivePath.startsWith('/quiz/')) {
+      setQuizState(APP_STATES.IN_PROGRESS);
+    } else if (effectivePath.startsWith('/results/')) {
+      setQuizState(APP_STATES.RESULTS);
+    } else if (effectivePath.startsWith('/store')) {
+      setQuizState(APP_STATES.STORE);
+    } else if (effectivePath.startsWith('/dashboard')) {
+      setQuizState(APP_STATES.DASHBOARD);
+    } else {
+      setQuizState(APP_STATES.TOPIC_SELECTION);
+    }
+  }, [location.pathname]);
+
+  // Handle routing logic (Quiz, Results, Modals) to avoid component-in-component re-mounting issues
+  useEffect(() => {
+    const effectivePath = location.pathname.startsWith('/app')
+      ? location.pathname.slice('/app'.length) || '/'
+      : location.pathname;
+
+    // 1. Quiz Route Logic
+    if (effectivePath.startsWith('/quiz/')) {
+      const parts = effectivePath.split('/');
+      // /quiz/:topic or /quiz/:topic/explain or /quiz/:topic/sketch
+      const topicParam = parts[2];
+      if (topicParam) {
+        const t = decodeTopicFromPath(topicParam);
+        
+        // Sync topic
+        if (currentTopic !== t) setCurrentTopic(t);
+
+        // Handle Explain/Sketch sub-routes
+        const isExplain = parts[3] === 'explain';
+        const isSketch = parts[3] === 'sketch';
+
+        if (isExplain) {
+          if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+            navigateApp(`/quiz/${encodeTopicForPath(t)}`, { replace: true });
+          }
+        } else if (!isSketch) {
+          // Main Quiz Route Logic
+          const fromResumeModal = location.state?.fromResumeModal;
+          const cameFromResume = !!fromResumeModal;
+          const pausedQuizData = userData?.pausedQuizzes?.[t];
+          const hasPausedQuestions = (pausedQuizData?.questions || []).length > 0;
+
+          // Check if we have questions for the CORRECT topic
+          // We need to check both currentTopic AND that currentQuiz questions match the topic
+          // Note: currentTopic may be stale (set by setCurrentTopic but not yet applied)
+          // So we also check if currentQuiz[0] has a matching topic/concept if available
+          const quizMatchesTopic = currentQuiz && currentQuiz.length > 0 && (
+            currentTopic === t || 
+            // Fallback: check if the first question's topic matches (for generated questions)
+            currentQuiz[0]?.topic === t ||
+            currentQuiz[0]?.concept === t
+          );
+
+          // If quiz matches topic, clear the init flag (quiz was loaded successfully)
+          if (quizMatchesTopic && quizInitInProgressRef.current) {
+            quizInitInProgressRef.current = false;
+          }
+
+          // If we have no questions loaded for this topic and not currently loading, decide where to pull them from
+          if (!quizMatchesTopic && !quizInitInProgressRef.current) {
+            quizInitInProgressRef.current = true;
+
+            (async () => {
+              try {
+                if (pausedQuizData && hasPausedQuestions && !cameFromResume) {
+                  navigateApp(`/resume/${encodeTopicForPath(t)}`, { replace: true });
+                  return;
+                }
+
+                if (cameFromResume && pausedQuizData && hasPausedQuestions) {
+                  resumePausedQuiz(t);
+                  return;
+                }
+                
+                // If we get here with no quiz for this topic and didn't come from resume,
+                // it means direct URL navigation without quiz data - redirect to topic selection
+                // The user should select a topic to start a quiz properly
+                if (!quizMatchesTopic && !hasPausedQuestions) {
+                  navigateApp('/', { replace: true });
+                }
+              } finally {
+                quizInitInProgressRef.current = false;
+              }
+            })();
+          }
+        }
+      }
+    } 
+    // 2. Results Route Logic
+    else if (effectivePath.startsWith('/results/')) {
+      const parts = effectivePath.split('/');
+      const topicParam = parts[2];
+      if (topicParam) {
+        const t = decodeTopicFromPath(topicParam);
+        if (t && currentTopic !== t) setCurrentTopic(t);
+        
+        // Handle Story sub-route
+        const isStory = parts[3] === 'story';
+        if (isStory) {
+           if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) {
+            navigateApp(`/results/${encodeTopicForPath(t)}`, { replace: true });
+          }
+        } else {
+          if (!currentQuiz || currentQuiz.length === 0) {
+            navigateApp('/', { replace: true });
+          }
+        }
+      }
+    }
+  }, [location.pathname, location.state, currentQuiz, userData, currentTopic, navigateApp, resumePausedQuiz, modalTitle, modalReactComponent, generatedContent, storyData, isGenerating]);
 
   const updateDifficulty = (score, numQuestions) => {
     const newDifficulty = Math.min(
@@ -1408,7 +1622,7 @@ const MainAppContent = () => {
   }, []);
 
   // --- Quiz Logic ---
-  const handleTopicSelection = (topic) => {
+  const handleTopicSelection = async (topic) => {
     const { availableTopics } = getTopicAvailability(userData, selectedGrade);
 
     if (!availableTopics.includes(topic)) {
@@ -1420,31 +1634,43 @@ const MainAppContent = () => {
       return;
     }
 
-    if (userData?.pausedQuizzes?.[topic]) {
-      setTopicToResume(topic);
-      setShowResumeModal(true);
-    } else {
-      startNewQuiz(topic);
+    // Only show resume modal if there are actually paused questions for this topic
+    const pausedQuizData = userData?.pausedQuizzes?.[topic];
+    const hasPausedQuestions = pausedQuizData && (pausedQuizData.questions || []).length > 0;
+    
+    if (hasPausedQuestions) {
+      navigateApp(`/resume/${encodeTopicForPath(topic)}`);
+      return;
     }
+
+    // Set flag before starting quiz to prevent useEffect from interfering
+    // The flag will be cleared by the useEffect once it sees the quiz is properly loaded
+    quizInitInProgressRef.current = true;
+    await startNewQuiz(topic);
+    navigateApp(`/quiz/${encodeTopicForPath(topic)}`);
   };
 
   const startNewQuiz = async (topic) => {
+    console.log('[startNewQuiz] Starting new quiz for topic:', topic);
     setCurrentTopic(topic);
     
     // Clear any paused quiz for this topic
     if (user && userData?.pausedQuizzes?.[topic]) {
+      console.log('[startNewQuiz] Clearing paused quiz');
       const userDocRef = getUserDocRef(user.uid);
       if (userDocRef) {
         try {
           await updateDoc(userDocRef, {
             [`pausedQuizzes.${topic}`]: null,
           });
+          console.log('[startNewQuiz] Paused quiz cleared');
         } catch (e) {
           console.warn('Could not clear paused quiz:', e);
         }
       }
     }
     
+    console.log('[startNewQuiz] Fetching history');
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
@@ -1536,6 +1762,7 @@ const MainAppContent = () => {
       userData?.dailyGoals ||
       {};
 
+    console.log('[startNewQuiz] Generating questions');
     const newQuestions = await generateQuizQuestions(
       topic,
       dailyGoalsForGrade,
@@ -1549,36 +1776,27 @@ const MainAppContent = () => {
       questionBankProbability,
       allowedSubtopicsByTopic
     );
+    console.log('[startNewQuiz] Questions generated:', newQuestions?.length);
     setCurrentQuiz(newQuestions);
-    setQuizState(APP_STATES.IN_PROGRESS);
     questionStartTime.current = Date.now();
-    resetQuiz();
-    setShowResumeModal(false);
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    resetQuestionState();
     setStoryCreatedForCurrentQuiz(false); // Reset story creation status for new quiz
     // Reset story state
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
-  };
-
-  const resumePausedQuiz = () => {
-    const pausedData = userData.pausedQuizzes[topicToResume];
-    setCurrentTopic(topicToResume);
-    setCurrentQuiz(pausedData.questions);
-    setCurrentQuestionIndex(pausedData.index);
-    setScore(pausedData.score);
-    setQuizState(APP_STATES.IN_PROGRESS);
-    questionStartTime.current = Date.now();
-    setShowResumeModal(false);
-    setStoryCreatedForCurrentQuiz(false); // Reset story creation status for resumed quiz
-    // Reset story state
-    setStoryData(null);
-    setShowStoryHint(false);
-    setShowStoryAnswer(false);
+    console.log('[startNewQuiz] Quiz setup complete');
   };
 
   const pauseQuiz = useCallback(async () => {
     if (!user) return;
+
+    if (!currentTopic || !currentQuiz || currentQuiz.length === 0) {
+      return;
+    }
+
     const userDocRef = getUserDocRef(user.uid);
     const pausedQuizData = {
       questions: currentQuiz,
@@ -1588,95 +1806,40 @@ const MainAppContent = () => {
     await updateDoc(userDocRef, {
       [`pausedQuizzes.${currentTopic}`]: pausedQuizData,
     });
-    setQuizState(APP_STATES.TOPIC_SELECTION);
+
+    // Optimistically update local state to avoid race conditions
+    setUserData(prev => ({
+      ...prev,
+      pausedQuizzes: {
+        ...prev?.pausedQuizzes,
+        [currentTopic]: pausedQuizData
+      }
+    }));
+
     // Reset story UI state
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
   }, [user, currentQuiz, currentQuestionIndex, score, currentTopic]);
 
-  // Keep users inside the app when using the browser back button by mapping it to in-app states
+  // Pause/persist quiz when navigating away from /quiz/* (but not when going to results)
+  const lastPathRef = useRef(location.pathname);
   useEffect(() => {
-    if (showModal && !modalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'modal' }, '');
-      modalHistoryPushedRef.current = true;
-    } else if (!showModal) {
-      modalHistoryPushedRef.current = false;
+    const prev = lastPathRef.current;
+    const next = location.pathname;
+    const stripBase = (p) => (p.startsWith('/app') ? p.slice('/app'.length) || '/' : p);
+    const prevPath = stripBase(prev);
+    const nextPath = stripBase(next);
+    const wasQuiz = prevPath.startsWith('/quiz/');
+    const isQuiz = nextPath.startsWith('/quiz/');
+    const goingToResults = nextPath.startsWith('/results/');
+
+    if (wasQuiz && !isQuiz && !goingToResults) {
+      pauseQuiz();
     }
-  }, [showModal]);
 
-  useEffect(() => {
-    if (showResumeModal && !resumeModalHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'resume-modal' }, '');
-      resumeModalHistoryPushedRef.current = true;
-    } else if (!showResumeModal) {
-      resumeModalHistoryPushedRef.current = false;
-    }
-  }, [showResumeModal]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.IN_PROGRESS && !quizHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'quiz' }, '');
-      quizHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.IN_PROGRESS) {
-      quizHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.STORE && !storeHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'store' }, '');
-      storeHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.STORE) {
-      storeHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    if (quizState === APP_STATES.DASHBOARD && !dashboardHistoryPushedRef.current) {
-      window.history.pushState({ mwView: 'dashboard' }, '');
-      dashboardHistoryPushedRef.current = true;
-    } else if (quizState !== APP_STATES.DASHBOARD) {
-      dashboardHistoryPushedRef.current = false;
-    }
-  }, [quizState]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (showModal) {
-        setShowModal(false);
-        if (modalTitle === "✨ A Fun Story Problem!") {
-          setShowStoryHint(false);
-          setShowStoryAnswer(false);
-        }
-        setModalReactComponent(null);
-        setGeneratedContent("");
-        return;
-      }
-
-      if (showResumeModal) {
-        setShowResumeModal(false);
-        return;
-      }
-
-      if (quizState === APP_STATES.STORE) {
-        setQuizState(APP_STATES.TOPIC_SELECTION);
-        return;
-      }
-
-      if (quizState === APP_STATES.DASHBOARD) {
-        setQuizState(APP_STATES.TOPIC_SELECTION);
-        return;
-      }
-
-      if (quizState === APP_STATES.IN_PROGRESS) {
-        pauseQuiz();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [showModal, showResumeModal, quizState, modalTitle, pauseQuiz]);
+    lastPathRef.current = next;
+  }, [location.pathname, pauseQuiz]);
 
   const handleAnswer = (option) => {
     if (isAnswered) return;
@@ -1929,7 +2092,7 @@ const MainAppContent = () => {
         }
       }
     } else {
-      feedbackMessage = `Not quite. The correct answer is ${currentQuiz[currentQuestionIndex].correctAnswer}.`;
+      feedbackMessage = `Not quite. The correct answer is ${formatMathText(currentQuiz[currentQuestionIndex].correctAnswer)}.`;
     }
 
     // Handle progress updates based on whether we're resetting or not
@@ -2086,7 +2249,7 @@ const MainAppContent = () => {
       [`pausedQuizzes.${currentTopic}`]: null,
     });
     updateDifficulty(score, currentQuiz.length);
-    setQuizState(APP_STATES.RESULTS);
+    navigateApp(`/results/${encodeTopicForPath(currentTopic)}`);
   };
 
   const resetQuestionState = () => {
@@ -2096,19 +2259,17 @@ const MainAppContent = () => {
     setFeedback(null);
     setIsAnswered(false);
     setDrawingImageBase64(null); // Clear drawing
-    setDrawingFeedback(null); // Clear drawing feedback
-    setIsValidatingDrawing(false); // Reset validation state
   };
-  const resetQuiz = () => {
-    setCurrentQuestionIndex(0);
-    setScore(0);
-    resetQuestionState();
-  };
-  const returnToTopics = () => {
-    setQuizState(APP_STATES.TOPIC_SELECTION);
-    setCurrentTopic(null);
-    setCurrentQuiz([]);
-    // Reset story state
+
+  const returnToTopics = async () => {
+    // Pause quiz before leaving if we have an active quiz
+    if (currentTopic && currentQuiz?.length > 0) {
+      await pauseQuiz();
+    }
+
+    navigateApp('/');
+    // Don't clear state immediately to avoid triggering QuizRoute logic during unmount
+    // State will be reset when starting a new quiz or resuming
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
@@ -2370,8 +2531,8 @@ const MainAppContent = () => {
       setModalTitle(`✨ Understanding ${concept}`);
       setModalReactComponent(() => ReactComponent);
       setGeneratedContent(null);
-      setShowModal(true);
       setIsGenerating(false);
+      navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
     } else {
       // Fall back to the legacy iframe system
       const explanationFile = conceptExplanationFiles[concept];
@@ -2382,8 +2543,8 @@ const MainAppContent = () => {
         setGeneratedContent(
           `<iframe src="${explanationFile}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;" title="${concept} Explanation"></iframe>`
         );
-        setShowModal(true);
         setIsGenerating(false);
+        navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
       } else {
         // Fallback: show modal with basic explanation
         setModalTitle(`✨ What is ${concept}?`);
@@ -2391,8 +2552,8 @@ const MainAppContent = () => {
         setGeneratedContent(
           "<p>Sorry, no detailed explanation is available for this concept yet!</p>"
         );
-        setShowModal(true);
         setIsGenerating(false);
+        navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/explain`);
       }
     }
   };
@@ -2436,10 +2597,11 @@ Question: [The question]
 Hint: [The hint]
 Answer: [The answer]`;
     setModalTitle(`✨ A Fun Story Problem!`);
-    setShowModal(true);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
     setStoryData(null);
+
+    navigateApp(`/results/${encodeTopicForPath(currentTopic)}/story`);
 
     // Pass explicit flag to avoid modalTitle timing issues
     await callGeminiAPI(prompt, { parseAsStory: true });
@@ -2505,7 +2667,7 @@ Answer: [The answer]`;
         
         {/* Store */}
         <button
-          onClick={() => setQuizState(APP_STATES.STORE)}
+          onClick={() => navigateApp('/store')}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Store"
           data-tutorial-id="store-button"
@@ -2515,7 +2677,7 @@ Answer: [The answer]`;
         
         {/* Dashboard */}
         <button
-          onClick={() => setQuizState("dashboard")}
+          onClick={() => navigateApp('/dashboard')}
           className="p-2 rounded-full hover:bg-gray-200 transition"
           title="Dashboard"
           data-tutorial-id="dashboard-button"
@@ -3325,7 +3487,9 @@ Answer: [The answer]`;
   };
 
   const renderQuiz = () => {
-    if (currentQuiz.length === 0) return null;
+    if (currentQuiz.length === 0) {
+      return null;
+    }
     const currentQuestion = currentQuiz[currentQuestionIndex];
     const progressPercentage =
       ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
@@ -3359,7 +3523,10 @@ Answer: [The answer]`;
               {currentTopic}
             </h2>
             <button
-              onClick={pauseQuiz}
+              onClick={async () => {
+                await pauseQuiz();
+                navigateApp('/');
+              }}
               className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"
             >
               <Pause size={20} /> Pause
@@ -3371,7 +3538,10 @@ Answer: [The answer]`;
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
-          <p className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]">
+          <p 
+            key={`${currentQuestionIndex}-${isAnswered}`}
+            className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]"
+          >
             {formatMathText(currentQuestion.question)}
           </p>
 
@@ -3446,7 +3616,7 @@ Answer: [The answer]`;
                       normalizeNumericAnswer(userAnswer) === normalizeNumericAnswer(currentQuestion.correctAnswer)
                         ? "text-green-600"
                         : "text-red-600"
-                    }>{userAnswer}</span>
+                    }>{formatMathText(userAnswer)}</span>
                   </p>
                 </div>
               )}
@@ -3473,7 +3643,7 @@ Answer: [The answer]`;
                 }
                 return (
                   <button
-                    key={index}
+                    key={`${index}-${isAnswered}`}
                     onClick={() => handleAnswer(option)}
                     onDoubleClick={() => {
                       if (!isAnswered) {
@@ -3548,7 +3718,7 @@ Answer: [The answer]`;
                 <Sparkles size={18} /> Learn About This
               </button>
               <button
-                onClick={() => setShowSketchOverlay(true)}
+                onClick={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/sketch`)}
                 className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition text-sm"
               >
                 <PenTool size={18} /> Sketch
@@ -3730,14 +3900,14 @@ Answer: [The answer]`;
   };
 
   const renderModal = () => {
-    if (!showModal) return null;
+    if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
           <div className="flex-shrink-0">
             <button
               onClick={() => {
-                setShowModal(false);
+                navigate(-1);
                 // Reset story state when modal is closed
                 if (modalTitle === "✨ A Fun Story Problem!") {
                   setShowStoryHint(false);
@@ -3827,54 +3997,6 @@ Answer: [The answer]`;
     );
   };
 
-  const renderResumeModal = () => {
-    if (!showResumeModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            Paused Quiz Found!
-          </h3>
-          <p className="text-gray-600 mb-8">
-            Do you want to continue your quiz on "{topicToResume}" or start a
-            new one?
-          </p>
-          <div className="flex flex-col gap-4">
-            <button
-              onClick={resumePausedQuiz}
-              className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-            >
-              <Play size={20} /> Resume Paused Quiz
-            </button>
-            <button
-              onClick={() => startNewQuiz(topicToResume)}
-              className="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
-            >
-              Start New Quiz
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderContent = () => {
-    switch (quizState) {
-      case APP_STATES.TOPIC_SELECTION:
-        return renderTopicSelection();
-      case APP_STATES.IN_PROGRESS:
-        return renderQuiz();
-      case APP_STATES.RESULTS:
-        return renderResults();
-      case APP_STATES.DASHBOARD:
-        return renderDashboard();
-      case APP_STATES.STORE:
-        return renderStore();
-      default:
-        return renderTopicSelection();
-    }
-  };
-
   const activeBgUrl =
     userData?.activeBackground && userData.activeBackground !== "default"
       ? storeItems.find((item) => item.id === userData.activeBackground)?.url
@@ -3901,17 +4023,31 @@ Answer: [The answer]`;
       <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-0"></div>
       <div className="relative z-10 w-full">
         {renderHeader()}
-        {renderModal()}
-        {renderResumeModal()}
-        <SketchOverlay 
-          isVisible={showSketchOverlay} 
-          onClose={() => setShowSketchOverlay(false)} 
-        />
         <div className="flex justify-center p-4">
           <div className="w-full max-w-6xl">
-            {renderContent()}
+            <Routes>
+              <Route path="dashboard" element={renderDashboard()} />
+              <Route path="store" element={renderStore()} />
+              <Route path="results/:topic/*" element={renderResults()} />
+              <Route path="quiz/:topic/*" element={renderQuiz()} />
+              <Route path="" element={renderTopicSelection()} />
+              <Route path="*" element={renderTopicSelection()} />
+            </Routes>
           </div>
         </div>
+
+        {/* Overlays (modals + sketch) are all route-driven */}
+        <Routes>
+          <Route path="resume/:topic" element={<ResumeModal userData={userData} startNewQuiz={startNewQuiz} resumePausedQuiz={resumePausedQuiz} navigateApp={navigateApp} />} />
+          <Route path="quiz/:topic/explain" element={renderModal()} />
+          <Route path="quiz/:topic/sketch" element={
+            <SketchOverlay
+              isVisible={true}
+              onClose={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}`)}
+            />
+          } />
+          <Route path="results/:topic/story" element={renderModal()} />
+        </Routes>
         <TutorialOverlay />
       </div>
     </div>
