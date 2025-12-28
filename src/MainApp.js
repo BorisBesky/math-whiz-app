@@ -1057,7 +1057,6 @@ const MainAppContent = () => {
 
   // Determine base app path once per mount; remains constant ("/app" or "").
   const appBasePathRef = useRef(location.pathname.startsWith('/app') ? '/app' : '');
-  const appBasePath = appBasePathRef.current;
 
   const navigateApp = useCallback(
     (to, options) => {
