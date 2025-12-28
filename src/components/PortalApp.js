@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, History, Layers, ShieldCheck, Users as UsersIcon, LayoutDashboard, UserCog, Image } from 'lucide-react';
+import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
-import TeacherDashboard from './TeacherDashboard';
-import AdminPortal from './AdminPortal';
-import { TutorialProvider } from '../contexts/TutorialContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { USER_ROLES } from '../utils/userRoles';
@@ -126,20 +123,7 @@ const PortalApp = ({ initialSection }) => {
     ];
 
     if (userRole === USER_ROLES.TEACHER) {
-      return [
-        ...sharedSections,
-        {
-          id: 'legacy-teacher',
-          label: 'Legacy Teacher Dashboard',
-          description: 'Full legacy experience (temporary)',
-          icon: History,
-          render: () => (
-            <TutorialProvider>
-              <TeacherDashboard />
-            </TutorialProvider>
-          ),
-        },
-      ];
+      return sharedSections;
     }
 
     if (userRole === USER_ROLES.ADMIN) {
@@ -168,17 +152,6 @@ const PortalApp = ({ initialSection }) => {
           icon: Image,
           render: () => (
             <ImagesSection />
-          ),
-        },
-        {
-          id: 'admin',
-          label: 'Admin Console',
-          description: 'Teacher management and advanced controls',
-          icon: ShieldCheck,
-          render: () => (
-            <AdminPortal
-              appId={appId}
-            />
           ),
         },
       ];
