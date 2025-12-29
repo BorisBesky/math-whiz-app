@@ -1092,6 +1092,8 @@ const MainAppContent = () => {
   const [storeItems, setStoreItems] = useState([]);
   // Image popup state
   const [popupImage, setPopupImage] = useState(null);
+  const [popupImageOffset, setPopupImageOffset] = useState(24);
+  const storeContainerRef = useRef(null);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
   // Prevent repeated quiz initialization loops when resuming/starting
@@ -1113,6 +1115,35 @@ const MainAppContent = () => {
       console.error('Logout error:', error);
     }
   };
+
+  const handleStoreImageClick = useCallback((item, event) => {
+    const defaultOffset = 24;
+    let offset = defaultOffset;
+
+    if (event?.currentTarget) {
+      const itemRect = event.currentTarget.getBoundingClientRect();
+      const container = storeContainerRef.current;
+
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        offset = itemRect.top - containerRect.top + container.scrollTop - defaultOffset;
+      } else {
+        const globalScroll =
+          typeof window !== 'undefined'
+            ? window.scrollY || document.documentElement?.scrollTop || 0
+            : 0;
+        offset = itemRect.top + globalScroll - defaultOffset;
+      }
+    }
+
+    setPopupImage(item);
+    setPopupImageOffset(Math.max(offset, 0));
+  }, [storeContainerRef]);
+
+  const handleClosePopupImage = useCallback(() => {
+    setPopupImage(null);
+    setPopupImageOffset(24);
+  }, []);
 
   // New state variables for story problem functionality
   const [showStoryHint, setShowStoryHint] = useState(false);
@@ -3151,7 +3182,11 @@ Answer: [The answer]`;
     const filteredItems = storeItems.filter((it) => it.theme?.toLowerCase() === storeTheme);
 
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20" data-tutorial-id="store-container">
+      <div
+        ref={storeContainerRef}
+        className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20 relative"
+        data-tutorial-id="store-container"
+      >
         <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center" data-tutorial-id="store-title">
           Rewards Store
         </h2>
@@ -3209,7 +3244,7 @@ Answer: [The answer]`;
                     src={item.url}
                     alt={item.name}
                     loading="lazy"
-                    onClick={() => setPopupImage(item)}
+                    onClick={(event) => handleStoreImageClick(item, event)}
                     className="w-full h-32 object-cover rounded-md mb-4 bg-gray-200 cursor-pointer hover:opacity-80 transition"
                   />
                   <h4 className="font-bold text-lg mb-2">{item.name}</h4>
@@ -3257,10 +3292,11 @@ Answer: [The answer]`;
         {/* Image Popup Modal */}
         {popupImage && (
           <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setPopupImage(null)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4"
+            style={{ paddingTop: `${popupImageOffset}px` }}
+            onClick={handleClosePopupImage}
           >
-            <div className="relative max-w-4xl max-h-[90vh] w-full">
+            <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(event) => event.stopPropagation()}>
               <img
                 src={popupImage.url}
                 alt={popupImage.name}
@@ -3270,7 +3306,7 @@ Answer: [The answer]`;
                 <h3 className="text-white text-xl font-bold text-center">{popupImage.name}</h3>
               </div>
               <button
-                onClick={() => setPopupImage(null)}
+                onClick={handleClosePopupImage}
                 className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition"
                 aria-label="Close"
               >

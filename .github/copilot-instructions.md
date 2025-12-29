@@ -33,6 +33,8 @@ The application follows a modern JAMstack architecture:
 
 ### Testing
 
+-   Always write unit tests for new components and functions using Jest and React Testing Library.
+-   Always run 'npm run build' to ensure the production build compiles without errors.
 -   The project is set up for end-to-end testing with Playwright. Test files are located in the `tests/` directory.
 -   Run tests using the `npx playwright test` command.
 
