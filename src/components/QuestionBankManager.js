@@ -953,6 +953,7 @@ const QuestionBankManager = ({
                 <option value="multiple-choice">Multiple Choice</option>
                 <option value="numeric">Numeric</option>
                 <option value="drawing">Drawing</option>
+                <option value="write-in">Write-in</option>
               </select>
             </div>
             <div>
@@ -1209,8 +1210,20 @@ const QuestionBankManager = ({
                                       ? 'bg-purple-100 text-purple-800'
                                       : 'bg-blue-100 text-blue-800'
                                       }`}>
-                                      {question.questionType === 'drawing' ? '✏️ Drawing' :
-                                        question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
+                                      {(() => {
+                                        switch (question.questionType) {
+                                          case 'drawing':
+                                            return '✏️ Drawing';
+                                          case 'numeric':
+                                            return '🔢 Numeric';
+                                          case 'write-in':
+                                            return '📝 Written';
+                                          case 'drawing-with-text':
+                                            return '✏️📝 Drawing + Text';
+                                          default:
+                                            return '📝 Multiple Choice';
+                                        }
+                                      })()}
                                     </span>
                                   )}
                                   {question.correctAnswer && question.questionType !== 'drawing' && (
@@ -1401,9 +1414,21 @@ const QuestionBankManager = ({
                                 ? 'bg-purple-100 text-purple-800'
                                 : 'bg-blue-100 text-blue-800'
                                 }`}>
-                                {question.questionType === 'drawing' ? '✏️ Drawing' :
-                                  question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
-                              </span>
+                                      {(() => {
+                                        switch (question.questionType) {
+                                          case 'drawing':
+                                            return '✏️ Drawing';
+                                          case 'numeric':
+                                            return '🔢 Numeric';
+                                          case 'write-in':
+                                            return '📝 Written';
+                                          case 'drawing-with-text':
+                                            return '✏️📝 Drawing + Text';
+                                          default:
+                                            return '📝 Multiple Choice';
+                                        }
+                                      })()}
+                                    </span>
                             )}
                             {question.correctAnswer && question.questionType !== 'drawing' && (
                               <span className="px-2 py-1 bg-green-100 rounded">
