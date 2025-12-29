@@ -258,6 +258,8 @@ const generateQuizQuestions = async (
     // Use configured probability to select Firestore question if available
     if (firestoreQuestions.length > 0 && firestoreQuestionIndex < firestoreQuestions.length && Math.random() < questionBankProbability) {
       const firestoreQ = firestoreQuestions[firestoreQuestionIndex];
+      // Always increment the index to avoid getting stuck on duplicates
+      firestoreQuestionIndex++;
       // Check if question is unique using signature
       const questionSig = getQuestionSignature(firestoreQ);
       if (!usedQuestions.has(questionSig)) {
@@ -266,7 +268,6 @@ const generateQuizQuestions = async (
           concept: firestoreQ.topic || firestoreQ.concept || topic,
         };
         useFirestoreQuestion = true;
-        firestoreQuestionIndex++;
       }
     }
 
@@ -455,6 +456,17 @@ const generateQuizQuestions = async (
       const avgComplexity = masteryEntry.totalComplexity / masteryEntry.count;
       const need = Math.min(1, avgComplexity); // complexity [0,1] → need [0,1] capped at 1
       acceptProb = 0.1 + 0.9 * need; // struggled items get up to 1.0, mastered get 0.1
+      
+      // Gradually increase acceptance probability as we approach the attempt limit
+      // This ensures we can still generate questions even with limited variety
+      const progressRatio = attempts / maxAttempts;
+      if (progressRatio > 0.3) {
+        // Start relaxing constraints after 30% of attempts
+        // At 30% attempts: boost by 0, at 100% attempts: boost to 1.0 (always accept)
+        const relaxFactor = Math.min(1, (progressRatio - 0.3) / 0.7);
+        acceptProb = acceptProb + (1 - acceptProb) * relaxFactor;
+      }
+      
       if (process.env.NODE_ENV === "development") {
         console.log(
           `Question: ${question.question}, avgComplexity: ${avgComplexity}, totalComplexity: ${masteryEntry.totalComplexity}, need: ${need}, acceptProb: ${acceptProb}`
@@ -3935,8 +3947,9 @@ Answer: [The answer]`;
             </div>
           ) : (
             <button
-              onClick={() => {
-                startNewQuiz(currentTopic);
+              onClick={async () => {
+                await startNewQuiz(currentTopic);
+                navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}`);
               }}
               className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
             >
