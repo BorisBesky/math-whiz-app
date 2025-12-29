@@ -1090,6 +1090,8 @@ const MainAppContent = () => {
   const [storeTheme, setStoreTheme] = useState("animals");
   // Store items loaded dynamically from Firebase Storage
   const [storeItems, setStoreItems] = useState([]);
+  // Image popup state
+  const [popupImage, setPopupImage] = useState(null);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
   // Prevent repeated quiz initialization loops when resuming/starting
@@ -3207,7 +3209,8 @@ Answer: [The answer]`;
                     src={item.url}
                     alt={item.name}
                     loading="lazy"
-                    className="w-full h-32 object-cover rounded-md mb-4 bg-gray-200"
+                    onClick={() => setPopupImage(item)}
+                    className="w-full h-32 object-cover rounded-md mb-4 bg-gray-200 cursor-pointer hover:opacity-80 transition"
                   />
                   <h4 className="font-bold text-lg mb-2">{item.name}</h4>
                   {isOwned ? (
@@ -3250,6 +3253,34 @@ Answer: [The answer]`;
             Back to Topics
           </button>
         </div>
+        
+        {/* Image Popup Modal */}
+        {popupImage && (
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setPopupImage(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] w-full">
+              <img
+                src={popupImage.url}
+                alt={popupImage.name}
+                className="w-full h-full object-contain rounded-lg shadow-2xl"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
+                <h3 className="text-white text-xl font-bold text-center">{popupImage.name}</h3>
+              </div>
+              <button
+                onClick={() => setPopupImage(null)}
+                className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition"
+                aria-label="Close"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
