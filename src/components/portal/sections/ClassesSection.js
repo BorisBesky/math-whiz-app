@@ -35,7 +35,6 @@ const ClassesSection = ({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <h3 className="text-lg font-semibold text-gray-900">Classes</h3>
         <div className="flex items-center space-x-3">
-          <p className="text-sm text-gray-500">Manage rosters and monitor class progress</p>
           {canCreateClass && (
             <button
               type="button"
