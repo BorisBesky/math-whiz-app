@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { USER_ROLES } from '../utils/userRoles';
 
 const DEFAULT_STATE = [];
@@ -71,7 +72,43 @@ const usePortalClasses = ({ appId = 'default-app-id', userRole, userId, userEmai
     await addDoc(classesRef, payload);
   }, [appId, db, userEmail, userId, userRole]);
 
-  return { classes, loading, error, summary, createClass };
+  const deleteClass = useCallback(async (classId) => {
+    if (!userRole || (userRole !== USER_ROLES.TEACHER && userRole !== USER_ROLES.ADMIN)) {
+      throw new Error('You do not have permission to delete classes');
+    }
+
+    if (!window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Get auth token for the API call
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      // Use the serverless function to delete class (handles enrollments and permissions)
+      const response = await fetch(`/.netlify/functions/classes?id=${classId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete class');
+      }
+    } catch (err) {
+      console.error('Error deleting class:', err);
+      throw new Error(err.message || 'Failed to delete class');
+    }
+  }, [userRole]);
+
+  return { classes, loading, error, summary, createClass, deleteClass };
 };
 
 export default usePortalClasses;

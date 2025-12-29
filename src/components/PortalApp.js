@@ -28,6 +28,7 @@ const PortalApp = ({ initialSection }) => {
     loading: classesLoading,
     error: classesError,
     createClass,
+    deleteClass,
   } = usePortalClasses({ appId, userRole, userId, userEmail });
 
   const {
@@ -99,6 +100,7 @@ const PortalApp = ({ initialSection }) => {
             error={classesError}
             userRole={userRole}
             onCreateClass={userRole === USER_ROLES.TEACHER ? createClass : undefined}
+            onDeleteClass={(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) ? deleteClass : undefined}
             students={students}
             onAssignStudent={assignStudentToClass}
             onRemoveStudent={removeStudentFromClass}
@@ -166,6 +168,7 @@ const PortalApp = ({ initialSection }) => {
     classesLoading,
     classCounts,
     createClass,
+    deleteClass,
     refreshStudents,
     removeStudentFromClass,
     teachers,

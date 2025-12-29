@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Users, GraduationCap, Plus } from 'lucide-react';
+import { Users, GraduationCap, Plus, Trash2 } from 'lucide-react';
 import { USER_ROLES } from '../../../utils/userRoles';
 import CreateClassForm from '../../CreateClassForm';
 import ClassDetailPanel from './ClassDetailPanel';
@@ -11,6 +11,7 @@ const ClassesSection = ({
   error,
   userRole,
   onCreateClass,
+  onDeleteClass,
   students = [],
   onAssignStudent,
   onRemoveStudent,
@@ -100,7 +101,7 @@ const ClassesSection = ({
               {classItem.description && (
                 <p className="text-xs text-gray-500">{classItem.description}</p>
               )}
-              <div className="pt-2">
+              <div className="pt-2 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setSelectedClassId(classItem.id)}
@@ -108,6 +109,16 @@ const ClassesSection = ({
                 >
                   View details
                 </button>
+                {(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) && typeof onDeleteClass === 'function' && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteClass(classItem.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete Class"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -43,6 +43,11 @@ const ClassDetailPanel = ({
     return students.filter((student) => student.classId !== classId);
   }, [students, classId]);
 
+  // Memoize roster IDs to prevent unnecessary re-fetches
+  const rosterIds = useMemo(() => {
+    return roster.map(s => s.id).sort().join(',');
+  }, [roster]);
+
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [status, setStatus] = useState(null);
   const [assigning, setAssigning] = useState(false);
@@ -120,7 +125,9 @@ const ClassDetailPanel = ({
     };
 
     loadEnrollments();
-  }, [classId, roster, db, appId, enrollmentReloadTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId, rosterIds, db, appId, enrollmentReloadTrigger]);
+  // Note: Using rosterIds instead of roster to prevent unnecessary refetches when students array is recreated
 
   const getTopicsForGrade = (grade) => {
     return grade === 'G3'

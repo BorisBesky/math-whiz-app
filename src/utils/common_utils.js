@@ -5,6 +5,15 @@
         console.log("Formatting date:", date);
       }
 
+      // Handle Firestore Timestamp objects
+      if (date && typeof date === 'object' && 'seconds' in date && 'nanoseconds' in date) {
+        const timestampDate = new Date(date.seconds * 1000);
+        if (Number.isNaN(timestampDate.getTime())) {
+          throw new Error('Invalid Firestore Timestamp');
+        }
+        return timestampDate.toLocaleDateString();
+      }
+
       if (date instanceof Date) {
         if (Number.isNaN(date.getTime())) {
           throw new Error('Invalid Date instance');
