@@ -2382,7 +2382,7 @@ const MainAppContent = () => {
   };
 
   const handleSetBackground = async (itemId) => {
-    if (userData.ownedBackgrounds.includes(itemId)) {
+    if (userData?.ownedBackgrounds?.includes(itemId)) {
       const userDocRef = getUserDocRef(user.uid);
       await updateDoc(userDocRef, { activeBackground: itemId });
     }
@@ -3232,8 +3232,8 @@ Answer: [The answer]`;
             </div>
           ) : (
             filteredItems.map((item) => {
-              const isOwned = userData.ownedBackgrounds.includes(item.id);
-              const isActive = userData.activeBackground === item.id;
+              const isOwned = userData?.ownedBackgrounds?.includes(item.id) ?? false;
+              const isActive = userData?.activeBackground === item.id;
 
               return (
                 <div
