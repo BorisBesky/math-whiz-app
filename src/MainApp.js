@@ -1092,7 +1092,6 @@ const MainAppContent = () => {
   const [storeItems, setStoreItems] = useState([]);
   // Image popup state
   const [popupImage, setPopupImage] = useState(null);
-  const [popupImageOffset, setPopupImageOffset] = useState(24);
   const storeContainerRef = useRef(null);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -1116,33 +1115,12 @@ const MainAppContent = () => {
     }
   };
 
-  const handleStoreImageClick = useCallback((item, event) => {
-    const defaultOffset = 24;
-    let offset = defaultOffset;
-
-    if (event?.currentTarget) {
-      const itemRect = event.currentTarget.getBoundingClientRect();
-      const container = storeContainerRef.current;
-
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        offset = itemRect.top - containerRect.top + container.scrollTop - defaultOffset;
-      } else {
-        const globalScroll =
-          typeof window !== 'undefined'
-            ? window.scrollY || document.documentElement?.scrollTop || 0
-            : 0;
-        offset = itemRect.top + globalScroll - defaultOffset;
-      }
-    }
-
+  const handleStoreImageClick = useCallback((item) => {
     setPopupImage(item);
-    setPopupImageOffset(Math.max(offset, 0));
-  }, [storeContainerRef]);
+  }, []);
 
   const handleClosePopupImage = useCallback(() => {
     setPopupImage(null);
-    setPopupImageOffset(24);
   }, []);
 
   // New state variables for story problem functionality
@@ -3289,31 +3267,31 @@ Answer: [The answer]`;
           </button>
         </div>
         
-        {/* Image Popup Modal */}
+        {/* Image Preview Modal */}
         {popupImage && (
           <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4"
-            style={{ paddingTop: `${popupImageOffset}px` }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"
             onClick={handleClosePopupImage}
           >
-            <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(event) => event.stopPropagation()}>
+            <div className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center">
+              <button
+                onClick={handleClosePopupImage}
+                className="absolute -top-10 right-0 text-white hover:text-gray-300"
+                aria-label="Close"
+              >
+                <X className="w-8 h-8" />
+              </button>
               <img
                 src={popupImage.url}
                 alt={popupImage.name}
-                className="w-full h-full object-contain rounded-lg shadow-2xl"
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-white"
               />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
-                <h3 className="text-white text-xl font-bold text-center">{popupImage.name}</h3>
+              <div className="mt-4 text-white text-center">
+                <h3 className="text-xl font-bold">{popupImage.name}</h3>
+                {popupImage.description && (
+                  <p className="text-gray-300 mt-1 max-w-2xl">{popupImage.description}</p>
+                )}
               </div>
-              <button
-                onClick={handleClosePopupImage}
-                className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition"
-                aria-label="Close"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
           </div>
         )}
@@ -3795,7 +3773,8 @@ Answer: [The answer]`;
               </button>
               <button
                 onClick={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/sketch`)}
-                className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition text-sm"
+                disabled={currentQuestion.questionType === 'drawing'}
+                className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 <PenTool size={18} /> Sketch
               </button>

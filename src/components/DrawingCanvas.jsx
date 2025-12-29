@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Eraser, Pen, RotateCcw, Trash2 } from 'lucide-react';
 
 /**
@@ -18,12 +18,33 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   const canvasRef = useRef(null);
   const currentStrokeRef = useRef(null);
   const onChangeRef = useRef(onChange);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const [currentTool, setCurrentTool] = useState('draw'); // 'draw' or 'erase'
+  const currentToolRef = useRef(currentTool);
   const [strokes, setStrokes] = useState([]);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
+  const contextRef = useRef(null);
+  const strokesRef = useRef([]);
+  const currentStrokeIndexRef = useRef(-1);
   const [bgImageObj, setBgImageObj] = useState(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    currentToolRef.current = currentTool;
+  }, [currentTool]);
+
+  useEffect(() => {
+    strokesRef.current = strokes;
+  }, [strokes]);
+
+  useEffect(() => {
+    currentStrokeIndexRef.current = currentStrokeIndex;
+  }, [currentStrokeIndex]);
+
+  useEffect(() => {
+    contextRef.current = context;
+  }, [context]);
 
   // Keep the onChange ref up to date
   useEffect(() => {
@@ -130,7 +151,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   }, [strokes, currentStrokeIndex, context, width, height, bgImageObj]);
 
   // Get coordinates from mouse or touch event
-  const getCoordinates = (e) => {
+  const getCoordinates = useCallback((e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
@@ -148,24 +169,24 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
       x: clientX - rect.left,
       y: clientY - rect.top
     };
-  };
+  }, []);
 
   // Start drawing
-  const startDrawing = (e) => {
+  const startDrawing = useCallback((e) => {
     e.preventDefault();
-    setIsDrawing(true);
+    isDrawingRef.current = true;
     const coords = getCoordinates(e);
     currentStrokeRef.current = {
       points: [coords],
-      color: currentTool === 'draw' ? '#000000' : '#FFFFFF',
-      width: currentTool === 'draw' ? 3 : 20,
-      mode: currentTool
+      color: currentToolRef.current === 'draw' ? '#000000' : '#FFFFFF',
+      width: currentToolRef.current === 'draw' ? 3 : 20,
+      mode: currentToolRef.current
     };
-  };
+  }, [getCoordinates]);
 
   // Draw
-  const draw = (e) => {
-    if (!isDrawing || !context || !currentStrokeRef.current) return;
+  const draw = useCallback((e) => {
+    if (!isDrawingRef.current || !contextRef.current || !currentStrokeRef.current) return;
     e.preventDefault();
 
     const coords = getCoordinates(e);
@@ -174,28 +195,29 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     currentStroke.points.push(coords);
 
     // Draw the current segment
-    context.strokeStyle = currentStroke.color;
-    context.lineWidth = currentStroke.width;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-    context.globalCompositeOperation = currentStroke.mode === 'erase' ? 'destination-out' : 'source-over';
+    const ctx = contextRef.current;
+    ctx.strokeStyle = currentStroke.color;
+    ctx.lineWidth = currentStroke.width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = currentStroke.mode === 'erase' ? 'destination-out' : 'source-over';
 
-    context.beginPath();
-    context.moveTo(lastPoint.x, lastPoint.y);
-    context.lineTo(coords.x, coords.y);
-    context.stroke();
-  };
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.x, lastPoint.y);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  }, [getCoordinates]);
 
   // Stop drawing
-  const stopDrawing = (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
+  const stopDrawing = useCallback((e) => {
+    if (!isDrawingRef.current) return;
+    if (e) e.preventDefault();
     
-    setIsDrawing(false);
+    isDrawingRef.current = false;
 
     // Commit the stroke from ref to state
     if (currentStrokeRef.current && currentStrokeRef.current.points.length > 0) {
-      const base = strokes.slice(0, currentStrokeIndex + 1);
+      const base = strokesRef.current.slice(0, currentStrokeIndexRef.current + 1);
       const newStrokes = [...base, currentStrokeRef.current];
       
       setStrokes(newStrokes);
@@ -203,7 +225,24 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     }
 
     currentStrokeRef.current = null;
-  };
+  }, []);
+
+  // Attach non-passive touch event listeners
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Use non-passive listeners for touch events to allow preventDefault
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', startDrawing);
+      canvas.removeEventListener('touchmove', draw);
+      canvas.removeEventListener('touchend', stopDrawing);
+    };
+  }, [startDrawing, draw, stopDrawing]);
 
   // Undo last stroke
   const handleUndo = () => {
@@ -235,9 +274,6 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
         style={{ 
           touchAction: 'none',
           display: 'block',
