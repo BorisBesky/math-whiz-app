@@ -11,7 +11,9 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const questionTypeOptions = [
         { value: 'multiple-choice', label: 'Multiple Choice' },
         { value: 'numeric', label: 'Numeric Answer' },
-        { value: 'drawing', label: 'Drawing (Interactive)' }
+        { value: 'drawing', label: 'Drawing (Interactive)' },
+        { value: 'write-in', label: 'Written Answer' },
+        { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
     ];
     const topicOptions = [
         TOPICS.MULTIPLICATION,
@@ -89,15 +91,16 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
         setError(null);
 
         try {
-            const isDrawingQuestion = editedQuestion.questionType === 'drawing';
+            // AI-evaluated types don't require correctAnswer
+            const isAIEvaluated = ['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType);
             
             if (!editedQuestion.question || !editedQuestion.topic || !editedQuestion.grade) {
                 throw new Error('Question text, topic, and grade are required');
             }
             
-            // For non-drawing questions, correctAnswer is required
-            if (!isDrawingQuestion && !editedQuestion.correctAnswer) {
-                throw new Error('Correct answer is required for non-drawing questions');
+            // For non-AI-evaluated questions, correctAnswer is required
+            if (!isAIEvaluated && !editedQuestion.correctAnswer) {
+                throw new Error('Correct answer is required for non-AI-evaluated questions');
             }
 
             await onSave(editedQuestion);
@@ -247,10 +250,22 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                                 AI will validate their drawings automatically.
                             </p>
                         )}
+                        {editedQuestion.questionType === 'write-in' && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                Written answer questions allow students to type their response (e.g., "Explain how you would solve this").
+                                AI will evaluate their answer automatically.
+                            </p>
+                        )}
+                        {editedQuestion.questionType === 'drawing-with-text' && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                Combined questions allow students to both draw and write their answer.
+                                AI will evaluate both the drawing and written explanation together.
+                            </p>
+                        )}
                     </div>
 
-                    {/* Options - Only show for multiple-choice questions */}
-                    {editedQuestion.questionType !== 'drawing' && (
+                    {/* Options - Only show for multiple-choice and numeric questions */}
+                    {!['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}
@@ -275,8 +290,8 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
                     )}
 
-                    {/* Correct Answer - Only show for non-drawing questions */}
-                    {editedQuestion.questionType !== 'drawing' && (
+                    {/* Correct Answer - Only show for non-AI-evaluated questions */}
+                    {!['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
                         <input
@@ -298,6 +313,23 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                             rows={2}
                         />
                     </div>
+
+                    {/* Expected Answer - For AI-evaluated questions */}
+                    {['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Expected Answer (Optional)</label>
+                        <textarea
+                            value={editedQuestion.expectedAnswer || ''}
+                            onChange={(e) => handleChange('expectedAnswer', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            rows={2}
+                            placeholder="Describe what a correct answer should contain (helps AI evaluation)"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                            This helps guide the AI when evaluating student responses. Example: "Should show x = 3 with steps: subtract 5, then divide by 3"
+                        </p>
+                    </div>
+                    )}
 
                     {/* Standard and Concept */}
                     <div className="grid grid-cols-2 gap-4">

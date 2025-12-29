@@ -29,6 +29,34 @@ export function isNumericQuestion(question) {
 }
 
 /**
+ * Checks if a question is a write-in (written answer) type
+ * @param {Object} question - The question object
+ * @returns {boolean} - True if the question is write-in type
+ */
+export function isWriteInQuestion(question) {
+  return question?.questionType === 'write-in';
+}
+
+/**
+ * Checks if a question is a drawing-with-text (combined drawing + written) type
+ * @param {Object} question - The question object
+ * @returns {boolean} - True if the question is drawing-with-text type
+ */
+export function isDrawingWithTextQuestion(question) {
+  return question?.questionType === 'drawing-with-text';
+}
+
+/**
+ * Checks if a question requires AI evaluation (drawing, write-in, or drawing-with-text)
+ * @param {Object} question - The question object
+ * @returns {boolean} - True if AI evaluation is needed
+ */
+export function isAIEvaluatedQuestion(question) {
+  const aiTypes = ['drawing', 'write-in', 'drawing-with-text'];
+  return aiTypes.includes(question?.questionType);
+}
+
+/**
  * Normalizes a numeric answer by removing leading zeros and whitespace
  * Handles positive, negative, integer, and decimal numbers
  * @param {string} answer - The answer to normalize

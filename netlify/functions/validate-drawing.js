@@ -120,15 +120,46 @@ exports.handler = async (event) => {
     // Verify authentication
     const userId = await verifyAuthToken(event.headers.authorization);
 
-    // Parse request body
-    const { question, drawingImageBase64, questionId } = JSON.parse(event.body);
+    // Parse request body - now supports drawing, write-in, and combined
+    const { 
+      question, 
+      questionType = 'drawing', // Default to drawing for backward compatibility
+      drawingImageBase64, 
+      userWrittenAnswer,
+      expectedAnswer,
+      questionId 
+    } = JSON.parse(event.body);
 
-    if (!question || !drawingImageBase64) {
+    // Validate based on question type
+    const needsDrawing = questionType === 'drawing' || questionType === 'drawing-with-text';
+    const needsWriteIn = questionType === 'write-in' || questionType === 'drawing-with-text';
+
+    if (!question) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: "Missing required fields: question and drawingImageBase64" 
+          error: "Missing required field: question" 
+        }),
+      };
+    }
+
+    if (needsDrawing && !drawingImageBase64) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: "Missing required field: drawingImageBase64 for drawing question" 
+        }),
+      };
+    }
+
+    if (needsWriteIn && !userWrittenAnswer) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: "Missing required field: userWrittenAnswer for write-in question" 
         }),
       };
     }
@@ -136,31 +167,32 @@ exports.handler = async (event) => {
     // Check rate limit
     await checkRateLimit(userId);
 
-    // Upload drawing image to Firebase Storage
-    const imageUrl = await uploadDrawingImage(
-      userId, 
-      questionId || `drawing_${Date.now()}`, 
-      drawingImageBase64
-    );
+    // Upload drawing image to Firebase Storage (only if there's a drawing)
+    let imageUrl = null;
+    if (needsDrawing && drawingImageBase64) {
+      imageUrl = await uploadDrawingImage(
+        userId, 
+        questionId || `${questionType}_${Date.now()}`, 
+        drawingImageBase64
+      );
+    }
 
     // Initialize Gemini AI
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash" });
 
-    // Prepare the image data for Gemini
-    const base64Data = drawingImageBase64.replace(/^data:image\/\w+;base64,/, '');
+    // Prepare content parts for Gemini
+    const contentParts = [];
     
-    const imagePart = {
-      inlineData: {
-        data: base64Data,
-        mimeType: "image/png",
-      },
-    };
-
-    // Create validation prompt
-    const prompt = `You are a helpful math teacher evaluating a student's drawing for a math question.
+    // Build the validation prompt based on question type
+    let prompt;
+    
+    if (questionType === 'drawing') {
+      // Drawing-only question
+      prompt = `You are a helpful math teacher evaluating a student's drawing for a math question.
 
 Question: ${question}
+${expectedAnswer ? `\nExpected Answer/Rubric: ${expectedAnswer}` : ''}
 
 Please analyze the student's drawing and determine if it correctly answers the question.
 
@@ -173,8 +205,72 @@ Your response MUST be in the following JSON format:
 Be encouraging and constructive in your feedback. If the drawing is correct, praise the student. If incorrect, explain what's wrong and how to improve.
 
 Focus on the geometric properties and mathematical accuracy, not artistic quality. Don't expect perfection in drawings and accept minor inaccuracies, such as angles not being perfectly equal to the expected values. For example if an angle is 60 degrees, a drawing showing greater than 45 and less than 90 should be accepted.`;
-    // Call Gemini Vision API
-    const result = await model.generateContent([prompt, imagePart]);
+      
+    } else if (questionType === 'write-in') {
+      // Write-in (text-only) question
+      prompt = `You are a helpful math teacher evaluating a student's written answer for a math question.
+
+Question: ${question}
+
+Student's Written Answer: ${userWrittenAnswer}
+${expectedAnswer ? `\nExpected Answer/Rubric: ${expectedAnswer}` : ''}
+
+Please evaluate if the student's answer is correct. Consider:
+- Is the answer mathematically correct?
+- Is the reasoning sound (if shown)?
+- Are the steps/logic appropriate for the question?
+
+Your response MUST be in the following JSON format:
+{
+  "isCorrect": true/false,
+  "feedback": "Brief explanation of why the answer is correct or incorrect, and if incorrect, what the student should understand"
+}
+
+Be encouraging and constructive in your feedback. If the answer is correct, praise the student. If incorrect, explain what's wrong and guide them toward the correct approach.
+
+Accept equivalent answers (e.g., "6" and "six", "1/2" and "0.5") as correct. Focus on mathematical correctness, not exact phrasing.`;
+      
+    } else if (questionType === 'drawing-with-text') {
+      // Combined drawing + text question
+      prompt = `You are a helpful math teacher evaluating a student's combined drawing and written explanation for a math question.
+
+Question: ${question}
+
+Student's Written Explanation: ${userWrittenAnswer}
+${expectedAnswer ? `\nExpected Answer/Rubric: ${expectedAnswer}` : ''}
+
+Please analyze BOTH the student's drawing AND their written explanation together. Consider:
+- Does the drawing correctly represent the answer?
+- Does the written explanation support or explain the drawing?
+- Is the overall answer mathematically correct?
+
+Your response MUST be in the following JSON format:
+{
+  "isCorrect": true/false,
+  "feedback": "Brief explanation evaluating both the drawing and explanation, noting what's correct or needs improvement"
+}
+
+Be encouraging and constructive in your feedback. Evaluate the complete response (drawing + text) holistically.
+
+Focus on mathematical accuracy and clarity of explanation. Don't expect perfection in drawings - accept minor inaccuracies in hand-drawn elements.`;
+    }
+    
+    contentParts.push(prompt);
+    
+    // Add image if this question type uses drawings
+    if (needsDrawing && drawingImageBase64) {
+      const base64Data = drawingImageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: "image/png",
+        },
+      };
+      contentParts.push(imagePart);
+    }
+
+    // Call Gemini API
+    const result = await model.generateContent(contentParts);
     const response = await result.response;
     const text = response.text();
 

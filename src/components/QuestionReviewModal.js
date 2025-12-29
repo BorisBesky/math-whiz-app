@@ -31,7 +31,9 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
   const questionTypeOptions = [
     { value: 'multiple-choice', label: 'Multiple Choice' },
     { value: 'numeric', label: 'Numeric Answer' },
-    { value: 'drawing', label: 'Drawing (Interactive)' }
+    { value: 'drawing', label: 'Drawing (Interactive)' },
+    { value: 'write-in', label: 'Written Answer' },
+    { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
   ];
   const topicOptions = [
     TOPICS.MULTIPLICATION,
@@ -138,12 +140,15 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
         
         // Validate question type
         const questionType = q.questionType || 'multiple-choice';
-        if (!['multiple-choice', 'numeric', 'drawing'].includes(questionType)) {
-          throw new Error(`Invalid question type "${questionType}". Must be one of: multiple-choice, numeric, drawing`);
+        if (!['multiple-choice', 'numeric', 'drawing', 'write-in', 'drawing-with-text'].includes(questionType)) {
+          throw new Error(`Invalid question type "${questionType}". Must be one of: multiple-choice, numeric, drawing, write-in, drawing-with-text`);
         }
         
+        // AI-evaluated types: drawing, write-in, drawing-with-text don't need correctAnswer
+        const isAIEvaluated = ['drawing', 'write-in', 'drawing-with-text'].includes(questionType);
+        
         // Validate correctAnswer based on question type
-        if (questionType !== 'drawing' && !q.correctAnswer) {
+        if (!isAIEvaluated && !q.correctAnswer) {
           throw new Error(`Question type "${questionType}" requires a correct answer`);
         }
         
@@ -309,10 +314,14 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                     {question.questionType && (
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         question.questionType === 'drawing' ? 'bg-purple-100 text-purple-800' :
+                        question.questionType === 'write-in' ? 'bg-yellow-100 text-yellow-800' :
+                        question.questionType === 'drawing-with-text' ? 'bg-indigo-100 text-indigo-800' :
                         question.questionType === 'numeric' ? 'bg-green-100 text-green-800' :
                         'bg-blue-100 text-blue-800'
                       }`}>
                         {question.questionType === 'drawing' ? '✏️ Drawing' :
+                         question.questionType === 'write-in' ? '📝 Written' :
+                         question.questionType === 'drawing-with-text' ? '✏️📝 Drawing + Text' :
                          question.questionType === 'numeric' ? '🔢 Numeric' : '📝 Multiple Choice'}
                       </span>
                     )}
@@ -444,8 +453,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                   </div>
                 )}
 
-                {/* Correct Answer - Only show for non-drawing questions */}
-                {question.questionType !== 'drawing' && (
+                {/* Correct Answer - Only show for non-AI-evaluated questions */}
+                {!['drawing', 'write-in', 'drawing-with-text'].includes(question.questionType) && (
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Correct Answer *
@@ -459,6 +468,29 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                       onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder={question.questionType === 'numeric' ? 'Enter numeric answer (e.g., 5.3, -1.2)' : 'Enter correct answer'}
+                    />
+                  </div>
+                )}
+
+                {/* Expected Answer - For AI-evaluated questions */}
+                {['drawing', 'write-in', 'drawing-with-text'].includes(question.questionType) && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expected Answer (Optional)
+                      <span className="text-xs text-gray-500 ml-2">Helps AI evaluate responses</span>
+                    </label>
+                    <textarea
+                      value={question.expectedAnswer || ''}
+                      onChange={(e) => handleQuestionChange(index, 'expectedAnswer', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      rows={2}
+                      placeholder={
+                        question.questionType === 'drawing' 
+                          ? 'Describe what the drawing should show (e.g., "A right triangle with legs of 3 and 4 units")' 
+                          : question.questionType === 'write-in'
+                            ? 'Describe the expected answer (e.g., "x = 3, showing steps: subtract 5, divide by 3")'
+                            : 'Describe what drawing and explanation should include'
+                      }
                     />
                   </div>
                 )}

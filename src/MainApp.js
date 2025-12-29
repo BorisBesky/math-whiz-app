@@ -53,8 +53,9 @@ import { storeTutorial } from './tutorials/storeTutorial';
 import { USER_ROLES } from './utils/userRoles';
 import SketchOverlay from './components/SketchCanvas';
 import DrawingCanvas from './components/DrawingCanvas';
+import WriteInInput from './components/WriteInInput';
 import NumberPad from './components/NumberPad';
-import { isNumericQuestion, normalizeNumericAnswer } from './utils/answer-helpers';
+import { isNumericQuestion, normalizeNumericAnswer, isAIEvaluatedQuestion } from './utils/answer-helpers';
 import {
   adaptAnsweredHistory,
   nextTargetComplexity,
@@ -1144,6 +1145,9 @@ const MainAppContent = () => {
   const [drawingImageBase64, setDrawingImageBase64] = useState(null);
   const [isValidatingDrawing, setIsValidatingDrawing] = useState(false);
   const [drawingFeedback, setDrawingFeedback] = useState(null);
+  
+  // Write-in answer state
+  const [writeInAnswer, setWriteInAnswer] = useState('');
 
   const [difficulty, setDifficulty] = useState(0.5);
   const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState(
@@ -1875,9 +1879,17 @@ const MainAppContent = () => {
   const checkAnswer = async () => {
     const currentQuestion = currentQuiz[currentQuestionIndex];
     
-    // Handle drawing questions differently
-    if (currentQuestion.questionType === 'drawing') {
-      if (!drawingImageBase64 || !user) return;
+    // Handle AI-evaluated questions (drawing, write-in, drawing-with-text)
+    if (isAIEvaluatedQuestion(currentQuestion)) {
+      // For drawing and drawing-with-text, we need drawingImageBase64
+      const needsDrawing = currentQuestion.questionType === 'drawing' || currentQuestion.questionType === 'drawing-with-text';
+      // For write-in and drawing-with-text, we need writeInAnswer
+      const needsWriteIn = currentQuestion.questionType === 'write-in' || currentQuestion.questionType === 'drawing-with-text';
+      
+      // Validate required inputs
+      if (needsDrawing && !drawingImageBase64) return;
+      if (needsWriteIn && !writeInAnswer.trim()) return;
+      if (!user) return;
       
       setIsValidatingDrawing(true);
       const timeTaken = (Date.now() - questionStartTime.current) / 1000;
@@ -1893,14 +1905,17 @@ const MainAppContent = () => {
           },
           body: JSON.stringify({
             question: currentQuestion.question,
-            drawingImageBase64: drawingImageBase64,
-            questionId: currentQuestion.id || `drawing_${Date.now()}`
+            questionType: currentQuestion.questionType,
+            drawingImageBase64: needsDrawing ? drawingImageBase64 : null,
+            userWrittenAnswer: needsWriteIn ? writeInAnswer.trim() : null,
+            expectedAnswer: currentQuestion.expectedAnswer || null,
+            questionId: currentQuestion.id || `${currentQuestion.questionType}_${Date.now()}`
           })
         });
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to validate drawing');
+          throw new Error(errorData.error || 'Failed to validate answer');
         }
         
         const result = await response.json();
@@ -1918,6 +1933,14 @@ const MainAppContent = () => {
         const updates = {};
         const sanitizedTopic = sanitizeTopicName(currentTopic);
         
+        // Build user answer representation based on question type
+        let userAnswerRecord = currentQuestion.questionType;
+        if (currentQuestion.questionType === 'drawing-with-text') {
+          userAnswerRecord = 'drawing + written answer';
+        } else if (currentQuestion.questionType === 'write-in') {
+          userAnswerRecord = writeInAnswer.trim();
+        }
+        
         const questionRecord = {
           id: `${Date.now()}_${currentQuestionIndex}`,
           timestamp: new Date().toISOString(),
@@ -1925,11 +1948,12 @@ const MainAppContent = () => {
           topic: currentTopic,
           grade: selectedGrade,
           question: currentQuestion.question,
-          userAnswer: 'drawing',
+          userAnswer: userAnswerRecord,
           isCorrect: isCorrect,
           timeTaken: timeTaken,
-          questionType: 'drawing',
-          drawingImageUrl: imageUrl,
+          questionType: currentQuestion.questionType,
+          ...(needsDrawing && { drawingImageUrl: imageUrl }),
+          ...(needsWriteIn && { userWrittenAnswer: writeInAnswer.trim() }),
           aiFeedback: aiFeedback
         };
         
@@ -2287,6 +2311,7 @@ const MainAppContent = () => {
   const resetQuestionState = () => {
     setUserAnswer(null);
     setNumericInput(''); // Clear numeric input
+    setWriteInAnswer(''); // Clear write-in answer
     setShowHint(false);
     setFeedback(null);
     setIsAnswered(false);
@@ -3627,7 +3652,7 @@ Answer: [The answer]`;
             </div>
           )}
           
-          {/* Conditionally render drawing canvas, number pad, or multiple choice */}
+          {/* Conditionally render drawing canvas, write-in input, drawing+text, number pad, or multiple choice */}
           {currentQuestion.questionType === 'drawing' ? (
             <div className="mb-6">
               {!isAnswered ? (
@@ -3658,6 +3683,87 @@ Answer: [The answer]`;
                         className="max-w-full h-auto border border-gray-300 rounded-lg mx-auto"
                         style={{ maxHeight: '300px' }}
                       />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : currentQuestion.questionType === 'write-in' ? (
+            <div className="mb-6">
+              {!isAnswered ? (
+                <WriteInInput
+                  value={writeInAnswer}
+                  onChange={(text) => setWriteInAnswer(text)}
+                  maxLength={240}
+                  placeholder="Type your answer here..."
+                  disabled={isAnswered}
+                />
+              ) : (
+                <div className="mt-4">
+                  {drawingFeedback && (
+                    <div className={`p-4 rounded-lg border-2 ${
+                      feedback?.type === 'success'
+                        ? 'bg-green-50 border-green-500 text-green-800'
+                        : 'bg-red-50 border-red-500 text-red-800'
+                    }`}>
+                      <p className="font-semibold mb-2">AI Feedback:</p>
+                      <p>{drawingFeedback}</p>
+                    </div>
+                  )}
+                  {writeInAnswer && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-600 mb-1">Your answer:</p>
+                      <p className="text-gray-800">{writeInAnswer}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : currentQuestion.questionType === 'drawing-with-text' ? (
+            <div className="mb-6 space-y-4">
+              {!isAnswered ? (
+                <>
+                  <DrawingCanvas
+                    onChange={(imageData) => setDrawingImageBase64(imageData)}
+                    width={600}
+                    height={350}
+                    backgroundImage={drawingBackgroundImage}
+                  />
+                  <WriteInInput
+                    value={writeInAnswer}
+                    onChange={(text) => setWriteInAnswer(text)}
+                    maxLength={240}
+                    placeholder="Explain your work or add details here..."
+                    disabled={isAnswered}
+                  />
+                </>
+              ) : (
+                <div className="mt-4">
+                  {drawingFeedback && (
+                    <div className={`p-4 rounded-lg border-2 ${
+                      feedback?.type === 'success'
+                        ? 'bg-green-50 border-green-500 text-green-800'
+                        : 'bg-red-50 border-red-500 text-red-800'
+                    }`}>
+                      <p className="font-semibold mb-2">AI Feedback:</p>
+                      <p>{drawingFeedback}</p>
+                    </div>
+                  )}
+                  {drawingImageBase64 && (
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-gray-600 mb-2">Your drawing:</p>
+                      <img 
+                        src={drawingImageBase64} 
+                        alt="Your drawing" 
+                        className="max-w-full h-auto border border-gray-300 rounded-lg mx-auto"
+                        style={{ maxHeight: '250px' }}
+                      />
+                    </div>
+                  )}
+                  {writeInAnswer && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-600 mb-1">Your explanation:</p>
+                      <p className="text-gray-800">{writeInAnswer}</p>
                     </div>
                   )}
                 </div>
@@ -3785,7 +3891,7 @@ Answer: [The answer]`;
               </button>
               <button
                 onClick={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}/sketch`)}
-                disabled={currentQuestion.questionType === 'drawing'}
+                disabled={currentQuestion.questionType === 'drawing' || currentQuestion.questionType === 'drawing-with-text'}
                 className="w-full flex items-center justify-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 <PenTool size={18} /> Sketch
@@ -3820,11 +3926,19 @@ Answer: [The answer]`;
                       {formatMathText(userAnswer)}
                     </span>
                   </span>
+                ) : isAIEvaluatedQuestion(currentQuestion) ? (
+                  <span className="italic text-gray-400">
+                    {currentQuestion.questionType === 'drawing' ? 'Draw your answer' : 
+                     currentQuestion.questionType === 'write-in' ? (writeInAnswer ? 'Answer ready' : 'Type your answer') :
+                     currentQuestion.questionType === 'drawing-with-text' ? 
+                       (drawingImageBase64 && writeInAnswer ? 'Ready to submit' : 
+                        drawingImageBase64 ? 'Add your explanation' : 
+                        writeInAnswer ? 'Draw your answer' : 'Draw and explain') : ''}
+                  </span>
                 ) : (
                   <span className="italic text-gray-400">
                     {isNumericQuestion(currentQuestion) ? 'Enter a number' : 
-                    currentQuestion.questionType === 'multiple-choice' ? 'Select an answer' : 
-                    currentQuestion.questionType === 'drawing' ? 'Draw your answer' : ''}
+                    currentQuestion.questionType === 'multiple-choice' ? 'Select an answer' : ''}
                   </span>
                 )}
               </div>
@@ -3843,14 +3957,18 @@ Answer: [The answer]`;
                       isValidatingDrawing ||
                       (currentQuestion.questionType === 'drawing'
                         ? !drawingImageBase64
-                        : (userAnswer === null || userAnswer === ''))
+                        : currentQuestion.questionType === 'write-in'
+                          ? !writeInAnswer.trim()
+                          : currentQuestion.questionType === 'drawing-with-text'
+                            ? (!drawingImageBase64 || !writeInAnswer.trim())
+                            : (userAnswer === null || userAnswer === ''))
                     }
                     className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2"
                   >
                     {isValidatingDrawing && (
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     )}
-                    <span>{isValidatingDrawing ? 'Checking drawing...' : 'Check Answer'}</span>
+                    <span>{isValidatingDrawing ? 'Checking answer...' : 'Check Answer'}</span>
                   </button>
                 )}
               </div>
