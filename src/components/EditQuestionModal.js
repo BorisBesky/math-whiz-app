@@ -11,6 +11,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const questionTypeOptions = [
         { value: 'multiple-choice', label: 'Multiple Choice' },
         { value: 'numeric', label: 'Numeric Answer' },
+        { value: 'fill-in-the-blanks', label: 'Fill in the Blanks' },
         { value: 'drawing', label: 'Drawing (Interactive)' },
         { value: 'write-in', label: 'Written Answer' },
         { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
@@ -244,6 +245,12 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                                 <option key={type.value} value={type.value}>{type.label}</option>
                             ))}
                         </select>
+                        {editedQuestion.questionType === 'fill-in-the-blanks' && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                Fill-in-the-blanks questions have one or more blanks marked with underscores (____). 
+                                Students type answers into inline input fields. Separate multiple answers with double semicolons (;;).
+                            </p>
+                        )}
                         {editedQuestion.questionType === 'drawing' && (
                             <p className="mt-2 text-xs text-gray-500">
                                 Drawing questions allow students to sketch their answers (e.g., "Draw an obtuse triangle"). 
@@ -265,7 +272,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
 
                     {/* Options - Only show for multiple-choice and numeric questions */}
-                    {!['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
+                    {!['drawing', 'write-in', 'drawing-with-text', 'fill-in-the-blanks'].includes(editedQuestion.questionType) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}
@@ -293,13 +300,22 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     {/* Correct Answer - Only show for non-AI-evaluated questions */}
                     {!['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Correct Answer * {editedQuestion.questionType === 'fill-in-the-blanks' && '(separate multiple answers with ;;)'}
+                        </label>
                         <input
                             type="text"
                             value={editedQuestion.correctAnswer || ''}
                             onChange={(e) => handleChange('correctAnswer', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder={editedQuestion.questionType === 'fill-in-the-blanks' ? 'e.g., answer1 ;; answer2 ;; answer3' : ''}
                         />
+                        {editedQuestion.questionType === 'fill-in-the-blanks' && (
+                            <p className="mt-1 text-xs text-gray-500">
+                                Tip: Use __ (two or more underscores) to create blanks in the question text. 
+                                The number of blanks must match the number of answers.
+                            </p>
+                        )}
                     </div>
                     )}
 

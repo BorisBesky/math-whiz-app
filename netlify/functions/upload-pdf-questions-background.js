@@ -547,12 +547,18 @@ async function processPDFAsync(jobId, userId, appId, classId, grade, fileData, f
 Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
 
 1. The question text
-2. Question type: (choose ONLY from these 3: 'multiple-choice', 'numeric', 'drawing')
+2. Question type: (choose ONLY from these 6: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text')
    - 'numeric': if the answer is a numeric value (e.g., "5.3", "-1.2", "0.001")
+   - 'fill-in-the-blanks': if the question has one or more blanks to fill in (e.g., "5 × ____ = 20" or "The product of ____ and ____ is 24")
+     * Use __ (two underscores) to indicate each blank in the question text
+     * Provide answers separated by ;; (double semicolons) in the correctAnswer field
+     * Example: question: "5 × ____ = ____", correctAnswer: "4 ;; 20"
    - 'drawing': if the user has to draw or mark something on an existing graphic (e.g., "Draw an obtuse triangle", "Mark the point on the number line")
+   - 'write-in': if the user has to write a text explanation or show work (e.g., "Explain your reasoning", "Show how you solved this")
+   - 'drawing-with-text': if the user has to both draw/mark something AND write an explanation
    - 'multiple-choice': all other questions with answer choices
-3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing')
-   - For 'drawing' questions, you can omit correctAnswer or set it to empty string
+3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing', 'write-in', 'drawing-with-text')
+   - For 'drawing', 'write-in', and 'drawing-with-text' questions, you can provide an expected answer description in 'correctAnswer' or omit it.
 4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
    - Must provide exactly 4 options for multiple-choice questions
 5. A helpful hint (if available)
@@ -560,13 +566,14 @@ Analyze this PDF and extract all math questions you find. If a question consists
 
 IMPORTANT: 
 - The topic MUST be one of these exact values: ${topicsListForPrompt}
-- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing' (lowercase, with hyphen)
+- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
+- For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
 
 Return the results as a JSON array where each question has this structure:
 {
-  "question": "question text",
-  "questionType": "multiple-choice" | "numeric" | "drawing",
-  "correctAnswer": "correct answer" (required for multiple-choice and numeric, optional for drawing),
+  "question": "question text (use __ for blanks in fill-in-the-blanks)",
+  "questionType": "multiple-choice" | "numeric" | "drawing" | "fill-in-the-blanks" | "write-in" | "drawing-with-text",
+  "correctAnswer": "correct answer (use ;; to separate multiple answers for fill-in-the-blanks)",
   "options": ["option1", "option2", "option3", "option4"] (required for multiple-choice, empty array for others),
   "hint": "helpful hint or explanation",
   "topic": "topic name from the allowed list"
@@ -699,7 +706,7 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
 
       // Process and validate question type
       let questionType = (q.questionType || '').toLowerCase().trim();
-      const validQuestionTypes = ['multiple-choice', 'numeric', 'drawing'];
+      const validQuestionTypes = ['multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text'];
       
       // Handle variations and normalize question type
       if (!questionType || !validQuestionTypes.includes(questionType)) {
@@ -716,7 +723,7 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
       // Validate correctAnswer based on question type
       // Drawing questions don't require correctAnswer (AI validates the drawing)
       // Multiple-choice and numeric questions require correctAnswer
-      if (questionType !== 'drawing' && !q.correctAnswer) {
+      if (!['drawing', 'write-in', 'drawing-with-text'].includes(questionType) && !q.correctAnswer) {
         throw new Error(`Question ${index + 1} (${questionType}) is missing required correctAnswer field`);
       }
 
@@ -736,8 +743,20 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
         // Multiple-choice questions need options
         processedOptions = Array.isArray(q.options) ? q.options.filter(opt => opt && opt.trim() !== '') : [];
       } else {
-        // Numeric and drawing questions should not have options
+        // Numeric, drawing, and fill-in-the-blanks questions should not have options
         processedOptions = [];
+      }
+      
+      // For fill-in-the-blanks, validate blank count matches answer count
+      if (questionType === 'fill-in-the-blanks') {
+        const blanks = (q.question || '').match(/_{2,}/g) || [];
+        const answers = (q.correctAnswer || '').split(';;').map(a => a.trim()).filter(Boolean);
+        if (blanks.length !== answers.length) {
+          throw new Error(`Question ${index + 1} (fill-in-the-blanks) has ${blanks.length} blanks but ${answers.length} answers. Counts must match.`);
+        }
+        if (blanks.length === 0) {
+          throw new Error(`Question ${index + 1} (fill-in-the-blanks) has no blanks (use __ to create blanks)`);
+        }
       }
 
       // Build the validated question object
@@ -753,13 +772,18 @@ Extract ALL questions from the PDF. Be thorough and accurate.`;
       };
 
       // Add correctAnswer only for non-drawing questions
-      if (questionType !== 'drawing') {
+      if (!['drawing', 'write-in', 'drawing-with-text'].includes(questionType)) {
         validatedQuestion.correctAnswer = String(q.correctAnswer || '').trim();
       }
 
       // Add options only for multiple-choice questions
       if (questionType === 'multiple-choice') {
         validatedQuestion.options = processedOptions;
+      }
+      
+      // For fill-in-the-blanks, ensure options is empty array
+      if (questionType === 'fill-in-the-blanks') {
+        validatedQuestion.options = [];
       }
 
       return validatedQuestion;

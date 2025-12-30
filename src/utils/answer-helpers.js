@@ -57,6 +57,116 @@ export function isAIEvaluatedQuestion(question) {
 }
 
 /**
+ * Checks if a question is a fill-in-the-blanks type
+ * @param {Object} question - The question object
+ * @returns {boolean} - True if the question is fill-in-the-blanks type
+ */
+export function isFillInTheBlanksQuestion(question) {
+  return question?.questionType === 'fill-in-the-blanks';
+}
+
+/**
+ * Parses a question text to find all blanks (sequences of 2+ underscores)
+ * @param {string} questionText - The question text
+ * @returns {Array} - Array of objects with {start, end, length} for each blank
+ */
+export function parseBlanks(questionText) {
+  if (!questionText) return [];
+  
+  const blanks = [];
+  const regex = /_{2,}/g;
+  let match;
+  
+  while ((match = regex.exec(questionText)) !== null) {
+    blanks.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      length: match[0].length
+    });
+  }
+  
+  return blanks;
+}
+
+/**
+ * Splits the question text into segments around blanks
+ * @param {string} questionText - The question text
+ * @param {Array} blanks - Array of blank positions from parseBlanks()
+ * @returns {Array} - Array of text segments (strings) and blank indicators (objects)
+ */
+export function splitQuestionByBlanks(questionText, blanks) {
+  if (!questionText) return [];
+  if (blanks.length === 0) return [questionText];
+  
+  const segments = [];
+  let lastEnd = 0;
+  
+  blanks.forEach((blank, index) => {
+    // Add text before the blank
+    if (blank.start > lastEnd) {
+      segments.push(questionText.substring(lastEnd, blank.start));
+    }
+    // Add blank indicator
+    segments.push({ blankIndex: index });
+    lastEnd = blank.end;
+  });
+  
+  // Add remaining text after last blank
+  if (lastEnd < questionText.length) {
+    segments.push(questionText.substring(lastEnd));
+  }
+  
+  return segments;
+}
+
+/**
+ * Parses the correctAnswer string to extract individual answers for each blank
+ * @param {string} correctAnswer - The correct answer string with ;; delimiters
+ * @returns {Array<string>} - Array of correct answers for each blank
+ */
+export function parseCorrectAnswers(correctAnswer) {
+  if (!correctAnswer) return [];
+  return correctAnswer.split(';;').map(ans => ans.trim());
+}
+
+/**
+ * Validates that the number of blanks matches the number of correct answers
+ * @param {Array} blanks - Array of blanks from parseBlanks()
+ * @param {Array<string>} correctAnswers - Array of correct answers
+ * @returns {boolean} - True if counts match
+ */
+export function validateBlankAnswerCount(blanks, correctAnswers) {
+  return blanks.length === correctAnswers.length && blanks.length > 0;
+}
+
+/**
+ * Validates a fill-in-the-blanks answer set
+ * @param {Array<string>} userAnswers - Array of user's answers
+ * @param {Array<string>} correctAnswers - Array of correct answers
+ * @param {Array<string>} inputTypes - Optional array of input types per blank
+ * @returns {Object} - {allCorrect: boolean, results: Array<boolean>}
+ */
+export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = []) {
+  if (userAnswers.length !== correctAnswers.length) {
+    return { allCorrect: false, results: [] };
+  }
+  
+  const results = userAnswers.map((userAnswer, index) => {
+    const correct = correctAnswers[index];
+    const userTrimmed = (userAnswer || '').trim().toLowerCase();
+    const correctTrimmed = (correct || '').trim().toLowerCase();
+    
+    // Exact match (no normalization as per requirements)
+    return userTrimmed === correctTrimmed;
+  });
+  
+  return {
+    allCorrect: results.every(r => r === true),
+    results: results
+  };
+}
+
+/**
  * Normalizes a numeric answer by removing leading zeros and whitespace
  * Handles positive, negative, integer, and decimal numbers
  * @param {string} answer - The answer to normalize

@@ -55,7 +55,7 @@ import SketchOverlay from './components/SketchCanvas';
 import DrawingCanvas from './components/DrawingCanvas';
 import WriteInInput from './components/WriteInInput';
 import NumberPad from './components/NumberPad';
-import { isNumericQuestion, normalizeNumericAnswer, isAIEvaluatedQuestion } from './utils/answer-helpers';
+import { isNumericQuestion, normalizeNumericAnswer, isAIEvaluatedQuestion, isFillInTheBlanksQuestion, parseBlanks, splitQuestionByBlanks, parseCorrectAnswers, validateBlankAnswerCount, validateFillInAnswers } from './utils/answer-helpers';
 import {
   adaptAnsweredHistory,
   nextTargetComplexity,
@@ -1148,6 +1148,10 @@ const MainAppContent = () => {
   
   // Write-in answer state
   const [writeInAnswer, setWriteInAnswer] = useState('');
+  
+  // Fill-in-the-blanks answer state
+  const [fillInAnswers, setFillInAnswers] = useState([]);
+  const [fillInResults, setFillInResults] = useState([]); // Array of booleans for each blank
 
   const [difficulty, setDifficulty] = useState(0.5);
   const [lastAskedComplexityByTopic, setLastAskedComplexityByTopic] = useState(
@@ -2013,6 +2017,140 @@ const MainAppContent = () => {
       return;
     }
     
+    // Handle fill-in-the-blanks questions
+    if (isFillInTheBlanksQuestion(currentQuestion)) {
+      if (!user) return;
+      
+      // Parse blanks and correct answers
+      const blanks = parseBlanks(currentQuestion.question);
+      const correctAnswers = parseCorrectAnswers(currentQuestion.correctAnswer);
+      
+      // Validate blank count matches answer count
+      if (!validateBlankAnswerCount(blanks, correctAnswers)) {
+        setFeedback({
+          message: '⚠️ Question configuration error',
+          type: 'error'
+        });
+        return;
+      }
+      
+      // Check if all blanks are filled
+      const allFilled = fillInAnswers.length === blanks.length && 
+                       fillInAnswers.every(ans => ans && ans.trim() !== '');
+      
+      if (!allFilled) {
+        setFeedback({
+          message: '⚠️ Please fill in all blanks',
+          type: 'error'
+        });
+        return;
+      }
+      
+      setIsAnswered(true);
+      const timeTaken = (Date.now() - questionStartTime.current) / 1000;
+      
+      // Validate answers
+      const validation = validateFillInAnswers(
+        fillInAnswers, 
+        correctAnswers, 
+        currentQuestion.inputTypes
+      );
+      
+      // Store results for color-coding
+      setFillInResults(validation.results);
+      
+      const isCorrect = validation.allCorrect;
+      const today = getTodayDateString();
+      const userDocRef = getUserDocRef(user.uid);
+      if (!userDocRef) return;
+      
+      const updates = {};
+      
+      // Sanitize topic name for Firestore field paths
+      const sanitizedTopic = sanitizeTopicName(currentTopic);
+      
+      // Update both legacy and new progress structures
+      const allProgress_path = `progress.${today}.all`;
+      const topicProgress_path = `progress.${today}.${sanitizedTopic}`;
+      const gradeAllProgress_path = `progressByGrade.${today}.${selectedGrade}.all`;
+      const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}`;
+      
+      // Create combined answer string for storage
+      const userAnswerString = fillInAnswers.join(' ;; ');
+      
+      // Create question record for tracking with grade information
+      const questionRecord = {
+        id: `${Date.now()}_${currentQuestionIndex}`,
+        timestamp: new Date().toISOString(),
+        date: today,
+        topic: currentTopic,
+        grade: selectedGrade,
+        question: currentQuestion.question,
+        userAnswer: userAnswerString,
+        isCorrect: isCorrect,
+        timeTaken: timeTaken,
+        questionType: 'fill-in-the-blanks',
+        correctAnswer: currentQuestion.correctAnswer,
+        options: [],
+        hint: currentQuestion.hint,
+        standard: currentQuestion.standard,
+        concept: currentQuestion.concept,
+        subtopic: currentQuestion.subtopic,
+        fillInResults: validation.results, // Store individual blank results
+      };
+      
+      // Award coins
+      updates.coins = increment(1);
+      updates.answeredQuestions = arrayUnion(questionRecord);
+      
+      // Update progress counters
+      updates[allProgress_path] = increment(1);
+      updates[topicProgress_path] = increment(1);
+      updates[gradeAllProgress_path] = increment(1);
+      updates[gradeTopicProgress_path] = increment(1);
+      
+      // Update correct answer counts
+      if (isCorrect) {
+        const correctAll_path = `progress.${today}.correctAll`;
+        const correctTopic_path = `progress.${today}.correct_${sanitizedTopic}`;
+        const gradeCorrectAll_path = `progressByGrade.${today}.${selectedGrade}.correctAll`;
+        const gradeCorrectTopic_path = `progressByGrade.${today}.${selectedGrade}.correct_${sanitizedTopic}`;
+        
+        updates[correctAll_path] = increment(1);
+        updates[correctTopic_path] = increment(1);
+        updates[gradeCorrectAll_path] = increment(1);
+        updates[gradeCorrectTopic_path] = increment(1);
+        
+        setScore(score + 1);
+      }
+      
+      // Determine feedback
+      let feedbackMessage = '';
+      let feedbackType = 'error';
+      
+      if (isCorrect) {
+        const correctMessages = [
+          '🎉 Perfect! All answers are correct!',
+          '✨ Excellent work! Every blank is right!',
+          '🌟 Outstanding! You got them all!',
+          '👏 Fantastic! All correct!',
+          '🎯 Bulls-eye! Perfect answers!',
+        ];
+        feedbackMessage = correctMessages[Math.floor(Math.random() * correctMessages.length)];
+        feedbackType = 'success';
+      } else {
+        const numCorrect = validation.results.filter(r => r).length;
+        const numIncorrect = validation.results.length - numCorrect;
+        feedbackMessage = `Not quite! ${numCorrect} correct, ${numIncorrect} incorrect. Try again!`;
+        feedbackType = 'error';
+      }
+      
+      setFeedback({ message: feedbackMessage, type: feedbackType });
+      
+      await updateDoc(userDocRef, updates);
+      return;
+    }
+
     // Handle regular questions (multiple-choice and numeric)
     if (userAnswer === null || !user) return;
 
@@ -2312,6 +2450,8 @@ const MainAppContent = () => {
     setUserAnswer(null);
     setNumericInput(''); // Clear numeric input
     setWriteInAnswer(''); // Clear write-in answer
+    setFillInAnswers([]); // Clear fill-in-the-blanks answers
+    setFillInResults([]); // Clear fill-in-the-blanks results
     setShowHint(false);
     setFeedback(null);
     setIsAnswered(false);
@@ -3769,6 +3909,121 @@ Answer: [The answer]`;
                 </div>
               )}
             </div>
+          ) : isFillInTheBlanksQuestion(currentQuestion) ? (
+            <div className="mb-6">
+              {(() => {
+                // Parse the question to find blanks and split into segments
+                const blanks = parseBlanks(currentQuestion.question);
+                const correctAnswers = parseCorrectAnswers(currentQuestion.correctAnswer);
+                const segments = splitQuestionByBlanks(currentQuestion.question, blanks);
+                
+                // Validate blank count matches answer count
+                if (!validateBlankAnswerCount(blanks, correctAnswers)) {
+                  return (
+                    <div className="p-4 bg-red-50 border border-red-300 rounded-lg">
+                      <p className="text-red-800 font-semibold">
+                        Error: Number of blanks ({blanks.length}) doesn't match number of answers ({correctAnswers.length})
+                      </p>
+                    </div>
+                  );
+                }
+                
+                // Get input types if specified in question
+                const inputTypes = currentQuestion.inputTypes || [];
+                
+                return (
+                  <div className="space-y-4">
+                    {/* Render question with inline input fields */}
+                    <div className="text-lg md:text-xl leading-relaxed flex flex-wrap items-center gap-2">
+                      {segments.map((segment, idx) => {
+                        if (typeof segment === 'string') {
+                          // Text segment
+                          return (
+                            <span key={idx} className="inline">
+                              {formatMathText(segment)}
+                            </span>
+                          );
+                        } else {
+                          // Blank input field
+                          const blankIndex = segment.blankIndex;
+                          const inputType = inputTypes[blankIndex] || 'mixed';
+                          const value = fillInAnswers[blankIndex] || '';
+                          const isCorrect = fillInResults[blankIndex];
+                          
+                          // Determine input styling based on answer state
+                          let inputClass = 'inline-block px-3 py-1 border-2 rounded text-center font-medium transition-all';
+                          
+                          if (isAnswered) {
+                            // Show color-coded feedback after answer
+                            if (isCorrect) {
+                              inputClass += ' border-green-500 bg-green-50 text-green-800';
+                            } else {
+                              inputClass += ' border-red-500 bg-red-50 text-red-800';
+                            }
+                          } else if (value) {
+                            // User has typed something
+                            inputClass += ' border-blue-500 bg-blue-50 text-gray-800';
+                          } else {
+                            // Empty field
+                            inputClass += ' border-gray-300 bg-white text-gray-800';
+                          }
+                          
+                          // Calculate width based on expected answer length (min 4rem, max 12rem)
+                          const expectedLength = correctAnswers[blankIndex]?.length || 5;
+                          const width = Math.min(Math.max(expectedLength * 0.6 + 2, 4), 12);
+                          
+                          return (
+                            <input
+                              key={idx}
+                              type="text"
+                              value={value}
+                              onChange={(e) => {
+                                const newAnswers = [...fillInAnswers];
+                                newAnswers[blankIndex] = e.target.value;
+                                setFillInAnswers(newAnswers);
+                              }}
+                              disabled={isAnswered}
+                              className={inputClass}
+                              style={{ width: `${width}rem` }}
+                              placeholder={`blank ${blankIndex + 1}`}
+                              autoComplete="off"
+                              inputMode={inputType === 'numeric' ? 'decimal' : 'text'}
+                            />
+                          );
+                        }
+                      })}
+                    </div>
+                    
+                    {/* Show correct answers after submission if there were errors */}
+                    {isAnswered && !fillInResults.every(r => r === true) && (
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-300 rounded-lg">
+                        <p className="font-semibold text-blue-800 mb-2">Correct answers:</p>
+                        <div className="space-y-1">
+                          {correctAnswers.map((answer, idx) => {
+                            const isCorrect = fillInResults[idx];
+                            return (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className={`font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                                  Blank {idx + 1}:
+                                </span>
+                                <span className="text-gray-800 font-semibold">
+                                  {formatMathText(answer)}
+                                </span>
+                                {!isCorrect && fillInAnswers[idx] && (
+                                  <span className="text-sm text-gray-600">
+                                    (You wrote: <span className="italic">{fillInAnswers[idx]}</span>)
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
           ) : isNumericQuestion(currentQuestion) ? (
             <div className="mb-6">
               {!isAnswered && (
@@ -3919,6 +4174,20 @@ Answer: [The answer]`;
               >
                 {feedback ? (
                   feedback.message
+                ) : isFillInTheBlanksQuestion(currentQuestion) ? (
+                  <span>
+                    {(() => {
+                      const blanks = parseBlanks(currentQuestion.question);
+                      const filledCount = fillInAnswers.filter(ans => ans && ans.trim() !== '').length;
+                      if (filledCount === 0) {
+                        return <span className="italic text-gray-400">Fill in all {blanks.length} blank{blanks.length > 1 ? 's' : ''}</span>;
+                      } else if (filledCount < blanks.length) {
+                        return <span className="text-yellow-700">{filledCount}/{blanks.length} blanks filled</span>;
+                      } else {
+                        return <span className="text-green-700">✓ All {blanks.length} blanks filled</span>;
+                      }
+                    })()}
+                  </span>
                 ) : userAnswer !== null && userAnswer !== '' ? (
                   <span>
                     {isNumericQuestion(currentQuestion) ? 'Your answer' : 'Selected'}:{" "}
@@ -3961,7 +4230,13 @@ Answer: [The answer]`;
                           ? !writeInAnswer.trim()
                           : currentQuestion.questionType === 'drawing-with-text'
                             ? (!drawingImageBase64 || !writeInAnswer.trim())
-                            : (userAnswer === null || userAnswer === ''))
+                            : isFillInTheBlanksQuestion(currentQuestion)
+                              ? (() => {
+                                  const blanks = parseBlanks(currentQuestion.question);
+                                  return fillInAnswers.length !== blanks.length || 
+                                         fillInAnswers.some(ans => !ans || ans.trim() === '');
+                                })()
+                              : (userAnswer === null || userAnswer === ''))
                     }
                     className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2"
                   >
