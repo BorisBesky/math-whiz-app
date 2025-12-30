@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { TOPICS } from '../constants/topics';
 
 const EditQuestionModal = ({ question, onSave, onCancel }) => {
@@ -11,7 +13,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const questionTypeOptions = [
         { value: 'multiple-choice', label: 'Multiple Choice' },
         { value: 'numeric', label: 'Numeric Answer' },
-        { value: 'fill-in-the-blanks', label: 'Fill in the Blanks' },
+        { value: 'fill-in-the-blank', label: 'Fill in the Blank' },
         { value: 'drawing', label: 'Drawing (Interactive)' },
         { value: 'write-in', label: 'Written Answer' },
         { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
@@ -64,19 +66,39 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
         }));
     };
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result;
+        try {
+            const storage = getStorage();
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) throw new Error('User not authenticated');
+
+            // Create a unique path for the image
+            const timestamp = Date.now();
+            const storagePath = `question-images/${user.uid}/${timestamp}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+
+            // Upload file
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
             setEditedQuestion(prev => ({
                 ...prev,
-                images: [...(prev.images || []), { type: 'question', data: base64String, description: file.name }]
+                images: [...(prev.images || []), { 
+                    type: 'question', 
+                    url: downloadURL, 
+                    description: file.name,
+                    storagePath: storagePath
+                }]
             }));
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            setError('Failed to upload image: ' + error.message);
+        }
     };
 
     const removeImage = (index) => {
@@ -245,9 +267,9 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                                 <option key={type.value} value={type.value}>{type.label}</option>
                             ))}
                         </select>
-                        {editedQuestion.questionType === 'fill-in-the-blanks' && (
+                        {editedQuestion.questionType === 'fill-in-the-blank' && (
                             <p className="mt-2 text-xs text-gray-500">
-                                Fill-in-the-blanks questions have one or more blanks marked with underscores (____). 
+                                Fill-in-the-blank questions have one or more blanks marked with underscores (____). 
                                 Students type answers into inline input fields. Separate multiple answers with double semicolons (;;).
                             </p>
                         )}
@@ -272,7 +294,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
 
                     {/* Options - Only show for multiple-choice and numeric questions */}
-                    {!['drawing', 'write-in', 'drawing-with-text', 'fill-in-the-blanks'].includes(editedQuestion.questionType) && (
+                    {!['drawing', 'write-in', 'drawing-with-text', 'fill-in-the-blank'].includes(editedQuestion.questionType) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}

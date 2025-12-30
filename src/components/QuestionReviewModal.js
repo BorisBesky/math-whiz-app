@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { TOPICS } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
@@ -33,7 +34,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
     { value: 'numeric', label: 'Numeric Answer' },
     { value: 'drawing', label: 'Drawing (Interactive)' },
     { value: 'write-in', label: 'Written Answer' },
-    { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
+    { value: 'drawing-with-text', label: 'Drawing + Written Answer' },
+    { value: 'fill-in-the-blanks', label: 'Fill in the Blanks' }
   ];
   const topicOptions = [
     TOPICS.MULTIPLICATION,
@@ -96,6 +98,58 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
       newSelected.add(index);
     }
     setSelectedQuestions(newSelected);
+  };
+
+  const handleImageUpload = async (index, file) => {
+    if (!file) return;
+
+    try {
+      const storage = getStorage();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) throw new Error('User not authenticated');
+
+      // Create a unique path for the image
+      const timestamp = Date.now();
+      const storagePath = `question-images/${user.uid}/${timestamp}_${file.name}`;
+      const storageRef = ref(storage, storagePath);
+
+      // Upload file
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Update question with new image
+      const updated = [...editedQuestions];
+      const currentImages = updated[index].images || [];
+      
+      updated[index] = {
+        ...updated[index],
+        images: [...currentImages, {
+          type: 'uploaded',
+          url: downloadURL,
+          description: file.name,
+          storagePath: storagePath
+        }]
+      };
+      
+      setEditedQuestions(updated);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image: ' + error.message);
+    }
+  };
+
+  const handleRemoveImage = (index, imgIndex) => {
+    const updated = [...editedQuestions];
+    const currentImages = [...(updated[index].images || [])];
+    currentImages.splice(imgIndex, 1);
+    
+    updated[index] = {
+      ...updated[index],
+      images: currentImages
+    };
+    setEditedQuestions(updated);
   };
 
   const selectAll = () => {
@@ -340,16 +394,40 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                     rows={3}
                     placeholder="Enter question text..."
                   />
-                  {question.images && question.images.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {question.images.map((img, imgIdx) => (
-                        <div key={imgIdx} className="flex items-center space-x-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                          <ImageIcon className="h-3 w-3" />
-                          <span>{img.type}: {img.description || 'Image'}</span>
-                        </div>
-                      ))}
+                  
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-gray-700">Images</label>
+                      <label className="cursor-pointer inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
+                        <Upload className="h-3 w-3 mr-1" />
+                        Upload Image
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(index, e.target.files[0])}
+                        />
+                      </label>
                     </div>
-                  )}
+                    
+                    {question.images && question.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {question.images.map((img, imgIdx) => (
+                          <div key={imgIdx} className="flex items-center space-x-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                            <ImageIcon className="h-3 w-3" />
+                            <span className="max-w-[150px] truncate">{img.description || 'Image'}</span>
+                            <button
+                              onClick={() => handleRemoveImage(index, imgIdx)}
+                              className="text-gray-400 hover:text-red-600 ml-1"
+                              title="Remove image"
+                            >
+                              <XIcon className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Question Type, Topic and Grade */}

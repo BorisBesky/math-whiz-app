@@ -954,6 +954,8 @@ const QuestionBankManager = ({
                 <option value="numeric">Numeric</option>
                 <option value="drawing">Drawing</option>
                 <option value="write-in">Write-in</option>
+                <option value="">Drawing + Text</option>
+                <option value="fill-in-the-blank">Fill in the Blank</option>
               </select>
             </div>
             <div>
@@ -1214,12 +1216,14 @@ const QuestionBankManager = ({
                                         switch (question.questionType) {
                                           case 'drawing':
                                             return '✏️ Drawing';
+                                          case 'drawing-with-text':
+                                            return '✏️📝 Drawing + Text';
                                           case 'numeric':
                                             return '🔢 Numeric';
                                           case 'write-in':
                                             return '📝 Written';
-                                          case 'drawing-with-text':
-                                            return '✏️📝 Drawing + Text';
+                                          case 'fill-in-the-blank':
+                                            return '📝 Fill in the Blank';
                                           default:
                                             return '📝 Multiple Choice';
                                         }
@@ -1418,12 +1422,14 @@ const QuestionBankManager = ({
                                         switch (question.questionType) {
                                           case 'drawing':
                                             return '✏️ Drawing';
+                                          case 'drawing-with-text':
+                                            return '✏️📝 Drawing + Text';
                                           case 'numeric':
                                             return '🔢 Numeric';
                                           case 'write-in':
                                             return '📝 Written';
-                                          case 'drawing-with-text':
-                                            return '✏️📝 Drawing + Text';
+                                          case 'fill-in-the-blank':
+                                            return '📝 Fill in the Blank';
                                           default:
                                             return '📝 Multiple Choice';
                                         }
