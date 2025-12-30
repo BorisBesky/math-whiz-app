@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { TOPICS } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 
 const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const [editedQuestion, setEditedQuestion] = useState({ ...question });
@@ -11,12 +11,12 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
 
     const gradeOptions = ['G3', 'G4'];
     const questionTypeOptions = [
-        { value: 'multiple-choice', label: 'Multiple Choice' },
-        { value: 'numeric', label: 'Numeric Answer' },
-        { value: 'fill-in-the-blank', label: 'Fill in the Blank' },
-        { value: 'drawing', label: 'Drawing (Interactive)' },
-        { value: 'write-in', label: 'Written Answer' },
-        { value: 'drawing-with-text', label: 'Drawing + Written Answer' }
+        { value: QUESTION_TYPES.MULTIPLE_CHOICE, label: 'Multiple Choice' },
+        { value: QUESTION_TYPES.NUMERIC, label: 'Numeric Answer' },
+        { value: QUESTION_TYPES.FILL_IN_THE_BLANKS, label: 'Fill in the Blanks' },
+        { value: QUESTION_TYPES.DRAWING, label: 'Drawing (Interactive)' },
+        { value: QUESTION_TYPES.WRITE_IN, label: 'Written Answer' },
+        { value: QUESTION_TYPES.DRAWING_WITH_TEXT, label: 'Drawing + Written Answer' }
     ];
     const topicOptions = [
         TOPICS.MULTIPLICATION,
@@ -115,7 +115,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
 
         try {
             // AI-evaluated types don't require correctAnswer
-            const isAIEvaluated = ['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType);
+            const isAIEvaluated = [QUESTION_TYPES.DRAWING, QUESTION_TYPES.WRITE_IN, QUESTION_TYPES.DRAWING_WITH_TEXT].includes(editedQuestion.questionType);
             
             if (!editedQuestion.question || !editedQuestion.topic || !editedQuestion.grade) {
                 throw new Error('Question text, topic, and grade are required');
@@ -267,25 +267,25 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                                 <option key={type.value} value={type.value}>{type.label}</option>
                             ))}
                         </select>
-                        {editedQuestion.questionType === 'fill-in-the-blank' && (
+                        {editedQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && (
                             <p className="mt-2 text-xs text-gray-500">
-                                Fill-in-the-blank questions have one or more blanks marked with underscores (____). 
+                                Fill-in-the-blanks questions have one or more blanks marked with underscores (____). 
                                 Students type answers into inline input fields. Separate multiple answers with double semicolons (;;).
                             </p>
                         )}
-                        {editedQuestion.questionType === 'drawing' && (
+                        {editedQuestion.questionType === QUESTION_TYPES.DRAWING && (
                             <p className="mt-2 text-xs text-gray-500">
                                 Drawing questions allow students to sketch their answers (e.g., "Draw an obtuse triangle"). 
                                 AI will validate their drawings automatically.
                             </p>
                         )}
-                        {editedQuestion.questionType === 'write-in' && (
+                        {editedQuestion.questionType === QUESTION_TYPES.WRITE_IN && (
                             <p className="mt-2 text-xs text-gray-500">
                                 Written answer questions allow students to type their response (e.g., "Explain how you would solve this").
                                 AI will evaluate their answer automatically.
                             </p>
                         )}
-                        {editedQuestion.questionType === 'drawing-with-text' && (
+                        {editedQuestion.questionType === QUESTION_TYPES.DRAWING_WITH_TEXT && (
                             <p className="mt-2 text-xs text-gray-500">
                                 Combined questions allow students to both draw and write their answer.
                                 AI will evaluate both the drawing and written explanation together.
@@ -294,7 +294,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
 
                     {/* Options - Only show for multiple-choice and numeric questions */}
-                    {!['drawing', 'write-in', 'drawing-with-text', 'fill-in-the-blank'].includes(editedQuestion.questionType) && (
+                    {!['drawing', 'write-in', 'drawing-with-text', QUESTION_TYPES.FILL_IN_THE_BLANKS].includes(editedQuestion.questionType) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}

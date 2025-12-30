@@ -51,6 +51,16 @@ const VALID_TOPICS_BY_GRADE = {
   ],
 };
 
+// Question type constants
+const QUESTION_TYPES = {
+  MULTIPLE_CHOICE: 'multiple-choice',
+  NUMERIC: 'numeric',
+  FILL_IN_THE_BLANKS: 'fill-in-the-blanks',
+  DRAWING: 'drawing',
+  WRITE_IN: 'write-in',
+  DRAWING_WITH_TEXT: 'drawing-with-text',
+};
+
 // Application state constants
 const APP_STATES = {
   TOPIC_SELECTION: 'topicSelection',
@@ -72,6 +82,7 @@ module.exports = {
   TOPICS,
   VALID_TOPICS_BY_GRADE,
   APP_STATES,
+  QUESTION_TYPES,
   ALL_TOPICS,
   ALL_APP_STATES,
 };

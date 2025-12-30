@@ -7,6 +7,7 @@ import {
   TOPICS as _TOPICS,
   VALID_TOPICS_BY_GRADE as _VALID_TOPICS_BY_GRADE,
   APP_STATES as _APP_STATES,
+  QUESTION_TYPES as _QUESTION_TYPES,
   ALL_TOPICS as _ALL_TOPICS,
   ALL_APP_STATES as _ALL_APP_STATES,
 } from './shared-constants.js';
@@ -16,5 +17,6 @@ export const GRADES = _GRADES;
 export const TOPICS = _TOPICS;
 export const VALID_TOPICS_BY_GRADE = _VALID_TOPICS_BY_GRADE;
 export const APP_STATES = _APP_STATES;
+export const QUESTION_TYPES = _QUESTION_TYPES;
 export const ALL_TOPICS = _ALL_TOPICS;
 export const ALL_APP_STATES = _ALL_APP_STATES;

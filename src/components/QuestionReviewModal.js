@@ -3,7 +3,7 @@ import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2, Upload } from
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { TOPICS } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel, source = 'pdf-upload' }) => {
@@ -11,8 +11,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
   const initializeQuestions = (qs) => {
     return qs.map(q => ({
       ...q,
-      questionType: q.questionType || 'multiple-choice',
-      options: q.questionType === 'multiple-choice' ? (q.options || []) : []
+      questionType: q.questionType || QUESTION_TYPES.MULTIPLE_CHOICE,
+      options: q.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ? (q.options || []) : []
     }));
   };
 
@@ -20,22 +20,24 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set(questions.map((_, i) => i)));
+  const [imageTypes, setImageTypes] = useState({});
 
   // Update editedQuestions when questions prop changes
   useEffect(() => {
     const initialized = initializeQuestions(questions);
     setEditedQuestions(initialized);
     setSelectedQuestions(new Set(questions.map((_, i) => i)));
+    setImageTypes({});
   }, [questions]);
 
   const gradeOptions = ['G3', 'G4'];
   const questionTypeOptions = [
-    { value: 'multiple-choice', label: 'Multiple Choice' },
-    { value: 'numeric', label: 'Numeric Answer' },
-    { value: 'drawing', label: 'Drawing (Interactive)' },
-    { value: 'write-in', label: 'Written Answer' },
-    { value: 'drawing-with-text', label: 'Drawing + Written Answer' },
-    { value: 'fill-in-the-blanks', label: 'Fill in the Blanks' }
+    { value: QUESTION_TYPES.MULTIPLE_CHOICE, label: 'Multiple Choice' },
+    { value: QUESTION_TYPES.NUMERIC, label: 'Numeric Answer' },
+    { value: QUESTION_TYPES.DRAWING, label: 'Drawing (Interactive)' },
+    { value: QUESTION_TYPES.WRITE_IN, label: 'Written Answer' },
+    { value: QUESTION_TYPES.DRAWING_WITH_TEXT, label: 'Drawing + Written Answer' },
+    { value: QUESTION_TYPES.FILL_IN_THE_BLANKS, label: 'Fill in the Blanks' }
   ];
   const topicOptions = [
     TOPICS.MULTIPLICATION,
@@ -100,7 +102,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
     setSelectedQuestions(newSelected);
   };
 
-  const handleImageUpload = async (index, file) => {
+  const handleImageUpload = async (index, file, type = 'question') => {
     if (!file) return;
 
     try {
@@ -126,7 +128,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
       updated[index] = {
         ...updated[index],
         images: [...currentImages, {
-          type: 'uploaded',
+          type: type,
           url: downloadURL,
           description: file.name,
           storagePath: storagePath
@@ -398,16 +400,27 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-medium text-gray-700">Images</label>
-                      <label className="cursor-pointer inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload Image
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(index, e.target.files[0])}
-                        />
-                      </label>
+                      <div className="flex items-center space-x-2">
+                        <select
+                          className="text-xs px-2 py-1 border border-gray-300 rounded"
+                          value={imageTypes[index] || 'question'}
+                          onChange={(e) => setImageTypes(prev => ({ ...prev, [index]: e.target.value }))}
+                        >
+                          <option value="question">Question</option>
+                          <option value="hint">Hint</option>
+                          <option value="solution">Solution</option>
+                        </select>
+                        <label className="cursor-pointer inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload Image
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(index, e.target.files[0], imageTypes[index] || 'question')}
+                          />
+                        </label>
+                      </div>
                     </div>
                     
                     {question.images && question.images.length > 0 && (
@@ -415,7 +428,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                         {question.images.map((img, imgIdx) => (
                           <div key={imgIdx} className="flex items-center space-x-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">
                             <ImageIcon className="h-3 w-3" />
-                            <span className="max-w-[150px] truncate">{img.description || 'Image'}</span>
+                            <span className="max-w-[150px] truncate">{img.type}: {img.description || 'Image'}</span>
                             <button
                               onClick={() => handleRemoveImage(index, imgIdx)}
                               className="text-gray-400 hover:text-red-600 ml-1"

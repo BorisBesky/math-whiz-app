@@ -3,7 +3,7 @@ import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc
 import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
 import QuestionReviewModal from './QuestionReviewModal';
-import { TOPICS } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 import 'katex/dist/katex.min.css';
 import renderMathInElement from 'katex/contrib/auto-render';
@@ -576,7 +576,7 @@ const QuestionBankManager = ({
         const question = questionsToShow.find(q => q.id === questionId);
         if (!question) continue;
 
-        const isDrawingQuestion = question.questionType === 'drawing';
+        const isDrawingQuestion = question.questionType === QUESTION_TYPES.DRAWING;
 
         // Create a reference document in the class questions subcollection
         // Use the same questionId to maintain consistency
@@ -764,7 +764,7 @@ const QuestionBankManager = ({
       const uniqueAssignedClasses = [...new Set(dataToSave.assignedClasses || [])];
 
       // Prepare clean data based on question type
-      const isDrawingQuestion = dataToSave.questionType === 'drawing';
+      const isDrawingQuestion = dataToSave.questionType === QUESTION_TYPES.DRAWING;
       const cleanData = {
         ...dataToSave,
         assignedClasses: uniqueAssignedClasses,
@@ -950,12 +950,12 @@ const QuestionBankManager = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
               >
                 <option value="">All Types</option>
-                <option value="multiple-choice">Multiple Choice</option>
-                <option value="numeric">Numeric</option>
-                <option value="drawing">Drawing</option>
-                <option value="write-in">Write-in</option>
-                <option value="">Drawing + Text</option>
-                <option value="fill-in-the-blank">Fill in the Blank</option>
+                <option value={QUESTION_TYPES.MULTIPLE_CHOICE}>Multiple Choice</option>
+                <option value={QUESTION_TYPES.NUMERIC}>Numeric</option>
+                <option value={QUESTION_TYPES.DRAWING}>Drawing</option>
+                <option value={QUESTION_TYPES.WRITE_IN}>Write-in</option>
+                <option value={QUESTION_TYPES.DRAWING_WITH_TEXT}>Drawing + Text</option>
+                <option value={QUESTION_TYPES.FILL_IN_THE_BLANKS}>Fill in the Blanks</option>
               </select>
             </div>
             <div>
@@ -1214,16 +1214,16 @@ const QuestionBankManager = ({
                                       }`}>
                                       {(() => {
                                         switch (question.questionType) {
-                                          case 'drawing':
+                                          case QUESTION_TYPES.DRAWING:
                                             return '✏️ Drawing';
-                                          case 'drawing-with-text':
+                                          case QUESTION_TYPES.DRAWING_WITH_TEXT:
                                             return '✏️📝 Drawing + Text';
-                                          case 'numeric':
+                                          case QUESTION_TYPES.NUMERIC:
                                             return '🔢 Numeric';
-                                          case 'write-in':
+                                          case QUESTION_TYPES.WRITE_IN:
                                             return '📝 Written';
-                                          case 'fill-in-the-blank':
-                                            return '📝 Fill in the Blank';
+                                          case QUESTION_TYPES.FILL_IN_THE_BLANKS:
+                                            return '📝 Fill in the Blanks';
                                           default:
                                             return '📝 Multiple Choice';
                                         }
@@ -1420,16 +1420,16 @@ const QuestionBankManager = ({
                                 }`}>
                                       {(() => {
                                         switch (question.questionType) {
-                                          case 'drawing':
+                                          case QUESTION_TYPES.DRAWING:
                                             return '✏️ Drawing';
-                                          case 'drawing-with-text':
+                                          case QUESTION_TYPES.DRAWING_WITH_TEXT:
                                             return '✏️📝 Drawing + Text';
-                                          case 'numeric':
+                                          case QUESTION_TYPES.NUMERIC:
                                             return '🔢 Numeric';
-                                          case 'write-in':
+                                          case QUESTION_TYPES.WRITE_IN:
                                             return '📝 Written';
-                                          case 'fill-in-the-blank':
-                                            return '📝 Fill in the Blank';
+                                          case QUESTION_TYPES.FILL_IN_THE_BLANKS:
+                                            return '📝 Fill in the Blanks';
                                           default:
                                             return '📝 Multiple Choice';
                                         }
