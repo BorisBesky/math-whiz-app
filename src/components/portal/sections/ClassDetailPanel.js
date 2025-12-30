@@ -125,7 +125,6 @@ const ClassDetailPanel = ({
     };
 
     loadEnrollments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, rosterIds, db, appId, enrollmentReloadTrigger]);
   // Note: Using rosterIds instead of roster to prevent unnecessary refetches when students array is recreated
 
