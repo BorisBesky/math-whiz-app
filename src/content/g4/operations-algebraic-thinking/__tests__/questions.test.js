@@ -23,8 +23,8 @@ describe('generateTwoStepPatternQuestion', () => {
   it('should generate a question with a sequence and blank', () => {
     const result = questions.generateTwoStepPatternQuestion();
 
-    expect(result.question).toMatch(/Look at this pattern: [-?\d, ]+, ___\. What comes next\?/);
-    expect(result.correctAnswer).toMatch(/^-?\d+$/); // Should be a number string
+    expect(result.question).toMatch(/Look at this pattern: [\d, ]+, ___\. What comes next\?/);
+    expect(result.correctAnswer).toMatch(/^\d+$/); // Should be a number string
   });
 
   it('should include correct answer in options', () => {
