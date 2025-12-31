@@ -4072,7 +4072,7 @@ Answer: [The answer]`;
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 items-stretch">
-              {currentQuestion.options.map((option, index) => {
+              {(currentQuestion.options || []).map((option, index) => {
                 const isSelected = userAnswer === option;
                 const isCorrect = option === currentQuestion.correctAnswer;
                 let buttonClass =
