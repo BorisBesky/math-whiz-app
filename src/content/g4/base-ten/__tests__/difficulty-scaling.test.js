@@ -101,7 +101,8 @@ describe('Grade 4 Difficulty Scaling', () => {
     });
 
     test('Fractions: Hard difficulty includes decimal notation', () => {
-      const questions = Array(20).fill(0).map(() => generateFractions(0.9));
+      // Sample more times to reduce flakiness
+      const questions = Array(200).fill(0).map(() => generateFractions(0.9));
       const subtopics = questions.map(q => q.subtopic);
       
       // At high difficulty, decimal notation should be available
