@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateAndWaitForAuth, delayBetweenTests } from './auth-helpers';
 
 /**
  * E2E tests to validate that quiz questions match the selected topic.
@@ -27,10 +28,15 @@ test.describe('Topic-Question Match Validation', () => {
   ];
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-    // Wait for topic selection UI to be available
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
+    // Use auth helper to handle Firebase Auth rate limiting
+    await navigateAndWaitForAuth(page, '/', {
+      timeout: 60000,
+      maxRetries: 5,
+      initialDelay: 2000,
+    });
+    
+    // Add a small delay between tests to avoid rate limiting
+    await delayBetweenTests(500);
   });
 
   // Helper function to get the displayed topic from the quiz interface
@@ -53,7 +59,7 @@ test.describe('Topic-Question Match Validation', () => {
     }
     
     // Wait for quiz interface
-    await page.waitForSelector('[data-tutorial-id="question-interface"]', { timeout: 30000 });
+    await page.waitForSelector('[data-tutorial-id="question-interface"]', { timeout: 10000 });
   }
 
   // Helper function to switch grade

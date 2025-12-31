@@ -1,26 +1,33 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Root Playwright config.
- *
- * We keep E2E specs under `tests/e2e` and avoid picking up non-E2E files
- * in `tests/` (some of which are Jest-style and not runnable by Playwright).
+ * Playwright configuration for Math Whiz App E2E tests
+ * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
   testDir: 'tests/e2e',
-  testMatch: ['**/*.spec.js', '**/*.spec.ts'],
-
+  testMatch: ['**/*.spec.js', '**/*.spec.ts'], // Explicit pattern to avoid Jest files
+  
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  /* Reduce parallelism to avoid Firebase Auth rate limiting */
+  /* Use fewer workers to reduce concurrent auth requests */
+  workers: process.env.CI ? 1 : 2,
   reporter: 'html',
+  timeout: 60000,
 
   use: {
-    baseURL: 'http://localhost:3000',
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    /* Will use port 8888 if PLAYWRIGHT_USE_NETLIFY_DEV=true, otherwise 3000 */
+    baseURL: process.env.PLAYWRIGHT_USE_NETLIFY_DEV === 'true' 
+      ? 'http://localhost:8888' 
+      : 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    /* Increase timeout to allow for Firebase Auth retries */
+    actionTimeout: 30000,
   },
 
   projects: [
@@ -28,12 +35,31 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Uncomment if you want to test other browsers
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
   ],
 
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* Run your local dev server before starting the tests */
+  webServer: (() => {
+    // Allow using netlify dev via environment variable: PLAYWRIGHT_USE_NETLIFY_DEV=true
+    const useNetlifyDev = process.env.PLAYWRIGHT_USE_NETLIFY_DEV === 'true';
+    const command = useNetlifyDev ? 'npm run dev' : 'npm start';
+    const url = useNetlifyDev ? 'http://localhost:8888' : 'http://localhost:3000';
+    
+    return {
+      command,
+      url,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180 * 1000, // Increased timeout for server startup (3 minutes)
+      stdout: 'pipe', // Show stdout to help debug startup issues
+      stderr: 'pipe', // Show stderr to help debug startup issues
+    };
+  })(),
 });

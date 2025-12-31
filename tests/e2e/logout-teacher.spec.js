@@ -19,14 +19,14 @@ test.describe('Teacher logout redirect', () => {
 
     // Confirm we are on the teacher portal overview
     const overviewHeading = page.getByRole('heading', { name: 'Overview' });
-    await expect(overviewHeading).toBeVisible({ timeout: 30000 });
+    await expect(overviewHeading).toBeVisible({ timeout: 10000 });
 
     // Click Sign out
     const signOutButton = page.locator('button:has-text("Sign out")');
     await signOutButton.click();
 
     // Expect to be redirected back to unified login page
-    await page.waitForURL('**/login', { timeout: 15000 });
+    await page.waitForURL('**/login', { timeout: 10000 });
     await expect(page.locator('text=Welcome to Math Whiz')).toBeVisible();
   });
 });

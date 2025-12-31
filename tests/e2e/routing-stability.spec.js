@@ -1,12 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { navigateAndWaitForAuth, delayBetweenTests } from './auth-helpers';
 
 test.describe('Routing Stability', () => {
   
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-    // Wait for topic selection UI to be available
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
+    // Use auth helper to handle Firebase Auth rate limiting
+    await navigateAndWaitForAuth(page, '/', {
+      timeout: 60000,
+      maxRetries: 5,
+      initialDelay: 2000,
+    });
+    
+    // Add a small delay between tests to avoid rate limiting
+    await delayBetweenTests(500);
   });
 
   test('should navigate to quiz and back to home without issues', async ({ page }) => {

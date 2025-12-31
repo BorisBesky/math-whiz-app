@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateAndWaitForAuth, delayBetweenTests } from './auth-helpers';
 
 /**
  * E2E Tests for Sketch Overlay Feature
@@ -14,14 +15,15 @@ import { test, expect } from '@playwright/test';
 test.describe('Sketch Overlay', () => {
   
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app
-    await page.goto('/');
-
-    // Firebase keeps long-lived connections open; avoid waiting for "networkidle".
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for topic selection UI to be available
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
+    // Use auth helper to handle Firebase Auth rate limiting
+    await navigateAndWaitForAuth(page, '/', {
+      timeout: 60000,
+      maxRetries: 5,
+      initialDelay: 2000,
+    });
+    
+    // Add a small delay between tests to avoid rate limiting
+    await delayBetweenTests(500);
     
     // Click on the first available topic (Multiplication for 3rd grade)
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
@@ -468,7 +470,7 @@ test.describe('Sketch Overlay - Mobile', () => {
     await page.waitForLoadState('domcontentloaded');
     
     // Navigate to quiz
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
+    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 10000 });
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });
@@ -493,7 +495,7 @@ test.describe('Sketch Overlay - Mobile', () => {
     await page.waitForLoadState('domcontentloaded');
     
     // Navigate to quiz
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 60000 });
+    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 10000 });
     const firstTopic = page.locator('button:has-text("Multiplication")').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });
