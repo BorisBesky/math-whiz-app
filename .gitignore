@@ -32,7 +32,7 @@ yarn-error.log*
 .env
 
 .cursor
-.github
+.github/prompts
 
 /test-results
 /playwright-report

@@ -1121,6 +1121,8 @@ const MainAppContent = () => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   // Prevent repeated quiz initialization loops when resuming/starting
   const quizInitInProgressRef = useRef(false);
+  // Guard to prevent snapshot-driven grade reverts immediately after a user-initiated grade change
+  const gradeChangeInProgressRef = useRef(false);
 
   // Navigate to login page for anonymous users to upgrade their account
   const handleUserClick = () => {
@@ -1196,6 +1198,16 @@ const MainAppContent = () => {
     setStoryData(null);
     setShowStoryHint(false);
     setShowStoryAnswer(false);
+
+    // Clear transient quiz state so previous feedback/answers don't carry over
+    setFeedback(null);
+    setIsAnswered(false);
+    setUserAnswer(null);
+    setWriteInAnswer('');
+    setFillInAnswers([]);
+    setFillInResults([]);
+    setDrawingFeedback(null);
+    setShowHint(false);
   }, [userData]);
 
   // Load store images from Firebase Storage on component mount
@@ -1524,8 +1536,14 @@ const MainAppContent = () => {
               }
 
               // Set selectedGrade state from userData
+              // When a local grade change is in progress, ignore snapshot-driven changes briefly to avoid UI flip-flop
               if (data.selectedGrade) {
-                setSelectedGrade(data.selectedGrade);
+                if (!gradeChangeInProgressRef.current) {
+                  setSelectedGrade(data.selectedGrade);
+                } else {
+                  // Ignore incoming selectedGrade while a user-initiated change is pending
+                  console.debug('Ignoring incoming selectedGrade update while local grade change in progress');
+                }
               }
 
               setUserData({ ...data });
@@ -3503,7 +3521,10 @@ Answer: [The answer]`;
       quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
 
     const handleGradeChange = async (newGrade) => {
+      // Optimistically set the UI state and mark change as in-progress so snapshots don't flip us back
       setSelectedGrade(newGrade);
+      gradeChangeInProgressRef.current = true;
+      setUserData(prev => ({ ...(prev || {}), selectedGrade: newGrade }));
 
       // Update selectedGrade in Firestore and ensure grade-specific data exists
       if (user && userData) {
@@ -3545,13 +3566,28 @@ Answer: [The answer]`;
               
               updatePayload.progressByGrade = userData.progressByGrade;
             }
-            
+
             await updateDoc(userDocRef, updatePayload);
             setUserData({...userData});
           } catch (e) {
             console.warn("Could not persist grade change:", e);
+          } finally {
+            // Allow a short grace period for Firestore snapshot to settle before accepting snapshot-driven changes
+            setTimeout(() => {
+              gradeChangeInProgressRef.current = false;
+            }, 1000);
           }
+        } else {
+          // No user doc found — clear the in-progress flag shortly so it doesn't stay set
+          setTimeout(() => {
+            gradeChangeInProgressRef.current = false;
+          }, 1000);
         }
+      } else {
+        // No user data available (e.g., not signed in) — clear the in-progress flag shortly
+        setTimeout(() => {
+          gradeChangeInProgressRef.current = false;
+        }, 1000);
       }
     };
 

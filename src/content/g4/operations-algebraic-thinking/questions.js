@@ -466,11 +466,21 @@ export function generateTwoStepPatternQuestion(difficulty = 0.5) {
       (nextValue + getRandomInt(2, 5)).toString(),
   ];
 
+  // Generate hint based on the operation
+  let hint;
+  if (operation.name === "add then multiply") {
+    hint = "First step is addition, second step is multiplication. Look carefully at how each number in the sequence changes from one to the next.";
+  } else if (operation.name === "multiply then add") {
+    hint = "First step is multiplication, second step is addition. Look carefully at how each number in the sequence changes from one to the next.";
+  } else if (operation.name === "subtract then add") {
+    hint = "First step is subtraction, second step is addition. Look carefully at how each number in the sequence changes from one to the next.";
+  }
+
   return {
     question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    hint: "The pattern is formed by applying two operations in sequence. Both - 1st and 2nd step - are either + or - or ×. Look carefully at how each number in the sequence changes from one to the next.",
+    hint: hint,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
     grade: "G4",

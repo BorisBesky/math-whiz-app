@@ -1,5 +1,6 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QUESTION_TYPES } from 'src/constants/topics';
+const React = require('react');
+const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
+const { QUESTION_TYPES } = require('../../constants/topics');
 
 // Mock firebase modules
 jest.mock('firebase/auth', () => ({
@@ -69,17 +70,15 @@ describe('QuestionReviewModal integration save flow', () => {
       // note: no inputTypes provided initially
     };
 
-    render(
-      <QuestionReviewModal
-        questions={[question]}
-        fileName="test.pdf"
-        classId="class123"
-        appId="testApp"
-        onSave={onSave}
-        onCancel={onCancel}
-        source="pdf-upload"
-      />
-    );
+    render(React.createElement(QuestionReviewModal, {
+      questions: [question],
+      fileName: 'test.pdf',
+      classId: 'class123',
+      appId: 'testApp',
+      onSave: onSave,
+      onCancel: onCancel,
+      source: 'pdf-upload'
+    }));
 
     // Click the Save button
     const saveButton = screen.getByRole('button', { name: /Save \d+ Question\(s\)/i });

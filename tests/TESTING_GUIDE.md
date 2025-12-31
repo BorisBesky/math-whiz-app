@@ -9,7 +9,7 @@ This testing guide covers all types of tests available in the Math Whiz app, inc
 ### 1. Jest Unit Tests (`npm test`)
 
 - **App.test.js**: React component rendering tests
-- **EditQuestionModal.test.js**: Ensures `inputTypes` are auto-detected from `correctAnswer` for fill-in-the-blanks questions and are passed to `onSave` (prevents regressions)
+- **tests/EditQuestionModal.test.js**: Ensures `inputTypes` are auto-detected from `correctAnswer` for fill-in-the-blanks questions and are passed to `onSave` (prevents regressions)
 - Uses Jest with React Testing Library
 - Automatically run in CI/CD pipeline
 
@@ -48,14 +48,21 @@ These tests verify React component rendering and basic functionality.
 ### Run a single test file
 
 ```bash
-# Run a single unit test
-npm test -- -i src/components/__tests__/EditQuestionModal.test.js
+# Run a single unit test (use CRA test runner which loads tests from /src proxies)
+npm test -- -i src/components/__tests__/EditQuestionModal.proxy.test.js
 
-# Run a single integration-style test
-npm test -- -i src/components/__tests__/QuestionReviewModal.integration.test.js
+# Run a single integration-style test (CRA proxy)
+npm test -- -i src/components/__tests__/QuestionReviewModal.integration.proxy.test.js
+
+# Or run tests directly from the /tests folder with Jest (may require additional Jest config if you run Jest directly)
+# Run unit test directly
+npx jest tests/EditQuestionModal.test.js -i --runInBand
+
+# Run integration-style test directly
+npx jest tests/QuestionReviewModal.integration.test.js -i --runInBand
 ```
 
-Note: integration-style tests in the repo mock Firebase (Auth/Firestore) — they do not hit real Firestore accounts.
+Note: integration-style tests in the repo mock Firebase (Auth/Firestore) — they do not hit real Firestore accounts. If you run tests directly with `npx jest`, you may need to install or configure `babel-jest`/`@babel/preset-react` if you encounter JSX parsing errors.
 
 ### 2. Start Development Environment
 
@@ -409,22 +416,28 @@ Once all tests pass:
 
 ### GitHub Actions Setup
 
-Add to `.github/workflows/test.yml`:
+We include a workflow that runs on `push` and `pull_request` which executes both the CRA proxy tests (so the standard `npm test` runner can pick up proxy test files) and direct Jest tests located in the `tests/` directory.
 
-```yaml
-name: Run Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - run: npm install
-      - run: npm test -- --coverage --watchAll=false
+Workflow file: **`.github/workflows/run-tests.yml`**
+
+What it runs:
+- CRA proxy tests using `npm test` (examples below run the specific proxy files)
+- Direct Jest runs for tests in `tests/` (via `npx jest`)
+
+Example workflow steps (already committed to the repository):
+
+```bash
+# CRA proxy tests (run via CRA's test runner)
+npm test -- -i src/components/__tests__/EditQuestionModal.proxy.test.js
+npm test -- -i src/components/__tests__/QuestionReviewModal.integration.proxy.test.js
+
+# direct Jest runs (optional additional checks)
+npx jest tests/EditQuestionModal.test.js tests/QuestionReviewModal.integration.test.js --runInBand
 ```
+
+Notes:
+- The direct Jest runs may require `babel-jest` / `@babel/preset-react` if you run tests that include JSX or import component files directly. We include proxy tests so that the CRA/Jest runner can execute tests that depend on the CRA/Babel configuration.
+- The workflow is at `.github/workflows/run-tests.yml` and runs on Node.js 18 with npm cache enabled.
 
 ### Test Coverage
 

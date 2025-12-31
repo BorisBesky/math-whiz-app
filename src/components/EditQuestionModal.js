@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { TOPICS, QUESTION_TYPES, ALL_QUESTION_TYPES } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 
 const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const [editedQuestion, setEditedQuestion] = useState({ ...question });

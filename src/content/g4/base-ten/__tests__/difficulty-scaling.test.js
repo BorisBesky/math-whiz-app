@@ -3,18 +3,18 @@
  * Validates that difficulty parameter properly affects question generation
  */
 
-import { generateQuestion as generateBaseTen } from '../content/g4/base-ten/questions';
-import { generateQuestion as generateFractions } from '../content/g4/fractions/questions';
-import { generateQuestion as generateGeometry } from '../content/g4/geometry/questions';
-import { generateQuestion as generateOperations } from '../content/g4/operations-algebraic-thinking/questions';
-import { generateQuestion as generateMeasurement } from '../content/g4/measurement-data/questions';
-import { generateQuestion as generateBinary } from '../content/g4/binary-addition/questions';
+import { generateQuestion as generateBaseTen } from '../questions';
+import { generateQuestion as generateFractions } from '../../fractions/questions';
+import { generateQuestion as generateGeometry } from '../../geometry/questions';
+import { generateQuestion as generateOperations } from '../../operations-algebraic-thinking/questions';
+import { generateQuestion as generateMeasurement } from '../../measurement-data/questions';
+import { generateQuestion as generateBinary } from '../../binary-addition/questions';
 
 // Grade 3 modules (should still work with difficulty)
-import { generateQuestion as generateMultiplication } from '../content/g3/multiplication/questions';
-import { generateQuestion as generateDivision } from '../content/g3/division/questions';
-import { generateQuestion as generateG3Fractions } from '../content/g3/fractions/questions';
-import { generateQuestion as generateG3Measurement } from '../content/g3/measurement-data/questions';
+import { generateQuestion as generateMultiplication } from '../../../g3/multiplication/questions';
+import { generateQuestion as generateDivision } from '../../../g3/division/questions';
+import { generateQuestion as generateG3Fractions } from '../../../g3/fractions/questions';
+import { generateQuestion as generateG3Measurement } from '../../../g3/measurement-data/questions';
 
 describe('Grade 4 Difficulty Scaling', () => {
   describe('All G4 modules accept difficulty parameter', () => {

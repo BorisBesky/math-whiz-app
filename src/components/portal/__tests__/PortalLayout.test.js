@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import PortalLayout from '../src/components/portal/PortalLayout';
+import PortalLayout from '../PortalLayout';
 
 describe('PortalLayout', () => {
   it('calls onLogout when Sign out button is clicked', () => {

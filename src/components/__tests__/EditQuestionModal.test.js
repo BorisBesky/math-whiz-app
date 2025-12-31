@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import EditQuestionModal from 'src/components/EditQuestionModal';
-import { QUESTION_TYPES } from 'src/constants/topics';
+const React = require('react');
+const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
+const EditQuestionModal = require('../EditQuestionModal').default;
+const { QUESTION_TYPES } = require('../../constants/topics');
 
 describe('EditQuestionModal', () => {
   test('auto-detects and includes inputTypes when saving a fill-in-the-blanks question', async () => {
@@ -17,7 +17,7 @@ describe('EditQuestionModal', () => {
       // No inputTypes initially
     };
 
-    render(<EditQuestionModal question={question} onSave={onSave} onCancel={onCancel} />);
+    render(React.createElement(EditQuestionModal, { question: question, onSave: onSave, onCancel: onCancel }));
 
     // Enter correct answers separated by ';;' (include a comma in one to test numeric detection)
     const correctAnswerInput = screen.getByPlaceholderText('e.g., answer1 ;; answer2 ;; answer3');
