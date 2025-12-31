@@ -67,6 +67,7 @@ import content from "./content";
 import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questionCache";
 import { loadStoreImages } from "./utils/storeImages";
 import { isSubtopicAllowed } from "./utils/subtopicUtils";
+import { resetTransientQuizState } from './utils/quizStateHelpers';
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -1200,14 +1201,17 @@ const MainAppContent = () => {
     setShowStoryAnswer(false);
 
     // Clear transient quiz state so previous feedback/answers don't carry over
-    setFeedback(null);
-    setIsAnswered(false);
-    setUserAnswer(null);
-    setWriteInAnswer('');
-    setFillInAnswers([]);
-    setFillInResults([]);
-    setDrawingFeedback(null);
-    setShowHint(false);
+    // Use helper to centralize logic and make it testable
+    resetTransientQuizState({
+      setFeedback,
+      setIsAnswered,
+      setUserAnswer,
+      setWriteInAnswer,
+      setFillInAnswers,
+      setFillInResults,
+      setDrawingFeedback,
+      setShowHint,
+    });
   }, [userData]);
 
   // Load store images from Firebase Storage on component mount
