@@ -9,8 +9,16 @@ This testing guide covers all types of tests available in the Math Whiz app, inc
 ### 1. Jest Unit Tests (`npm test`)
 
 - **App.test.js**: React component rendering tests
+- **EditQuestionModal.test.js**: Ensures `inputTypes` are auto-detected from `correctAnswer` for fill-in-the-blanks questions and are passed to `onSave` (prevents regressions)
 - Uses Jest with React Testing Library
 - Automatically run in CI/CD pipeline
+
+
+### 5. Integration-style Jest Tests (mocked Firebase)
+
+- These are Jest tests that mock Firebase modules (Auth/Firestore) to exercise higher-level flows without hitting real services.
+- **QuestionReviewModal.integration.test.js**: Mocks `firebase/auth` and `firebase/firestore` and verifies the full save flow from the review modal to the teacher's question bank and class question subcollections; asserts `inputTypes` are computed and persisted when missing.
+- Run these the same way as unit tests (examples below) — they rely on the mocked implementations included in the test file.
 
 ### 2. Node.js Backend Tests
 
@@ -36,6 +44,18 @@ npm test
 ```
 
 These tests verify React component rendering and basic functionality.
+
+### Run a single test file
+
+```bash
+# Run a single unit test
+npm test -- -i src/components/__tests__/EditQuestionModal.test.js
+
+# Run a single integration-style test
+npm test -- -i src/components/__tests__/QuestionReviewModal.integration.test.js
+```
+
+Note: integration-style tests in the repo mock Firebase (Auth/Firestore) — they do not hit real Firestore accounts.
 
 ### 2. Start Development Environment
 

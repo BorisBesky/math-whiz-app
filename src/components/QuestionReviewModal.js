@@ -3,17 +3,32 @@ import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2, Upload } from
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { TOPICS, QUESTION_TYPES } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES, ALL_QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel, source = 'pdf-upload' }) => {
   // Initialize questions with default questionType if missing
   const initializeQuestions = (qs) => {
-    return qs.map(q => ({
-      ...q,
-      questionType: q.questionType || QUESTION_TYPES.MULTIPLE_CHOICE,
-      options: q.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ? (q.options || []) : []
-    }));
+    return qs.map(q => {
+      const question = {
+        ...q,
+        questionType: q.questionType || QUESTION_TYPES.MULTIPLE_CHOICE,
+        options: q.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ? (q.options || []) : [],
+        inputTypes: q.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS ? (q.inputTypes || []) : undefined
+      };
+      
+      // Auto-detect inputTypes for fill-in-the-blanks questions if not already set
+      if (question.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && question.correctAnswer && (!question.inputTypes || question.inputTypes.length === 0)) {
+        const answers = question.correctAnswer.split(';;').map(ans => ans.trim());
+        question.inputTypes = answers.map(answer => {
+          // Check if the answer is purely numeric (allowing decimals, comma or dot as decimal/thousands separator, and negatives)
+          const numericRegex = /^-?\d+([.,]\d+)?$/;
+          return numericRegex.test(answer) ? 'numeric' : 'mixed';
+        });
+      }
+      
+      return question;
+    });
   };
 
   const [editedQuestions, setEditedQuestions] = useState(() => initializeQuestions(questions));
@@ -54,8 +69,21 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
 
   const handleQuestionChange = (index, field, value) => {
     const updated = [...editedQuestions];
+    const question = updated[index];
+    
+    // Auto-detect inputTypes for fill-in-the-blanks when correctAnswer changes
+    if (field === 'correctAnswer' && question.questionType === 'fill-in-the-blanks') {
+      const answers = value ? value.split(';;').map(ans => ans.trim()) : [];
+      const inputTypes = answers.map(answer => {
+        // Check if the answer is purely numeric (allowing decimals and negatives)
+        const numericRegex = /^-?\d+([.,]\d+)?$/;
+        return numericRegex.test(answer) ? 'numeric' : 'mixed';
+      });
+      question.inputTypes = inputTypes;
+    }
+    
     updated[index] = {
-      ...updated[index],
+      ...question,
       [field]: value
     };
     setEditedQuestions(updated);
@@ -195,13 +223,13 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
         }
         
         // Validate question type
-        const questionType = q.questionType || 'multiple-choice';
-        if (!['multiple-choice', 'numeric', 'drawing', 'write-in', 'drawing-with-text'].includes(questionType)) {
-          throw new Error(`Invalid question type "${questionType}". Must be one of: multiple-choice, numeric, drawing, write-in, drawing-with-text`);
+        const questionType = q.questionType || QUESTION_TYPES.MULTIPLE_CHOICE;
+        if (!ALL_QUESTION_TYPES.includes(questionType)) {
+          throw new Error(`Invalid question type "${questionType}". Must be one of: ${ALL_QUESTION_TYPES.join(', ')}`);
         }
         
         // AI-evaluated types: drawing, write-in, drawing-with-text don't need correctAnswer
-        const isAIEvaluated = ['drawing', 'write-in', 'drawing-with-text'].includes(questionType);
+        const isAIEvaluated = [QUESTION_TYPES.DRAWING, QUESTION_TYPES.WRITE_IN, QUESTION_TYPES.DRAWING_WITH_TEXT].includes(questionType);
         
         // Validate correctAnswer based on question type
         if (!isAIEvaluated && !q.correctAnswer) {
@@ -209,7 +237,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
         }
         
         // Validate options for multiple-choice questions
-        if (questionType === 'multiple-choice' && (!q.options || q.options.length === 0)) {
+        if (questionType === QUESTION_TYPES.MULTIPLE_CHOICE && (!q.options || q.options.length === 0)) {
           throw new Error('Multiple choice questions must have at least one option');
         }
         
@@ -223,26 +251,57 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
 
       // First, save all questions to teacher's global question bank
       const savedQuestionIds = [];
+
+      // Import firestore functions at runtime to use the mocked implementations reliably in tests
+      const firestoreModule = require('firebase/firestore');
+      const runtimeCollection = firestoreModule.collection;
+      const runtimeAddDoc = firestoreModule.addDoc;
+
       for (const question of questionsToSave) {
-        const questionBankRef = collection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
-        const savedDoc = await addDoc(questionBankRef, {
-          ...question,
+        // Clean inputTypes for fill-in-the-blanks questions
+        const cleanQuestion = { ...question };
+        if (cleanQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS) {
+          // If inputTypes present, remove empty entries
+          if (cleanQuestion.inputTypes) {
+            cleanQuestion.inputTypes = cleanQuestion.inputTypes.filter(type => type && type.trim() !== '');
+          }
+
+          // Fallback: if no inputTypes available but we have a correctAnswer, auto-detect them
+          if ((!cleanQuestion.inputTypes || cleanQuestion.inputTypes.length === 0) && cleanQuestion.correctAnswer) {
+            const answers = cleanQuestion.correctAnswer.split(';;').map(ans => ans.trim());
+            const numericRegex = /^-?\d+([.,]\d+)?$/;
+            cleanQuestion.inputTypes = answers.map(answer => (numericRegex.test(answer) ? 'numeric' : 'mixed'));
+          }
+
+          // Ensure the field is present as an array (Firestore will store empty arrays too)
+          cleanQuestion.inputTypes = cleanQuestion.inputTypes || [];
+        }
+
+        const questionBankRef = runtimeCollection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
+        const savedDoc = await runtimeAddDoc(questionBankRef, {
+          ...cleanQuestion,
           createdAt: new Date(),
           createdBy: user.uid,
           source: source,
           pdfSource: fileName || '',
           assignedClasses: classId ? [classId] : []
         });
-        savedQuestionIds.push({ id: savedDoc.id, question });
+        savedQuestionIds.push({ id: savedDoc.id, question: cleanQuestion });
       }
 
       // If classId provided, create reference documents in the class questions subcollection
       if (classId) {
         const classRefPromises = [];
+
+        // Use runtime doc/setDoc as well
+        const firestoreModule2 = require('firebase/firestore');
+        const runtimeDoc = firestoreModule2.doc;
+        const runtimeSetDoc = firestoreModule2.setDoc;
+
         for (const { id: questionId, question } of savedQuestionIds) {
-          const classQuestionRef = doc(db, 'artifacts', appId, 'classes', classId, 'questions', questionId);
+          const classQuestionRef = runtimeDoc(db, 'artifacts', appId, 'classes', classId, 'questions', questionId);
           classRefPromises.push(
-            setDoc(classQuestionRef, {
+            runtimeSetDoc(classQuestionRef, {
               // Reference information
               questionBankRef: `artifacts/${appId}/users/${user.uid}/questionBank/${questionId}`,
               teacherId: user.uid,
@@ -255,6 +314,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
               questionType: question.questionType || 'multiple-choice',
               correctAnswer: question.correctAnswer,
               options: question.options || [],
+              inputTypes: question.inputTypes || [],
               hint: question.hint || '',
               standard: question.standard || '',
               concept: question.concept || '',
@@ -552,15 +612,54 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
                       {question.questionType === 'numeric' && (
                         <span className="text-xs text-gray-500 ml-2">(Numeric value only, no units)</span>
                       )}
+                      {question.questionType === 'fill-in-the-blanks' && (
+                        <span className="text-xs text-gray-500 ml-2">(Separate multiple answers with ;;)</span>
+                      )}
                     </label>
                     <input
                       type="text"
                       value={question.correctAnswer || ''}
                       onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder={question.questionType === 'numeric' ? 'Enter numeric answer (e.g., 5.3, -1.2)' : 'Enter correct answer'}
+                      placeholder={
+                        question.questionType === 'numeric' 
+                          ? 'Enter numeric answer (e.g., 5.3, -1.2)' 
+                          : question.questionType === 'fill-in-the-blanks'
+                            ? 'e.g., answer1 ;; answer2 ;; answer3'
+                            : 'Enter correct answer'
+                      }
                     />
+                    {question.questionType === 'fill-in-the-blanks' && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Tip: Use __ (two or more underscores) to create blanks in the question text. 
+                        The number of blanks must match the number of answers.
+                      </p>
+                    )}
                   </div>
+                )}
+
+                {/* Input Types - For fill-in-the-blanks questions */}
+                {question.questionType === 'fill-in-the-blanks' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Input Types (Optional - separate with commas)
+                        </label>
+                        <input
+                            type="text"
+                            value={(question.inputTypes || []).join(', ')}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                const inputTypes = value ? value.split(',').map(s => s.trim()) : [];
+                                handleQuestionChange(index, 'inputTypes', inputTypes);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="e.g., numeric, mixed, numeric"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                            Specify input type for each blank: 'numeric' for numbers, 'mixed' for text/numbers (default). 
+                            Leave empty for all mixed.
+                        </p>
+                    </div>
                 )}
 
                 {/* Expected Answer - For AI-evaluated questions */}

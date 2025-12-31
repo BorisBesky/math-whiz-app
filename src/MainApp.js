@@ -3992,7 +3992,7 @@ Answer: [The answer]`;
                           
                           // Calculate width based on expected answer length (min 4rem, max 12rem)
                           const expectedLength = correctAnswers[blankIndex]?.length || 5;
-                          const width = Math.min(Math.max(expectedLength * 0.6 + 2, 4), 12);
+                          const width = Math.min(Math.max(expectedLength, 4), 12);
                           
                           return (
                             <input
@@ -4006,8 +4006,8 @@ Answer: [The answer]`;
                               }}
                               disabled={isAnswered}
                               className={inputClass}
-                              style={{ width: `${width}rem` }}
-                              placeholder={`blank ${blankIndex + 1}`}
+                              style={{ width: `${width}ch` }}
+                              placeholder={`?`}
                               autoComplete="off"
                               inputMode={inputType === 'numeric' ? 'decimal' : 'text'}
                             />
@@ -4026,7 +4026,7 @@ Answer: [The answer]`;
                             return (
                               <div key={idx} className="flex items-center gap-2">
                                 <span className={`font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                                  Blank {idx + 1}:
+                                  Answer {idx + 1}:
                                 </span>
                                 <span className="text-gray-800 font-semibold">
                                   {formatMathText(answer)}

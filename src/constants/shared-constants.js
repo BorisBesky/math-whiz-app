@@ -61,6 +61,9 @@ const QUESTION_TYPES = {
   DRAWING_WITH_TEXT: 'drawing-with-text',
 };
 
+// Export all question types as an array for validation/iteration
+const ALL_QUESTION_TYPES = Object.values(QUESTION_TYPES);
+
 // Application state constants
 const APP_STATES = {
   TOPIC_SELECTION: 'topicSelection',
@@ -85,4 +88,5 @@ module.exports = {
   QUESTION_TYPES,
   ALL_TOPICS,
   ALL_APP_STATES,
+  ALL_QUESTION_TYPES,
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { TOPICS, QUESTION_TYPES } from '../constants/topics';
+import { TOPICS, QUESTION_TYPES, ALL_QUESTION_TYPES } from '../constants/topics';
 
 const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const [editedQuestion, setEditedQuestion] = useState({ ...question });
@@ -32,7 +32,14 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     ];
 
     useEffect(() => {
-        setEditedQuestion({ ...question });
+        const initialQuestion = { ...question };
+        
+        // Auto-detect inputTypes for fill-in-the-blanks questions if not already set
+        if (initialQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && initialQuestion.correctAnswer && (!initialQuestion.inputTypes || initialQuestion.inputTypes.length === 0)) {
+            initialQuestion.inputTypes = detectInputTypes(initialQuestion.correctAnswer);
+        }
+        
+        setEditedQuestion(initialQuestion);
     }, [question]);
 
     const handleChange = (field, value) => {
@@ -40,6 +47,31 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
             ...prev,
             [field]: value
         }));
+    };
+
+    // Helper function to auto-detect input types from correct answers
+    const detectInputTypes = (correctAnswer) => {
+        if (!correctAnswer) return [];
+        
+        const answers = correctAnswer.split(';;').map(ans => ans.trim());
+        return answers.map(answer => {
+            // Check if the answer is purely numeric (allowing decimals and negatives)
+            const numericRegex = /^-?\d+([.,]\d+)?$/;
+            return numericRegex.test(answer) ? 'numeric' : 'mixed';
+        });
+    };
+
+    const handleCorrectAnswerChange = (value) => {
+        setEditedQuestion(prev => {
+            const updates = { correctAnswer: value };
+            
+            // Auto-detect inputTypes for fill-in-the-blanks questions
+            if (prev.questionType === 'fill-in-the-blanks') {
+                updates.inputTypes = detectInputTypes(value);
+            }
+            
+            return { ...prev, ...updates };
+        });
     };
 
     const handleOptionChange = (index, value) => {
@@ -126,7 +158,24 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                 throw new Error('Correct answer is required for non-AI-evaluated questions');
             }
 
-            await onSave(editedQuestion);
+            // Prepare a clean copy of the question to save
+            const toSave = { ...editedQuestion };
+
+            // Ensure inputTypes are cleaned and present for fill-in-the-blanks questions
+            if (toSave.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS) {
+                if (toSave.inputTypes) {
+                    toSave.inputTypes = toSave.inputTypes.filter(type => type && type.trim() !== '');
+                }
+
+                // Fallback: if inputTypes absent or empty but we have a correctAnswer, auto-detect
+                if ((!toSave.inputTypes || toSave.inputTypes.length === 0) && toSave.correctAnswer) {
+                    toSave.inputTypes = detectInputTypes(toSave.correctAnswer);
+                }
+
+                toSave.inputTypes = toSave.inputTypes || [];
+            }
+
+            await onSave(toSave);
         } catch (err) {
             console.error('Save error:', err);
             setError(err.message || 'Failed to save question');
@@ -294,10 +343,10 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
 
                     {/* Options - Only show for multiple-choice and numeric questions */}
-                    {!['drawing', 'write-in', 'drawing-with-text', QUESTION_TYPES.FILL_IN_THE_BLANKS].includes(editedQuestion.questionType) && (
+                    {![QUESTION_TYPES.DRAWING, QUESTION_TYPES.WRITE_IN, QUESTION_TYPES.DRAWING_WITH_TEXT, QUESTION_TYPES.FILL_IN_THE_BLANKS].includes(editedQuestion.questionType) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Options {editedQuestion.questionType === 'multiple-choice' && '(for multiple choice)'}
+                                Options {editedQuestion.questionType === QUESTION_TYPES.MULTIPLE_CHOICE && '(for multiple choice)'}
                             </label>
                         {(editedQuestion.options || []).map((option, index) => (
                             <div key={index} className="flex items-center space-x-2 mb-2">
@@ -323,21 +372,45 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     {!['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Correct Answer * {editedQuestion.questionType === 'fill-in-the-blanks' && '(separate multiple answers with ;;)'}
+                            Correct Answer * {editedQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && '(separate multiple answers with ;;)'}
                         </label>
                         <input
                             type="text"
                             value={editedQuestion.correctAnswer || ''}
-                            onChange={(e) => handleChange('correctAnswer', e.target.value)}
+                            onChange={(e) => handleCorrectAnswerChange(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            placeholder={editedQuestion.questionType === 'fill-in-the-blanks' ? 'e.g., answer1 ;; answer2 ;; answer3' : ''}
+                            placeholder={editedQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS ? 'e.g., answer1 ;; answer2 ;; answer3' : ''}
                         />
-                        {editedQuestion.questionType === 'fill-in-the-blanks' && (
+                        {editedQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && (
                             <p className="mt-1 text-xs text-gray-500">
                                 Tip: Use __ (two or more underscores) to create blanks in the question text. 
                                 The number of blanks must match the number of answers.
                             </p>
                         )}
+                    </div>
+                    )}
+
+                    {/* Input Types - For fill-in-the-blanks questions */}
+                    {editedQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Input Types (Optional - separate with commas)
+                        </label>
+                        <input
+                            type="text"
+                            value={(editedQuestion.inputTypes || []).join(', ')}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                const inputTypes = value ? value.split(',').map(s => s.trim()) : [];
+                                handleChange('inputTypes', inputTypes);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="e.g., numeric, mixed, numeric"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                            Specify input type for each blank: 'numeric' for numbers, 'mixed' for text/numbers (default). 
+                            Leave empty for all mixed.
+                        </p>
                     </div>
                     )}
 
@@ -353,7 +426,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </div>
 
                     {/* Expected Answer - For AI-evaluated questions */}
-                    {['drawing', 'write-in', 'drawing-with-text'].includes(editedQuestion.questionType) && (
+                    {[QUESTION_TYPES.DRAWING, QUESTION_TYPES.WRITE_IN, QUESTION_TYPES.DRAWING_WITH_TEXT].includes(editedQuestion.questionType) && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Expected Answer (Optional)</label>
                         <textarea

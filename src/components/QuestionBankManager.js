@@ -765,6 +765,7 @@ const QuestionBankManager = ({
 
       // Prepare clean data based on question type
       const isDrawingQuestion = dataToSave.questionType === QUESTION_TYPES.DRAWING;
+      const isFillInTheBlanks = dataToSave.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS;
       const cleanData = {
         ...dataToSave,
         assignedClasses: uniqueAssignedClasses,
@@ -775,6 +776,11 @@ const QuestionBankManager = ({
       if (isDrawingQuestion) {
         cleanData.correctAnswer = deleteField();
         cleanData.options = deleteField();
+      }
+
+      // Clean inputTypes for fill-in-the-blanks questions (remove empty strings)
+      if (isFillInTheBlanks && cleanData.inputTypes) {
+        cleanData.inputTypes = cleanData.inputTypes.filter(type => type && type.trim() !== '');
       }
 
       await updateDoc(questionRef, cleanData);
