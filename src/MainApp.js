@@ -145,6 +145,17 @@ const sanitizeTopicName = (topicName) => {
     .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
 };
 
+// --- Helper function to sanitize objects for Firestore ---
+const sanitizeObject = (obj) => {
+  const sanitized = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+};
+
 // --- Concept Explanation HTML Files Mapping ---
 const conceptExplanationFiles = {
   // 3rd Grade Topics
@@ -1961,7 +1972,10 @@ const MainAppContent = () => {
           aiFeedback: aiFeedback
         };
         
-        updates[`answeredQuestions`] = arrayUnion(questionRecord);
+        // Sanitize questionRecord to remove undefined values
+        const sanitizedQuestionRecord = sanitizeObject(questionRecord);
+        
+        updates[`answeredQuestions`] = arrayUnion(sanitizedQuestionRecord);
         
         // Track answered question bank questions to avoid repeating them
         if (isCorrect && currentQuestion.questionId) {
@@ -2099,9 +2113,12 @@ const MainAppContent = () => {
         fillInResults: validation.results, // Store individual blank results
       };
       
+      // Sanitize questionRecord to remove undefined values
+      const sanitizedQuestionRecord = sanitizeObject(questionRecord);
+      
       // Award coins
       updates.coins = increment(1);
-      updates.answeredQuestions = arrayUnion(questionRecord);
+      updates.answeredQuestions = arrayUnion(sanitizedQuestionRecord);
       
       // Update progress counters
       updates[allProgress_path] = increment(1);
@@ -2204,8 +2221,11 @@ const MainAppContent = () => {
       questionRecord.subtopic = currentQuiz[currentQuestionIndex].subtopic;
     }
 
+    // Sanitize questionRecord to remove undefined values
+    const sanitizedQuestionRecord = sanitizeObject(questionRecord);
+
     // Add question to answered questions array
-    updates[`answeredQuestions`] = arrayUnion(questionRecord);
+    updates[`answeredQuestions`] = arrayUnion(sanitizedQuestionRecord);
 
     // Track answered question bank questions
     if (isCorrect && currentQuestion.questionId) {
@@ -3769,12 +3789,14 @@ Answer: [The answer]`;
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
-          <p 
-            key={`${currentQuestionIndex}-${isAnswered}`}
-            className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]"
-          >
-            {formatMathText(currentQuestion.question)}
-          </p>
+          {!isFillInTheBlanksQuestion(currentQuestion) && (
+            <p 
+              key={`${currentQuestionIndex}-${isAnswered}`}
+              className="text-lg md:text-xl text-gray-800 mb-6 min-h-[56px]"
+            >
+              {formatMathText(currentQuestion.question)}
+            </p>
+          )}
 
           {/* Question Images */}
           {displayQuestionImages.length > 0 && (
