@@ -2190,6 +2190,15 @@ const MainAppContent = () => {
         updates[gradeCorrectTopic_path] = increment(1);
         
         setScore(score + 1);
+        
+        // Track answered question bank questions to avoid repeating them
+        if (currentQuestion.questionId) {
+          // Question is from Firestore question bank
+          const currentAnsweredIds = userData?.answeredQuestionBankQuestions || [];
+          if (!currentAnsweredIds.includes(currentQuestion.questionId)) {
+            updates[`answeredQuestionBankQuestions`] = arrayUnion(currentQuestion.questionId);
+          }
+        }
       }
       
       // Determine feedback
