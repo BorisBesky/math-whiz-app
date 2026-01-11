@@ -66,7 +66,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
             const updates = { correctAnswer: value };
             
             // Auto-detect inputTypes for fill-in-the-blanks questions
-            if (prev.questionType === 'fill-in-the-blanks') {
+            if (prev.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS) {
                 updates.inputTypes = detectInputTypes(value);
             }
             

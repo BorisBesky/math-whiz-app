@@ -1,4 +1,5 @@
 // Question generation for 3rd Grade Multiplication topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
@@ -260,7 +261,7 @@ function generateFillInTheBlanksQuestion(difficulty = 0.5) {
   
   return {
     question: selected.question,
-    questionType: 'fill-in-the-blanks',
+    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
     correctAnswer: selected.answers.join(' ;; '),
     inputTypes: selected.inputTypes,
     options: [], // No options for fill-in-the-blanks

@@ -2154,7 +2154,7 @@ const MainAppContent = () => {
         userAnswer: userAnswerString,
         isCorrect: isCorrect,
         timeTaken: timeTaken,
-        questionType: 'fill-in-the-blanks',
+        questionType: currentQuestion.questionType,
         correctAnswer: currentQuestion.correctAnswer,
         options: [],
         hint: currentQuestion.hint,

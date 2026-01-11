@@ -1,3 +1,5 @@
+import { QUESTION_TYPES } from '../constants/shared-constants';
+
 /**
  * Checks if a question has purely numeric answers
  * @param {Object} question - The question object
@@ -41,7 +43,7 @@ export function isNumericQuestion(question) {
  * @returns {boolean} - True if the question is write-in type
  */
 export function isWriteInQuestion(question) {
-  return question?.questionType === 'write-in';
+  return question?.questionType === QUESTION_TYPES.WRITE_IN;
 }
 
 /**
@@ -59,7 +61,7 @@ export function isDrawingWithTextQuestion(question) {
  * @returns {boolean} - True if AI evaluation is needed
  */
 export function isAIEvaluatedQuestion(question) {
-  const aiTypes = ['drawing', 'write-in', 'drawing-with-text'];
+  const aiTypes = [QUESTION_TYPES.DRAWING, QUESTION_TYPES.WRITE_IN, QUESTION_TYPES.DRAWING_WITH_TEXT];
   return aiTypes.includes(question?.questionType);
 }
 
@@ -69,7 +71,17 @@ export function isAIEvaluatedQuestion(question) {
  * @returns {boolean} - True if the question is fill-in-the-blanks type
  */
 export function isFillInTheBlanksQuestion(question) {
-  return question?.questionType === 'fill-in-the-blanks';
+  if (question?.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS) {
+    return true;
+  }
+
+  // Fallback: also detect if the question text contains blanks (_____),
+  // provided it's not explicitly marked as another type that shouldn't be overridden.
+  // Note: MainApp checking order usually handles explicit types first.
+  return (
+    question?.question && 
+    /_{2,}/.test(question.question)
+  );
 }
 
 /**
