@@ -8,14 +8,14 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Methods": "DELETE, OPTIONS",
   };
 
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
       headers,
-      body: '',
+      body: "",
     };
   }
-  
+
   if (event.httpMethod !== "DELETE") {
     return {
       statusCode: 405,
@@ -28,26 +28,28 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Internal Server Error: Firebase Admin SDK not initialized." }),
+      body: JSON.stringify({
+        error: "Internal Server Error: Firebase Admin SDK not initialized.",
+      }),
     };
   }
 
   try {
     const { teacherId, teacherUid, appId } = JSON.parse(event.body);
-    
+
     // Validate required fields with detailed error messages
     const missingFields = [];
-    if (!teacherId) missingFields.push('teacherId');
-    if (!teacherUid) missingFields.push('teacherUid');
-    if (!appId) missingFields.push('appId');
-    
+    if (!teacherId) missingFields.push("teacherId");
+    if (!teacherUid) missingFields.push("teacherUid");
+    if (!appId) missingFields.push("appId");
+
     if (missingFields.length > 0) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ 
-          error: `Missing required fields: ${missingFields.join(', ')}`,
-          received: { teacherId, teacherUid, appId }
+        body: JSON.stringify({
+          error: `Missing required fields: ${missingFields.join(", ")}`,
+          received: { teacherId, teacherUid, appId },
         }),
       };
     }
@@ -64,12 +66,14 @@ exports.handler = async (event) => {
 
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await admin.auth().verifyIdToken(token);
-    
+
     if (decodedToken.admin !== true) {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: "Forbidden: Only admins can delete teachers." }),
+        body: JSON.stringify({
+          error: "Forbidden: Only admins can delete teachers.",
+        }),
       };
     }
 
@@ -86,24 +90,27 @@ exports.handler = async (event) => {
 
     // Step 1: Check if teacher has any assigned classes
     const classesRef = db.collection(`artifacts/${appId}/classes`);
-    const teacherClassesQuery = classesRef.where('teacherId', '==', teacherUid);
+    const teacherClassesQuery = classesRef.where("teacherId", "==", teacherUid);
     const teacherClassesSnapshot = await teacherClassesQuery.get();
-    
+
     if (!teacherClassesSnapshot.empty) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ 
-          error: "Cannot delete teacher with assigned classes. Please reassign or delete classes first.",
-          assignedClasses: teacherClassesSnapshot.size
+        body: JSON.stringify({
+          error:
+            "Cannot delete teacher with assigned classes. Please reassign or delete classes first.",
+          assignedClasses: teacherClassesSnapshot.size,
         }),
       };
     }
 
     // Step 2: Delete teacher profile from Firestore
-    const teacherRef = db.doc(`artifacts/${appId}/users/${teacherId}/math_whiz_data/profile`);
+    const teacherRef = db.doc(
+      `artifacts/${appId}/users/${teacherId}/math_whiz_data/profile`
+    );
     const teacherDoc = await teacherRef.get();
-    
+
     if (!teacherDoc.exists) {
       return {
         statusCode: 404,
@@ -114,11 +121,10 @@ exports.handler = async (event) => {
 
     await teacherRef.delete();
 
-    const math_whiz_dataRef = db.doc(`artifacts/${appId}/users/${teacherId}/math_whiz_data`);
-    const math_whiz_dataDoc = await math_whiz_dataRef.get();
-    if (math_whiz_dataDoc.exists) {
-      await math_whiz_dataRef.delete();
-    }
+    // Delete the parent user document to clean up
+    const userRef = db.doc(`artifacts/${appId}/users/${teacherId}`);
+    await userRef.delete();
+
     console.log(`Teacher profile deleted from Firestore: ${teacherId}`);
 
     // Step 3: Remove admin custom claims from Firebase Auth user
@@ -147,18 +153,17 @@ exports.handler = async (event) => {
         success: true,
         message: "Teacher account deleted successfully",
         deletedTeacherId: teacherId,
-        deletedTeacherUid: teacherUid
+        deletedTeacherUid: teacherUid,
       }),
     };
-
   } catch (error) {
     console.error("Error in delete-teacher function:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: "Internal Server Error", 
-        details: error.message 
+      body: JSON.stringify({
+        error: "Internal Server Error",
+        details: error.message,
       }),
     };
   }
