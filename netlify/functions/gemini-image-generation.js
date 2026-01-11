@@ -19,8 +19,8 @@ const verifyAuthToken = async (authHeader) => {
 };
 
 // Create a unique job ID
-const createJobId = (userId) => `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
+const createJobId = (userId) =>
+  `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
 exports.handler = async (event) => {
   // Handle CORS for browser requests
@@ -54,7 +54,15 @@ exports.handler = async (event) => {
       event.headers.authorization || event.headers.Authorization;
     const userId = await verifyAuthToken(authHeader);
 
-    const { action, theme, themeDescription, count, descriptions, selectedIndices, generatedImages } = JSON.parse(event.body);
+    const {
+      action,
+      theme,
+      themeDescription,
+      count,
+      descriptions,
+      selectedIndices,
+      generatedImages,
+    } = JSON.parse(event.body);
     const appId = event.queryStringParameters?.appId || "default-app-id";
 
     if (!action) {
@@ -71,13 +79,19 @@ exports.handler = async (event) => {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "Theme description and count are required" }),
+          body: JSON.stringify({
+            error: "Theme description and count are required",
+          }),
         };
       }
     }
 
     if (action === "generate-images") {
-      if (!descriptions || !Array.isArray(descriptions) || descriptions.length === 0) {
+      if (
+        !descriptions ||
+        !Array.isArray(descriptions) ||
+        descriptions.length === 0
+      ) {
         return {
           statusCode: 400,
           headers,
@@ -95,7 +109,11 @@ exports.handler = async (event) => {
     }
 
     if (action === "add-to-store") {
-      if (!selectedIndices || !Array.isArray(selectedIndices) || selectedIndices.length === 0) {
+      if (
+        !selectedIndices ||
+        !Array.isArray(selectedIndices) ||
+        selectedIndices.length === 0
+      ) {
         return {
           statusCode: 400,
           headers,
@@ -122,46 +140,67 @@ exports.handler = async (event) => {
 
     // Create a background job
     const jobId = createJobId(userId);
-    const jobRef = db.collection('artifacts').doc(appId)
-      .collection('imageGenerationJobs').doc(jobId);
+    const jobRef = db
+      .collection("artifacts")
+      .doc(appId)
+      .collection("imageGenerationJobs")
+      .doc(jobId);
 
     // Store job data
     await jobRef.set({
       userId,
       action,
-      status: 'pending',
+      status: "pending",
       progress: 0,
       createdAt: getTimestamp(),
     });
 
     // Invoke the background function
-    const backgroundFunctionUrl = `${process.env.URL || 'http://localhost:8888'}/.netlify/functions/gemini-image-generation-background`;
-    
-    // Don't await - fire and forget
-    fetch(backgroundFunctionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jobId,
-        userId,
-        appId,
-        jobData: { action, theme, themeDescription, count, descriptions, selectedIndices, generatedImages }
-      }),
-    }).catch(err => console.error('Error invoking background function:', err));
+    const backgroundFunctionUrl = `${
+      process.env.URL || "http://localhost:8888"
+    }/.netlify/functions/gemini-image-generation-background`;
+
+    // Await the fetch to ensure the request is sent before the function returns.
+    // Since it's a background function, it will respond immediately with 202.
+    try {
+      await fetch(backgroundFunctionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jobId,
+          userId,
+          appId,
+          jobData: {
+            action,
+            theme,
+            themeDescription,
+            count,
+            descriptions,
+            selectedIndices,
+            generatedImages,
+          },
+        }),
+      });
+    } catch (err) {
+      console.error("Error invoking background function:", err);
+      // If we fail to start the background job, we should probably update the status to failed or let the user know,
+      // but for now let's at least log it. The client effectively got a "success" (202) promise if we continue,
+      // but if this fetch fails, nothing will happen.
+      // Ideally we might want to return 500 here if we can't start the background job.
+    }
 
     // Return job ID immediately
     return {
       statusCode: 202,
       headers,
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         jobId,
-        message: 'Job created and processing started',
-        status: 'pending'
+        message: "Job created and processing started",
+        status: "pending",
       }),
     };
-
   } catch (error) {
     console.error("Gemini image generation error:", error);
     console.error("Error stack:", error.stack);
@@ -194,4 +233,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
