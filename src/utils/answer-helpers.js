@@ -4,15 +4,16 @@
  * @returns {boolean} - True if all options are numeric
  */
 export function isNumericQuestion(question) {
-  if (!question || !question.options || question.options.length === 0) {
+  if (!question) {
     return false;
   }
 
   // Check if the correct answer is purely numeric (including negative numbers)
   const correctAnswer = question.correctAnswer?.toString().trim();
+  const isCorrectNumeric = correctAnswer && /^-?\d+(\.\d+)?$/.test(correctAnswer);
   
   // If correct answer contains non-digit characters (except decimal point and negative sign), it's not purely numeric
-  if (correctAnswer && !/^-?\d+(\.\d+)?$/.test(correctAnswer)) {
+  if (!isCorrectNumeric) {
     return false;
   }
 
@@ -21,11 +22,17 @@ export function isNumericQuestion(question) {
     return false;
   }
 
-  // Check if all options are purely numeric (including negative numbers)
-  return question.options.every(option => {
-    const optionStr = option?.toString().trim();
-    return /^-?\d+(\.\d+)?$/.test(optionStr);
-  });
+  // If options exist, check if they are all numeric
+  if (question.options && question.options.length > 0) {
+    return question.options.every(option => {
+      const optionStr = option?.toString().trim();
+      return /^-?\d+(\.\d+)?$/.test(optionStr);
+    });
+  }
+
+  // If no options exist but correct answer is numeric, treat as numeric question
+  // This allows AI generated questions without options to use the number pad
+  return true;
 }
 
 /**
