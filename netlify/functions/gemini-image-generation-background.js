@@ -1,7 +1,22 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { admin, db, storage } = require("./firebase-admin");
 const { getStorage } = require("firebase-admin/storage");
-const sharp = require("sharp");
+let sharp = null;
+try {
+  // Optional dependency: if sharp isn't available in the functions runtime,
+  // we still want to complete the job and report status to Firestore.
+  sharp = require("sharp");
+} catch (e) {
+  console.warn(
+    "Optional dependency 'sharp' is not available; PNGs will be stored without conversion.",
+    e?.message
+  );
+}
+const {
+  getErrorSummary,
+  updateJobWithRetry,
+  generateContentWithRetry,
+} = require("./retry-utils");
 
 const getTimestamp = () => admin.firestore.Timestamp.now();
 
@@ -94,7 +109,9 @@ Number of descriptions: ${count}
 Return only the JSON array, no additional text.`;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(model, prompt, {
+      label: "generate-descriptions",
+    });
     const response = await result.response;
     const text = response.text();
 
@@ -161,7 +178,9 @@ The style should match the description provided by the user.
 Make it engaging and visually appealing.`;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(model, prompt, {
+      label: "generate-image",
+    });
     const response = await result.response;
     
     // Check if response contains an image
@@ -204,7 +223,7 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
     const bucket = getStorage().bucket();
 
     if (action === "generate-descriptions") {
-      await jobRef.update({
+      await updateJobWithRetry(jobRef, {
         status: 'processing',
         progress: 10,
         message: 'Generating descriptions...',
@@ -212,7 +231,7 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
 
       const generatedDescriptions = await generateDescriptions(themeDescription, parseInt(count));
 
-      await jobRef.update({
+      await updateJobWithRetry(jobRef, {
         status: 'completed',
         progress: 100,
         descriptions: generatedDescriptions,
@@ -224,12 +243,13 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
 
     else if (action === "generate-images") {
       const images = [];
+      const imageErrors = [];
       const timestamp = Date.now();
       const totalImages = descriptions.length;
 
       for (let i = 0; i < descriptions.length; i++) {
         try {
-          await jobRef.update({
+          await updateJobWithRetry(jobRef, {
             status: 'processing',
             progress: Math.round((i / totalImages) * 90),
             message: `Generating image ${i + 1} of ${totalImages}...`,
@@ -239,18 +259,19 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
           const fullDescription = typeof descObj === 'string' ? descObj : descObj.fullDescription || descObj.description || '';
           const { buffer, mimeType } = await generateImage(fullDescription);
 
-          // Convert PNG to JPG for storage efficiency
+          // Convert PNG to JPG for storage efficiency (when sharp is available)
           let imageBuffer = buffer;
           const isPng = mimeType && mimeType.includes('png');
+          const canConvert = Boolean(isPng && sharp);
           
-          if (isPng) {
+          if (canConvert) {
             imageBuffer = await sharp(buffer)
               .jpeg({ quality: 90 })
               .toBuffer();
           }
 
-          const contentType = 'image/jpeg';
-          const extension = 'jpg';
+          const contentType = canConvert ? 'image/jpeg' : (mimeType || 'image/png');
+          const extension = canConvert ? 'jpg' : (contentType.includes('png') ? 'png' : 'img');
           
           const shortName = typeof descObj === 'string' 
             ? `${theme}-${i + 1}`.toLowerCase().replace(/[^a-z0-9-]/g, '-')
@@ -276,23 +297,54 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
           });
         } catch (error) {
           console.error(`Error generating image ${i + 1}:`, error);
+          imageErrors.push({
+            index: i,
+            message: error?.message || String(error),
+          });
           // Continue with other images even if one fails
         }
       }
 
-      await jobRef.update({
+      if (images.length === 0) {
+        await updateJobWithRetry(jobRef, {
+          status: 'error',
+          progress: 100,
+          images: [],
+          imageErrors,
+          completedAt: getTimestamp(),
+          error:
+            imageErrors.length > 0
+              ? `Failed to generate any images (${imageErrors.length} failure(s))`
+              : 'Failed to generate any images',
+          message: 'Image generation failed',
+        });
+        console.warn(
+          `Job ${jobId} failed: generated 0/${totalImages} images`,
+          imageErrors
+        );
+        return;
+      }
+
+      await updateJobWithRetry(jobRef, {
         status: 'completed',
         progress: 100,
         images: images,
+        imageErrors: imageErrors.length > 0 ? imageErrors : [],
         completedAt: getTimestamp(),
-        message: `Generated ${images.length} images successfully`,
+        message:
+          imageErrors.length > 0
+            ? `Generated ${images.length}/${totalImages} images (${imageErrors.length} failed)`
+            : `Generated ${images.length} images successfully`,
       });
 
-      console.log(`Job ${jobId} completed: generated ${images.length} images`);
+      console.log(
+        `Job ${jobId} completed: generated ${images.length}/${totalImages} images`,
+        imageErrors.length > 0 ? { failures: imageErrors.length } : ''
+      );
     }
 
     else if (action === "add-to-store") {
-      await jobRef.update({
+      await updateJobWithRetry(jobRef, {
         status: 'processing',
         progress: 50,
         message: 'Adding images to store...',
@@ -324,7 +376,7 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
 
       await updateMetadata(bucket, newImages);
 
-      await jobRef.update({
+      await updateJobWithRetry(jobRef, {
         status: 'completed',
         progress: 100,
         addedImages: newImages,
@@ -337,11 +389,18 @@ const processImageGenerationJob = async (jobId, userId, appId, jobData) => {
 
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
-    await jobRef.update({
-      status: 'error',
-      error: error.message || 'Unknown error occurred',
-      completedAt: getTimestamp(),
-    });
+    try {
+      await updateJobWithRetry(jobRef, {
+        status: 'error',
+        error: error.message || 'Unknown error occurred',
+        completedAt: getTimestamp(),
+      });
+    } catch (updateErr) {
+      console.error(
+        `Failed to update job ${jobId} error status:`,
+        getErrorSummary(updateErr)
+      );
+    }
   }
 };
 
@@ -362,11 +421,18 @@ async function processImageGenerationJobWithTimeout(...args) {
     const jobRef = db.collection('artifacts').doc(appId)
       .collection('imageGenerationJobs').doc(jobId);
     console.error(`Error processing job ${jobId}:`, error);
-    await jobRef.update({
-      status: 'error',
-      error: error.message || 'Unknown error occurred',
-      completedAt: getTimestamp(),
-    });
+    try {
+      await updateJobWithRetry(jobRef, {
+        status: 'error',
+        error: error.message || 'Unknown error occurred',
+        completedAt: getTimestamp(),
+      });
+    } catch (updateErr) {
+      console.error(
+        `Failed to update job ${jobId} error status after timeout:`,
+        getErrorSummary(updateErr)
+      );
+    }
   }
 }
 

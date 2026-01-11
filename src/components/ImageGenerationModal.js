@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const APP_ID = 'default-app-id';
 const POLL_INTERVAL = 2000; // Poll every 2 seconds
+const JOB_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes (server timeout is 10m)
 
 const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const [progressMessage, setProgressMessage] = useState('');
   
   const pollIntervalRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
   const cancelledRef = useRef(false);
 
   // Reset state when modal opens
@@ -35,6 +37,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
+      }
+
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
       }
       
       // Reset cancellation flag for new session
@@ -63,6 +70,9 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+      }
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
       }
     };
   }, []);
@@ -135,6 +145,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = null;
     }
 
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+
     // Reset cancellation flag for new operation
     cancelledRef.current = false;
 
@@ -171,15 +186,43 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       const result = await response.json();
       const jobId = result.jobId;
 
-      // Start polling
-      pollIntervalRef.current = setInterval(async () => {
-        await pollJobStatus(jobId, (completedResult) => {
-          setDescriptions(completedResult.descriptions || []);
-          setStep(2);
+      pollTimeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (!cancelledRef.current) {
+          setError('Timed out while generating descriptions. Please try again.');
           setLoading(false);
           setProgress(0);
           setProgressMessage('');
-        });
+        }
+      }, JOB_TIMEOUT_MS);
+
+      // Start polling
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          await pollJobStatus(jobId, (completedResult) => {
+            if (pollTimeoutRef.current) {
+              clearTimeout(pollTimeoutRef.current);
+              pollTimeoutRef.current = null;
+            }
+            setDescriptions(completedResult.descriptions || []);
+            setStep(2);
+            setLoading(false);
+            setProgress(0);
+            setProgressMessage('');
+          });
+        } catch (pollErr) {
+          if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
+          }
+          setError(pollErr.message || 'Failed while generating descriptions');
+          setLoading(false);
+          setProgress(0);
+          setProgressMessage('');
+        }
       }, POLL_INTERVAL);
 
     } catch (err) {
@@ -232,6 +275,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = null;
     }
 
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+
     // Reset cancellation flag for new operation
     cancelledRef.current = false;
 
@@ -267,16 +315,44 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       const result = await response.json();
       const jobId = result.jobId;
 
-      // Start polling
-      pollIntervalRef.current = setInterval(async () => {
-        await pollJobStatus(jobId, (completedResult) => {
-          setGeneratedImages(completedResult.images || []);
-          setSelectedIndices((completedResult.images || []).map((_, idx) => idx));
-          setStep(3);
+      pollTimeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (!cancelledRef.current) {
+          setError('Timed out while generating images. Please try again.');
           setGeneratingImages(false);
           setProgress(0);
           setProgressMessage('');
-        });
+        }
+      }, JOB_TIMEOUT_MS);
+
+      // Start polling
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          await pollJobStatus(jobId, (completedResult) => {
+            if (pollTimeoutRef.current) {
+              clearTimeout(pollTimeoutRef.current);
+              pollTimeoutRef.current = null;
+            }
+            setGeneratedImages(completedResult.images || []);
+            setSelectedIndices((completedResult.images || []).map((_, idx) => idx));
+            setStep(3);
+            setGeneratingImages(false);
+            setProgress(0);
+            setProgressMessage('');
+          });
+        } catch (pollErr) {
+          if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
+          }
+          setError(pollErr.message || 'Failed while generating images');
+          setGeneratingImages(false);
+          setProgress(0);
+          setProgressMessage('');
+        }
       }, POLL_INTERVAL);
 
     } catch (err) {
@@ -308,6 +384,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
+    }
+
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
     }
 
     // Reset cancellation flag for new operation
@@ -346,15 +427,43 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       const result = await response.json();
       const jobId = result.jobId;
 
+      pollTimeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (!cancelledRef.current) {
+          setError('Timed out while adding images to store. Please try again.');
+          setLoading(false);
+          setProgress(0);
+          setProgressMessage('');
+        }
+      }, JOB_TIMEOUT_MS);
+
       // Start polling
       pollIntervalRef.current = setInterval(async () => {
-        await pollJobStatus(jobId, (completedResult) => {
-          // Close modal and refresh
-          handleClose();
-          if (onSuccess) {
-            onSuccess(completedResult);
+        try {
+          await pollJobStatus(jobId, (completedResult) => {
+            if (pollTimeoutRef.current) {
+              clearTimeout(pollTimeoutRef.current);
+              pollTimeoutRef.current = null;
+            }
+            // Close modal and refresh
+            handleClose();
+            if (onSuccess) {
+              onSuccess(completedResult);
+            }
+          });
+        } catch (pollErr) {
+          if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
           }
-        });
+          setError(pollErr.message || 'Failed while adding images to store');
+          setLoading(false);
+          setProgress(0);
+          setProgressMessage('');
+        }
       }, POLL_INTERVAL);
 
     } catch (err) {
@@ -374,6 +483,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
+    }
+
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
     }
     
     // Reset state
@@ -401,6 +515,11 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
+      }
+
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
       }
       
       // Reset loading states
