@@ -113,13 +113,29 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       setProgressMessage(result.message || '');
 
       if (result.status === 'completed') {
-        clearInterval(pollIntervalRef.current);
+        // Clear both interval and timeout
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
         // Check one more time before calling completion callback
         if (!cancelledRef.current) {
           onComplete(result);
         }
       } else if (result.status === 'error') {
-        clearInterval(pollIntervalRef.current);
+        // Clear both interval and timeout
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
         throw new Error(result.error || 'Job failed');
       }
     } catch (err) {
@@ -128,7 +144,15 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
         return;
       }
       console.error('Polling error:', err);
-      clearInterval(pollIntervalRef.current);
+      // Clear both interval and timeout on error
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
       throw err;
     }
   };
@@ -203,10 +227,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = setInterval(async () => {
         try {
           await pollJobStatus(jobId, (completedResult) => {
-            if (pollTimeoutRef.current) {
-              clearTimeout(pollTimeoutRef.current);
-              pollTimeoutRef.current = null;
-            }
             setDescriptions(completedResult.descriptions || []);
             setStep(2);
             setLoading(false);
@@ -214,10 +234,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
             setProgressMessage('');
           });
         } catch (pollErr) {
-          if (pollTimeoutRef.current) {
-            clearTimeout(pollTimeoutRef.current);
-            pollTimeoutRef.current = null;
-          }
           setError(pollErr.message || 'Failed while generating descriptions');
           setLoading(false);
           setProgress(0);
@@ -332,10 +348,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = setInterval(async () => {
         try {
           await pollJobStatus(jobId, (completedResult) => {
-            if (pollTimeoutRef.current) {
-              clearTimeout(pollTimeoutRef.current);
-              pollTimeoutRef.current = null;
-            }
             setGeneratedImages(completedResult.images || []);
             setSelectedIndices((completedResult.images || []).map((_, idx) => idx));
             setStep(3);
@@ -344,10 +356,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
             setProgressMessage('');
           });
         } catch (pollErr) {
-          if (pollTimeoutRef.current) {
-            clearTimeout(pollTimeoutRef.current);
-            pollTimeoutRef.current = null;
-          }
           setError(pollErr.message || 'Failed while generating images');
           setGeneratingImages(false);
           setProgress(0);
@@ -444,10 +452,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       pollIntervalRef.current = setInterval(async () => {
         try {
           await pollJobStatus(jobId, (completedResult) => {
-            if (pollTimeoutRef.current) {
-              clearTimeout(pollTimeoutRef.current);
-              pollTimeoutRef.current = null;
-            }
             // Close modal and refresh
             handleClose();
             if (onSuccess) {
@@ -455,10 +459,6 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
             }
           });
         } catch (pollErr) {
-          if (pollTimeoutRef.current) {
-            clearTimeout(pollTimeoutRef.current);
-            pollTimeoutRef.current = null;
-          }
           setError(pollErr.message || 'Failed while adding images to store');
           setLoading(false);
           setProgress(0);

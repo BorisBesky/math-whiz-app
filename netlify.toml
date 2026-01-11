@@ -6,6 +6,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
+[functions]
+  # Ensure sharp is included in the function bundle even though it's optional
+  included_files = ["node_modules/sharp/**"]
+
 # Optional environment variables for PDF question upload processing:
 # PDF_OPTIONS_BATCH_SIZE - Number of questions to process concurrently per batch (default: 5)
 # PDF_OPTIONS_BATCH_DELAY - Delay in milliseconds between batches (default: 2000)
