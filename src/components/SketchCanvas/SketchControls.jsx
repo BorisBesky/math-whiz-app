@@ -23,6 +23,22 @@ const SketchControls = ({
     setIsMenuOpen(true);
   }, [currentTool]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && !event.target.closest('.sketch-controls')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   const handleToolClick = (tool) => {
     if (currentTool === tool) {
       setIsMenuOpen(!isMenuOpen);
