@@ -443,43 +443,74 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
   const denominator = denominators[getRandomInt(0, denominators.length - 1)];
   
   // Create data points
-  const dataPoints = [];
-  const numPoints = 6 + Math.floor(difficulty * 4);
+  let dataPoints = [];
+  let counts = {};
   
   // Define possible values (whole number + fraction)
   const wholeNumbers = [1, 2, 3];
-  const fractions = [];
-  for (let i = 0; i < denominator; i++) {
-    fractions.push(i);
+  let allPossibleValues = [];
+  
+  for (let w of wholeNumbers) {
+    for (let i = 0; i < denominator; i++) {
+        allPossibleValues.push({ whole: w, numerator: i, denominator });
+    }
   }
   
-  // Generate random data points
-  for (let i = 0; i < numPoints; i++) {
-    const whole = wholeNumbers[getRandomInt(0, wholeNumbers.length - 1)];
-    const numerator = fractions[getRandomInt(0, fractions.length - 1)];
-    dataPoints.push({ whole, numerator, denominator });
-  }
+  // Select distinct values to use in the plot (3 to 5 distinct values)
+  const numDistinctValues = getRandomInt(3, 5);
+  const selectedValues = shuffle(allPossibleValues).slice(0, numDistinctValues);
   
-  // Count occurrences of each value
-  const counts = {};
-  dataPoints.forEach(point => {
-    const key = point.numerator === 0 
-      ? `${point.whole}` 
-      : `${point.whole} ${point.numerator}/${point.denominator}`;
-    counts[key] = (counts[key] || 0) + 1;
+  // Determine frequencies with guaranteed unique max and min
+  const minFreq = 1;
+  const maxFreq = getRandomInt(3, 5); // Ensure gap for distinctness (at least 2 greater than min)
+  
+  // Assign counts
+  let valueCounts = [];
+  
+  // 1. Max frequency
+  valueCounts.push({ value: selectedValues[0], count: maxFreq });
+  
+  // 2. Min frequency
+  valueCounts.push({ value: selectedValues[1], count: minFreq });
+  
+  // 3. Others (strictly between min and max)
+  for (let i = 2; i < selectedValues.length; i++) {
+      const midCount = getRandomInt(minFreq + 1, maxFreq - 1);
+      valueCounts.push({ value: selectedValues[i], count: midCount });
+  }
+
+  // Construct dataPoints list and counts map
+  valueCounts.forEach(item => {
+    // Add to dataPoints list
+    for(let k=0; k < item.count; k++) {
+        dataPoints.push(item.value);
+    }
+    
+    // Build counts map
+    const key = item.value.numerator === 0 
+        ? `${item.value.whole}` 
+        : `${item.value.whole} ${item.value.numerator}/${item.value.denominator}`;
+    counts[key] = item.count;
   });
   
-  // Find statistics
-  const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  const mostCommon = sortedKeys[0];
+  dataPoints = shuffle(dataPoints);
+  const numPoints = dataPoints.length;
   
-  const questionTypes = ['count', 'mostCommon', 'howMany'];
+  const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  
+  // Find statistics
+  const mostCommon = sortedKeys[0];
+  const leastCommon = sortedKeys[sortedKeys.length - 1];
+  
+  const questionTypes = ['count', 'mostCommon', 'leastCommon', 'howMany'];
   const questionType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
   
   // Format data description for the question
-  const dataDescription = Object.entries(counts)
-    .map(([key, count]) => `${key}: ${count} measurements`)
-    .join('\n');
+  const dataDescription = dataPoints.map(point => 
+    point.numerator === 0 
+      ? `${point.whole}` 
+      : `${point.whole} ${point.numerator}/${point.denominator}`
+  ).join(', ');
   
   if (questionType === 'count') {
     const targetValue = sortedKeys[getRandomInt(0, Math.min(2, sortedKeys.length - 1))];
@@ -494,7 +525,7 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
       question: `Line Plot Data:\n${dataDescription}\n\nHow many data points are at ${targetValue}?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-      hint: "Count the X marks above the given value on the number line.",
+      hint: "Count how many times the value appears in the list.",
       standard: "4.MD.B.4",
       concept: "Measurement & Data 4th",
       grade: "G4",
@@ -508,7 +539,21 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
       question: `Line Plot Data:\n${dataDescription}\n\nWhich measurement appears most frequently?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, wrongOptions)),
-      hint: "Look for the value with the most X marks above it.",
+      hint: "Find the value that appears most frequently in the list.",
+      standard: "4.MD.B.4",
+      concept: "Measurement & Data 4th",
+      grade: "G4",
+      subtopic: "line plots",
+    };
+  } else if (questionType === 'leastCommon') {
+    const correctAnswer = leastCommon;
+    const wrongOptions = sortedKeys.filter(k => k !== leastCommon).slice(0, 3);
+    
+    return {
+      question: `Line Plot Data:\n${dataDescription}\n\nWhich measurement appears least frequently?`,
+      correctAnswer: correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, wrongOptions)),
+      hint: "Find the value that appears least frequently in the list.",
       standard: "4.MD.B.4",
       concept: "Measurement & Data 4th",
       grade: "G4",
@@ -526,7 +571,7 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
       question: `Line Plot Data:\n${dataDescription}\n\nHow many total measurements are shown on the line plot?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-      hint: "Add up all the X marks on the line plot.",
+      hint: "Count all the numbers in the list.",
       standard: "4.MD.B.4",
       concept: "Measurement & Data 4th",
       grade: "G4",
