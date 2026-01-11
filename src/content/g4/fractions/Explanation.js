@@ -214,6 +214,42 @@ const FractionsExplanation = () => {
         <span style={styles.emoji}>💡</span><strong>Decimal Trick:</strong> For tenths, put one digit after the decimal point. For hundredths, put two digits!
       </div>
 
+      <h2 style={styles.h2}>➕ Adding & Subtracting Decimals</h2>
+      <p>Line up the decimal points! It's just like adding regular numbers, but you have to keep the dots aligned.</p>
+
+      <div style={styles.example}>
+        <strong>Example: 3.25 + 4.1</strong>
+        <br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'  3.25'}
+          <br/>{'+ 4.10'} (Fill empty spots with 0)
+          <br/>{'______'}
+          <br/>{'  7.35'}
+        </div>
+      </div>
+
+      <h2 style={styles.h2}>✖️ Multiplying Decimals</h2>
+      <p>Multiply the numbers as if the decimals weren't there, then put the decimal back in!</p>
+
+      <div style={styles.example}>
+        <strong>Example: 0.5 × 0.3</strong>
+        <br/>• Ignore decimals: 5 × 3 = 15
+        <br/>• Count decimal places: 0.5 (1 place) + 0.3 (1 place) = 2 places
+        <br/>• Move dot 2 places left in 15: .15
+        <br/>• Answer: 0.15
+      </div>
+
+      <h2 style={styles.h2}>➗ Dividing Decimals</h2>
+      <p>Make the number you are dividing by a whole number first!</p>
+
+      <div style={styles.example}>
+        <strong>Example: 3.6 ÷ 0.6</strong>
+        <br/>• Move decimal in 0.6 one hop right → 6
+        <br/>• Move decimal in 3.6 one hop right → 36
+        <br/>• Divide: 36 ÷ 6 = 6
+        <br/>• Answer: 6
+      </div>
+
       <h2 style={styles.h2}>🔄 Mixed Numbers</h2>
       <p>A mixed number has a whole number AND a fraction together!</p>
       

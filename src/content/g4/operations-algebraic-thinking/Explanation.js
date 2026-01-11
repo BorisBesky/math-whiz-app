@@ -110,7 +110,55 @@ const OperationsAlgebraicThinkingExplanation = () => {
         <span style={styles.emoji}>💡</span><strong>Tip:</strong> Look for phrases like "times as many," "times as much," or "times larger" - these mean multiplication!
       </div>
 
-      <h2 style={styles.h2}>🔢 Prime and Composite Numbers</h2>
+      <h2 style={styles.h2}>🔢 Order of Operations</h2>
+      <p>When a math problem has more than one operation, we need rules to know what to do first. This sets the "Order of Operations"!</p>
+
+      <div style={styles.example}>
+        <strong>The Rules (PEMDAS):</strong>
+        <br/>1. <strong>P</strong>arentheses () - Do things inside these first!
+        <br/>2. <strong>E</strong>xponents - (you'll learn these soon!)
+        <br/>3. <strong>M</strong>ultiplication & <strong>D</strong>ivision (from left to right)
+        <br/>4. <strong>A</strong>ddition & <strong>S</strong>ubtraction (from left to right)
+        <br/><br/>
+        <strong>Example:</strong> 4 + 3 × 2 = ?
+        <br/>Wrong way: 4 + 3 = 7, then 7 × 2 = 14 ❌
+        <br/>Right way (Multiply first): 3 × 2 = 6, then 4 + 6 = 10 ✅
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🚦</span><strong>Remember:</strong> Multiplication and Division are like VIPs - they get to go before Addition and Subtraction (unless there are parentheses)!
+      </div>
+
+      <h2 style={styles.h2}>� Multiplication Properties</h2>
+      <p>Special rules that help us solve multiplication problems faster!</p>
+      
+      <div style={styles.example}>
+        <strong>1. Commutative Property (Order Property):</strong> You can multiply numbers in any order and get the same answer.
+        <br/>3 × 5 = 15
+        <br/>5 × 3 = 15
+        <br/><br/>
+        <strong>2. Associative Property (Grouping Property):</strong> You can change the grouping of numbers and get the same answer.
+        <br/>(2 × 3) × 4 = 6 × 4 = 24
+        <br/>2 × (3 × 4) = 2 × 12 = 24
+        <br/><br/>
+        <strong>3. Distributive Property:</strong> Breaking a number apart makes it easier to multiply.
+        <br/>4 × 12 = 4 × (10 + 2)
+        <br/>= (4 × 10) + (4 × 2)
+        <br/>= 40 + 8
+        <br/>= 48
+         <br/><br/>
+        <strong>4. Identity Property:</strong> Any number multiplied by 1 stays the same.
+        <br/>7 × 1 = 7
+         <br/><br/>
+        <strong>5. Zero Property:</strong> Any number multiplied by 0 is 0.
+        <br/>8 × 0 = 0
+      </div>
+      
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🪄</span><strong>Magic Trick:</strong> Use the Associative Property to look for easy numbers to multiply first, like 2 × 5 = 10!
+      </div>
+
+      <h2 style={styles.h2}>�🔢 Prime and Composite Numbers</h2>
       <p>Numbers can be organized into special groups based on their factors!</p>
       
       <div style={styles.example}>
