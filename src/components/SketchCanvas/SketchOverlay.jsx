@@ -7,6 +7,9 @@ const SketchOverlay = ({ isVisible, onClose }) => {
   const currentStrokeRef = useRef(null); // Use ref to store mutable stroke data during drawing
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState('draw'); // 'draw' or 'erase'
+  const [eraserSize, setEraserSize] = useState(20);
+  const [penSize, setPenSize] = useState(3);
+  const [penColor, setPenColor] = useState('#000000');
   const [strokes, setStrokes] = useState([]); // Array of stroke objects
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
@@ -101,8 +104,8 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     // Store stroke in ref to avoid re-renders during drawing
     currentStrokeRef.current = {
       points: [coords],
-      color: currentTool === 'draw' ? '#000000' : '#FFFFFF',
-      width: currentTool === 'draw' ? 3 : 20,
+      color: currentTool === 'draw' ? penColor : '#FFFFFF',
+      width: currentTool === 'draw' ? penSize : eraserSize,
       mode: currentTool
     };
   };
@@ -169,6 +172,15 @@ const SketchOverlay = ({ isVisible, onClose }) => {
     }
   };
 
+  // Clear all strokes
+  const handleClearAll = () => {
+    if (context) {
+      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    }
+    setStrokes([]);
+    setCurrentStrokeIndex(-1);
+  };
+
   // Clear canvas and close
   const handleClose = () => {
     if (context) {
@@ -208,6 +220,13 @@ const SketchOverlay = ({ isVisible, onClose }) => {
         onClose={handleClose}
         canUndo={currentStrokeIndex >= 0}
         canRedo={currentStrokeIndex < strokes.length - 1}
+        onClearAll={handleClearAll}
+        eraserSize={eraserSize}
+        onEraserSizeChange={setEraserSize}
+        penSize={penSize}
+        onPenSizeChange={setPenSize}
+        penColor={penColor}
+        onPenColorChange={setPenColor}
       />
     </div>
   );
