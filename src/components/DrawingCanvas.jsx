@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Eraser, Pen, RotateCcw, Trash2 } from 'lucide-react';
+import { Eraser, Pen, RotateCcw, Trash2, Circle } from 'lucide-react';
 
 /**
  * DrawingCanvas Component
@@ -19,8 +19,20 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   const currentStrokeRef = useRef(null);
   const onChangeRef = useRef(onChange);
   const isDrawingRef = useRef(false);
+  
+  // Tool state
   const [currentTool, setCurrentTool] = useState('draw'); // 'draw' or 'erase'
+  const [penColor, setPenColor] = useState('#000000');
+  const [penSize, setPenSize] = useState(3);
+  const [eraserSize, setEraserSize] = useState(20);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Refs for drawing performance (avoid closures capturing old state)
   const currentToolRef = useRef(currentTool);
+  const penColorRef = useRef(penColor);
+  const penSizeRef = useRef(penSize);
+  const eraserSizeRef = useRef(eraserSize);
+
   const [strokes, setStrokes] = useState([]);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(-1);
   const [context, setContext] = useState(null);
@@ -32,7 +44,21 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   // Keep refs in sync with state
   useEffect(() => {
     currentToolRef.current = currentTool;
+    // Auto-open menu when switching tools
+    setIsMenuOpen(true);
   }, [currentTool]);
+
+  useEffect(() => {
+    penColorRef.current = penColor;
+  }, [penColor]);
+
+  useEffect(() => {
+    penSizeRef.current = penSize;
+  }, [penSize]);
+
+  useEffect(() => {
+    eraserSizeRef.current = eraserSize;
+  }, [eraserSize]);
 
   useEffect(() => {
     strokesRef.current = strokes;
@@ -45,6 +71,23 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   useEffect(() => {
     contextRef.current = context;
   }, [context]);
+
+  // Handle click outside to close menus
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && !event.target.closest('.tool-control-wrapper')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   // Keep the onChange ref up to date
   useEffect(() => {
@@ -178,8 +221,8 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     const coords = getCoordinates(e);
     currentStrokeRef.current = {
       points: [coords],
-      color: currentToolRef.current === 'draw' ? '#000000' : '#FFFFFF',
-      width: currentToolRef.current === 'draw' ? 3 : 20,
+      color: currentToolRef.current === 'draw' ? penColorRef.current : '#FFFFFF',
+      width: currentToolRef.current === 'draw' ? penSizeRef.current : eraserSizeRef.current,
       mode: currentToolRef.current
     };
   }, [getCoordinates]);
@@ -282,22 +325,63 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
       />
       
       {/* Drawing Controls */}
-      <div className="flex justify-center items-center space-x-3 mt-4">
-        <button
-          onClick={() => setCurrentTool('draw')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-            currentTool === 'draw'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-          title="Pen Tool"
-        >
-          <Pen className="h-4 w-4" />
-          <span className="text-sm font-medium">Pen</span>
-        </button>
+      <div className="flex justify-center items-center space-x-3 mt-4 relative z-10">
         
-        <button
-          onClick={() => setCurrentTool('erase')}
+        {/* Pen Tool Wrapper */}
+        <div className="tool-control-wrapper relative">
+          {/* Pen Submenu */}
+          <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col-reverse items-center gap-2 transition-all duration-200 z-50 ${currentTool === 'draw' && isMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+             {/* Sizes */}
+             <button onClick={() => setPenSize(3)} className={`p-1.5 rounded-full hover:bg-gray-100 ${penSize === 3 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Small Pen"><Circle size={8} fill={penSize === 3 ? "currentColor" : "none"}/></button>
+             <button onClick={() => setPenSize(6)} className={`p-1.5 rounded-full hover:bg-gray-100 ${penSize === 6 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Medium Pen"><Circle size={12} fill={penSize === 6 ? "currentColor" : "none"}/></button>
+             <button onClick={() => setPenSize(10)} className={`p-1.5 rounded-full hover:bg-gray-100 ${penSize === 10 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Large Pen"><Circle size={16} fill={penSize === 10 ? "currentColor" : "none"}/></button>
+             
+             {/* Divider */}
+             <div className="w-8 h-px bg-gray-200 my-1"></div>
+
+             {/* Colors */}
+             <button onClick={() => setPenColor('#000000')} className={`p-1 rounded-full border-2 ${penColor === '#000000' ? 'border-blue-600' : 'border-transparent'}`} title="Black"><div className="w-5 h-5 rounded-full bg-black"></div></button>
+             <button onClick={() => setPenColor('#EF4444')} className={`p-1 rounded-full border-2 ${penColor === '#EF4444' ? 'border-blue-600' : 'border-transparent'}`} title="Red"><div className="w-5 h-5 rounded-full bg-red-500"></div></button>
+             <button onClick={() => setPenColor('#3B82F6')} className={`p-1 rounded-full border-2 ${penColor === '#3B82F6' ? 'border-blue-600' : 'border-transparent'}`} title="Blue"><div className="w-5 h-5 rounded-full bg-blue-500"></div></button>
+          </div>
+
+          <button
+            onClick={() => {
+                if (currentTool === 'draw') {
+                    setIsMenuOpen(!isMenuOpen);
+                } else {
+                    setCurrentTool('draw');
+                }
+            }}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+              currentTool === 'draw'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            title="Pen Tool"
+          >
+            <Pen className="h-4 w-4" />
+            <span className="text-sm font-medium">Pen</span>
+          </button>
+        </div>
+        
+        {/* Eraser Tool Wrapper */}
+        <div className="tool-control-wrapper relative">
+           {/* Eraser Submenu */}
+           <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col-reverse items-center gap-2 transition-all duration-200 z-50 ${currentTool === 'erase' && isMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+             <button onClick={() => setEraserSize(10)} className={`p-1.5 rounded-full hover:bg-gray-100 ${eraserSize === 10 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Small Eraser"><Circle size={8} fill={eraserSize === 10 ? "currentColor" : "none"}/></button>
+             <button onClick={() => setEraserSize(20)} className={`p-1.5 rounded-full hover:bg-gray-100 ${eraserSize === 20 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Medium Eraser"><Circle size={14} fill={eraserSize === 20 ? "currentColor" : "none"}/></button>
+             <button onClick={() => setEraserSize(40)} className={`p-1.5 rounded-full hover:bg-gray-100 ${eraserSize === 40 ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}`} title="Large Eraser"><Circle size={20} fill={eraserSize === 40 ? "currentColor" : "none"}/></button>
+           </div>
+
+           <button
+            onClick={() => {
+                if (currentTool === 'erase') {
+                    setIsMenuOpen(!isMenuOpen);
+                } else {
+                    setCurrentTool('erase');
+                }
+            }}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
             currentTool === 'erase'
               ? 'bg-blue-600 text-white'
@@ -308,6 +392,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
           <Eraser className="h-4 w-4" />
           <span className="text-sm font-medium">Eraser</span>
         </button>
+        </div>
         
         <button
           onClick={handleUndo}
