@@ -105,11 +105,11 @@ test.describe('Sketch Overlay', () => {
     await page.click('button:has-text("Sketch")');
     
     // Draw tool button should be active by default
-    const drawBtn = page.locator('.sketch-control-btn').first();
+    const drawBtn = page.locator('button[title="Draw"]');
     await expect(drawBtn).toHaveClass(/active/);
     
     // Click erase button
-    const eraseBtn = page.locator('.sketch-control-btn').nth(1);
+    const eraseBtn = page.locator('button[title="Erase"]');
     await eraseBtn.click();
     
     // Erase button should now be active
@@ -413,7 +413,7 @@ test.describe('Sketch Overlay', () => {
     });
     
     // Switch to eraser
-    const eraseBtn = page.locator('.sketch-control-btn').nth(1);
+    const eraseBtn = page.locator('button[title="Erase"]');
     await eraseBtn.click();
     
     // Erase through the drawn line
