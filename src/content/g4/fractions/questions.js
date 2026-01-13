@@ -1,4 +1,5 @@
 // Question generation for 4th Grade Fractions topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions
@@ -106,6 +107,7 @@ export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
     question: `Which fraction is equivalent to ${numerator}/${denominator}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "To find equivalent fractions, multiply both the numerator and denominator by the same number.",
     standard: "4.NF.A.1",
     concept: "Fractions 4th",
@@ -142,6 +144,7 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
     question: `What is ${num1}/${denominator} + ${num2}/${denominator2}?`,
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "To add fractions with different denominators, you first need to find a common denominator! When adding fractions with the same denominator, add the numerators and keep the denominator the same.",
     standard: "4.NF.B.3.a",
     concept: "Fractions 4th",
@@ -183,6 +186,7 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
     question: `What is ${num1}/${denominator} - ${num2}/${denominator2}?`,
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "When subtracting fractions with the same denominator, subtract the numerators and keep the denominator the same.",
     standard: "4.NF.B.3.a",
     concept: "Fractions 4th",
@@ -219,6 +223,7 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     question: `Compare these fractions: ${num1}/${den1} ___ ${num2}/${den2}`,
     correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "Convert to common denominators, or think about which fraction is closer to 0, 1/2, or 1.",
     standard: "4.NF.A.2",
     concept: "Fractions 4th",
@@ -242,16 +247,11 @@ export function generateDecimalNotationQuestion(difficulty = 0.5) {
     const maxNum = Math.floor(20 + difficulty * 79);
     const numerator = getRandomInt(1, maxNum);
     const decimal = (numerator / 100).toFixed(2);
-    const potentialDistractors = [
-        (numerator / 10).toFixed(1),
-        (numerator / 1000).toFixed(3),
-        (numerator).toString(),
-    ];
     
     return {
       question: `Write ${numerator}/100 as a decimal.`,
       correctAnswer: decimal,
-      options: shuffle(generateUniqueOptions(decimal, potentialDistractors)),
+      questionType: QUESTION_TYPES.NUMERIC,
       hint: "Hundredths are written as two decimal places after the decimal point.",
       standard: "4.NF.C.6",
       concept: "Fractions 4th",
@@ -263,16 +263,11 @@ export function generateDecimalNotationQuestion(difficulty = 0.5) {
   } else {
     const numerator = getRandomInt(1, 9);
     const decimal = (numerator / 10).toFixed(1);
-    const potentialDistractors = [
-        (numerator / 100).toFixed(2),
-        (numerator).toString(),
-        `0.${numerator}${numerator}`,
-    ];
     
     return {
       question: `Write ${numerator}/10 as a decimal.`,
       correctAnswer: decimal,
-      options: shuffle(generateUniqueOptions(decimal, potentialDistractors)),
+      questionType: QUESTION_TYPES.NUMERIC,
       hint: "Tenths are written as one decimal place after the decimal point.",
       standard: "4.NF.C.6",
       concept: "Fractions 4th",
@@ -308,6 +303,7 @@ export function generateFractionMultiplicationQuestion(difficulty = 0.5) {
     question: `What is ${wholeNumber} × ${numerator}/${denominator}?`,
     correctAnswer: simplifiedResult,
     options: shuffle(generateUniqueOptions(simplifiedResult, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "To multiply a fraction by a whole number, multiply the numerator by the whole number and keep the same denominator.",
     standard: "4.NF.B.4.a",
     concept: "Fractions 4th",
@@ -345,6 +341,7 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
       question: `Convert ${wholeNumber} ${numerator}/${denominator} to an improper fraction.`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: 'multiple-choice',
       hint: "Multiply the whole number by the denominator, then add the numerator. Put the result over the same denominator.",
       standard: "4.NF.B.3.b",
       concept: "Fractions 4th",
@@ -372,6 +369,7 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
       question: `Convert ${improperNumerator}/${denominator} to a mixed number.`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: 'multiple-choice',
       hint: "Divide the numerator by the denominator. The quotient is the whole number, and the remainder becomes the new numerator.",
       standard: "4.NF.B.3.b",
       concept: "Fractions 4th",
@@ -411,6 +409,7 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
       question: `What is ${whole1} ${num1}/${denominator} + ${whole2} ${num2}/${denominator}?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: 'multiple-choice',
       hint: "Add the whole numbers together. Then add the fractions. If the fraction sum is greater than 1, carry over to the whole number.",
       standard: "4.NF.B.3.c",
       concept: "Fractions 4th",

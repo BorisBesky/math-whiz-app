@@ -1,5 +1,6 @@
 // Question generation for 3rd Grade Fractions topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -85,6 +86,7 @@ export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
     question: `Which fraction is equivalent to ${f_num_eq}/${f_den_eq}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "Equivalent fractions have the same value. Multiply the top and bottom by the same number.",
     standard: "3.NF.A.3.b",
     concept: "Fractions",
@@ -110,7 +112,7 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     return {
       question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
+      questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
       hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
       standard: "3.NF.A.3.d",
       concept: "Fractions",
@@ -133,6 +135,7 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
       question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
+      questionType: 'multiple-choice',
       hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
       standard: "3.NF.A.3.d",
       concept: "Fractions",
@@ -163,6 +166,7 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
     question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
     correctAnswer: add_answer,
     options: shuffle(generateUniqueOptions(add_answer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "To add fractions with different denominators, you first need to find a common denominator!",
     standard: "4.NF.B.3",
     concept: "Fractions",
@@ -195,6 +199,7 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
     question: `What is ${num1}/${den1} - ${num2}/${den2}?`,
     correctAnswer: answer,
     options: shuffle(generateUniqueOptions(answer, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
     standard: "4.NF.B.3",
     concept: "Fractions",
@@ -220,6 +225,7 @@ export function generateFractionSimplificationQuestion(difficulty = 0.5) {
     question: `Simplify the fraction ${starting_num}/${starting_den}`,
     correctAnswer: simplified_fraction,
     options: shuffle(generateUniqueOptions(simplified_fraction, potentialDistractors)),
+    questionType: 'multiple-choice',
     hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
     standard: "4.NF.A.1",
     concept: "Fractions",
