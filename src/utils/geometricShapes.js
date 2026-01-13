@@ -1165,7 +1165,6 @@ function createClassifiedTriangleSVG(
   if (type === "equilateral" || type === "isosceles") {
     // Add tick marks to show equal sides
     // This is a simplified representation - in a full implementation you'd calculate the actual midpoints
-    const tickLength = 5;
 
     if (type === "equilateral") {
       // Add three tick marks for three equal sides
@@ -1315,6 +1314,21 @@ function createSymmetryDemoSVG(
       butterflyLine.setAttribute("stroke-width", "2");
       butterflyLine.setAttribute("stroke-dasharray", "5,5");
       svg.appendChild(butterflyLine);
+      break;
+    default:
+      // Default to square if unknown shapeType
+      const defaultSquare = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect"
+      );
+      defaultSquare.setAttribute("x", centerX - 40);
+      defaultSquare.setAttribute("y", centerY - 40);
+      defaultSquare.setAttribute("width", 80);
+      defaultSquare.setAttribute("height", 80);
+      defaultSquare.setAttribute("fill", options.fill || "#ff9800");
+      defaultSquare.setAttribute("stroke", options.stroke || "#f57c00");
+      defaultSquare.setAttribute("stroke-width", "2");
+      svg.appendChild(defaultSquare);
       break;
   }
 

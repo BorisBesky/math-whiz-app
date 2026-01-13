@@ -1,5 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { onSnapshot } from 'firebase/firestore';
+import App from '../App';
 
 // Integration test skipped: flakey and causes ESM resolution issues in test env
 // Covered by `resetTransientQuizState` unit test
@@ -81,15 +84,18 @@ test.skip('resuming a paused quiz clears transient state (integration - skipped)
   fireEvent.click(resumeBtn);
 
   // After resuming, we should see the paused question and NOT see the previous "Next Question" (i.e., transient state cleared)
-  await waitFor(async () => {
+  await waitFor(() => {
     // The paused question text should be visible
     expect(screen.getByText(/What time is shown on the clock/i)).toBeInTheDocument();
+  });
 
+  await waitFor(() => {
     // The Check Answer button should be present (meaning isAnswered is false)
     expect(screen.getByText(/Check Answer/i)).toBeInTheDocument();
+  });
 
+  await waitFor(() => {
     // The "Next Question" button from the previous topic should not be present
-    const nextQuery = screen.queryByText(/Next Question/i);
-    expect(nextQuery).not.toBeInTheDocument();
+    expect(screen.queryByText(/Next Question/i)).not.toBeInTheDocument();
   });
 });

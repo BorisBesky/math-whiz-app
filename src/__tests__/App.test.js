@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import App from '../App';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { onSnapshot } from 'firebase/firestore';
 
 jest.mock('firebase/auth');
 jest.mock('firebase/firestore');

@@ -65,14 +65,14 @@ describe('generateTwoStepPatternQuestion', () => {
   it('should have options that are close to the correct answer', () => {
     const result = questions.generateTwoStepPatternQuestion();
 
-    if (result.options && result.correctAnswer) {
-      const correctNum = parseInt(result.correctAnswer);
+    expect(result.options).toBeDefined();
+    expect(result.correctAnswer).toBeDefined();
+    const correctNum = parseInt(result.correctAnswer);
 
-      // All options should be numbers close to the correct answer
-      result.options.forEach(option => {
-        const num = parseInt(option);
-        expect(Math.abs(num - correctNum)).toBeLessThan(20); // Within reasonable range
-      });
-    }
+    // All options should be numbers close to the correct answer
+    result.options.forEach(option => {
+      const num = parseInt(option);
+      expect(Math.abs(num - correctNum)).toBeLessThan(20); // Within reasonable range
+    });
   });
 });
