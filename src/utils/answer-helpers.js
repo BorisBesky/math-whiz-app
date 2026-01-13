@@ -172,10 +172,21 @@ export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = 
   
   const results = userAnswers.map((userAnswer, index) => {
     const correct = correctAnswers[index];
-    const userTrimmed = (userAnswer || '').trim().toLowerCase();
-    const correctTrimmed = (correct || '').trim().toLowerCase();
+    const inputType = inputTypes[index];
     
-    // Exact match (no normalization as per requirements)
+    let userTrimmed = (userAnswer || '').trim();
+    let correctTrimmed = (correct || '').trim();
+    
+    // For numeric inputs, normalize both answers for comparison
+    if (inputType === 'numeric') {
+      userTrimmed = normalizeNumericAnswer(userTrimmed);
+      correctTrimmed = normalizeNumericAnswer(correctTrimmed);
+    } else {
+      // For non-numeric, convert to lowercase for case-insensitive comparison
+      userTrimmed = userTrimmed.toLowerCase();
+      correctTrimmed = correctTrimmed.toLowerCase();
+    }
+    
     return userTrimmed === correctTrimmed;
   });
   
@@ -186,7 +197,7 @@ export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = 
 }
 
 /**
- * Normalizes a numeric answer by removing leading zeros and whitespace
+ * Normalizes a numeric answer by removing commas, leading zeros, and standardizing decimal representation
  * Handles positive, negative, integer, and decimal numbers
  * @param {string} answer - The answer to normalize
  * @returns {string} - Normalized answer
@@ -194,16 +205,21 @@ export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = 
 export function normalizeNumericAnswer(answer) {
   if (!answer) return '';
   
-  const trimmed = answer.toString().trim();
+  let trimmed = answer.toString().trim();
+  
+  // Remove commas
+  trimmed = trimmed.replace(/,/g, '');
   
   // Handle decimal numbers (both positive and negative)
   if (trimmed.includes('.')) {
-    // Split into integer and fractional parts
-    const [intPart, fracPart] = trimmed.split('.');
-    // Remove leading zeros from integer part, but preserve '0' if intPart is all zeros
-    const normInt = intPart.replace(/^0+(?=\d)/, '') || '0';
-    // Recombine, preserving fractional part exactly
-    return normInt + '.' + fracPart;
+    // Parse as float and back to string to normalize (e.g., 4700.0 -> 4700)
+    const parsed = parseFloat(trimmed);
+    if (!isNaN(parsed)) {
+      // Convert back to string, removing trailing .0 for integers
+      const asString = parsed.toString();
+      return asString;
+    }
+    return trimmed; // fallback if parsing fails
   }
   
   // Handle integers - remove leading zeros (preserves negative sign)

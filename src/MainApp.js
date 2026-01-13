@@ -68,6 +68,7 @@ import { getCachedClassQuestions, setCachedClassQuestions } from "./utils/questi
 import { loadStoreImages, getCachedStoreImages } from "./utils/storeImages";
 import { isSubtopicAllowed } from "./utils/subtopicUtils";
 import { resetTransientQuizState } from './utils/quizStateHelpers';
+import { QUESTION_TYPES } from "./constants/shared-constants";
 
 // --- Firebase Configuration ---
 // Using individual environment variables for better security
@@ -4124,7 +4125,7 @@ Answer: [The answer]`;
                 );
               })()}
             </div>
-          ) : isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? (
+          ) : isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? (
             <div className="mb-6">
               {!isAnswered && (
                 <NumberPad 
@@ -4290,7 +4291,7 @@ Answer: [The answer]`;
                   </span>
                 ) : userAnswer !== null && userAnswer !== '' ? (
                   <span>
-                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? 'Your answer' : 'Selected'}:{" "}
+                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? 'Your answer' : 'Selected'}:{" "}
                     <span className="font-bold">
                       {formatMathText(userAnswer)}
                     </span>
@@ -4306,8 +4307,8 @@ Answer: [The answer]`;
                   </span>
                 ) : (
                   <span className="italic text-gray-400">
-                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? 'Enter a number' : 
-                    currentQuestion.questionType === 'multiple-choice' ? 'Select an answer' : ''}
+                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? 'Enter a number' : 
+                    currentQuestion.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ? 'Select an answer' : ''}
                   </span>
                 )}
               </div>

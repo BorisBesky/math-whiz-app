@@ -45,7 +45,8 @@ The fill-in-the-blanks question type allows students to complete sentences or eq
 - The number of blanks must match the number of answers provided
 
 ### 2. Answer Validation
-- **No normalization**: Answers must match exactly (case-sensitive, no trimming beyond whitespace)
+- **Normalization for numeric answers**: Numeric answers are normalized (commas removed, decimals standardized) for accurate comparison (e.g., "4,700", "4700", and "4700.0" are equivalent)
+- **Case-insensitive for non-numeric**: Text answers are compared case-insensitively
 - **No partial credit**: All blanks must be correct for the question to be marked as correct
 - Individual blanks are color-coded after submission:
   - ✅ Green border: Correct answer
