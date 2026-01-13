@@ -1,5 +1,5 @@
 
-const { isNumericQuestion, normalizeNumericAnswer, validateFillInAnswers } = require('../answer-helpers');
+const { isNumericQuestion, normalizeNumericAnswer, normalizeMathExpression, validateFillInAnswers } = require('../answer-helpers');
 
 describe('isNumericQuestion', () => {
   test('returns true for numeric question with options', () => {
@@ -87,6 +87,34 @@ describe('normalizeNumericAnswer', () => {
   });
 });
 
+describe('normalizeMathExpression', () => {
+  test('standardizes multiplication symbols', () => {
+    expect(normalizeMathExpression('63 × 9 = 567')).toBe('63 x 9 = 567');
+    expect(normalizeMathExpression('63 * 9 = 567')).toBe('63 x 9 = 567');
+    expect(normalizeMathExpression('63x9=567')).toBe('63 x 9 = 567');
+  });
+
+  test('standardizes division symbols', () => {
+    expect(normalizeMathExpression('42 ÷ 6 = 7')).toBe('42 / 6 = 7');
+    expect(normalizeMathExpression('42/6=7')).toBe('42 / 6 = 7');
+  });
+
+  test('normalizes whitespace around operators', () => {
+    expect(normalizeMathExpression('63×9=567')).toBe('63 x 9 = 567');
+    expect(normalizeMathExpression('63  ×  9  =  567')).toBe('63 x 9 = 567');
+  });
+
+  test('handles empty and invalid input', () => {
+    expect(normalizeMathExpression('')).toBe('');
+    expect(normalizeMathExpression(null)).toBe('');
+    expect(normalizeMathExpression('   ')).toBe('');
+  });
+
+  test('preserves other characters', () => {
+    expect(normalizeMathExpression('2,141 x 4 = 8,564')).toBe('2,141 x 4 = 8,564');
+  });
+});
+
 describe('validateFillInAnswers', () => {
   test('validates numeric answers with normalization', () => {
     const userAnswers = ['4,700', '4700.0', '007'];
@@ -99,9 +127,19 @@ describe('validateFillInAnswers', () => {
   });
 
   test('validates mixed numeric and text answers', () => {
-    const userAnswers = ['4,700', 'Hello'];
-    const correctAnswers = ['4700', 'hello'];
+    const userAnswers = ['4,700', '63 × 9 = 567'];
+    const correctAnswers = ['4700', '63 x 9 = 567'];
     const inputTypes = ['numeric', 'letters'];
+    
+    const result = validateFillInAnswers(userAnswers, correctAnswers, inputTypes);
+    expect(result.allCorrect).toBe(true);
+    expect(result.results).toEqual([true, true]);
+  });
+
+  test('normalizes mathematical symbols in text answers', () => {
+    const userAnswers = ['63 x 9 = 567', '2,141 × 4 = 8,564'];
+    const correctAnswers = ['63 × 9 = 567', '2,141 x 4 = 8,564'];
+    const inputTypes = ['letters', 'letters'];
     
     const result = validateFillInAnswers(userAnswers, correctAnswers, inputTypes);
     expect(result.allCorrect).toBe(true);

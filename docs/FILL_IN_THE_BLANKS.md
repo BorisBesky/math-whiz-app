@@ -46,7 +46,7 @@ The fill-in-the-blanks question type allows students to complete sentences or eq
 
 ### 2. Answer Validation
 - **Normalization for numeric answers**: Numeric answers are normalized (commas removed, decimals standardized) for accurate comparison (e.g., "4,700", "4700", and "4700.0" are equivalent)
-- **Case-insensitive for non-numeric**: Text answers are compared case-insensitively
+- **Normalization for text answers**: Mathematical expressions are normalized (standardizing symbols like ×→x, ÷→/, and whitespace) for case-insensitive comparison (e.g., "63 × 9 = 567" and "63 x 9 = 567" are equivalent)
 - **No partial credit**: All blanks must be correct for the question to be marked as correct
 - Individual blanks are color-coded after submission:
   - ✅ Green border: Correct answer

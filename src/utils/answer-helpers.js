@@ -182,9 +182,9 @@ export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = 
       userTrimmed = normalizeNumericAnswer(userTrimmed);
       correctTrimmed = normalizeNumericAnswer(correctTrimmed);
     } else {
-      // For non-numeric, convert to lowercase for case-insensitive comparison
-      userTrimmed = userTrimmed.toLowerCase();
-      correctTrimmed = correctTrimmed.toLowerCase();
+      // For non-numeric, normalize mathematical expressions and convert to lowercase
+      userTrimmed = normalizeMathExpression(userTrimmed).toLowerCase();
+      correctTrimmed = normalizeMathExpression(correctTrimmed).toLowerCase();
     }
     
     return userTrimmed === correctTrimmed;
@@ -225,5 +225,30 @@ export function normalizeNumericAnswer(answer) {
   // Handle integers - remove leading zeros (preserves negative sign)
   const parsed = parseInt(trimmed, 10);
   return isNaN(parsed) ? trimmed : parsed.toString();
+}
+
+/**
+ * Normalizes mathematical expressions for comparison by standardizing common symbols
+ * @param {string} expression - The mathematical expression to normalize
+ * @returns {string} - Normalized expression
+ */
+export function normalizeMathExpression(expression) {
+  if (!expression) return '';
+  
+  let normalized = expression.toString().trim();
+  
+  // Standardize multiplication symbols
+  normalized = normalized.replace(/[×*]/g, 'x');
+  
+  // Standardize division symbols  
+  normalized = normalized.replace(/[÷]/g, '/');
+  
+  // Normalize whitespace around operators
+  normalized = normalized.replace(/\s*([+\-x/=])\s*/g, ' $1 ');
+  
+  // Remove extra whitespace
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+  
+  return normalized;
 }
 
