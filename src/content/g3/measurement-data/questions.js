@@ -1,4 +1,5 @@
 // Question generation for 3rd Grade Measurement & Data topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 function getRandomInt(min, max) {
@@ -68,7 +69,7 @@ export function generateAreaQuestion() {
     question: `A rectangle has a length of ${md_length} cm and a width of ${md_width} cm. What is its area?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Area of a rectangle is found by multiplying its length and width.",
     standard: "3.MD.C.7.b",
     concept: "Measurement & Data",
@@ -91,7 +92,7 @@ export function generatePerimeterQuestion() {
     question: `What is the perimeter of a rectangle with sides of length ${md_side1} inches and ${md_side2} inches?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Perimeter is the distance all the way around a shape. Add up all four sides!",
     standard: "3.MD.D.8",
     concept: "Measurement & Data",
@@ -116,7 +117,7 @@ export function generateVolumeQuestion() {
     question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
     standard: "3.MD.C.5",
     concept: "Measurement & Data",

@@ -1,4 +1,5 @@
 // Question generation for 4th Grade Geometry topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions that need to be imported from utils
@@ -105,7 +106,7 @@ export function generateLinesAndAnglesQuestion(difficulty = 0.5) {
   return {
     ...questionType,
     options: shuffle(generateUniqueOptions(questionType.correctAnswer, questionType.options)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     standard: "4.G.A.1",
     concept: "Geometry",
     grade: "G4",
@@ -160,7 +161,7 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
     question: `What shape ${shape.description}?`,
     correctAnswer: shape.name,
     options: shuffle(generateUniqueOptions(shape.name, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Think about the properties of each shape.",
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -204,7 +205,7 @@ export function generateTriangleClassificationBySidesQuestion(difficulty = 0.5) 
     question: `What type of triangle has ${triangle.properties}?`,
     correctAnswer: triangle.name,
     options: shuffle(generateUniqueOptions(triangle.name, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: triangle.description,
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -248,7 +249,7 @@ export function generateTriangleClassificationByAnglesQuestion(difficulty = 0.5)
     question: `What type of triangle has ${triangle.properties}?`,
     correctAnswer: triangle.name,
     options: shuffle(generateUniqueOptions(triangle.name, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: triangle.description,
     standard: "4.G.A.2",
     concept: "Geometry",
@@ -321,7 +322,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
     question: `Which quadrilateral has ALL of these properties: "${properties.join(", ")}"?`,
     correctAnswer: quad.name,
     options: shuffle(generateUniqueOptions(quad.name, wrongQuads)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Think about the defining characteristics of each quadrilateral.`,
     standard: "4.G.A.2",
     concept: "Geometry", 
@@ -375,7 +376,7 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
     question: `How many lines of symmetry does a ${example.shape} have?`,
     correctAnswer: example.lines,
     options: shuffle(generateUniqueOptions(example.lines, wrongOptions)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `A line of symmetry divides a shape so both halves match exactly. ${example.explanation}.`,
     standard: "4.G.A.3",
     concept: "Geometry",
@@ -455,7 +456,7 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     question: qType.getQuestion(angle),
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Remember: ${angle.name}s ${angle.range}.`,
     standard: "4.G.A.1",
     concept: "Geometry",
@@ -535,7 +536,7 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
     question: qType.getQuestion(concept),
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
-    questionType: 'multiple-choice',
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Remember: a ${concept.name} ${concept.definition}.`,
     standard: "4.G.A.1", 
     concept: "Geometry",
