@@ -1,4 +1,5 @@
 // Question generation for 4th Grade Binary Addition topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 
 // Helper functions
 function getRandomInt(min, max) {
@@ -90,19 +91,11 @@ export function generateBinaryToDecimalQuestion(difficulty = 0.5) {
   const decimal = getRandomInt(1, 15);
   const binary = decimalToBinary(decimal);
   
-  // Generate wrong answers
-  const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    let wrong = getRandomInt(1, 20);
-    if (wrong !== decimal && !wrongAnswers.includes(wrong)) {
-      wrongAnswers.push(wrong);
-    }
-  }
   
   return {
     question: `What is the decimal (base-10) value of the binary number ${binary}?`,
     correctAnswer: decimal.toString(),
-    options: shuffleArray([decimal.toString(), ...wrongAnswers.map(String)]),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: `In binary, each position represents a power of 2. From right to left: 1, 2, 4, 8, 16... Add up the positions where you see a 1.`,
     standard: '4.NBT.A.1',
     concept: 'Binary Addition',
@@ -119,20 +112,11 @@ export function generateDecimalToBinaryQuestion(difficulty = 0.5) {
   const decimal = getRandomInt(1, 15);
   const correctBinary = decimalToBinary(decimal);
   
-  // Generate wrong binary answers
-  const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    const wrongDecimal = getRandomInt(1, 20);
-    const wrongBinary = decimalToBinary(wrongDecimal);
-    if (wrongBinary !== correctBinary && !wrongAnswers.includes(wrongBinary)) {
-      wrongAnswers.push(wrongBinary);
-    }
-  }
   
   return {
     question: `What is the binary (base-2) representation of the decimal number ${decimal}?`,
     correctAnswer: correctBinary,
-    options: shuffleArray([correctBinary, ...wrongAnswers]),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: `To convert to binary, keep dividing by 2 and write down the remainders from bottom to top. Or think: what powers of 2 add up to ${decimal}?`,
     standard: '4.NBT.A.1',
     concept: 'Binary Addition',
@@ -168,6 +152,7 @@ export function generateBinaryAdditionQuestion(difficulty = 0.5) {
     question: `Add these binary numbers: ${binary1} + ${binary2} = ?`,
     correctAnswer: correctSum,
     options: shuffleArray([correctSum, ...wrongAnswers]),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Remember binary addition rules: 0+0=0, 0+1=1, 1+0=1, 1+1=10 (which means write 0 and carry 1). You can also convert to decimal, add, then convert back!`,
     standard: '4.OA.A.3',
     concept: 'Binary Addition',
@@ -181,29 +166,28 @@ export function generateBinaryAdditionQuestion(difficulty = 0.5) {
  */
 export function generateBinaryComparisonQuestion(difficulty = 0.5) {
   const num1 = getRandomInt(3, 12);
-  const num2 = getRandomInt(3, 12);
-  
-  // Make sure they're different
-  const actualNum2 = num1 === num2 ? num2 + 1 : num2;
-  
+  let num2 = getRandomInt(3, 12);
+  // Ensure num2 is different from num1
+  while (num2 === num1) {
+    num2 = getRandomInt(3, 12);
+  } 
+
   const binary1 = decimalToBinary(num1);
-  const binary2 = decimalToBinary(actualNum2);
+  const binary2 = decimalToBinary(num2);
   
   let correctAnswer, wrongAnswers;
   
-  if (num1 > actualNum2) {
+  if (num1 > num2) {
     correctAnswer = `${binary1} > ${binary2}`;
     wrongAnswers = [
       `${binary1} < ${binary2}`,
       `${binary1} = ${binary2}`,
-      `Cannot compare binary numbers`
     ];
   } else {
     correctAnswer = `${binary1} < ${binary2}`;
     wrongAnswers = [
       `${binary1} > ${binary2}`,
       `${binary1} = ${binary2}`,
-      `Cannot compare binary numbers`
     ];
   }
   
@@ -211,6 +195,7 @@ export function generateBinaryComparisonQuestion(difficulty = 0.5) {
     question: `Which comparison is correct?`,
     correctAnswer: correctAnswer,
     options: shuffleArray([correctAnswer, ...wrongAnswers]),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `You can compare binary numbers by converting them to decimal first, or by comparing from left to right just like decimal numbers!`,
     standard: '4.NBT.A.2',
     concept: 'Binary Addition',
@@ -242,6 +227,7 @@ export function generateBinaryPlaceValueQuestion(difficulty = 0.5) {
     question: `In the binary number ${binary}, the digit 1 is in which place value?`,
     correctAnswer: correctAnswer,
     options: shuffleArray([correctAnswer, ...wrongAnswers.slice(0, 3)]),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `In binary, place values from right to left are: 1 (2⁰), 2 (2¹), 4 (2²), 8 (2³), and so on. Each place is worth twice the place to its right!`,
     standard: '4.NBT.A.1',
     concept: 'Binary Addition',

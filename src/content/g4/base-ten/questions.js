@@ -1,5 +1,6 @@
 // Question generation for 4th Grade Base Ten topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 
 // Helper functions
 function getRandomInt(min, max) {
@@ -114,6 +115,7 @@ export function generatePlaceValueQuestion(difficulty = 0.5) {
     question: `In the number ${number}, what is the place value of the digit ${digit}?`,
     correctAnswer: correctPosition,
     options: shuffle(generateUniqueOptions(correctPosition, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Count the positions from right to left: ones, tens, hundreds, thousands, ten thousands, hundred thousands, millions.`,
     standard: "4.NBT.A.1",
     concept: "Base Ten",
@@ -158,6 +160,7 @@ export function generateRoundingQuestion(difficulty = 0.5) {
     question: `Round ${number} to the nearest ${roundTo.name}.`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Look at the digit to the right of the ${roundTo.name} place. If it's 5 or more, round up. If it's less than 5, round down.`,
     standard: "4.NBT.A.3",
     concept: "Base Ten",
@@ -209,6 +212,7 @@ export function generateMultiDigitArithmeticQuestion(difficulty = 0.5, forceOper
     question,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -236,12 +240,11 @@ export function generateComparisonQuestion(difficulty = 0.5) {
   }
   
   const correctAnswer = num1 > num2 ? ">" : "<";
-  const incorrectAnswer = num1 > num2 ? "<" : ">";
 
   return {
     question: `Compare these numbers: ${num1} __ ${num2}`,
     correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, [incorrectAnswer, "="])),
+    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
     hint: "Compare digits from left to right, starting with the highest place value.",
     standard: "4.NBT.A.2",
     concept: "Base Ten",
@@ -301,8 +304,8 @@ export function generateSubtractionWordProblemQuestion(difficulty = 0.5) {
   ];
 
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  const schoolNames = ["Riverside Elementary", "Oak Hill School", "Maplewood Academy", "Sunrise Elementary", "Valley View School"];
-  const organizationNames = ["Green Valley", "Riverside", "Mountain View", "Sunset", "Hillcrest"];
+  const schoolNames = ["Riverside Elementary", "Oak Hill School", "Maplewood Academy", "Sunrise Elementary", "Mariposa Upper Elementary"];
+  const organizationNames = ["Green Valley", "Riverside", "Mountain View", "Sunset", "San Carlos"];
   
   const isSchool = scenario.location === "school";
   const locationName = isSchool 
@@ -328,6 +331,7 @@ export function generateSubtractionWordProblemQuestion(difficulty = 0.5) {
     question: scenario.question(locationName, smaller, larger, scenario.item),
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `To find "how many more," subtract the smaller amount from the larger amount: ${addCommas(larger)} - ${addCommas(smaller)}.`,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -442,6 +446,7 @@ export function generateAdditionWordProblemQuestion(difficulty = 0.5) {
     question: questionText,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Add the two numbers together: ${addCommas(num1)} + ${addCommas(num2)}.`,
     standard: "4.NBT.B.4",
     concept: "Base Ten",
@@ -536,6 +541,7 @@ export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
     question: questionText,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Break this into steps: first do any addition, then do any subtraction.",
     standard: "4.NBT.B.4",
     concept: "Base Ten", 

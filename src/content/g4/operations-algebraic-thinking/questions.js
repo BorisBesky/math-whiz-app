@@ -1,5 +1,6 @@
 // Question generation for 4th Grade Operations & Algebraic Thinking topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 
 // Helper functions
 // Get random integer between min and max (inclusive)
@@ -106,16 +107,11 @@ export function generateMultiplicativeComparisonQuestion(difficulty = 0.5) {
   ];
 
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  const potentialDistractors = [
-    (base + multiplier).toString(),
-    (result + 5).toString(),
-    (result - 3).toString(),
-  ];
 
   return {
     question: scenario.question,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: 'numeric',
     hint: scenario.hint,
     standard: "4.OA.A.1",
     concept: "Operations & Algebraic Thinking",
@@ -159,12 +155,11 @@ export function generatePrimeCompositeQuestion(difficulty = 0.1) {
     ? PRIMES[getRandomInt(0, PRIMES.length - 1)]
     : COMPOSITES[getRandomInt(0, COMPOSITES.length - 1)];
   const correctAnswer = isPrime ? "Prime" : "Composite";
-  const incorrectAnswer = isPrime ? "Composite" : "Prime";
-
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, [incorrectAnswer], 2)),
+    options: ["Prime", "Composite"],
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "A prime number has exactly two factors: 1 and itself. A composite number has more than two factors.",
     standard: "4.OA.B.4",
     concept: "Operations & Algebraic Thinking",
@@ -193,6 +188,7 @@ export function generateFactorsQuestion(difficulty = 0.5) {
     question: `Which of these is a factor of ${base}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors, Math.min(3, potentialDistractors.length) + 1)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `A factor of ${base} divides evenly into ${base} with no remainder.`,
     standard: "4.OA.B.4",
     concept: "Operations & Algebraic Thinking",
@@ -230,6 +226,7 @@ export function generateMultiplesQuestion(difficulty = 0.5) {
       question: `Which of these is a multiple of ${base}?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: `A multiple of ${base} can be divided by ${base} with no remainder. Think: ${base}, ${base * 2}, ${base * 3}, ${base * 4}...`,
       standard: "4.OA.B.4",
       concept: "Operations & Algebraic Thinking",
@@ -257,6 +254,7 @@ export function generateMultiplesQuestion(difficulty = 0.5) {
       question: `What is the ${ordinal} multiple of ${base}?`,
       correctAnswer: correctAnswer,
       options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: `List the multiples of ${base}: ${base}, ${base * 2}, ${base * 3}... and count to the ${ordinal} one.`,
       standard: "4.OA.B.4",
       concept: "Operations & Algebraic Thinking",
@@ -277,16 +275,10 @@ export function generateMultiplesQuestion(difficulty = 0.5) {
     const lcm = (num1 * num2) / gcd(num1, num2);
     const correctAnswer = lcm.toString();
     
-    const potentialDistractors = [
-      (num1 * num2).toString(),
-      (num1 + num2).toString(),
-      (lcm * 2).toString(),
-    ];
-    
     return {
       question: `What is the least common multiple (LCM) of ${num1} and ${num2}?`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: 'numeric',
       hint: `List multiples of ${num1} (${num1}, ${num1 * 2}, ${num1 * 3}...) and multiples of ${num2} (${num2}, ${num2 * 2}, ${num2 * 3}...). Find the smallest number that appears in both lists!`,
       standard: "4.OA.B.4",
       concept: "Operations & Algebraic Thinking",
@@ -333,9 +325,10 @@ export function generateNumberPatternQuestion(difficulty = 0.5) {
   ];
   
   return {
-    question: `Look at this number pattern: ${sequence.join(', ')}, ___. What number comes next?`,
+    question: `Look at this number pattern and fill in the blank with the number that comes next number: ${sequence.join(', ')}, ___ `,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Look at the difference between each number. The pattern adds a constant each time.`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -368,16 +361,11 @@ export function generateSequenceCompletionQuestion(difficulty = 0.5) {
   const questionSequence = [...sequence];
   questionSequence[missingIndex] = "___";
   const correctAnswer = missingValue.toString();
-  const potentialDistractors = [
-    (missingValue + step).toString(),
-    (missingValue - step).toString(),
-    (missingValue + getRandomInt(2, 8)).toString(),
-  ];
   
   return {
     question: `Find the missing number in this pattern: ${questionSequence.join(', ')}`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
     hint: `The pattern increases by a constant each time. What number is missing?`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -417,6 +405,7 @@ export function generatePatternRuleQuestion(difficulty = 0.5) {
     question: `Look at this pattern: ${sequence.join(', ')}. What is the rule?`,
     correctAnswer: correctRule,
     options: shuffle(generateUniqueOptions(correctRule, incorrectRules)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Look at how much each number increases from the previous one.`,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -460,11 +449,6 @@ export function generateTwoStepPatternQuestion(difficulty = 0.5) {
   nextValue = operation.func1(sequence[sequence.length - 1]);
 
   const correctAnswer = nextValue.toString();
-  const potentialDistractors = [
-      (nextValue + 1).toString(),
-      (nextValue - 1).toString(),
-      (nextValue + getRandomInt(2, 5)).toString(),
-  ];
 
   // Generate hint based on the operation
   let hint;
@@ -477,9 +461,9 @@ export function generateTwoStepPatternQuestion(difficulty = 0.5) {
   }
 
   return {
-    question: `Look at this pattern: ${sequence.join(', ')}, ___. What comes next?`,
+    question: `Look at this pattern and fill in the blank with the number that comes next number: ${sequence.join(', ')}, ___.`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
     hint: hint,
     standard: "4.OA.C.5",
     concept: "Operations & Algebraic Thinking",
@@ -512,6 +496,7 @@ export function generateLongDivisionWithRemainderQuestion(difficulty = 0.5) {
     question: `What is ${dividend} ÷ ${divisor}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `How many times does ${divisor} go into ${dividend}? Don't forget the remainder!`,
     standard: "4.NBT.B.6",
     concept: "Operations & Algebraic Thinking",
@@ -543,6 +528,7 @@ export function generateLongDivisionNoRemainderQuestion(difficulty = 0.5) {
     question: `What is ${dividend} ÷ ${divisor}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Think: ${divisor} times what number equals ${dividend}?`,
     standard: "4.NBT.B.6",
     concept: "Operations & Algebraic Thinking",
@@ -564,16 +550,11 @@ export function generateTwoDigitMultiplicationQuestion(difficulty = 0.5) {
   const oneDigit = getRandomInt(2, 9);
   const result = twoDigit * oneDigit;
   const correctAnswer = result.toString();
-  const potentialDistractors = [
-      (result + getRandomInt(10, 50)).toString(),
-      (result - getRandomInt(10, 30)).toString(),
-      (result + oneDigit).toString(),
-  ];
 
   return {
     question: `What is ${twoDigit} × ${oneDigit}?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: 'numeric',
     hint: `Break it down: multiply the ones place first, then the tens place. Don't forget to carry over!`,
     standard: "4.NBT.B.5",
     concept: "Operations & Algebraic Thinking",
@@ -616,16 +597,11 @@ export function generateMultiplicationWordProblemQuestion(difficulty = 0.5) {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  const potentialDistractors = [
-      (groups + itemsPerGroup).toString(),
-      (total - groups).toString(),
-      (total + itemsPerGroup).toString(),
-  ];
 
   return {
     question: scenario.question,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: `This is ${groups} groups of ${itemsPerGroup}. Multiply ${groups} × ${itemsPerGroup}.`,
     standard: "4.OA.A.2",
     concept: "Operations & Algebraic Thinking",
@@ -675,6 +651,7 @@ export function generateDivisionWordProblemQuestion(difficulty = 0.5) {
     question: scenario.question,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Divide ${dividend} by ${divisor}. How many complete groups can you make?`,
     standard: "4.OA.A.3",
     concept: "Operations & Algebraic Thinking",

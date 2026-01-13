@@ -26,6 +26,7 @@ function generateBasicMultiplicationQuestion(difficulty = 0.5) {
     question: `What is ${m1} x ${m2}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Try skip-counting by ${m2}, ${m1} times!`,
     standard: "3.OA.C.7",
     concept: "Multiplication",
@@ -102,6 +103,7 @@ export function generateSkipCountingQuestion() {
     question: `If you skip count by ${factor}s, ${count} times, what number do you land on?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Start at 0 and add ${factor} each time: ${factor}, ${factor * 2}, ${factor * 3}...`,
     standard: "3.OA.C.7",
     concept: "Multiplication",
@@ -118,16 +120,11 @@ export function generateArrayQuestion() {
   const cols = getRandomInt(2, 8);
   const total = rows * cols;
   const correctAnswer = total.toString();
-  const potentialDistractors = [
-    (rows + cols).toString(),
-    (total + rows).toString(),
-    (total - cols).toString(),
-  ];
   
   return {
     question: `There are ${rows} rows of objects with ${cols} objects in each row. How many objects are there in total?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: `Think of it as ${rows} groups of ${cols}. You can multiply ${rows} × ${cols}.`,
     standard: "3.OA.A.1",
     concept: "Multiplication",
@@ -169,16 +166,11 @@ export function generateEqualGroupsQuestion() {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
-  const potentialDistractors = [
-    (groups + itemsPerGroup).toString(),
-    (total + groups).toString(),
-    (total - itemsPerGroup).toString(),
-  ];
   
   return {
     question: scenario.question(groups, itemsPerGroup, scenario.item, scenario.container),
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: `This is ${groups} groups of ${itemsPerGroup}. Multiply ${groups} × ${itemsPerGroup}.`,
     standard: "3.OA.A.3",
     concept: "Multiplication",
@@ -215,16 +207,11 @@ export function generateFactFamilyQuestion() {
   
   const selected = questionTypes[getRandomInt(0, questionTypes.length - 1)];
   const correctAnswer = selected.answer.toString();
-  const potentialDistractors = [
-    (selected.answer + 1).toString(),
-    (selected.answer - 1).toString(),
-    (selected.answer + getRandomInt(2, 5)).toString(),
-  ];
   
   return {
     question: selected.question,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.NUMERIC,
     hint: selected.property === "commutative" 
       ? "The order of factors doesn't change the product!" 
       : "Multiplication and division are opposite operations.",

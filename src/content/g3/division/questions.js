@@ -1,4 +1,5 @@
 // Question generation for 3rd Grade Division topic
+import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 
@@ -26,6 +27,7 @@ function generateBasicDivisionQuestion(difficulty = 0.5) {
     question: `What is ${d_dividend} ÷ ${d_divisor}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Think: ${d_divisor} multiplied by what number gives you ${d_dividend}?`,
     standard: "3.OA.C.7",
     concept: "Division",
@@ -131,6 +133,7 @@ export function generateEqualSharingQuestion() {
     question: scenario.question(adjustedTotal, numGroups, scenario.item, scenario.container),
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Divide ${adjustedTotal} into ${numGroups} equal groups. ${adjustedTotal} ÷ ${numGroups} = ?`,
     standard: "3.OA.A.2",
     concept: "Division",
@@ -182,6 +185,7 @@ export function generateGroupingQuestion() {
     question: scenario.question(totalItems, itemsPerGroup, scenario.item, scenario.container),
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `How many groups of ${itemsPerGroup} can you make from ${totalItems}? ${totalItems} ÷ ${itemsPerGroup} = ?`,
     standard: "3.OA.A.2",
     concept: "Division",
@@ -229,6 +233,7 @@ export function generateFactFamilyQuestion() {
     question: selected.question,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Remember: multiplication and division are opposite operations. They're like inverse partners!",
     standard: "3.OA.B.6",
     concept: "Division",
@@ -257,6 +262,7 @@ export function generateRemainderQuestion() {
     question: `What is the remainder when ${dividend} ÷ ${divisor}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Divide ${dividend} by ${divisor}. How much is left over after making equal groups?`,
     standard: "3.OA.C.7",
     concept: "Division",
@@ -296,6 +302,7 @@ export function generateArrayDivisionQuestion() {
     question: selected.question,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Think about how arrays work. Rows × columns = total, so total ÷ one dimension = the other dimension.",
     standard: "3.OA.A.3",
     concept: "Division",
