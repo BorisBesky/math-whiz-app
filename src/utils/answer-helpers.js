@@ -1,5 +1,11 @@
 import { QUESTION_TYPES } from '../constants/shared-constants';
 
+/** Check if the passed in string is numeric (including negative numbers and decimals and commas) */
+function isNumeric(str) {
+  if (typeof str !== 'string') return false;
+  return /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(str) || /^-?\d+(\.\d+)?$/.test(str);
+}
+
 /**
  * Checks if a question has purely numeric answers
  * @param {Object} question - The question object
@@ -12,7 +18,7 @@ export function isNumericQuestion(question) {
 
   // Check if the correct answer is purely numeric (including negative numbers)
   const correctAnswer = question.correctAnswer?.toString().trim();
-  const isCorrectNumeric = correctAnswer && /^-?\d+(\.\d+)?$/.test(correctAnswer);
+  const isCorrectNumeric = correctAnswer && isNumeric(correctAnswer);
   
   // If correct answer contains non-digit characters (except decimal point and negative sign), it's not purely numeric
   if (!isCorrectNumeric) {
@@ -28,7 +34,7 @@ export function isNumericQuestion(question) {
   if (question.options && question.options.length > 0) {
     return question.options.every(option => {
       const optionStr = option?.toString().trim();
-      return /^-?\d+(\.\d+)?$/.test(optionStr);
+      return isNumeric(optionStr);
     });
   }
 
@@ -172,8 +178,11 @@ export function validateFillInAnswers(userAnswers, correctAnswers, inputTypes = 
   
   const results = userAnswers.map((userAnswer, index) => {
     const correct = correctAnswers[index];
-    const inputType = inputTypes[index];
-    
+    let inputType = inputTypes[index];
+    if (!inputType) {
+      // Infer input type: if correct answer is numeric, treat as numeric
+      inputType = isNumeric(correct) ? 'numeric' : 'letters';
+    }
     let userTrimmed = (userAnswer || '').trim();
     let correctTrimmed = (correct || '').trim();
     

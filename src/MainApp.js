@@ -2214,7 +2214,11 @@ const MainAppContent = () => {
           '👏 Fantastic! All correct!',
           '🎯 Bulls-eye! Perfect answers!',
         ];
-        feedbackMessage = correctMessages[Math.floor(Math.random() * correctMessages.length)];
+        feedbackMessage = (
+          <span className="flex items-center justify-center gap-2">
+            {correctMessages[Math.floor(Math.random() * correctMessages.length)]} +1 Coin! <Coins className="text-yellow-500" />
+          </span>
+        );
         feedbackType = 'success';
       } else {
         const numCorrect = validation.results.filter(r => r).length;
