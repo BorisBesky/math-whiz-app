@@ -4124,7 +4124,7 @@ Answer: [The answer]`;
                 );
               })()}
             </div>
-          ) : isNumericQuestion(currentQuestion) ? (
+          ) : isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? (
             <div className="mb-6">
               {!isAnswered && (
                 <NumberPad 
@@ -4290,7 +4290,7 @@ Answer: [The answer]`;
                   </span>
                 ) : userAnswer !== null && userAnswer !== '' ? (
                   <span>
-                    {isNumericQuestion(currentQuestion) ? 'Your answer' : 'Selected'}:{" "}
+                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? 'Your answer' : 'Selected'}:{" "}
                     <span className="font-bold">
                       {formatMathText(userAnswer)}
                     </span>
@@ -4306,7 +4306,7 @@ Answer: [The answer]`;
                   </span>
                 ) : (
                   <span className="italic text-gray-400">
-                    {isNumericQuestion(currentQuestion) ? 'Enter a number' : 
+                    {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== 'multiple-choice' ? 'Enter a number' : 
                     currentQuestion.questionType === 'multiple-choice' ? 'Select an answer' : ''}
                   </span>
                 )}
