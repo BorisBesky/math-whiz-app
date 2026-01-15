@@ -1,0 +1,606 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WriteInInput Snapshots renders at character limit state 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-red-500"
+        id="char-count-info"
+      >
+        240
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders disabled state correctly 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-200 bg-gray-50"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-gray-50 cursor-not-allowed text-gray-500"
+      disabled=""
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      Disabled answer
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        15
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders empty state correctly 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    />
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <div />
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        0
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders near character limit state 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-orange-500"
+        id="char-count-info"
+      >
+        200
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders with additional className 1`] = `
+<div
+  class="w-full custom-class mt-4"
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      Test
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        4
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders with custom max length 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      Short
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        5
+        /
+        50
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders with custom placeholder 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Show your work here..."
+      rows="4"
+    />
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <div />
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        0
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders with math symbols in answer 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      3/4 + 1/4 = 1, and 5 × 6 = 30
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        29
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`WriteInInput Snapshots renders with text value 1`] = `
+<div
+  class="w-full "
+>
+  <div
+    class="relative rounded-lg border-2 transition-colors border-gray-300 bg-white hover:border-gray-400"
+  >
+    <textarea
+      aria-describedby="char-count-info"
+      aria-label="Written answer input"
+      class="w-full p-4 rounded-lg resize-none focus:outline-none text-gray-800 text-base bg-transparent"
+      placeholder="Type your answer here..."
+      rows="4"
+    >
+      My answer is 42
+    </textarea>
+    <div
+      class="flex items-center justify-between px-3 py-2 border-t border-gray-100"
+    >
+      <button
+        aria-label="Clear text"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+        type="button"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+        Clear
+      </button>
+      <div
+        class="text-sm font-medium transition-colors text-gray-400"
+        id="char-count-info"
+      >
+        15
+        /
+        240
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-2 flex items-start gap-2 text-xs text-gray-500"
+  >
+    <svg
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+      />
+    </svg>
+    <span>
+      Write your answer clearly. Include your work or reasoning for full credit.
+       
+      You can use symbols like +, -, ×, ÷, =, and fractions like 3/4.
+    </span>
+  </div>
+</div>
+`;

@@ -1,0 +1,831 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-800"
+    >
+      123
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed flex items-center justify-center text-lg"
+      disabled=""
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      disabled=""
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed flex items-center justify-center text-xl"
+      disabled=""
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed col-span-1 flex items-center justify-center"
+      disabled=""
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed col-span-2 flex items-center justify-center gap-1"
+      disabled=""
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;
+
+exports[`NumberPad Snapshots renders empty state correctly 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-400 italic"
+    >
+      Enter number...
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;
+
+exports[`NumberPad Snapshots renders with decimal value 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-800"
+    >
+      3.14
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;
+
+exports[`NumberPad Snapshots renders with large number 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-800"
+    >
+      999999999
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;
+
+exports[`NumberPad Snapshots renders with negative value 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-800"
+    >
+      -42
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;
+
+exports[`NumberPad Snapshots renders with numeric value 1`] = `
+<div
+  class="w-full max-w-xs mx-auto"
+>
+  <div
+    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+  >
+    <span
+      class="text-lg font-bold text-gray-800"
+    >
+      123
+    </span>
+  </div>
+  <div
+    class="grid grid-cols-3 gap-1"
+  >
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      1
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      2
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      3
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      4
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      5
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      6
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      7
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      8
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      9
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      title="Toggle Positive/Negative"
+    >
+      +/−
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+    >
+      0
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      title="Decimal Point"
+    >
+      .
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      title="Clear"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-x"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 6 6 18"
+        />
+        <path
+          d="m6 6 12 12"
+        />
+      </svg>
+    </button>
+    <button
+      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      title="Backspace"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-delete"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+        />
+        <path
+          d="m12 9 6 6"
+        />
+        <path
+          d="m18 9-6 6"
+        />
+      </svg>
+       Delete
+    </button>
+  </div>
+</div>
+`;

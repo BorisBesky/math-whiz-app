@@ -9,10 +9,10 @@ import questions from '../questions.js';
 describe('generateTwoStepPatternQuestion', () => {
   it('should return a question object with required properties', () => {
     const result = questions.generateTwoStepPatternQuestion();
-    
+
     expect(result).toHaveProperty('question');
     expect(result).toHaveProperty('correctAnswer');
-    expect(result).toHaveProperty('options');
+    expect(result).toHaveProperty('questionType');
     expect(result).toHaveProperty('hint');
     expect(result).toHaveProperty('standard');
     expect(result).toHaveProperty('concept');
@@ -23,18 +23,18 @@ describe('generateTwoStepPatternQuestion', () => {
   it('should generate a question with a sequence and blank', () => {
     const result = questions.generateTwoStepPatternQuestion();
 
-    expect(result.question).toMatch(/Look at this pattern: [\d,\s-]+, ___\. What comes next\?/);
+    // The question format includes a blank for fill-in-the-blanks type
+    expect(result.question).toMatch(/Look at this pattern.*___/);
     expect(result.correctAnswer).toMatch(/^-?\d+$/); // Should be a number string (may be negative)
   });
 
-  it('should include correct answer in options', () => {
+  it('should be a fill-in-the-blanks question type', () => {
     const result = questions.generateTwoStepPatternQuestion();
 
-    // Since mocking might not work perfectly, just check that options exist and contain strings
-    expect(result.options).toBeDefined();
-    expect(Array.isArray(result.options)).toBe(true);
-    expect(result.options.length).toBeGreaterThan(0);
-    expect(result.options.every(option => typeof option === 'string')).toBe(true);
+    // This question type is fill-in-the-blanks, not multiple choice
+    expect(result.questionType).toBe('fill-in-the-blanks');
+    // Fill-in-the-blanks questions don't have options
+    expect(result.options).toBeUndefined();
   });
 
   it('should have correct standard and metadata', () => {
@@ -62,17 +62,12 @@ describe('generateTwoStepPatternQuestion', () => {
     expect(result2.question).toBeTruthy();
   });
 
-  it('should have options that are close to the correct answer', () => {
+  it('should have a valid numeric correct answer', () => {
     const result = questions.generateTwoStepPatternQuestion();
 
-    expect(result.options).toBeDefined();
     expect(result.correctAnswer).toBeDefined();
     const correctNum = parseInt(result.correctAnswer);
-
-    // All options should be numbers close to the correct answer
-    result.options.forEach(option => {
-      const num = parseInt(option);
-      expect(Math.abs(num - correctNum)).toBeLessThan(20); // Within reasonable range
-    });
+    // The correct answer should be a valid number
+    expect(isNaN(correctNum)).toBe(false);
   });
 });
