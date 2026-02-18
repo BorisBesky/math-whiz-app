@@ -1,8 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle } from 'lucide-react';
-import { formatDate } from '../../../utils/common_utils';
+import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { TOPICS } from '../../../constants/topics';
 import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 
 const ClassDetailPanel = ({
@@ -14,7 +13,7 @@ const ClassDetailPanel = ({
   onRefresh,
 }) => {
   const classId = classItem?.id;
-  const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+  const appId = getAppId();
   const db = getFirestore();
   
   const [enrollments, setEnrollments] = useState({});
@@ -128,12 +127,6 @@ const ClassDetailPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, rosterIds, db, appId, enrollmentReloadTrigger]);
   // Note: Using rosterIds instead of roster to prevent unnecessary refetches when students array is recreated
-
-  const getTopicsForGrade = (grade) => {
-    return grade === 'G3'
-      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
-  };
 
   const handleRetryEnrollments = () => {
     // Trigger reload by incrementing the reload trigger

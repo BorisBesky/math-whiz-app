@@ -4,6 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore }from "firebase/firestore";
 import AdminLogin from './AdminLogin';
 import AdminPortal from './AdminPortal';
+import { getAppId } from '../utils/common_utils';
 
 // Firebase configuration - same as in App.js
 let firebaseConfig = {};
@@ -122,7 +123,7 @@ const AdminPage = () => {
     <div className="min-h-screen bg-gray-100">
       <AdminPortal 
         db={db} 
-        appId={typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id"}
+        appId={getAppId()}
         currentUser={user}
         onClose={handleClose}
       />

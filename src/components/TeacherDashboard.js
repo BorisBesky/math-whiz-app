@@ -30,12 +30,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import TutorialOverlay from './TutorialOverlay';
 import { teacherDashboardTutorial } from '../tutorials/teacherDashboardTutorial';
-import { TOPICS } from '../constants/topics';
 import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
 import QuestionBankManager from './QuestionBankManager';
-import { formatDate, formatTime } from '../utils/common_utils';
+import { formatDate, formatTime, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString, getAppId } from '../utils/common_utils';
 import { useSearchParams } from 'react-router-dom';
 
 const TeacherDashboard = () => {
@@ -62,8 +61,8 @@ const TeacherDashboard = () => {
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [uploadClassId, setUploadClassId] = useState(null);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(getTodayDateString());
+  const [endDate, setEndDate] = useState(getTodayDateString());
   const [realtimeReloadKey, setRealtimeReloadKey] = useState(0);
   const [questionBankReloadKey, setQuestionBankReloadKey] = useState(0);
 
@@ -87,20 +86,7 @@ const TeacherDashboard = () => {
   const { user, logout } = useAuth();
   const { startTutorial, getCurrentStep, currentStep: tutorialCurrentStep } = useTutorial();
   const db = getFirestore();
-  const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
-
-  // Utility function to normalize date formats
-  const normalizeDate = (dateStr) => {
-    if (!dateStr) return null;
-    // Handle different date formats
-    if (dateStr.includes('/')) {
-      // MM/DD/YYYY format
-      const [month, day, year] = dateStr.split('/');
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-    // Assume YYYY-MM-DD format or already normalized
-    return dateStr;
-  };
+  const appId = getAppId();
 
   // Debug logging
   useEffect(() => {
@@ -153,7 +139,7 @@ const TeacherDashboard = () => {
       
       const rawStudentData = await response.json();
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
       let activeToday = 0;
@@ -464,73 +450,10 @@ const TeacherDashboard = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `student_data_${getTodayDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const calculateTopicProgressForRange = (student, grade, startDate, endDate) => {
-    const normalizedStartDate = normalizeDate(startDate);
-    const normalizedEndDate = normalizeDate(endDate);
-
-    const questionsInRange = student.answeredQuestions?.filter(
-      (q) => {
-        const normalizedQuestionDate = normalizeDate(q.date);
-        return normalizedQuestionDate >= normalizedStartDate && normalizedQuestionDate <= normalizedEndDate;
-      }
-    ) || [];
-
-    const topics = grade === 'G3'
-      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
-
-    // Count unique active days (days when student answered at least one question)
-    const activeDays = new Set(questionsInRange.map(q => normalizeDate(q.date))).size;
-
-    return topics.map(topic => {
-      // Filter questions for this topic
-      const topicQuestions = questionsInRange.filter(q => q.topic === topic);
-
-      // Group by date to calculate per-day averages
-      const questionsByDate = {};
-      topicQuestions.forEach(q => {
-        const date = normalizeDate(q.date);
-        if (!questionsByDate[date]) {
-          questionsByDate[date] = [];
-        }
-        questionsByDate[date].push(q);
-      });
-
-      // Calculate total correct/incorrect across all active days
-      const totalCorrect = topicQuestions.filter(q => q.isCorrect).length;
-      const totalIncorrect = topicQuestions.filter(q => !q.isCorrect).length;
-
-      // Calculate average per active day (only days when this topic was practiced)
-      const topicActiveDays = Object.keys(questionsByDate).length;
-      const averageCorrect = topicActiveDays > 0 ? (totalCorrect / topicActiveDays) : 0;
-      const averageIncorrect = topicActiveDays > 0 ? (totalIncorrect / topicActiveDays) : 0;
-
-      const goal = student.dailyGoalsByGrade?.[grade]?.[topic] || 4;
-
-      return {
-        topic,
-        totalCorrect,
-        totalIncorrect,
-        averageCorrect: Math.round(averageCorrect * 10) / 10, // Round to 1 decimal
-        averageIncorrect: Math.round(averageIncorrect * 10) / 10,
-        activeDays: topicActiveDays,
-        totalActiveDays: activeDays,
-        goal,
-        completed: averageCorrect >= goal
-      };
-    });
-  };
-
-  const getTopicsForGrade = (grade) => {
-    return grade === 'G3'
-      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
   };
 
   const openGoalsModalForStudent = (student) => {
@@ -1514,7 +1437,7 @@ const TeacherDashboard = () => {
                       </div>
                       <button
                         onClick={() => {
-                          const today = new Date().toISOString().split('T')[0];
+                          const today = getTodayDateString();
                           setStartDate(today);
                           setEndDate(today);
                         }}

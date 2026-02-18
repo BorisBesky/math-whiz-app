@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
+import { getAppId } from '../utils/common_utils';
 
 const JoinClass = () => {
   const [params] = useSearchParams();
@@ -8,7 +9,7 @@ const JoinClass = () => {
   const [code, setCode] = useState((params.get('code') || '').toUpperCase());
   const [status, setStatus] = useState('idle'); // idle | working | success | error
   const [error, setError] = useState('');
-  const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+  const appId = getAppId();
 
   const redeem = async () => {
     setStatus('working');

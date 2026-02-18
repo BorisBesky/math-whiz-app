@@ -27,12 +27,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
 import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
-import { formatDate, formatTime } from '../utils/common_utils';
+import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
 
 const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
   const db = initialDb ?? getFirestore();
-  const appId = initialAppId ?? (typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id');
+  const appId = initialAppId ?? getAppId();
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -107,7 +107,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
 
       const rawStudentData = await response.json();
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
       let activeToday = 0;
@@ -586,7 +586,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `student_data_${getTodayDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

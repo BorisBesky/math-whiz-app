@@ -286,163 +286,33 @@ const generateQuizQuestions = async (
     }
 
     // If not using Firestore question, generate one
+    // Topic-to-content mapping: maps each TOPICS constant to its [gradeId, topicId] in the content system
+    const TOPIC_CONTENT_MAP = {
+      [TOPICS.MULTIPLICATION]:               ['g3', 'multiplication'],
+      [TOPICS.DIVISION]:                     ['g3', 'division'],
+      [TOPICS.FRACTIONS]:                    ['g3', 'fractions'],
+      [TOPICS.MEASUREMENT_DATA]:             ['g3', 'measurement-data'],
+      [TOPICS.OPERATIONS_ALGEBRAIC_THINKING]:['g4', 'operations-algebraic-thinking'],
+      [TOPICS.BASE_TEN]:                     ['g4', 'base-ten'],
+      [TOPICS.FRACTIONS_4TH]:               ['g4', 'fractions'],
+      [TOPICS.MEASUREMENT_DATA_4TH]:        ['g4', 'measurement-data'],
+      [TOPICS.GEOMETRY]:                     ['g4', 'geometry'],
+      [TOPICS.BINARY_ADDITION]:             ['g4', 'binary-addition'],
+    };
+
     if (!useFirestoreQuestion) {
-      switch (topic) {
-      case TOPICS.MULTIPLICATION:
-        // Use the new pluggable content system for Multiplication
-        const multiplicationTopic = content.getTopic('g3', 'multiplication');
-        if (multiplicationTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = multiplicationTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+      const contentEntry = TOPIC_CONTENT_MAP[topic];
+      if (contentEntry) {
+        const [gradeId, topicId] = contentEntry;
+        const topicContent = content.getTopic(gradeId, topicId);
+        if (topicContent) {
+          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
+          question = topicContent.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           if (question) {
-            question.concept = TOPICS.MULTIPLICATION;
+            question.concept = topic;
           }
         }
-        break;
-      case TOPICS.DIVISION:
-        // Use the new pluggable content system for Division
-        const divisionTopic = content.getTopic('g3', 'division');
-        if (divisionTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = divisionTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          if (question) {
-            question.concept = TOPICS.DIVISION;
-          }
-        }
-        break;
-      case TOPICS.FRACTIONS:
-        // Use the new pluggable content system for G3 Fractions
-        const g3FractionsTopic = content.getTopic('g3', 'fractions');
-        if (g3FractionsTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = g3FractionsTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          if (question) {
-            question.concept = TOPICS.FRACTIONS;
-          }
-        }
-        break;
-      case TOPICS.MEASUREMENT_DATA:
-        // Use the new pluggable content system for G3 Measurement & Data
-        const g3MeasurementDataTopic = content.getTopic('g3', 'measurement-data');
-        if (g3MeasurementDataTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = g3MeasurementDataTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          if (question) {
-            question.concept = TOPICS.MEASUREMENT_DATA;
-          }
-        }
-        break;
-
-      // 4th Grade Topics
-      case TOPICS.OPERATIONS_ALGEBRAIC_THINKING:
-        // Use the new pluggable content system for Operations & Algebraic Thinking
-        const oaTopic = content.getTopic('g4', 'operations-algebraic-thinking');
-        if (oaTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = oaTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.OPERATIONS_ALGEBRAIC_THINKING;
-          }
-        } 
-        break;
-
-      case TOPICS.BASE_TEN:
-        // Use the new pluggable content system for Base Ten
-        const baseTenTopic = content.getTopic('g4', 'base-ten');
-        if (baseTenTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = baseTenTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.BASE_TEN;
-          }
-        }
-        break;
-
-      case TOPICS.FRACTIONS_4TH:
-        // Use the new pluggable content system for Fractions
-        const fractionsTopic = content.getTopic('g4', 'fractions');
-        if (fractionsTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = fractionsTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.FRACTIONS_4TH;
-          }
-        }
-        break;
-
-      case TOPICS.MEASUREMENT_DATA_4TH:
-        // Use the new pluggable content system for Measurement & Data
-        const measurementDataTopic = content.getTopic('g4', 'measurement-data');
-        if (measurementDataTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = measurementDataTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.MEASUREMENT_DATA_4TH;
-          }
-        }
-        break;
-
-      case TOPICS.GEOMETRY:
-        // Use the new pluggable content system for Geometry
-        const geometryTopic = content.getTopic('g4', 'geometry');
-        if (geometryTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = geometryTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.GEOMETRY;
-          }
-        }
-        break;
-
-      case TOPICS.BINARY_ADDITION:
-        // Use the new pluggable content system for Binary Addition
-        const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
-        if (binaryAdditionTopic) {
-          // Get allowed subtopics for this topic if restrictions exist
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic && allowedSubtopicsByTopic[topic]
-            ? allowedSubtopicsByTopic[topic]
-            : null;
-          question = binaryAdditionTopic.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          // Ensure the concept field matches the old TOPICS constant for compatibility
-          if (question) {
-            question.concept = TOPICS.BINARY_ADDITION;
-          }
-        }
-        break;
-
-      default:
+      } else {
         question = {
           question: "No question generated",
           options: [],

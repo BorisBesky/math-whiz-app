@@ -4,7 +4,7 @@ import {
   ChevronUp, ChevronDown, CheckCircle, X
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
-import { TOPICS } from '../../../constants/topics';
+import { formatDate, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
 
 const fieldMap = {
   'grade': 'grade',
@@ -24,75 +24,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [viewingStudent, setViewingStudent] = useState(null);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(getTodayDateString());
+  const [endDate, setEndDate] = useState(getTodayDateString());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const db = getFirestore();
-
-  // Helper functions
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const normalizeDate = (dateStr) => {
-    if (!dateStr) return null;
-    if (dateStr instanceof Date) return dateStr.toISOString().split('T')[0];
-    if (dateStr.includes('/')) {
-      const [m, d, y] = dateStr.split('/');
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-    }
-    return dateStr.split('T')[0];
-  };
-
-  const getTopicsForGrade = (grade) => {
-    return grade === 'G3'
-      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY, TOPICS.BINARY_ADDITION];
-  };
-
-  const calculateTopicProgressForRange = (student, grade, start, end) => {
-    const normalizedStart = normalizeDate(start);
-    const normalizedEnd = normalizeDate(end);
-
-    const questionsInRange = student.answeredQuestions?.filter(
-      (q) => {
-        const qDate = normalizeDate(q.date);
-        return qDate >= normalizedStart && qDate <= normalizedEnd;
-      }
-    ) || [];
-
-    const topics = getTopicsForGrade(grade);
-    const activeDays = new Set(questionsInRange.map(q => normalizeDate(q.date))).size;
-
-    return topics.map(topic => {
-      const topicQuestions = questionsInRange.filter(q => q.topic === topic);
-      const correct = topicQuestions.filter(q => q.isCorrect).length;
-      const total = topicQuestions.length;
-      
-      // Get goal from student settings or default
-      const studentGoals = student.dailyGoalsByGrade?.[grade] || {};
-      const goal = parseInt(studentGoals[topic] || 4);
-      
-      // Calculate average correct per active day
-      // If no active days, average is 0
-      const averageCorrect = activeDays > 0 
-        ? Math.round((correct / activeDays) * 10) / 10 
-        : 0;
-
-      return {
-        topic,
-        correct,
-        total,
-        goal,
-        averageCorrect,
-        activeDays,
-        completed: averageCorrect >= goal
-      };
-    });
-  };
 
   // Sorting logic
   const handleSort = (field) => {
@@ -174,7 +111,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `student_data_${getTodayDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

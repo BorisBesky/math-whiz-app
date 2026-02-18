@@ -14,12 +14,13 @@ import ClassesSection from './portal/sections/ClassesSection';
 import QuestionBankSection from './portal/sections/QuestionBankSection';
 import TeacherManagementSection from './portal/sections/TeacherManagementSection';
 import ImagesSection from './portal/sections/ImagesSection';
+import { getAppId } from '../utils/common_utils';
 
 const PortalApp = ({ initialSection }) => {
   const { user, userRole, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [activeSectionId, setActiveSectionId] = useState(initialSection || 'overview');
-  const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+  const appId = getAppId();
   const userId = user?.uid || null;
   const userEmail = user?.email || null;
 

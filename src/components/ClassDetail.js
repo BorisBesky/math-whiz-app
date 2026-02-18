@@ -4,7 +4,7 @@ import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy, Upload } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
-import { formatDate } from '../utils/common_utils';
+import { formatDate, getAppId } from '../utils/common_utils';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [students, setStudents] = useState([]);
@@ -17,7 +17,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const db = getFirestore();
-  const appId = typeof window.__app_id !== "undefined" ? window.__app_id : "default-app-id";
+  const appId = getAppId();
 
   const loadStudents = useCallback(() => {
     const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAuth } from 'firebase/auth';
+import { getTodayDateString } from '../utils/common_utils';
 
 const defaultStats = {
   totalStudents: 0,
@@ -48,7 +49,7 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       }
 
       const rawStudentData = await response.json();
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
       let activeToday = 0;
