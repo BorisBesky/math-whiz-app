@@ -2168,30 +2168,21 @@ const MainAppContent = () => {
       // Sanitize questionRecord to remove undefined values
       const sanitizedQuestionRecord = sanitizeObject(questionRecord);
       
-      // Award coins
-      updates.coins = increment(1);
       updates.answeredQuestions = arrayUnion(sanitizedQuestionRecord);
-      
-      // Update progress counters
-      updates[allProgress_path] = increment(1);
-      updates[topicProgress_path] = increment(1);
-      updates[gradeAllProgress_path] = increment(1);
-      updates[gradeTopicProgress_path] = increment(1);
-      
-      // Update correct answer counts
+
+      // Update progress counters (matching the structure used by regular questions)
       if (isCorrect) {
-        const correctAll_path = `progress.${today}.correctAll`;
-        const correctTopic_path = `progress.${today}.correct_${sanitizedTopic}`;
-        const gradeCorrectAll_path = `progressByGrade.${today}.${selectedGrade}.correctAll`;
-        const gradeCorrectTopic_path = `progressByGrade.${today}.${selectedGrade}.correct_${sanitizedTopic}`;
-        
-        updates[correctAll_path] = increment(1);
-        updates[correctTopic_path] = increment(1);
-        updates[gradeCorrectAll_path] = increment(1);
-        updates[gradeCorrectTopic_path] = increment(1);
-        
+        updates.coins = increment(1);
+        updates[`${gradeAllProgress_path}.correct`] = increment(1);
+        updates[`${gradeTopicProgress_path}.correct`] = increment(1);
+
+        if (selectedGrade === "G3") {
+          updates[`${allProgress_path}.correct`] = increment(1);
+          updates[`${topicProgress_path}.correct`] = increment(1);
+        }
+
         setScore(score + 1);
-        
+
         // Track answered question bank questions to avoid repeating them
         if (currentQuestion.questionId) {
           // Question is from Firestore question bank
@@ -2200,6 +2191,23 @@ const MainAppContent = () => {
             updates[`answeredQuestionBankQuestions`] = arrayUnion(currentQuestion.questionId);
           }
         }
+      } else {
+        updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
+        updates[`${gradeTopicProgress_path}.incorrect`] = increment(1);
+
+        if (selectedGrade === "G3") {
+          updates[`${allProgress_path}.incorrect`] = increment(1);
+          updates[`${topicProgress_path}.incorrect`] = increment(1);
+        }
+      }
+
+      // Always increment time
+      updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
+      updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken);
+
+      if (selectedGrade === "G3") {
+        updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+        updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
       }
       
       // Determine feedback
