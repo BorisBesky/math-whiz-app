@@ -461,7 +461,8 @@ const getTopicAvailability = (userData, selectedGrade = "G3") => {
     
     const goalForTopic = dailyGoalsForGrade[topic] || DEFAULT_DAILY_GOAL;
     const sanitizedTopic = sanitizeTopicName(topic);
-    const stats = progressForGrade[sanitizedTopic] || {
+    const rawStats = progressForGrade[sanitizedTopic];
+    const stats = (rawStats && typeof rawStats === 'object') ? rawStats : {
       correct: 0,
       incorrect: 0,
     };
