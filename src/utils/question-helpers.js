@@ -22,17 +22,9 @@ export function generateUniqueOptions(correctAnswer, potentialDistractors, numOp
   const options = [correctAnswer];
   const distractors = [...potentialDistractors];
 
-  //
   for (let i = 0; i < distractors.length && options.length < numOptions; i++) {
-    options.push(distractors[i]);
-  }
-
-  // If not enough unique distractors, generate random numbers
-  while (typeof correctAnswer === "number" && options.length < numOptions) {
-    const randomOffset = Math.floor(Math.random() * 10) + 1;
-    const randomDistractor = (parseInt(correctAnswer) + randomOffset).toString();
-    if (!options.includes(randomDistractor)) {
-      options.push(randomDistractor);
+    if (distractors[i] != null && distractors[i] !== '' && !options.includes(distractors[i])) {
+      options.push(distractors[i]);
     }
   }
 
