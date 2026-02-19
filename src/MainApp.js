@@ -994,6 +994,8 @@ const MainAppContent = () => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   // Prevent repeated quiz initialization loops when resuming/starting
   const quizInitInProgressRef = useRef(false);
+  // Track whether the current quiz has been completed (to prevent re-pausing on navigation)
+  const quizFinishedRef = useRef(false);
   // Guard to prevent snapshot-driven grade reverts immediately after a user-initiated grade change
   const gradeChangeInProgressRef = useRef(false);
 
@@ -1061,6 +1063,7 @@ const MainAppContent = () => {
     const pausedData = userData?.pausedQuizzes?.[topic];
     if (!pausedData) return;
 
+    quizFinishedRef.current = false;
     setCurrentTopic(topic);
     setCurrentQuiz(pausedData.questions);
     setCurrentQuestionIndex(pausedData.index);
@@ -1617,6 +1620,7 @@ const MainAppContent = () => {
 
   const startNewQuiz = async (topic) => {
     console.log('[startNewQuiz] Starting new quiz for topic:', topic);
+    quizFinishedRef.current = false;
     setCurrentTopic(topic);
     
     // Clear any paused quiz for this topic
@@ -2406,6 +2410,7 @@ const MainAppContent = () => {
     await updateDoc(userDocRef, {
       [`pausedQuizzes.${currentTopic}`]: null,
     });
+    quizFinishedRef.current = true;
     updateDifficulty(score, currentQuiz.length);
     navigateApp(`/results/${encodeTopicForPath(currentTopic)}`);
   };
@@ -2423,8 +2428,8 @@ const MainAppContent = () => {
   };
 
   const returnToTopics = async () => {
-    // Pause quiz before leaving if we have an active quiz
-    if (currentTopic && currentQuiz?.length > 0) {
+    // Pause quiz before leaving if we have an active (unfinished) quiz
+    if (currentTopic && currentQuiz?.length > 0 && !quizFinishedRef.current) {
       await pauseQuiz();
     }
 
