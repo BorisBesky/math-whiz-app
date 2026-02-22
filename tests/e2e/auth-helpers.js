@@ -11,8 +11,17 @@ export async function navigateAndWaitForAuth(page, url = '/') {
   await page.waitForLoadState('domcontentloaded');
 
   const path = new URL(page.url()).pathname;
-  if (path === '/login' || path === '/student-login') {
-    const guestButton = page.getByRole('button', { name: 'Start as Guest' });
+  if (path === '/login') {
+    const continueAsGuestLink = page.getByRole('link', { name: /Continue as Guest/i });
+    if (await continueAsGuestLink.count()) {
+      await continueAsGuestLink.click();
+      await page.waitForLoadState('domcontentloaded');
+    }
+  }
+
+  const maybeStudentLoginPath = new URL(page.url()).pathname;
+  if (maybeStudentLoginPath === '/student-login') {
+    const guestButton = page.getByRole('button', { name: /Start as Guest/i });
     await guestButton.click();
     await page.waitForLoadState('domcontentloaded');
   }

@@ -63,7 +63,45 @@ jobs:
       - name: Print Playwright test timings (sorted)
         if: always()
         run: |
-          node -e "const fs=require('fs'); const path='test-results/playwright-results.json'; if(!fs.existsSync(path)){console.log('No Playwright JSON results found.'); process.exit(0);} const data=JSON.parse(fs.readFileSync(path,'utf8')); const rows=[]; const walk=(suite,prefix='')=>{ for(const spec of (suite.specs||[])){ const title=[prefix,spec.title].filter(Boolean).join(' › '); for(const test of (spec.tests||[])){ const project=test.projectName||'unknown'; const duration=(test.results||[]).reduce((max,r)=>Math.max(max, r.duration||0),0); rows.push({title:`[${project}] ${title}`, duration}); } } for(const child of (suite.suites||[])){ const childPrefix=[prefix, child.title].filter(Boolean).join(' › '); walk(child, childPrefix); } }; for(const root of (data.suites||[])){ walk(root, root.title||''); } rows.sort((a,b)=>b.duration-a.duration); console.log('Playwright test durations (slowest first):'); for(const r of rows){ console.log(`${String(r.duration).padStart(6)} ms  ${r.title}`);} "
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'test-results/playwright-results.json';
+
+          if (!fs.existsSync(path)) {
+            console.log('No Playwright JSON results found.');
+            process.exit(0);
+          }
+
+          const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const rows = [];
+
+          const walk = (suite, prefix = '') => {
+            for (const spec of (suite.specs || [])) {
+              const title = [prefix, spec.title].filter(Boolean).join(' › ');
+              for (const test of (spec.tests || [])) {
+                const project = test.projectName || 'unknown';
+                const duration = (test.results || []).reduce((max, result) => Math.max(max, result.duration || 0), 0);
+                rows.push({ title: '[' + project + '] ' + title, duration });
+              }
+            }
+
+            for (const child of (suite.suites || [])) {
+              const childPrefix = [prefix, child.title].filter(Boolean).join(' › ');
+              walk(child, childPrefix);
+            }
+          };
+
+          for (const root of (data.suites || [])) {
+            walk(root, root.title || '');
+          }
+
+          rows.sort((a, b) => b.duration - a.duration);
+          console.log('Playwright test durations (slowest first):');
+          for (const row of rows) {
+            const padded = String(row.duration).padStart(6);
+            console.log(padded + ' ms  ' + row.title);
+          }
+          NODE
 
       - name: Save Firebase Emulators cache
         if: always() && steps.firebase-emulators-cache.outputs.cache-hit != 'true'

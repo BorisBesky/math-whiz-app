@@ -466,12 +466,10 @@ test.describe('Sketch Overlay - Mobile', () => {
   test.use({ viewport: { width: 375, height: 667 }, hasTouch: true });
   
   test('should position controls at bottom on mobile', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-    
+    await navigateAndWaitForAuth(page, '/');
+
     // Navigate to quiz
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 10000 });
-    const firstTopic = page.locator('button:has-text("Multiplication")').first();
+    const firstTopic = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });
     
@@ -491,12 +489,10 @@ test.describe('Sketch Overlay - Mobile', () => {
   });
 
   test('should handle touch events for drawing', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-    
+    await navigateAndWaitForAuth(page, '/');
+
     // Navigate to quiz
-    await page.waitForSelector('[data-tutorial-id="topic-selection"]', { timeout: 10000 });
-    const firstTopic = page.locator('button:has-text("Multiplication")').first();
+    const firstTopic = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await firstTopic.click();
     await page.waitForSelector('text=Sketch', { timeout: 10000 });
     
