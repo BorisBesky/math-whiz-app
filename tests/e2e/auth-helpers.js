@@ -9,6 +9,14 @@
 export async function navigateAndWaitForAuth(page, url = '/') {
   await page.goto(url);
   await page.waitForLoadState('domcontentloaded');
+
+  const path = new URL(page.url()).pathname;
+  if (path === '/login' || path === '/student-login') {
+    const guestButton = page.getByRole('button', { name: 'Start as Guest' });
+    await guestButton.click();
+    await page.waitForLoadState('domcontentloaded');
+  }
+
   await page.waitForSelector('[data-tutorial-id="topic-selection"]', {
     timeout: 30000,
   });

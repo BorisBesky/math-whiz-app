@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { navigateAndWaitForAuth, delayBetweenTests } from './auth-helpers';
 
+const getActiveTopicFromUrl = (url) => {
+  const match = url.match(/\/quiz\/([^/?#]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 test.describe('Routing Stability', () => {
   
   test.beforeEach(async ({ page }) => {
@@ -17,12 +22,11 @@ test.describe('Routing Stability', () => {
 
   test('should navigate to quiz and back to home without issues', async ({ page }) => {
     // 1. Start a quiz
-    // Use a specific topic that is likely to be available
-    const topicButton = page.locator('button:has-text("Multiplication")').first();
+    const topicButton = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await topicButton.click();
     
     // Wait for quiz URL
-    await expect(page).toHaveURL(/\/quiz\/Multiplication/);
+    await expect(page).toHaveURL(/\/quiz\/[^/]+/);
     await page.waitForSelector('[data-tutorial-id="question-interface"]');
 
     // 2. Click Home button
@@ -38,13 +42,16 @@ test.describe('Routing Stability', () => {
 
   test('should handle sketch route navigation correctly', async ({ page }) => {
     // 1. Start a quiz
-    const topicButton = page.locator('button:has-text("Multiplication")').first();
+    const topicButton = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await topicButton.click();
+    await expect(page).toHaveURL(/\/quiz\/[^/]+/);
+    const topic = getActiveTopicFromUrl(page.url());
+    if (!topic) throw new Error('Could not determine active topic from quiz URL');
     await page.waitForSelector('[data-tutorial-id="question-interface"]');
 
-    // 2. Open Sketch (navigates to /quiz/Multiplication/sketch)
+    // 2. Open Sketch (navigates to /quiz/<topic>/sketch)
     await page.click('button:has-text("Sketch")');
-    await expect(page).toHaveURL(/\/quiz\/Multiplication\/sketch/);
+    await expect(page).toHaveURL(new RegExp(`/quiz/${topic}/sketch`));
     await expect(page.locator('.sketch-overlay')).toBeVisible();
 
     // 3. Close Sketch (navigates back to /quiz/Multiplication)
@@ -53,15 +60,18 @@ test.describe('Routing Stability', () => {
     await page.click('.sketch-control-btn.close-btn');
     
     // Should return to quiz URL
-    await expect(page).toHaveURL(/\/quiz\/Multiplication/);
+    await expect(page).toHaveURL(new RegExp(`/quiz/${topic}`));
     await expect(page.locator('.sketch-overlay')).not.toBeVisible();
     await expect(page.locator('[data-tutorial-id="question-interface"]')).toBeVisible();
   });
 
   test('should resume quiz without infinite loops', async ({ page }) => {
     // 1. Start a quiz
-    const topicButton = page.locator('button:has-text("Multiplication")').first();
+    const topicButton = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await topicButton.click();
+    await expect(page).toHaveURL(/\/quiz\/[^/]+/);
+    const topic = getActiveTopicFromUrl(page.url());
+    if (!topic) throw new Error('Could not determine active topic from quiz URL');
     await page.waitForSelector('[data-tutorial-id="question-interface"]');
 
     // 2. Pause and go home (Pause button usually navigates home)
@@ -69,16 +79,16 @@ test.describe('Routing Stability', () => {
     await expect(page).not.toHaveURL(/\/quiz\//);
 
     // 3. Click topic again to trigger resume modal
-    await topicButton.click();
+    await page.locator('[data-tutorial-id="topic-selection"] button').first().click();
     
-    // 4. Check for Resume Modal (it navigates to /resume/Multiplication)
-    await expect(page).toHaveURL(/\/resume\/Multiplication/);
+    // 4. Check for Resume Modal (it navigates to /resume/<topic>)
+    await expect(page).toHaveURL(new RegExp(`/resume/${topic}`));
     
     // 5. Click Resume
     await page.click('button:has-text("Resume Paused Quiz")');
     
     // 6. Verify back in quiz
-    await expect(page).toHaveURL(/\/quiz\/Multiplication/);
+    await expect(page).toHaveURL(new RegExp(`/quiz/${topic}`));
     await expect(page.locator('[data-tutorial-id="question-interface"]')).toBeVisible();
   });
 });

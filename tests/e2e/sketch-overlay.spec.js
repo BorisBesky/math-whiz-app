@@ -25,8 +25,8 @@ test.describe('Sketch Overlay', () => {
     // Add a small delay between tests to avoid rate limiting
     await delayBetweenTests(500);
     
-    // Click on the first available topic (Multiplication for 3rd grade)
-    const firstTopic = page.locator('button:has-text("Multiplication")').first();
+    // Click on the first available topic
+    const firstTopic = page.locator('[data-tutorial-id="topic-selection"] button').first();
     await firstTopic.waitFor({ state: 'visible', timeout: 5000 });
     await firstTopic.click();
     
