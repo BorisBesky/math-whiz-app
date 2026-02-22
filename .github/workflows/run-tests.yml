@@ -31,14 +31,15 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Cache Firebase Emulators
-        uses: actions/cache@v4
+      - name: Restore Firebase Emulators cache
+        id: firebase-emulators-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/firebase/emulators
           key: firebase-emulators-${{ runner.os }}
-          save-always: true
 
       - name: Download Firebase Emulators
+        if: steps.firebase-emulators-cache.outputs.cache-hit != 'true'
         run: npx firebase setup:emulators:firestore
 
       - name: Install Playwright browsers
@@ -48,10 +49,17 @@ jobs:
         run: npx firebase emulators:start --only auth,firestore --project demo-mathwhiz &
 
       - name: Wait for emulators to be ready
-        run: npx wait-on http://127.0.0.1:9099 http://127.0.0.1:8080 --timeout 60000
+        run: npx wait-on tcp:127.0.0.1:9099 tcp:127.0.0.1:8080 --timeout 60000
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium
         timeout-minutes: 15
         env:
           REACT_APP_USE_EMULATOR: 'true'
+
+      - name: Save Firebase Emulators cache
+        if: always() && steps.firebase-emulators-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
