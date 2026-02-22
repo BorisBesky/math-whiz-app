@@ -25,9 +25,23 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Set up Java (required by Firestore emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Start Firebase Emulators
+        run: npx firebase emulators:start --only auth,firestore --project demo-mathwhiz &
+
+      - name: Wait for emulators to be ready
+        run: npx wait-on http://127.0.0.1:9099 http://127.0.0.1:8080 --timeout 30000
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium
         timeout-minutes: 15
+        env:
+          REACT_APP_USE_EMULATOR: 'true'

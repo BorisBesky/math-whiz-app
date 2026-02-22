@@ -84,6 +84,7 @@ service cloud.firestore {
                               isAdmin() ||
                               (isTeacher() && resource.data.userId == request.auth.uid)
                             );
+      }
 
       // Rules for classes
       match /classes/{classId} {

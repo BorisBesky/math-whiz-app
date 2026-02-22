@@ -25,12 +25,14 @@ import {
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
+  connectAuthEmulator,
   signInAnonymously,
   onAuthStateChanged,
   signInWithCustomToken,
 } from "firebase/auth";
 import {
   getFirestore,
+  connectFirestoreEmulator,
   doc,
   setDoc,
   onSnapshot,
@@ -101,6 +103,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+if (process.env.REACT_APP_USE_EMULATOR === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
 
 // Export db and storage for use in other modules
 export { db, storage };
@@ -1530,10 +1537,16 @@ const MainAppContent = () => {
                   ? null
                   : currentUser.email || null,
               };
-              setDoc(userDocRef, initialData).then(() => {
-                setUserData(initialData);
-                setSelectedGrade("G3");
-              });
+              setDoc(userDocRef, initialData)
+                .then(() => {
+                  setUserData(initialData);
+                  setSelectedGrade("G3");
+                })
+                .catch((error) => {
+                  console.error("Failed to create user document:", error);
+                  setUserData(initialData);
+                  setSelectedGrade("G3");
+                });
               setLastAskedComplexityByTopic({});
             }
           },

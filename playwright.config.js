@@ -58,13 +58,16 @@ export default defineConfig({
   webServer: (() => {
     // Allow using netlify dev via environment variable: PLAYWRIGHT_USE_NETLIFY_DEV=true
     const useNetlifyDev = process.env.PLAYWRIGHT_USE_NETLIFY_DEV === 'true';
-    const command = useNetlifyDev ? 'npm run dev' : 'npm start';
+    const useEmulator = process.env.REACT_APP_USE_EMULATOR === 'true' || process.env.CI;
+    const command = useNetlifyDev
+      ? 'npm run dev'
+      : (useEmulator ? 'REACT_APP_USE_EMULATOR=true npm start' : 'npm start');
     const url = useNetlifyDev ? 'http://localhost:8888' : 'http://localhost:3000';
     
     return {
       command,
       url,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI && !useEmulator,
       timeout: 180 * 1000, // Increased timeout for server startup (3 minutes)
       stdout: 'pipe', // Show stdout to help debug startup issues
       stderr: 'pipe', // Show stderr to help debug startup issues

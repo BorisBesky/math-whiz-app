@@ -28,7 +28,9 @@
     "test:coverage": "react-scripts test --coverage --watchAll=false",
     "test:ci": "react-scripts test --coverage --watchAll=false --ci",
     "test:e2e": "npx playwright test",
+    "test:e2e:emulator": "REACT_APP_USE_EMULATOR=true npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-mathwhiz",
     "test:e2e:report": "npx playwright show-report",
     "test:lighthouse": "lhci autorun",
     "test:lighthouse:collect": "lhci collect",
@@ -87,9 +89,11 @@
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.2.2",
     "eslint": "^8.57.1",
+    "firebase-tools": "^15.7.0",
     "node-fetch": "^2.7.0",
     "playwright": "^1.56.1",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "wait-on": "^9.0.4"
   }
 }
