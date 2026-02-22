@@ -76,11 +76,19 @@ jobs:
           if [ "${{ runner.debug }}" = "1" ]; then
             export DEBUG=pw:webserver
             echo "Playwright debug logging enabled: $DEBUG"
+            echo "REACT_APP_FIREBASE_API_KEY set: ${REACT_APP_FIREBASE_API_KEY:+yes}"
+            echo "REACT_APP_FIREBASE_PROJECT_ID: ${REACT_APP_FIREBASE_PROJECT_ID}"
           fi
           npx playwright test --project=chromium --workers=2 --retries=1 --reporter=list,json
         timeout-minutes: 30
         env:
           REACT_APP_USE_EMULATOR: 'true'
+          REACT_APP_FIREBASE_API_KEY: 'demo-api-key'
+          REACT_APP_FIREBASE_AUTH_DOMAIN: 'demo-mathwhiz.firebaseapp.com'
+          REACT_APP_FIREBASE_PROJECT_ID: 'demo-mathwhiz'
+          REACT_APP_FIREBASE_STORAGE_BUCKET: 'demo-mathwhiz.appspot.com'
+          REACT_APP_FIREBASE_MESSAGING_SENDER_ID: '1234567890'
+          REACT_APP_FIREBASE_APP_ID: '1:1234567890:web:abcdef1234567890'
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/playwright-results.json
 
       - name: Dump debug artifacts on failure
