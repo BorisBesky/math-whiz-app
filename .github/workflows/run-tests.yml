@@ -36,6 +36,10 @@ jobs:
         with:
           path: ~/.cache/firebase/emulators
           key: firebase-emulators-${{ runner.os }}
+          save-always: true
+
+      - name: Download Firebase Emulators
+        run: npx firebase setup:emulators:firestore
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -44,7 +48,7 @@ jobs:
         run: npx firebase emulators:start --only auth,firestore --project demo-mathwhiz &
 
       - name: Wait for emulators to be ready
-        run: npx wait-on http://127.0.0.1:9099 http://127.0.0.1:8080 --timeout 120000
+        run: npx wait-on http://127.0.0.1:9099 http://127.0.0.1:8080 --timeout 60000
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium
