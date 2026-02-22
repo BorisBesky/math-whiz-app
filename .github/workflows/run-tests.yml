@@ -45,20 +45,51 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Debug snapshot (runner debug)
+        if: ${{ runner.debug == '1' }}
+        run: |
+          echo "Runner debug is enabled"
+          echo "Node: $(node -v)"
+          echo "npm: $(npm -v)"
+          echo "firebase-tools: $(npx firebase --version)"
+          echo "playwright: $(npx playwright --version)"
+          echo "PWD: $PWD"
+          echo "Branch: $GITHUB_REF"
+
       - name: Start Firebase Emulators
-        run: npx firebase emulators:start --only auth,firestore --project demo-mathwhiz &
+        run: npx firebase emulators:start --only auth,firestore --project demo-mathwhiz > emulator.log 2>&1 &
 
       - name: Wait for emulators to be ready
         run: npx wait-on tcp:127.0.0.1:9099 tcp:127.0.0.1:8080 --timeout 60000
 
+      - name: Verify emulator ports (runner debug)
+        if: ${{ runner.debug == '1' }}
+        run: |
+          echo "Checking listeners for emulator ports..."
+          (ss -ltnp || true) | grep -E ':8080|:9099' || true
+          echo "Last emulator log lines:"
+          tail -n 80 emulator.log || true
+
       - name: Run Playwright tests
         run: |
           mkdir -p test-results
+          if [ "${{ runner.debug }}" = "1" ]; then
+            export DEBUG=pw:webserver
+            echo "Playwright debug logging enabled: $DEBUG"
+          fi
           npx playwright test --project=chromium --workers=2 --retries=1 --reporter=list,json
         timeout-minutes: 30
         env:
           REACT_APP_USE_EMULATOR: 'true'
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/playwright-results.json
+
+      - name: Dump debug artifacts on failure
+        if: failure()
+        run: |
+          echo "===== emulator.log (tail) ====="
+          tail -n 200 emulator.log || true
+          echo "===== Playwright error contexts ====="
+          find test-results -name 'error-context.md' -maxdepth 4 -print -exec sh -c 'echo "----- $1 -----"; sed -n "1,200p" "$1"' _ {} \; || true
 
       - name: Print Playwright test timings (sorted)
         if: always()

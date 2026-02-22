@@ -9,6 +9,15 @@ test.describe('Teacher logout redirect', () => {
     await page.goto('/teacher-login?mode=signup');
     await page.waitForLoadState('domcontentloaded');
 
+    // Fallback for unified login route: navigate to teacher signup explicitly
+    if (new URL(page.url()).pathname === '/login') {
+      await page.getByRole('button', { name: /Sign Up/i }).click();
+      await page.getByRole('link', { name: /Sign Up as Teacher/i }).click();
+      await page.waitForLoadState('domcontentloaded');
+    }
+
+    await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 15000 });
+
     // Fill in sign up form
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
