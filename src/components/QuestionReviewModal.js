@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { TOPICS, QUESTION_TYPES, ALL_QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel, source = 'pdf-upload' }) => {
+  const removeUndefinedFields = (obj) => {
+    const cleaned = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  };
+
   // Initialize questions with default questionType if missing
   const initializeQuestions = (qs) => {
     return qs.map(q => {
@@ -252,11 +262,6 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
       // First, save all questions to teacher's global question bank
       const savedQuestionIds = [];
 
-      // Import firestore functions at runtime to use the mocked implementations reliably in tests
-      const firestoreModule = require('firebase/firestore');
-      const runtimeCollection = firestoreModule.collection;
-      const runtimeAddDoc = firestoreModule.addDoc;
-
       for (const question of questionsToSave) {
         // Clean inputTypes for fill-in-the-blanks questions
         const cleanQuestion = { ...question };
@@ -277,8 +282,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           cleanQuestion.inputTypes = cleanQuestion.inputTypes || [];
         }
 
-        const questionBankRef = runtimeCollection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
-        const savedDoc = await runtimeAddDoc(questionBankRef, {
+        const questionBankRef = collection(db, 'artifacts', appId, 'users', user.uid, 'questionBank');
+        const questionBankPayload = removeUndefinedFields({
           ...cleanQuestion,
           createdAt: new Date(),
           createdBy: user.uid,
@@ -286,6 +291,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           pdfSource: fileName || '',
           assignedClasses: classId ? [classId] : []
         });
+
+        const savedDoc = await addDoc(questionBankRef, questionBankPayload);
         savedQuestionIds.push({ id: savedDoc.id, question: cleanQuestion });
       }
 
@@ -293,15 +300,9 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
       if (classId) {
         const classRefPromises = [];
 
-        // Use runtime doc/setDoc as well
-        const firestoreModule2 = require('firebase/firestore');
-        const runtimeDoc = firestoreModule2.doc;
-        const runtimeSetDoc = firestoreModule2.setDoc;
-
         for (const { id: questionId, question } of savedQuestionIds) {
-          const classQuestionRef = runtimeDoc(db, 'artifacts', appId, 'classes', classId, 'questions', questionId);
-          classRefPromises.push(
-            runtimeSetDoc(classQuestionRef, {
+          const classQuestionRef = doc(db, 'artifacts', appId, 'classes', classId, 'questions', questionId);
+          const classQuestionPayload = removeUndefinedFields({
               // Reference information
               questionBankRef: `artifacts/${appId}/users/${user.uid}/questionBank/${questionId}`,
               teacherId: user.uid,
@@ -323,8 +324,9 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
               pdfSource: fileName || '',
               createdAt: new Date(),
               createdBy: user.uid
-            })
-          );
+            });
+
+          classRefPromises.push(setDoc(classQuestionRef, classQuestionPayload));
         }
         await Promise.all(classRefPromises);
         
@@ -359,10 +361,10 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-medium text-gray-900">
-                Review {source === 'imported' ? 'Imported' : 'Extracted'} Questions
+                Review {source === 'ai-generated' ? 'AI Generated' : source === 'imported' ? 'Imported' : 'Extracted'} Questions
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                {fileName && `${fileName} • `}{editedQuestions.length} question(s) {source === 'imported' ? 'imported' : 'extracted'}
+                {fileName && `${fileName} • `}{editedQuestions.length} question(s) {source === 'ai-generated' ? 'generated' : source === 'imported' ? 'imported' : 'extracted'}
               </p>
             </div>
             <button

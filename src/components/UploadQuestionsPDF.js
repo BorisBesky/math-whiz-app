@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, limit, doc, updateDoc } from 'firebase/firestore';
 import QuestionReviewModal from './QuestionReviewModal';
 import { GRADES } from '../constants/topics';
 
@@ -82,22 +82,18 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     const jobsRef = collection(db, 'artifacts', currentAppId, 'pdfProcessingJobs');
     
     let unsubscribe = null;
-    let fallbackUnsubscribe = null;
 
     console.log('Setting up real-time listener for pending jobs...');
     setCheckingJobs(true);
 
-    // Try query with orderBy first
     try {
       const q = query(
         jobsRef,
         where('userId', '==', user.uid),
         where('status', '==', 'completed'),
-        orderBy('createdAt', 'desc'),
-        limit(10)
+        limit(20)
       );
 
-      // Set up real-time listener
       unsubscribe = onSnapshot(
         q,
         (snapshot) => {
@@ -113,75 +109,18 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
             code: err.code,
             stack: err.stack
           });
-          
-          // If query fails (e.g., missing index), try without orderBy
-          if (err.code === 'failed-precondition') {
-            console.log('Query requires index. Trying simpler query...');
-            try {
-              const simpleQ = query(
-                jobsRef,
-                where('userId', '==', user.uid),
-                where('status', '==', 'completed'),
-                limit(10)
-              );
-              
-              fallbackUnsubscribe = onSnapshot(
-                simpleQ,
-                (snapshot) => {
-                  console.log(`Fallback listener: Found ${snapshot.size} completed jobs`);
-                  const jobs = processJobsSnapshot(snapshot, false);
-                  setPendingJobs(jobs);
-                  setCheckingJobs(false);
-                },
-                (fallbackErr) => {
-                  console.error('Fallback query also failed:', fallbackErr);
-                  setCheckingJobs(false);
-                }
-              );
-            } catch (fallbackErr) {
-              console.error('Error setting up fallback listener:', fallbackErr);
-              setCheckingJobs(false);
-            }
-          } else {
-            setCheckingJobs(false);
-          }
+          setCheckingJobs(false);
         }
       );
     } catch (err) {
-      // If orderBy fails at query construction, use simpler query
-      console.warn('OrderBy query construction failed, using simpler query:', err);
-      try {
-        const simpleQ = query(
-          jobsRef,
-          where('userId', '==', user.uid),
-          where('status', '==', 'completed'),
-          limit(10)
-        );
-        
-        unsubscribe = onSnapshot(
-          simpleQ,
-          (snapshot) => {
-            console.log(`Simple listener: Found ${snapshot.size} completed jobs`);
-            const jobs = processJobsSnapshot(snapshot, false);
-            setPendingJobs(jobs);
-            setCheckingJobs(false);
-          },
-          (snapshotErr) => {
-            console.error('Simple query also failed:', snapshotErr);
-            setCheckingJobs(false);
-          }
-        );
-      } catch (simpleErr) {
-        console.error('Error setting up simple listener:', simpleErr);
-        setCheckingJobs(false);
-      }
+      console.error('Error setting up listener for pending jobs:', err);
+      setCheckingJobs(false);
     }
 
     // Cleanup listeners on unmount
     return () => {
       console.log('Cleaning up real-time listener(s) for pending jobs');
       if (unsubscribe) unsubscribe();
-      if (fallbackUnsubscribe) fallbackUnsubscribe();
     };
   }, [appId, processJobsSnapshot]);
 

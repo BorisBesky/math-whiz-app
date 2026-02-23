@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc, deleteField } from 'firebase/firestore';
-import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload, Sparkles } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
 import QuestionReviewModal from './QuestionReviewModal';
+import GenerateQuestionsModal from './GenerateQuestionsModal';
 import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 import 'katex/dist/katex.min.css';
@@ -49,6 +50,7 @@ const QuestionBankManager = ({
   const [importedQuestions, setImportedQuestions] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedFileName, setImportedFileName] = useState('');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const itemsPerPage = 10;
   const questionContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -481,6 +483,25 @@ const QuestionBankManager = ({
     setImportedQuestions(null);
     setImportedFileName('');
     setSelectedQuestions(new Set());
+  };
+
+  // Handle AI-generated questions from GenerateQuestionsModal
+  const handleGeneratedQuestions = (questions) => {
+    setShowGenerateModal(false);
+    const normalizedQuestions = questions.map(q => ({
+      ...q,
+      questionType: q.questionType || 'multiple-choice',
+      options: q.options || [],
+      hint: q.hint || '',
+      images: q.images || [],
+      source: q.source || 'ai-generated',
+      pdfSource: '',
+      standard: q.standard || '',
+      concept: q.concept || '',
+    }));
+    setImportedQuestions(normalizedQuestions);
+    setImportedFileName('AI Generated');
+    setShowImportModal(true);
   };
 
   const toggleSourceExpansion = (source) => {
@@ -1039,6 +1060,15 @@ const QuestionBankManager = ({
             onChange={handleImportFile}
             className="hidden"
           />
+          {isAdmin && (
+            <button
+              onClick={() => setShowGenerateModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm flex items-center space-x-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Generate Questions</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1632,7 +1662,16 @@ const QuestionBankManager = ({
             setImportedQuestions(null);
             setImportedFileName('');
           }}
-          source="imported"
+          source={importedFileName === 'AI Generated' ? 'ai-generated' : 'imported'}
+        />
+      )}
+
+      {/* Generate Questions Modal */}
+      {showGenerateModal && (
+        <GenerateQuestionsModal
+          isOpen={showGenerateModal}
+          onClose={() => setShowGenerateModal(false)}
+          onGenerated={handleGeneratedQuestions}
         />
       )}
     </div >
