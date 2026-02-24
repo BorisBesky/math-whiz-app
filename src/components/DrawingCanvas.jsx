@@ -16,6 +16,7 @@ import { Eraser, Pen, RotateCcw, Trash2, Circle } from 'lucide-react';
  */
 const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', backgroundImage = null }) => {
   const canvasRef = useRef(null);
+  const bgCanvasRef = useRef(null);
   const currentStrokeRef = useRef(null);
   const onChangeRef = useRef(onChange);
   const isDrawingRef = useRef(false);
@@ -107,32 +108,65 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     }
   }, [backgroundImage]);
 
-  // Initialize canvas
+  // Initialize canvases
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    const dpr = window.devicePixelRatio || 1;
+
+    // Setup strokes canvas (transparent - no white fill)
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
-    // Set canvas size
-    const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     ctx.scale(dpr, dpr);
-    
-    // Set white background
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, width, height);
-    
+
+    // Setup background canvas
+    const bgCanvas = bgCanvasRef.current;
+    if (bgCanvas) {
+      const bgCtx = bgCanvas.getContext('2d');
+      bgCanvas.width = width * dpr;
+      bgCanvas.height = height * dpr;
+      bgCanvas.style.width = width + 'px';
+      bgCanvas.style.height = height + 'px';
+      bgCtx.scale(dpr, dpr);
+      bgCtx.fillStyle = '#FFFFFF';
+      bgCtx.fillRect(0, 0, width, height);
+    }
+
     setContext(ctx);
   }, [width, height]);
 
-  // Redraw canvas whenever strokes change or background image changes
+  // Draw background image on the dedicated background canvas
+  useEffect(() => {
+    const bgCanvas = bgCanvasRef.current;
+    if (!bgCanvas) return;
+
+    const bgCtx = bgCanvas.getContext('2d');
+
+    // Reset transform, clear, then re-apply
+    bgCtx.save();
+    bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    bgCtx.restore();
+
+    bgCtx.fillStyle = '#FFFFFF';
+    bgCtx.fillRect(0, 0, width, height);
+
+    if (bgImageObj) {
+      const scale = Math.min(width / bgImageObj.width, height / bgImageObj.height);
+      const x = (width / 2) - (bgImageObj.width / 2) * scale;
+      const y = (height / 2) - (bgImageObj.height / 2) * scale;
+      bgCtx.drawImage(bgImageObj, x, y, bgImageObj.width * scale, bgImageObj.height * scale);
+    }
+  }, [bgImageObj, width, height]);
+
+  // Redraw strokes whenever they change
   useEffect(() => {
     if (!context) return;
-    
+
     // Create an offscreen canvas for strokes to handle eraser properly
     const offscreenCanvas = document.createElement('canvas');
     offscreenCanvas.width = width;
@@ -140,7 +174,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     const offCtx = offscreenCanvas.getContext('2d');
 
     // Draw all strokes up to currentStrokeIndex on offscreen canvas
-    const strokesToDraw = currentStrokeIndex >= 0 
+    const strokesToDraw = currentStrokeIndex >= 0
       ? strokes.slice(0, currentStrokeIndex + 1)
       : [];
 
@@ -162,33 +196,33 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
       offCtx.stroke();
     });
 
-    // Clear main canvas
+    // Clear strokes canvas (transparent - background is on separate canvas)
     context.clearRect(0, 0, width, height);
-    
-    // Draw background (white or image)
-    if (bgImageObj) {
-      // Draw image to fit canvas while maintaining aspect ratio
-      const scale = Math.min(width / bgImageObj.width, height / bgImageObj.height);
-      const x = (width / 2) - (bgImageObj.width / 2) * scale;
-      const y = (height / 2) - (bgImageObj.height / 2) * scale;
-      
-      // Fill white first
-      context.fillStyle = '#FFFFFF';
-      context.fillRect(0, 0, width, height);
-      
-      context.drawImage(bgImageObj, x, y, bgImageObj.width * scale, bgImageObj.height * scale);
-    } else {
-      context.fillStyle = '#FFFFFF';
-      context.fillRect(0, 0, width, height);
-    }
 
     // Draw strokes from offscreen canvas
     context.globalCompositeOperation = 'source-over';
     context.drawImage(offscreenCanvas, 0, 0);
 
-    // Notify parent of changes with base64 image
+    // Notify parent with composite image (background + strokes)
     if (onChangeRef.current) {
-      const imageData = canvasRef.current.toDataURL('image/png');
+      const dpr = window.devicePixelRatio || 1;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = width * dpr;
+      exportCanvas.height = height * dpr;
+      const exportCtx = exportCanvas.getContext('2d');
+
+      // Draw background canvas
+      if (bgCanvasRef.current) {
+        exportCtx.drawImage(bgCanvasRef.current, 0, 0);
+      } else {
+        exportCtx.fillStyle = '#FFFFFF';
+        exportCtx.fillRect(0, 0, width * dpr, height * dpr);
+      }
+
+      // Draw strokes canvas on top
+      exportCtx.drawImage(canvasRef.current, 0, 0);
+
+      const imageData = exportCanvas.toDataURL('image/png');
       onChangeRef.current(imageData);
     }
   }, [strokes, currentStrokeIndex, context, width, height, bgImageObj]);
@@ -300,8 +334,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
     setCurrentStrokeIndex(-1);
     currentStrokeRef.current = null;
     if (context) {
-      context.fillStyle = '#FFFFFF';
-      context.fillRect(0, 0, width, height);
+      context.clearRect(0, 0, width, height);
     }
     if (onChangeRef.current) {
       onChangeRef.current(null);
@@ -310,19 +343,31 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
 
   return (
     <div className={`drawing-canvas-container ${className}`}>
-      <canvas
-        ref={canvasRef}
-        className="border border-gray-300 rounded-lg cursor-crosshair bg-white"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        style={{ 
-          touchAction: 'none',
-          display: 'block',
-          margin: '0 auto'
-        }}
-      />
+      <div className="border border-gray-300 rounded-lg bg-white overflow-hidden" style={{ position: 'relative', width: width + 'px', height: height + 'px', margin: '0 auto' }}>
+        <canvas
+          ref={bgCanvasRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            display: 'block',
+            pointerEvents: 'none'
+          }}
+        />
+        <canvas
+          ref={canvasRef}
+          className="cursor-crosshair"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          style={{
+            position: 'relative',
+            touchAction: 'none',
+            display: 'block'
+          }}
+        />
+      </div>
       
       {/* Drawing Controls */}
       <div className="flex justify-center items-center space-x-3 mt-4 relative z-10">
