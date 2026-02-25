@@ -45,6 +45,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'subtraction': { generator: generateFractionSubtractionQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'comparison': { generator: generateFractionComparisonQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'decimal notation': { generator: generateDecimalNotationQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    'decimal operations': { generator: generateDecimalOperationsQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'multiplication': { generator: generateFractionMultiplicationQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'mixed numbers': { generator: generateMixedNumbersQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
   };
@@ -421,6 +422,177 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
   }
 }
 
+/**
+ * Generates a decimal addition question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalAdditionQuestion(difficulty = 0.5) {
+  const useHundredths = difficulty > 0.5 ? Math.random() < 0.7 : Math.random() < 0.3;
+
+  let a, b, sum;
+  if (useHundredths) {
+    const maxWhole = Math.floor(5 + difficulty * 15);
+    a = (getRandomInt(10, maxWhole * 100) / 100);
+    b = (getRandomInt(10, maxWhole * 100) / 100);
+    sum = parseFloat((a + b).toFixed(2));
+    a = parseFloat(a.toFixed(2));
+    b = parseFloat(b.toFixed(2));
+  } else {
+    const maxWhole = Math.floor(5 + difficulty * 15);
+    a = (getRandomInt(1, maxWhole * 10) / 10);
+    b = (getRandomInt(1, maxWhole * 10) / 10);
+    sum = parseFloat((a + b).toFixed(1));
+    a = parseFloat(a.toFixed(1));
+    b = parseFloat(b.toFixed(1));
+  }
+
+  return {
+    question: `What is ${a} + ${b}?`,
+    correctAnswer: String(sum),
+    options: [],
+    questionType: QUESTION_TYPES.NUMERIC,
+    hint: "Line up the decimal points, then add just like whole numbers. Don't forget to place the decimal point in your answer!",
+    standard: "4.NF.C.7",
+    concept: "Fractions 4th",
+    grade: "G4",
+    subtopic: "decimal operations",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal subtraction question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalSubtractionQuestion(difficulty = 0.5) {
+  const useHundredths = difficulty > 0.5 ? Math.random() < 0.7 : Math.random() < 0.3;
+
+  let a, b;
+  if (useHundredths) {
+    const maxWhole = Math.floor(5 + difficulty * 15);
+    a = (getRandomInt(10, maxWhole * 100) / 100);
+    b = (getRandomInt(10, maxWhole * 100) / 100);
+    a = parseFloat(a.toFixed(2));
+    b = parseFloat(b.toFixed(2));
+  } else {
+    const maxWhole = Math.floor(5 + difficulty * 15);
+    a = (getRandomInt(1, maxWhole * 10) / 10);
+    b = (getRandomInt(1, maxWhole * 10) / 10);
+    a = parseFloat(a.toFixed(1));
+    b = parseFloat(b.toFixed(1));
+  }
+
+  // Ensure a >= b so result is non-negative
+  if (a < b) {
+    [a, b] = [b, a];
+  }
+
+  const diff = parseFloat((a - b).toFixed(useHundredths ? 2 : 1));
+
+  return {
+    question: `What is ${a} - ${b}?`,
+    correctAnswer: String(diff),
+    options: [],
+    questionType: QUESTION_TYPES.NUMERIC,
+    hint: "Line up the decimal points, then subtract just like whole numbers. You can add zeros to fill empty places.",
+    standard: "4.NF.C.7",
+    concept: "Fractions 4th",
+    grade: "G4",
+    subtopic: "decimal operations",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal multiplication question
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalMultiplicationQuestion(difficulty = 0.5) {
+  let a, b, product;
+
+  if (difficulty <= 0.5) {
+    // Decimal × whole number
+    a = (getRandomInt(1, 50) / 10);
+    a = parseFloat(a.toFixed(1));
+    b = getRandomInt(2, 6);
+    product = parseFloat((a * b).toFixed(1));
+  } else {
+    // Decimal × decimal
+    a = (getRandomInt(1, 30) / 10);
+    b = (getRandomInt(1, 30) / 10);
+    a = parseFloat(a.toFixed(1));
+    b = parseFloat(b.toFixed(1));
+    product = parseFloat((a * b).toFixed(2));
+  }
+
+  return {
+    question: `What is ${a} × ${b}?`,
+    correctAnswer: String(product),
+    options: [],
+    questionType: QUESTION_TYPES.NUMERIC,
+    hint: "Multiply as if there are no decimals, then count the total decimal places in both numbers and place the decimal point that many places from the right.",
+    standard: "4.NF.C.7",
+    concept: "Fractions 4th",
+    grade: "G4",
+    subtopic: "decimal operations",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal division question (always divides evenly)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalDivisionQuestion(difficulty = 0.5) {
+  let dividend, divisor, quotient;
+
+  if (difficulty <= 0.5) {
+    // Decimal ÷ whole number — construct so it divides evenly
+    divisor = getRandomInt(2, 5);
+    quotient = (getRandomInt(1, 30) / 10);
+    quotient = parseFloat(quotient.toFixed(1));
+    dividend = parseFloat((quotient * divisor).toFixed(1));
+  } else {
+    // Decimal ÷ decimal — construct so it divides evenly
+    divisor = (getRandomInt(2, 20) / 10);
+    divisor = parseFloat(divisor.toFixed(1));
+    quotient = getRandomInt(2, 8 + Math.floor(difficulty * 4));
+    dividend = parseFloat((quotient * divisor).toFixed(2));
+  }
+
+  return {
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    correctAnswer: String(quotient),
+    options: [],
+    questionType: QUESTION_TYPES.NUMERIC,
+    hint: "If dividing by a decimal, move the decimal point in both numbers to make the divisor a whole number, then divide normally.",
+    standard: "4.NF.C.7",
+    concept: "Fractions 4th",
+    grade: "G4",
+    subtopic: "decimal operations",
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Dispatches to one of the 4 decimal operation generators at random
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalOperationsQuestion(difficulty = 0.5) {
+  const generators = [
+    generateDecimalAdditionQuestion,
+    generateDecimalSubtractionQuestion,
+    generateDecimalMultiplicationQuestion,
+    generateDecimalDivisionQuestion,
+  ];
+  const selected = generators[getRandomInt(0, generators.length - 1)];
+  return selected(difficulty);
+}
+
 const fractionsQuestions = {
   generateQuestion,
   generateEquivalentFractionsQuestion,
@@ -428,6 +600,11 @@ const fractionsQuestions = {
   generateFractionSubtractionQuestion,
   generateFractionComparisonQuestion,
   generateDecimalNotationQuestion,
+  generateDecimalOperationsQuestion,
+  generateDecimalAdditionQuestion,
+  generateDecimalSubtractionQuestion,
+  generateDecimalMultiplicationQuestion,
+  generateDecimalDivisionQuestion,
   generateFractionMultiplicationQuestion,
   generateMixedNumbersQuestion,
   simplifyFraction,

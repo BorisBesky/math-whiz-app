@@ -112,7 +112,7 @@ const TOPIC_GUIDELINES = {
   [GRADES.G4]: `Topic Guidelines for 4th Grade:
 - Operations & Algebraic Thinking: Focus on multiplicative comparisons ("3 times as many"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
 - Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships
-- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions
+- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions, decimal operations (adding, subtracting, multiplying, and dividing decimals)
 - Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
 - Binary Addition: Focus on converting between binary and decimal, adding binary numbers`,

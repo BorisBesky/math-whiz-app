@@ -214,8 +214,11 @@ const FractionsExplanation = () => {
         <span style={styles.emoji}>💡</span><strong>Decimal Trick:</strong> For tenths, put one digit after the decimal point. For hundredths, put two digits!
       </div>
 
-      <h2 style={styles.h2}>➕ Adding & Subtracting Decimals</h2>
-      <p>Line up the decimal points! It's just like adding regular numbers, but you have to keep the dots aligned.</p>
+      <h2 style={styles.h2}>🧮 Decimal Operations</h2>
+      <p>Once you know how to write decimals, you can add, subtract, multiply, and divide them!</p>
+
+      <h3 style={{...styles.h2, fontSize: '1.4em', borderBottom: '2px dashed #ad1457', marginTop: '20px'}}>➕ Adding Decimals</h3>
+      <p>Line up the decimal points, then add just like whole numbers!</p>
 
       <div style={styles.example}>
         <strong>Example: 3.25 + 4.1</strong>
@@ -228,7 +231,25 @@ const FractionsExplanation = () => {
         </div>
       </div>
 
-      <h2 style={styles.h2}>✖️ Multiplying Decimals</h2>
+      <h3 style={{...styles.h2, fontSize: '1.4em', borderBottom: '2px dashed #ad1457', marginTop: '20px'}}>➖ Subtracting Decimals</h3>
+      <p>Line up the decimal points, then subtract just like whole numbers!</p>
+
+      <div style={styles.example}>
+        <strong>Example: 5.80 - 2.35</strong>
+        <br/>
+        <div style={{fontFamily: 'monospace', fontSize: '1.2em', margin: '10px 0'}}>
+          {'  5.80'}
+          <br/>{'- 2.35'}
+          <br/>{'______'}
+          <br/>{'  3.45'}
+        </div>
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span><strong>Decimal Lineup Trick:</strong> Always line up the decimal points! Add zeros at the end if one number has fewer decimal places.
+      </div>
+
+      <h3 style={{...styles.h2, fontSize: '1.4em', borderBottom: '2px dashed #ad1457', marginTop: '20px'}}>✖️ Multiplying Decimals</h3>
       <p>Multiply the numbers as if the decimals weren't there, then put the decimal back in!</p>
 
       <div style={styles.example}>
@@ -239,7 +260,7 @@ const FractionsExplanation = () => {
         <br/>• Answer: 0.15
       </div>
 
-      <h2 style={styles.h2}>➗ Dividing Decimals</h2>
+      <h3 style={{...styles.h2, fontSize: '1.4em', borderBottom: '2px dashed #ad1457', marginTop: '20px'}}>➗ Dividing Decimals</h3>
       <p>Make the number you are dividing by a whole number first!</p>
 
       <div style={styles.example}>

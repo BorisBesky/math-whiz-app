@@ -23,6 +23,7 @@ export const fractions = {
     'subtraction',
     'multiplication',
     'decimal notation',
+    'decimal operations',
     'mixed numbers'
   ],
   
@@ -34,6 +35,7 @@ export const fractions = {
     'Multiply fractions by whole numbers',
     'Express fractions with denominators of 10 as decimals',
     'Compare decimal notations for fractions',
+    'Add, subtract, multiply, and divide decimals',
     'Solve word problems involving fractions'
   ]
 };
