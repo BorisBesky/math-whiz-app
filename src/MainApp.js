@@ -46,6 +46,7 @@ import {
   DEFAULT_DAILY_GOAL,
   DAILY_GOAL_BONUS,
   STORE_BACKGROUND_COST,
+  DEFAULT_BACKGROUND_IMAGE,
   conceptExplanationFiles,
   quizTopicsByGrade,
   TOPIC_CONTENT_MAP,
@@ -1941,7 +1942,7 @@ Answer: [The answer]`;
   const activeBgUrl =
     userData?.activeBackground && userData.activeBackground !== "default"
       ? storeItems.find((item) => item.id === userData.activeBackground)?.url
-      : null;
+      : DEFAULT_BACKGROUND_IMAGE;
 
   if (!user || !userData) {
     return (

@@ -3,6 +3,7 @@ import { TOPICS } from "./topics";
 export const DEFAULT_DAILY_GOAL = 4;
 export const DAILY_GOAL_BONUS = 10;
 export const STORE_BACKGROUND_COST = 20;
+export const DEFAULT_BACKGROUND_IMAGE = "/images/default-background.jpg";
 export const GOAL_RANGE_MIN = 4;
 export const GOAL_RANGE_MAX = 40;
 export const GOAL_RANGE_STEP = 1;
