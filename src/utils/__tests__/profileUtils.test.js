@@ -21,8 +21,8 @@ jest.mock('firebase/firestore', () => ({
   deleteDoc: jest.fn()
 }));
 
-// Mock the db import from MainApp
-jest.mock('../../MainApp', () => ({
+// Mock the db import from firebase
+jest.mock('../../firebase', () => ({
   db: {}
 }));
 

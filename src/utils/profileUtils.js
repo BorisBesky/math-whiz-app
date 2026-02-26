@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../MainApp';
+import { db } from '../firebase';
 
 /**
  * Get the standardized profile document reference path
