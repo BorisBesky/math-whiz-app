@@ -1032,6 +1032,20 @@ const MainAppContent = () => {
     setPopupImage(null);
   }, []);
 
+  // Memoized callbacks for child components to prevent re-renders
+  const handleDrawingChange = useCallback((imageData) => {
+    setDrawingImageBase64(imageData);
+  }, []);
+
+  const handleWriteInChange = useCallback((text) => {
+    setWriteInAnswer(text);
+  }, []);
+
+  const handleNumericChange = useCallback((value) => {
+    setNumericInput(value);
+    setUserAnswer(value);
+  }, []);
+
   // New state variables for story problem functionality
   const [showStoryHint, setShowStoryHint] = useState(false);
   const [showStoryAnswer, setShowStoryAnswer] = useState(false);
@@ -1174,7 +1188,7 @@ const MainAppContent = () => {
         console.warn("KaTeX render error:", e);
       }
     }
-  }, [quizState, currentQuestionIndex, currentQuiz, userAnswer, isAnswered, feedback]);
+  }, [quizState, currentQuestionIndex, currentQuiz]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep quizState in sync with the current route (used by tutorial + KaTeX effect)
   useEffect(() => {
@@ -2790,116 +2804,78 @@ Answer: [The answer]`;
 
   // --- UI Rendering ---
   const renderHeader = () => {
+    const iconBtn = "p-2 rounded-xl hover:bg-white/80 hover:shadow-sm active:scale-95 transition-all duration-200";
     return (
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-full shadow-md z-10" data-tutorial-id="navigation-menu">
+      <div className="fixed top-3 left-3 right-3 flex items-center gap-1.5 bg-white/70 backdrop-blur-md px-3 py-2 rounded-2xl shadow-card border border-white/50 z-10 overflow-x-auto" data-tutorial-id="navigation-menu">
         {/* Login options when no user is authenticated */}
         {!authUser && (
-          <div className="flex items-center gap-2">
-            <a
-              href="/student-login"
-              className="px-3 py-1 bg-green-100 hover:bg-green-200 rounded-full text-sm text-green-800 transition"
-              title="Student Login"
-            >
-              Student
-            </a>
-            <a
-              href="/teacher-login"
-              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded-full text-sm text-blue-800 transition"
-              title="Teacher Login"
-            >
-              Teacher
-            </a>
-            <a
-              href="/admin-login"
-              className="px-3 py-1 bg-purple-100 hover:bg-purple-200 rounded-full text-sm text-purple-800 transition"
-              title="Admin Login"
-            >
-              Admin
-            </a>
+          <div className="flex items-center gap-1.5">
+            <a href="/student-login" className="px-3 py-1.5 bg-green-100 hover:bg-green-200 rounded-button text-xs font-bold text-green-700 transition" title="Student Login">Student</a>
+            <a href="/teacher-login" className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 rounded-button text-xs font-bold text-blue-700 transition" title="Teacher Login">Teacher</a>
+            <a href="/admin-login" className="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 rounded-button text-xs font-bold text-purple-700 transition" title="Admin Login">Admin</a>
           </div>
         )}
-        
-        {/* User info section */}
+
+        {/* User info */}
         {authUser && (
-          <div 
-            className={`flex items-center gap-2 text-gray-700 bg-gray-100 px-3 py-1 rounded-full ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-200 transition' : ''}`}
+          <div
+            className={`flex items-center gap-1.5 text-gray-700 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-100 ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-100 transition' : ''}`}
             onClick={handleUserClick}
             title={authUser.isAnonymous ? "Click to create an account and save your progress!" : (authUser.displayName || authUser.email)}
             data-tutorial-id="settings-menu"
           >
-            <User size={16} />
-            <span className="text-sm font-medium">
+            <User size={14} />
+            <span className="text-xs font-bold">
               {authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
             </span>
             {userRole && (
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                userRole === USER_ROLES.ADMIN ? 'bg-purple-100 text-purple-700' :
+                userRole === USER_ROLES.TEACHER ? 'bg-blue-100 text-blue-700' :
+                'bg-green-100 text-green-700'
+              }`}>
                 {userRole}
               </span>
             )}
           </div>
         )}
-        
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-200 mx-0.5" />
+
         {/* Coins */}
-        <div className="flex items-center gap-2 text-yellow-600 font-bold px-2">
-          <Coins size={24} />
+        <div className="flex items-center gap-1 text-amber-600 font-display font-bold text-sm px-1.5">
+          <Coins size={18} />
           <span>{userData?.coins || 0}</span>
         </div>
-        
-        {/* Store */}
-        <button
-          onClick={() => navigateApp('/store')}
-          className="p-2 rounded-full hover:bg-gray-200 transition"
-          title="Store"
-          data-tutorial-id="store-button"
-        >
-          <Store size={24} className="text-purple-600" />
-        </button>
-        
-        {/* Dashboard */}
-        <button
-          onClick={() => navigateApp('/dashboard')}
-          className="p-2 rounded-full hover:bg-gray-200 transition"
-          title="Dashboard"
-          data-tutorial-id="dashboard-button"
-        >
-          <BarChart2 size={24} className="text-blue-600" />
-        </button>
-        
-        {/* Teacher Dashboard - only for teachers and admins */}
-        {userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole) && (
-          <a
-            href="/teacher"
-            className="p-2 rounded-full hover:bg-gray-200 transition"
-            title="Teacher Dashboard"
-          >
-            <BookOpen size={24} className="text-indigo-600" />
-          </a>
-        )}
-        
-        {/* Admin Portal - only for admins */}
-        {userRole === USER_ROLES.ADMIN && (
-          <a
-            href="/admin"
-            className="p-2 rounded-full hover:bg-gray-200 transition"
-            title="Admin Portal"
-          >
-            <Shield size={24} className="text-purple-600" />
-          </a>
-        )}
-        
-        {/* About */}
-        <a
-          href="/about"
-          className="p-2 rounded-full hover:bg-gray-200 transition"
-          title="About Math Whiz"
-        >
-          <Info size={24} className="text-sky-600" />
-        </a>
 
-        {/* Help/Tutorial */}
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-200 mx-0.5" />
+
+        {/* Nav buttons */}
+        <button onClick={() => navigateApp('/store')} className={iconBtn} title="Store" data-tutorial-id="store-button">
+          <Store size={20} className="text-brand-purple" />
+        </button>
+        <button onClick={() => navigateApp('/dashboard')} className={iconBtn} title="Dashboard" data-tutorial-id="dashboard-button">
+          <BarChart2 size={20} className="text-brand-blue" />
+        </button>
+
+        {userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole) && (
+          <a href="/teacher" className={iconBtn} title="Teacher Dashboard">
+            <BookOpen size={20} className="text-indigo-500" />
+          </a>
+        )}
+        {userRole === USER_ROLES.ADMIN && (
+          <a href="/admin" className={iconBtn} title="Admin Portal">
+            <Shield size={20} className="text-brand-purple" />
+          </a>
+        )}
+
+        <a href="/about" className={iconBtn} title="About Math Whiz">
+          <Info size={20} className="text-brand-sky" />
+        </a>
         <button
           onClick={() => {
-            // Show appropriate tutorial based on current page
             switch (quizState) {
               case APP_STATES.DASHBOARD:
                 startTutorial('dashboard', dashboardTutorial);
@@ -2912,31 +2888,18 @@ Answer: [The answer]`;
                 break;
             }
           }}
-          className="p-2 rounded-full hover:bg-gray-200 transition"
+          className={iconBtn}
           title="Show Tutorial"
         >
-          <HelpCircle size={24} className="text-green-600" />
+          <HelpCircle size={20} className="text-brand-mint" />
+        </button>
+        <button onClick={returnToTopics} className={iconBtn} title="Home" data-tutorial-id="return-to-topics-button">
+          <Home size={20} className="text-brand-mint" />
         </button>
 
-        {/* Home */}
-        <button
-          onClick={returnToTopics}
-          className="p-2 rounded-full hover:bg-gray-200 transition"
-          title="Home"
-          data-tutorial-id="return-to-topics-button"
-        >
-          <Home size={24} className="text-green-600" />
-        </button>
-        
-        {/* Logout - for all authenticated users */}
         {authUser && (
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-full hover:bg-red-100 transition"
-            title={authUser.isAnonymous ? "Switch User" : "Logout"}
-            data-tutorial-id="logout-button"
-          >
-            <LogOut size={24} className="text-red-600" />
+          <button onClick={handleLogout} className="p-2 rounded-xl hover:bg-red-50 active:scale-95 transition-all duration-200" title={authUser.isAnonymous ? "Switch User" : "Logout"} data-tutorial-id="logout-button">
+            <LogOut size={20} className="text-red-400" />
           </button>
         )}
       </div>
@@ -3048,36 +3011,34 @@ Answer: [The answer]`;
     };
 
     return (
-      <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20" data-tutorial-id="dashboard-container">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center" data-tutorial-id="dashboard-title">
-          {selectedGrade === "G3" ? "3rd" : "4th"} Grade Daily Goals & Progress
+      <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-card shadow-card border border-white/60 mt-16 animate-fade-in" data-tutorial-id="dashboard-container">
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 mb-5 text-center" data-tutorial-id="dashboard-title">
+          {selectedGrade === "G3" ? "3rd" : "4th"} Grade Progress
         </h2>
 
         {/* Grade Selector */}
         <div className="mb-6 flex justify-center">
-          <div className="bg-white/70 backdrop-blur-sm p-3 rounded-xl shadow-md">
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedGrade("G3")}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                  selectedGrade === "G3"
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-white text-gray-700 hover:bg-blue-50 border border-gray-300"
-                }`}
-              >
-                3rd Grade
-              </button>
-              <button
-                onClick={() => setSelectedGrade("G4")}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                  selectedGrade === "G4"
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-white text-gray-700 hover:bg-blue-50 border border-gray-300"
-                }`}
-              >
-                4th Grade
-              </button>
-            </div>
+          <div className="inline-flex bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setSelectedGrade("G3")}
+              className={`px-5 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 ${
+                selectedGrade === "G3"
+                  ? "bg-brand-blue text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              3rd Grade
+            </button>
+            <button
+              onClick={() => setSelectedGrade("G4")}
+              className={`px-5 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 ${
+                selectedGrade === "G4"
+                  ? "bg-brand-purple text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              4th Grade
+            </button>
           </div>
         </div>
 
@@ -3124,47 +3085,45 @@ Answer: [The answer]`;
           ))}
         </div>
 
-        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center border-t pt-6">
+        <h3 className="text-lg font-display font-bold text-gray-700 mb-3 text-center border-t border-gray-100 pt-6">
           Today's Performance
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-8" data-tutorial-id="progress-stats">
-          <div className="bg-blue-100 p-4 rounded-lg">
-            <p className="text-lg text-blue-800">Total Answered</p>
-            <p className="text-3xl font-bold text-blue-600">{totalAnswered}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" data-tutorial-id="progress-stats">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-card border border-blue-100 text-center">
+            <p className="text-xs font-bold text-blue-500 uppercase tracking-wide">Answered</p>
+            <p className="text-3xl font-display font-bold text-blue-600 mt-1">{totalAnswered}</p>
           </div>
-          <div className="bg-green-100 p-4 rounded-lg">
-            <p className="text-lg text-green-800">Overall Accuracy</p>
-            <p className="text-3xl font-bold text-green-600">{accuracy}%</p>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-card border border-green-100 text-center">
+            <p className="text-xs font-bold text-green-500 uppercase tracking-wide">Accuracy</p>
+            <p className="text-3xl font-display font-bold text-green-600 mt-1">{accuracy}%</p>
           </div>
-          <div className="bg-yellow-100 p-4 rounded-lg">
-            <p className="text-lg text-yellow-800">Avg. Time</p>
-            <p className="text-3xl font-bold text-yellow-600">{avgTime}s</p>
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-100 p-4 rounded-card border border-amber-100 text-center">
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-wide">Avg. Time</p>
+            <p className="text-3xl font-display font-bold text-amber-600 mt-1">{avgTime}s</p>
           </div>
-          <div className="bg-purple-100 p-4 rounded-lg">
-            <p className="text-lg text-purple-800">All Time Total</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {totalQuestionsAnswered}
-            </p>
+          <div className="bg-gradient-to-br from-purple-50 to-violet-100 p-4 rounded-card border border-purple-100 text-center">
+            <p className="text-xs font-bold text-purple-500 uppercase tracking-wide">All Time</p>
+            <p className="text-3xl font-display font-bold text-purple-600 mt-1">{totalQuestionsAnswered}</p>
           </div>
         </div>
 
         {topicsPracticed.length > 0 && (
           <div className="mt-8">
-            <h4 className="text-xl font-bold text-gray-700 mb-4">
-              Topic Breakdown:
+            <h4 className="text-lg font-display font-bold text-gray-700 mb-3">
+              Topic Breakdown
             </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left rounded-lg overflow-hidden">
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="p-3 font-bold">Topic</th>
-                    <th className="p-3 font-bold text-center">Correct</th>
-                    <th className="p-3 font-bold text-center">Incorrect</th>
-                    <th className="p-3 font-bold text-center">Accuracy</th>
+            <div className="overflow-x-auto rounded-card border border-gray-100">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="p-3 text-xs font-bold text-gray-500 uppercase tracking-wide">Topic</th>
+                    <th className="p-3 text-xs font-bold text-gray-500 uppercase tracking-wide text-center">Correct</th>
+                    <th className="p-3 text-xs font-bold text-gray-500 uppercase tracking-wide text-center">Incorrect</th>
+                    <th className="p-3 text-xs font-bold text-gray-500 uppercase tracking-wide text-center">Accuracy</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {topicsPracticed.map((topic) => {
+                  {topicsPracticed.map((topic, idx) => {
                     const stats = topicStats[topic];
                     const topicAccuracy =
                       stats.total > 0
@@ -3173,17 +3132,23 @@ Answer: [The answer]`;
                     return (
                       <tr
                         key={topic}
-                        className="border-b bg-white hover:bg-gray-50"
+                        className={`border-b border-gray-50 transition-colors hover:bg-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                       >
-                        <td className="p-3 font-semibold">{topic}</td>
-                        <td className="p-3 text-center text-green-600 font-semibold">
+                        <td className="p-3 font-bold text-sm text-gray-700">{topic}</td>
+                        <td className="p-3 text-center text-green-600 font-bold text-sm">
                           {stats.correct}
                         </td>
-                        <td className="p-3 text-center text-red-600 font-semibold">
+                        <td className="p-3 text-center text-red-500 font-bold text-sm">
                           {stats.incorrect}
                         </td>
-                        <td className="p-3 text-center font-semibold">
-                          {topicAccuracy}%
+                        <td className="p-3 text-center font-bold text-sm">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
+                            topicAccuracy >= 80 ? 'bg-green-100 text-green-700' :
+                            topicAccuracy >= 50 ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {topicAccuracy}%
+                          </span>
                         </td>
                       </tr>
                     );
@@ -3303,7 +3268,7 @@ Answer: [The answer]`;
         <div className="text-center mt-8">
           <button
             onClick={returnToTopics}
-            className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition"
+            className="bg-brand-blue text-white font-display font-bold py-2.5 px-8 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 shadow-sm"
           >
             Back to Topics
           </button>
@@ -3331,27 +3296,27 @@ Answer: [The answer]`;
     return (
       <div
         ref={storeContainerRef}
-        className="w-full max-w-5xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl mt-20 relative"
+        className="w-full max-w-5xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-card shadow-card border border-white/60 mt-16 relative animate-fade-in"
         data-tutorial-id="store-container"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-2 text-center" data-tutorial-id="store-title">
+        <h2 className="text-3xl font-display font-bold text-gray-800 mb-1 text-center" data-tutorial-id="store-title">
           Rewards Store
         </h2>
-        <p className="text-lg text-gray-600 mb-6 text-center" data-tutorial-id="store-description">
-          Use your coins to buy new backgrounds! Browse by theme.
+        <p className="text-sm text-gray-500 mb-6 text-center" data-tutorial-id="store-description">
+          Spend your coins on awesome backgrounds!
         </p>
 
-        {/* Theme Tabs */}
+        {/* Theme Tabs — pill style */}
         <div className="overflow-x-auto mb-6" data-tutorial-id="store-tabs">
-          <div className="flex justify-center gap-3 min-w-max px-4">
+          <div className="flex justify-center gap-2 min-w-max px-4">
             {themes.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setStoreTheme(t.key)}
-                className={`px-4 py-2 rounded-full font-semibold transition whitespace-nowrap ${
+                className={`px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 whitespace-nowrap active:scale-95 ${
                   storeTheme === t.key
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                    ? "bg-brand-purple text-white shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {t.label}
@@ -3362,19 +3327,19 @@ Answer: [The answer]`;
 
         {purchaseFeedback && (
           <div
-            className={`p-3 rounded-lg mb-6 text-center font-semibold ${
+            className={`p-3 rounded-button mb-6 text-center font-bold text-sm animate-slide-up ${
               purchaseFeedback.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-green-50 text-green-700 border border-green-200"
+                : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
             {purchaseFeedback.message}
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" data-tutorial-id="store-items">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-tutorial-id="store-items">
           {filteredItems.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 py-8">
+            <div className="col-span-full text-center text-gray-400 py-12 font-display">
               No items in this theme yet.
             </div>
           ) : (
@@ -3385,29 +3350,36 @@ Answer: [The answer]`;
               return (
                 <div
                   key={item.id}
-                  className="border rounded-lg p-4 flex flex-col items-center justify-between bg-gray-50 shadow-md"
+                  className="rounded-card border border-gray-100 bg-white p-3 flex flex-col items-center justify-between shadow-card hover:shadow-card-hover transition-all duration-300 group"
                 >
-                  <img
-                    src={item.url}
-                    alt={item.name}
-                    loading="lazy"
-                    onClick={(event) => handleStoreImageClick(item, event)}
-                    className="w-full h-32 object-cover rounded-md mb-4 bg-gray-200 cursor-pointer hover:opacity-80 transition"
-                  />
-                  <h4 className="font-bold text-lg mb-2">{item.name}</h4>
+                  <div className="relative w-full mb-3 overflow-hidden rounded-xl">
+                    <img
+                      src={item.url}
+                      alt={item.name}
+                      loading="lazy"
+                      onClick={(event) => handleStoreImageClick(item, event)}
+                      className="w-full h-32 object-cover bg-gray-100 cursor-pointer group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {isOwned && (
+                      <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-green-500 text-white' : 'bg-white/90 text-gray-600'}`}>
+                        {isActive ? 'Active' : 'Owned'}
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-sm mb-2 text-gray-700 text-center">{item.name}</h4>
                   {isOwned ? (
                     <button
                       onClick={() => handleSetBackground(item.id)}
                       disabled={isActive}
-                      className={`w-full font-bold py-2 px-4 rounded-lg transition ${
+                      className={`w-full font-bold text-sm py-2 px-3 rounded-button transition-all duration-200 active:scale-95 ${
                         isActive
-                          ? "bg-green-500 text-white"
-                          : "bg-blue-200 text-blue-800 hover:bg-blue-300"
+                          ? "bg-green-100 text-green-600 cursor-default"
+                          : "bg-gray-100 text-gray-700 hover:bg-brand-blue hover:text-white"
                       }`}
                     >
                       {isActive ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <CheckCircle size={20} /> Active
+                        <span className="flex items-center justify-center gap-1.5">
+                          <CheckCircle size={16} /> Active
                         </span>
                       ) : (
                         "Set Active"
@@ -3416,10 +3388,10 @@ Answer: [The answer]`;
                   ) : (
                     <button
                       onClick={() => handlePurchase(item)}
-                      className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                      className="w-full bg-brand-purple text-white font-bold text-sm py-2 px-3 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5"
                       data-tutorial-id="store-buy-button"
                     >
-                      <Coins size={16} /> {STORE_BACKGROUND_COST}
+                      <Coins size={14} /> {STORE_BACKGROUND_COST}
                     </button>
                   )}
                 </div>
@@ -3430,7 +3402,7 @@ Answer: [The answer]`;
         <div className="text-center mt-8">
           <button
             onClick={returnToTopics}
-            className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition"
+            className="bg-brand-blue text-white font-display font-bold py-2.5 px-8 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 shadow-sm"
           >
             Back to Topics
           </button>
@@ -3545,138 +3517,179 @@ Answer: [The answer]`;
       }
     };
 
+    // Per-topic color theming
+    const topicColors = {
+      'Multiplication':                 { bg: 'bg-blue-50',    border: 'border-blue-200',   accent: 'bg-blue-500',    text: 'text-blue-600',    hoverBg: 'hover:bg-blue-100',    icon: '✕', lightBg: 'bg-blue-100' },
+      'Division':                       { bg: 'bg-purple-50',  border: 'border-purple-200', accent: 'bg-purple-500',  text: 'text-purple-600',  hoverBg: 'hover:bg-purple-100',  icon: '÷', lightBg: 'bg-purple-100' },
+      'Fractions':                      { bg: 'bg-rose-50',    border: 'border-rose-200',   accent: 'bg-rose-500',    text: 'text-rose-600',    hoverBg: 'hover:bg-rose-100',    icon: '½', lightBg: 'bg-rose-100' },
+      'Measurement & Data':             { bg: 'bg-amber-50',   border: 'border-amber-200',  accent: 'bg-amber-500',   text: 'text-amber-600',   hoverBg: 'hover:bg-amber-100',   icon: '📏', lightBg: 'bg-amber-100' },
+      'Operations & Algebraic Thinking': { bg: 'bg-teal-50',   border: 'border-teal-200',   accent: 'bg-teal-500',    text: 'text-teal-600',    hoverBg: 'hover:bg-teal-100',    icon: '🧮', lightBg: 'bg-teal-100' },
+      'Base Ten':                       { bg: 'bg-indigo-50',  border: 'border-indigo-200', accent: 'bg-indigo-500',  text: 'text-indigo-600',  hoverBg: 'hover:bg-indigo-100',  icon: '🔢', lightBg: 'bg-indigo-100' },
+      'Fractions 4th':                  { bg: 'bg-pink-50',    border: 'border-pink-200',   accent: 'bg-pink-500',    text: 'text-pink-600',    hoverBg: 'hover:bg-pink-100',    icon: '¾', lightBg: 'bg-pink-100' },
+      'Measurement & Data 4th':         { bg: 'bg-orange-50',  border: 'border-orange-200', accent: 'bg-orange-500',  text: 'text-orange-600',  hoverBg: 'hover:bg-orange-100',  icon: '📐', lightBg: 'bg-orange-100' },
+      'Geometry':                       { bg: 'bg-emerald-50', border: 'border-emerald-200',accent: 'bg-emerald-500', text: 'text-emerald-600', hoverBg: 'hover:bg-emerald-100', icon: '📐', lightBg: 'bg-emerald-100' },
+      'Binary Operations':              { bg: 'bg-cyan-50',    border: 'border-cyan-200',   accent: 'bg-cyan-500',    text: 'text-cyan-600',    hoverBg: 'hover:bg-cyan-100',    icon: '⚡', lightBg: 'bg-cyan-100' },
+    };
+    const defaultColor = { bg: 'bg-gray-50', border: 'border-gray-200', accent: 'bg-gray-500', text: 'text-gray-600', hoverBg: 'hover:bg-gray-100', icon: '📚', lightBg: 'bg-gray-100' };
+
     return (
-      <div className="text-center mt-20 pb-20">
-        <div className="mb-2 flex justify-center items-center" data-tutorial-id="welcome-header">
-          {/* Using animated gif for better performance */}
+      <div className="text-center mt-16 pb-20 px-4">
+        {/* Title */}
+        <div className="mb-4 flex justify-center items-center" data-tutorial-id="welcome-header">
           <img
             src="/math-whiz-title.gif"
             alt="Math Whiz!"
-            className="h-16 md:h-20 w-auto mb-4"
+            className="h-16 md:h-20 w-auto"
             style={{ imageRendering: "auto" }}
           />
         </div>
 
-        {/* Grade Selector */}
-        <div className="mb-6 flex justify-center">
-          <div className="bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md">
-            <label className="block text-lg font-bold text-gray-700 mb-2">
-              Choose your grade level:
-            </label>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => handleGradeChange("G3")}
-                className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                  selectedGrade === "G3"
-                    ? "bg-blue-600 text-white shadow-lg transform scale-105"
-                    : "bg-white text-gray-700 hover:bg-blue-50 border-2 border-gray-300"
-                }`}
-              >
-                3rd Grade
-              </button>
-              <button
-                onClick={() => handleGradeChange("G4")}
-                className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                  selectedGrade === "G4"
-                    ? "bg-blue-600 text-white shadow-lg transform scale-105"
-                    : "bg-white text-gray-700 hover:bg-blue-50 border-2 border-gray-300"
-                }`}
-              >
-                4th Grade
-              </button>
-            </div>
+        {/* Grade Selector — pill toggle */}
+        <div className="mb-8 flex justify-center">
+          <div className="inline-flex bg-white rounded-full p-1.5 shadow-card border border-gray-100">
+            <button
+              onClick={() => handleGradeChange("G3")}
+              className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
+                selectedGrade === "G3"
+                  ? "bg-brand-blue text-white shadow-glow-blue"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              3rd Grade
+            </button>
+            <button
+              onClick={() => handleGradeChange("G4")}
+              className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
+                selectedGrade === "G4"
+                  ? "bg-brand-purple text-white shadow-glow-blue"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              4th Grade
+            </button>
           </div>
         </div>
 
-        <p className="text-2xl font-bold text-blue-600 mb-4 text-center pt-6">
-          Choose a topic to start your {selectedGrade === "G3" ? "3rd" : "4th"}{" "}
-          Grade math adventure!
+        <p className="font-display text-2xl md:text-3xl font-bold text-gray-800 mb-6">
+          Pick a topic to practice{' '}
+          <span className="text-gradient-brand">
+            {selectedGrade === "G3" ? "3rd" : "4th"} Grade
+          </span>{' '}
+          math!
         </p>
 
         {/* Feedback message */}
         {feedback && (
           <div
-            className={`mb-6 p-3 rounded-lg mx-auto max-w-md text-center font-semibold ${
+            className={`mb-6 p-3 rounded-button mx-auto max-w-md text-center font-semibold animate-slide-up ${
               feedback.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-green-100 text-green-800 border border-green-200"
+                : "bg-red-100 text-red-800 border border-red-200"
             }`}
           >
             {feedback.message}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto px-4" data-tutorial-id="topic-selection">
-          {currentTopics.map((topic) => {
+        {/* Topic Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto" data-tutorial-id="topic-selection">
+          {currentTopics.map((topic, index) => {
             const isAvailable = availableTopics.includes(topic);
             const isCompleted =
               topicStats?.find((t) => t.topic === topic)?.completed || false;
+            const colors = topicColors[topic] || defaultColor;
+            const stat = topicStats?.find((t) => t.topic === topic);
+            const progressPct = stat ? Math.min(100, (stat.correctAnswers / Math.max(stat.goal, 1)) * 100) : 0;
 
             return (
               <button
                 key={topic}
                 onClick={() => handleTopicSelection(topic)}
                 disabled={!isAvailable}
-                className={`w-full p-4 rounded-2xl shadow-lg transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-center group min-h-[140px] ${
+                className={`w-full p-5 rounded-card border-2 transition-all duration-300 ease-out flex items-center gap-4 text-left group min-h-[100px] animate-slide-up ${
                   isAvailable
-                    ? "bg-white/50 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transform cursor-pointer"
-                    : "bg-gray-300/50 backdrop-blur-sm cursor-not-allowed opacity-60"
+                    ? `${colors.bg} ${colors.border} shadow-card hover:shadow-card-hover hover:-translate-y-1 cursor-pointer`
+                    : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
                 }`}
+                style={{ animationDelay: `${index * 0.06}s`, animationFillMode: 'both' }}
               >
+                {/* Topic Icon */}
                 <div
-                  className={`p-3 rounded-full mb-3 transition-colors duration-300 ${
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-all duration-300 ${
                     isAvailable
-                      ? "bg-blue-100 group-hover:bg-blue-500"
+                      ? `${colors.lightBg} group-hover:${colors.accent} group-hover:text-white group-hover:scale-110`
                       : "bg-gray-200"
                   }`}
                 >
                   {isCompleted ? (
                     <Award
+                      size={28}
                       className={`${
                         isAvailable ? "text-green-500" : "text-gray-400"
                       } transition-colors duration-300`}
                     />
                   ) : (
-                    <Sparkles
-                      className={`${
-                        isAvailable
-                          ? "text-blue-500 group-hover:text-white"
-                          : "text-gray-400"
-                      } transition-colors duration-300`}
-                    />
+                    <span>{colors.icon}</span>
                   )}
                 </div>
-                <h3
-                  className={`text-lg md:text-xl font-bold transition-colors duration-300 ${
-                    isAvailable
-                      ? "text-gray-800 group-hover:text-blue-600"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {topic}
-                </h3>
-                <p
-                  className={`mt-1 text-sm ${
-                    isAvailable ? "text-gray-500" : "text-gray-400"
-                  }`}
-                >
-                  {isCompleted && !isAvailable
-                    ? "✅ Waiting for others..."
-                    : isCompleted && isAvailable
-                    ? "✅ Ready to practice!"
-                    : isAvailable
-                    ? "Practice your skills!"
-                    : "Complete other topics first"}
-                </p>
+
+                {/* Topic Info */}
+                <div className="flex-1 min-w-0">
+                  <h3
+                    className={`text-lg font-display font-bold transition-colors duration-300 ${
+                      isAvailable
+                        ? `text-gray-800 group-hover:${colors.text}`
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {topic}
+                  </h3>
+                  <p
+                    className={`text-sm mt-0.5 ${
+                      isAvailable ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  >
+                    {isCompleted && !isAvailable
+                      ? "Waiting for others..."
+                      : isCompleted && isAvailable
+                      ? "Ready to practice!"
+                      : isAvailable
+                      ? "Practice your skills!"
+                      : "Complete other topics first"}
+                  </p>
+                  {/* Mini progress bar */}
+                  {stat && isAvailable && (
+                    <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-green-400' : colors.accent.replace('bg-', 'bg-')}`}
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress badge */}
+                {stat && (
+                  <div className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
+                    isCompleted
+                      ? "bg-green-100 text-green-700"
+                      : isAvailable
+                      ? `${colors.lightBg} ${colors.text}`
+                      : "bg-gray-200 text-gray-500"
+                  }`}>
+                    {stat.correctAnswers}/{stat.goal}
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
+
         {/* Progress Info */}
-        <div className="mt-8 mb-8 bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-md max-w-2xl mx-auto">
-          <p className="text-sm text-gray-700 font-medium">
+        <div className="mt-8 mb-8 bg-white/80 backdrop-blur-sm p-5 rounded-card shadow-card max-w-2xl mx-auto border border-gray-100">
+          <p className="text-sm text-gray-600 font-medium">
             {allCompleted ? (
-              <span className="text-green-600">
+              <span className="text-green-600 font-display font-bold">
                 🎉 All {selectedGrade === "G3" ? "3rd" : "4th"} grade topics
                 completed! Ready for a fresh start?
               </span>
@@ -3686,40 +3699,20 @@ Answer: [The answer]`;
               </span>
             ) : (
               <span>
-                Answer the required questions correctly per topic. Topics will
-                become unavailable once completed until others catch up.
+                Answer the required questions correctly per topic to progress.
               </span>
             )}
           </p>
-          {topicStats && (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              {topicStats.map((stat) => (
-                <div
-                  key={stat.topic}
-                  className={`p-2 rounded ${
-                    stat.completed
-                      ? "bg-green-100 text-green-800"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  <div className="font-semibold">{stat.topic}</div>
-                  <div>
-                    {stat.correctAnswers}/{stat.goal} ✓
-                  </div>
-                </div>
-              ))}
 
-              {/* Reset button when all topics are completed */}
-              {allCompleted && (
-                <div className="mt-4">
-                  <button
-                    onClick={resetAllProgress}
-                    className="bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 mx-auto"
-                  >
-                    <Award size={20} /> Start Fresh Cycle
-                  </button>
-                </div>
-              )}
+          {/* Reset button when all topics are completed */}
+          {allCompleted && (
+            <div className="mt-4">
+              <button
+                onClick={resetAllProgress}
+                className="bg-brand-purple text-white font-display font-bold py-2.5 px-6 rounded-button hover:opacity-90 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 mx-auto shadow-card"
+              >
+                <Award size={20} /> Start Fresh Cycle
+              </button>
             </div>
           )}
         </div>
@@ -3755,12 +3748,13 @@ Answer: [The answer]`;
       <>
         <div
           ref={quizContainerRef}
-          className="w-full max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl mt-20 flex flex-col"
+          className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-card shadow-card border border-white/60 mt-16 flex flex-col animate-fade-in"
           style={{ minHeight: 600 }}
           data-tutorial-id="question-interface"
         >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-blue-600">
+          {/* Quiz header */}
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl md:text-2xl font-display font-bold text-gray-800">
               {currentTopic}
             </h2>
             <button
@@ -3768,17 +3762,25 @@ Answer: [The answer]`;
                 await pauseQuiz();
                 navigateApp('/');
               }}
-              className="flex items-center gap-2 text-gray-500 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition"
+              className="flex items-center gap-1.5 text-gray-400 font-semibold py-1.5 px-3 rounded-button text-sm hover:bg-gray-100 hover:text-gray-600 active:scale-95 transition-all"
             >
-              <Pause size={20} /> Pause
+              <Pause size={16} /> Pause
             </button>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+          {/* Progress bar */}
+          <div className="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden">
             <div
-              className="bg-green-500 h-2.5 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
+              className="h-full rounded-full progress-bar-animated"
+              style={{
+                width: `${progressPercentage}%`,
+                background: `linear-gradient(90deg, #48d1a5 0%, #3a7bd5 ${Math.min(progressPercentage + 20, 100)}%, #8b5cf6 100%)`,
+              }}
+            />
           </div>
+          {/* Question counter */}
+          <p className="text-xs text-gray-400 font-medium mb-4">
+            Question {currentQuestionIndex + 1} of {currentQuiz.length}
+          </p>
           {!isFillInTheBlanksQuestion(currentQuestion) && (
             <p 
               key={`${currentQuestionIndex}-${isAnswered}`}
@@ -3809,7 +3811,7 @@ Answer: [The answer]`;
             <div className="mb-6">
               {!isAnswered ? (
                 <DrawingCanvas
-                  onChange={(imageData) => setDrawingImageBase64(imageData)}
+                  onChange={handleDrawingChange}
                   width={600}
                   height={400}
                   backgroundImage={drawingBackgroundImage}
@@ -3845,7 +3847,7 @@ Answer: [The answer]`;
               {!isAnswered ? (
                 <WriteInInput
                   value={writeInAnswer}
-                  onChange={(text) => setWriteInAnswer(text)}
+                  onChange={handleWriteInChange}
                   maxLength={240}
                   placeholder="Type your answer here..."
                   disabled={isAnswered}
@@ -3876,14 +3878,14 @@ Answer: [The answer]`;
               {!isAnswered ? (
                 <>
                   <DrawingCanvas
-                    onChange={(imageData) => setDrawingImageBase64(imageData)}
+                    onChange={handleDrawingChange}
                     width={600}
                     height={350}
                     backgroundImage={drawingBackgroundImage}
                   />
                   <WriteInInput
                     value={writeInAnswer}
-                    onChange={(text) => setWriteInAnswer(text)}
+                    onChange={handleWriteInChange}
                     maxLength={240}
                     placeholder="Explain your work or add details here..."
                     disabled={isAnswered}
@@ -4039,12 +4041,9 @@ Answer: [The answer]`;
           ) : isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? (
             <div className="mb-6">
               {!isAnswered && (
-                <NumberPad 
+                <NumberPad
                   value={numericInput}
-                  onChange={(value) => {
-                    setNumericInput(value);
-                    setUserAnswer(value);
-                  }}
+                  onChange={handleNumericChange}
                   disabled={isAnswered}
                 />
               )}
@@ -4061,24 +4060,24 @@ Answer: [The answer]`;
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 items-stretch">
               {(currentQuestion.options || []).map((option, index) => {
                 const isSelected = userAnswer === option;
                 const isCorrect = option === currentQuestion.correctAnswer;
                 let buttonClass =
-                  "bg-white border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-400";
+                  "bg-white border-2 border-gray-200 hover:border-brand-blue hover:bg-blue-50/50 hover:shadow-sm";
                 if (isAnswered) {
                   if (isCorrect)
                     buttonClass =
-                      "bg-green-100 border-2 border-green-500 text-green-800";
+                      "bg-green-50 border-2 border-green-400 text-green-800 shadow-glow-green";
                   else if (isSelected && !isCorrect)
                     buttonClass =
-                      "bg-red-100 border-2 border-red-500 text-red-800";
+                      "bg-red-50 border-2 border-red-400 text-red-800 animate-shake";
                   else
                     buttonClass =
-                      "bg-gray-100 border-2 border-gray-300 text-gray-500";
+                      "bg-gray-50 border-2 border-gray-200 text-gray-400";
                 } else if (isSelected) {
-                  buttonClass = "bg-blue-100 border-2 border-blue-500";
+                  buttonClass = "bg-blue-50 border-2 border-brand-blue shadow-glow-blue";
                 }
                 return (
                   <button
@@ -4087,13 +4086,13 @@ Answer: [The answer]`;
                     onDoubleClick={() => {
                       if (!isAnswered) {
                         handleAnswer(option);
-                        // Use setTimeout to ensure the answer is set before checking
                         setTimeout(() => checkAnswer(), 0);
                       }
                     }}
                     disabled={isAnswered}
-                    className={`w-full p-4 rounded-lg text-left text-lg font-medium transition-all duration-200 h-auto whitespace-normal break-words overflow-visible ${buttonClass}`}
+                    className={`w-full p-4 rounded-card text-left text-lg font-medium transition-all duration-200 h-auto whitespace-normal break-words overflow-visible active:scale-[0.98] ${buttonClass}`}
                   >
+                    <span className="text-xs font-bold text-gray-300 mr-2">{String.fromCharCode(65 + index)}.</span>
                     {formatMathText(option)}
                   </button>
                 );
@@ -4176,12 +4175,12 @@ Answer: [The answer]`;
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Response Field: show feedback, selected answer, or prompt to select */}
               <div
-                className={`flex items-center justify-center w-full min-h-[40px] rounded-lg border px-3 text-sm font-medium ${
+                className={`flex items-center justify-center w-full min-h-[40px] rounded-button border px-3 text-sm font-bold transition-all duration-300 ${
                   feedback
                     ? feedback.type === "success"
-                      ? "bg-green-100 border-green-500 text-green-800"
-                      : "bg-red-100 border-red-500 text-red-800"
-                    : "bg-gray-50 border-gray-200 text-gray-700"
+                      ? "bg-green-50 border-green-300 text-green-700 animate-bounce-in"
+                      : "bg-red-50 border-red-300 text-red-700 animate-shake"
+                    : "bg-gray-50 border-gray-200 text-gray-500"
                 }`}
               >
                 {feedback ? (
@@ -4227,7 +4226,7 @@ Answer: [The answer]`;
                 {isAnswered ? (
                   <button
                     onClick={nextQuestion}
-                    className="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2 text-sm min-h-[40px]"
+                    className="w-full bg-brand-blue text-white font-display font-bold py-2 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 text-sm min-h-[40px] shadow-sm"
                   >
                     Next Question <ChevronsRight size={18} />
                   </button>
@@ -4250,7 +4249,7 @@ Answer: [The answer]`;
                                 })()
                               : (userAnswer === null || userAnswer === ''))
                     }
-                    className="w-full bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2"
+                    className="w-full bg-brand-mint text-white font-display font-bold py-2 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2 shadow-sm"
                   >
                     {isValidatingDrawing && (
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -4305,14 +4304,14 @@ Answer: [The answer]`;
       isCurrentTopicCompleted && hasIncompleteTopics;
 
     return (
-      <div className="text-center bg-white/50 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-20">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">
+      <div className="text-center bg-white/80 backdrop-blur-md p-8 rounded-card shadow-card border border-white/60 max-w-md mx-auto mt-16 animate-bounce-in">
+        <h2 className="text-3xl font-display font-bold text-gray-800 mb-3">
           Quiz Complete!
         </h2>
-        <div className="text-6xl mb-4">{emoji}</div>
-        <p className="text-xl text-gray-600 mb-2">{message}</p>
-        <p className="text-2xl font-bold text-blue-600 mb-6">
-          You scored {score} out of {currentQuiz.length} ({percentage}%)
+        <div className="text-6xl mb-3 animate-celebrate">{emoji}</div>
+        <p className="text-lg text-gray-600 mb-2 font-medium">{message}</p>
+        <p className="text-2xl font-display font-bold text-brand-blue mb-6">
+          {score}/{currentQuiz.length} <span className="text-lg text-gray-500">({percentage}%)</span>
         </p>
         {feedback && (
           <div
@@ -4329,7 +4328,7 @@ Answer: [The answer]`;
           {canCreateStory ? (
             <button
               onClick={handleCreateStoryProblem}
-              className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-brand-purple text-white font-display font-bold py-3 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
             >
               <Sparkles size={20} /> Create a Story Problem
             </button>
@@ -4356,14 +4355,14 @@ Answer: [The answer]`;
                 await startNewQuiz(currentTopic);
                 navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}`);
               }}
-              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+              className="bg-brand-blue text-white font-display font-bold py-3 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 shadow-sm"
             >
               Try Again
             </button>
           )}
           <button
             onClick={returnToTopics}
-            className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
+            className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-button hover:bg-gray-200 active:scale-95 transition-all duration-200"
           >
             Choose New Topic
           </button>

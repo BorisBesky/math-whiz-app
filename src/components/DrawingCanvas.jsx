@@ -14,7 +14,7 @@ import { Eraser, Pen, RotateCcw, Trash2, Circle } from 'lucide-react';
  * - Clear canvas
  * - Export to base64 image
  */
-const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', backgroundImage = null }) => {
+const DrawingCanvas = React.memo(({ onChange, width = 600, height = 400, className = '', backgroundImage = null }) => {
   const canvasRef = useRef(null);
   const bgCanvasRef = useRef(null);
   const currentStrokeRef = useRef(null);
@@ -42,36 +42,16 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
   const currentStrokeIndexRef = useRef(-1);
   const [bgImageObj, setBgImageObj] = useState(null);
 
-  // Keep refs in sync with state
-  useEffect(() => {
-    currentToolRef.current = currentTool;
-    // Auto-open menu when switching tools
-    setIsMenuOpen(true);
-  }, [currentTool]);
-
+  // Keep all drawing refs in sync with state (consolidated)
+  useEffect(() => { currentToolRef.current = currentTool; setIsMenuOpen(true); }, [currentTool]);
   useEffect(() => {
     penColorRef.current = penColor;
-  }, [penColor]);
-
-  useEffect(() => {
     penSizeRef.current = penSize;
-  }, [penSize]);
-
-  useEffect(() => {
     eraserSizeRef.current = eraserSize;
-  }, [eraserSize]);
-
-  useEffect(() => {
     strokesRef.current = strokes;
-  }, [strokes]);
-
-  useEffect(() => {
     currentStrokeIndexRef.current = currentStrokeIndex;
-  }, [currentStrokeIndex]);
-
-  useEffect(() => {
     contextRef.current = context;
-  }, [context]);
+  }, [penColor, penSize, eraserSize, strokes, currentStrokeIndex, context]);
 
   // Handle click outside to close menus
   useEffect(() => {
@@ -343,7 +323,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
 
   return (
     <div className={`drawing-canvas-container ${className}`}>
-      <div className="border border-gray-300 rounded-lg bg-white overflow-hidden" style={{ position: 'relative', width: width + 'px', height: height + 'px', margin: '0 auto' }}>
+      <div className="border-2 border-gray-200 rounded-card bg-white overflow-hidden shadow-card" style={{ position: 'relative', width: width + 'px', height: height + 'px', margin: '0 auto' }}>
         <canvas
           ref={bgCanvasRef}
           style={{
@@ -370,7 +350,7 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
       </div>
       
       {/* Drawing Controls */}
-      <div className="flex justify-center items-center space-x-3 mt-4 relative z-10">
+      <div className="flex justify-center items-center gap-2 mt-3 relative z-10 bg-gray-50 rounded-card p-2 border border-gray-100 w-fit mx-auto">
         
         {/* Pen Tool Wrapper */}
         <div className="tool-control-wrapper relative">
@@ -398,15 +378,15 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
                     setCurrentTool('draw');
                 }
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 ${
               currentTool === 'draw'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-brand-blue text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-gray-200 hover:border-brand-blue hover:text-brand-blue'
             }`}
             title="Pen Tool"
           >
             <Pen className="h-4 w-4" />
-            <span className="text-sm font-medium">Pen</span>
+            <span>Pen</span>
           </button>
         </div>
         
@@ -427,39 +407,41 @@ const DrawingCanvas = ({ onChange, width = 600, height = 400, className = '', ba
                     setCurrentTool('erase');
                 }
             }}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 ${
             currentTool === 'erase'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-brand-blue text-white shadow-sm'
+              : 'bg-white text-gray-600 border border-gray-200 hover:border-brand-blue hover:text-brand-blue'
           }`}
           title="Eraser Tool"
         >
           <Eraser className="h-4 w-4" />
-          <span className="text-sm font-medium">Eraser</span>
+          <span>Eraser</span>
         </button>
         </div>
         
         <button
           onClick={handleUndo}
           disabled={currentStrokeIndex < 0}
-          className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-white text-gray-600 border border-gray-200 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
           title="Undo"
         >
           <RotateCcw className="h-4 w-4" />
-          <span className="text-sm font-medium">Undo</span>
+          <span>Undo</span>
         </button>
         
         <button
           onClick={handleClear}
-          className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold bg-white text-red-400 border border-red-200 hover:bg-red-50 hover:border-red-400 transition-all duration-200 active:scale-95"
           title="Clear Canvas"
         >
           <Trash2 className="h-4 w-4" />
-          <span className="text-sm font-medium">Clear</span>
+          <span>Clear</span>
         </button>
       </div>
     </div>
   );
-};
+});
+
+DrawingCanvas.displayName = 'DrawingCanvas';
 
 export default DrawingCanvas;

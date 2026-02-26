@@ -46,7 +46,9 @@ describe('NumberPad', () => {
 
     it('displays placeholder when value is empty', () => {
       render(<NumberPad value="" onChange={mockOnChange} />);
-      expect(screen.getByText('Enter number...')).toBeInTheDocument();
+      const allZeros = screen.getAllByText('0');
+      // Display shows '0' placeholder and there's a '0' button — both should exist
+      expect(allZeros.length).toBeGreaterThanOrEqual(2);
     });
   });
 

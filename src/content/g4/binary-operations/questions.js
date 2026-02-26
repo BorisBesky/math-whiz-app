@@ -41,21 +41,6 @@ function subtractBinary(bin1, bin2) {
   return decimalToBinary(difference);
 }
 
-// Multiply two binary strings
-function multiplyBinary(bin1, bin2) {
-  const decimal1 = binaryToDecimal(bin1);
-  const decimal2 = binaryToDecimal(bin2);
-  const product = decimal1 * decimal2;
-  return decimalToBinary(product);
-}
-
-// Divide two binary strings (integer division)
-function divideBinary(bin1, bin2) {
-  const decimal1 = binaryToDecimal(bin1);
-  const decimal2 = binaryToDecimal(bin2);
-  const quotient = Math.floor(decimal1 / decimal2);
-  return decimalToBinary(quotient);
-}
 
 /**
  * Generates a random Binary Operations question for 4th grade

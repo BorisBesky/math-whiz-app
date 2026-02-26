@@ -2,96 +2,96 @@
 
 exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-800"
+      class="text-2xl font-display font-bold tracking-wide text-gray-800"
     >
       123
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-base"
       disabled=""
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-2xl"
       disabled=""
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
       disabled=""
       title="Clear"
     >
@@ -99,13 +99,13 @@ exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -117,7 +117,7 @@ exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-gray-200 text-gray-400 cursor-not-allowed col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed col-span-2 gap-1.5"
       disabled=""
       title="Backspace"
     >
@@ -125,13 +125,13 @@ exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -152,97 +152,97 @@ exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
 
 exports[`NumberPad Snapshots renders empty state correctly 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-400 italic"
+      class="text-2xl font-display font-bold tracking-wide text-gray-300"
     >
-      Enter number...
+      0
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
       title="Clear"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -254,20 +254,20 @@ exports[`NumberPad Snapshots renders empty state correctly 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
       title="Backspace"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -288,97 +288,97 @@ exports[`NumberPad Snapshots renders empty state correctly 1`] = `
 
 exports[`NumberPad Snapshots renders with decimal value 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-800"
+      class="text-2xl font-display font-bold tracking-wide text-gray-800"
     >
       3.14
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
       title="Clear"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -390,20 +390,20 @@ exports[`NumberPad Snapshots renders with decimal value 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
       title="Backspace"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -424,97 +424,97 @@ exports[`NumberPad Snapshots renders with decimal value 1`] = `
 
 exports[`NumberPad Snapshots renders with large number 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-800"
+      class="text-2xl font-display font-bold tracking-wide text-gray-800"
     >
       999999999
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
       title="Clear"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -526,20 +526,20 @@ exports[`NumberPad Snapshots renders with large number 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
       title="Backspace"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -560,97 +560,97 @@ exports[`NumberPad Snapshots renders with large number 1`] = `
 
 exports[`NumberPad Snapshots renders with negative value 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-800"
+      class="text-2xl font-display font-bold tracking-wide text-gray-800"
     >
       -42
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
       title="Clear"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -662,20 +662,20 @@ exports[`NumberPad Snapshots renders with negative value 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
       title="Backspace"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -696,97 +696,97 @@ exports[`NumberPad Snapshots renders with negative value 1`] = `
 
 exports[`NumberPad Snapshots renders with numeric value 1`] = `
 <div
-  class="w-full max-w-xs mx-auto"
+  class="w-full max-w-[280px] mx-auto"
 >
   <div
-    class="mb-2 p-2 bg-white border-2 border-blue-300 rounded-lg min-h-[40px] flex items-center justify-center"
+    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
   >
     <span
-      class="text-lg font-bold text-gray-800"
+      class="text-2xl font-display font-bold tracking-wide text-gray-800"
     >
       123
     </span>
   </div>
   <div
-    class="grid grid-cols-3 gap-1"
+    class="grid grid-cols-3 gap-2"
   >
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       1
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       2
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       3
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       4
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       5
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       6
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       7
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       8
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       9
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-lg"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
       title="Toggle Positive/Negative"
     >
       +/−
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
     >
       0
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-blue-900 text-white hover:bg-blue-600 active:scale-95 flex items-center justify-center text-xl"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
       title="Decimal Point"
     >
       .
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-1 flex items-center justify-center"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
       title="Clear"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-x"
         fill="none"
-        height="16"
+        height="18"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="16"
+        width="18"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
@@ -798,20 +798,20 @@ exports[`NumberPad Snapshots renders with numeric value 1`] = `
       </svg>
     </button>
     <button
-      class="p-2 rounded-lg text-base font-bold transition-all duration-200 bg-red-500 text-white hover:bg-red-600 active:scale-95 col-span-2 flex items-center justify-center gap-1"
+      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
       title="Backspace"
     >
       <svg
         aria-hidden="true"
         class="lucide lucide-delete"
         fill="none"
-        height="14"
+        height="16"
         stroke="currentColor"
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
         viewBox="0 0 24 24"
-        width="14"
+        width="16"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
