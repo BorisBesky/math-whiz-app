@@ -1,6 +1,7 @@
 {
   "short_name": "Math Whiz",
-  "name": "Math Whiz",
+  "name": "Math Whiz — Adaptive Math Practice",
+  "description": "Free adaptive math practice for 3rd and 4th graders. Teachers create classes and track progress. Students earn rewards while mastering real curriculum.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#3b82f6",
+  "background_color": "#eff6ff",
+  "categories": ["education", "kids"]
 }

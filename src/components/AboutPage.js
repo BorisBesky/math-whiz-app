@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   GraduationCap,
@@ -18,6 +18,52 @@ import {
 } from 'lucide-react';
 
 const AboutPage = () => {
+  useEffect(() => {
+    document.title = 'About Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) {
+      meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, track progress, and add custom content.');
+    }
+
+    // Structured data for search engines
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Math Whiz',
+      applicationCategory: 'EducationalApplication',
+      operatingSystem: 'Web',
+      description: 'Free adaptive math practice platform for 3rd and 4th graders with teacher dashboards, custom content, and AI question generation.',
+      educationalLevel: ['3rd Grade', '4th Grade'],
+      audience: {
+        '@type': 'EducationalAudience',
+        educationalRole: ['student', 'teacher', 'parent'],
+      },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      featureList: [
+        'Adaptive difficulty',
+        'Drawing canvas for showing work',
+        'Coin rewards system',
+        'Teacher class management',
+        'Custom question sets',
+        'AI question generation',
+        'Real-time student analytics',
+        'Common Core aligned',
+      ],
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      document.title = 'Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
+      document.head.removeChild(script);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
