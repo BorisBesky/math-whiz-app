@@ -7,6 +7,69 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+export const ANGLE_TYPES = [
+  {
+    name: "acute angle",
+    range: "less than 90°",
+    example: "45°",
+    realLifeExamples: [
+      "open scissors",
+      "slice of pizza tip",
+      "clock hands at 1:00",
+      "partially opened book",
+      "roof peak on a steep house",
+      "letter V shape",
+      "narrow road fork",
+      "paper folded into a sharp corner",
+    ],
+  },
+  {
+    name: "right angle",
+    range: "exactly 90°",
+    example: "90°",
+    realLifeExamples: [
+      "corner of a book",
+      "corner of a window frame",
+      "corner of a square tile",
+      "edge where wall meets floor",
+      "corner of a picture frame",
+      "corner of a notebook",
+      "intersection of perpendicular streets",
+      "corner of a rectangular table",
+    ],
+  },
+  {
+    name: "obtuse angle",
+    range: "between 90° and 180°",
+    example: "120°",
+    realLifeExamples: [
+      "laptop half-open",
+      "door opened wide",
+      "clock hands at 4:00",
+      "wide pair of tongs",
+      "reclining beach chair angle",
+      "open mailbox lid",
+      "tree branch splitting wide",
+      "opened umbrella rib section",
+    ],
+  },
+  {
+    name: "straight angle",
+    range: "exactly 180°",
+    example: "180°",
+    realLifeExamples: [
+      "flat table edge",
+      "horizon line",
+      "straight ruler edge",
+      "taut jump rope",
+      "straight road segment",
+      "edge of a shelf",
+      "fully opened book laid flat",
+      "straight line on notebook paper",
+    ],
+  },
+];
+
 /**
  * Generates a random geometry question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
@@ -392,32 +455,7 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateAngleMeasurementQuestion(difficulty = 0.5) {
-  const angleTypes = [
-    {
-      name: "acute angle",
-      range: "less than 90°",
-      example: "45°",
-      realLife: "open scissors",
-    },
-    {
-      name: "right angle", 
-      range: "exactly 90°",
-      example: "90°",
-      realLife: "corner of a book",
-    },
-    {
-      name: "obtuse angle",
-      range: "between 90° and 180°", 
-      example: "120°",
-      realLife: "laptop half-open",
-    },
-    {
-      name: "straight angle",
-      range: "exactly 180°",
-      example: "180°", 
-      realLife: "flat table edge",
-    },
-  ];
+  const angleTypes = ANGLE_TYPES;
   
   const questionTypes = [
     {
@@ -433,9 +471,10 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     {
       type: "realLife",
       getQuestion: (angle) => `Which real-life example shows an ${angle.name}?`,
-      correctAnswer: (angle) => angle.realLife,
     },
   ];
+
+  const pickRandomFrom = (items) => items[getRandomInt(0, items.length - 1)];
   
   const angle = angleTypes[getRandomInt(0, angleTypes.length - 1)];
   const qType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
@@ -446,10 +485,14 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
   } else if (qType.type === "measure") {
     wrongOptions = angleTypes.filter(a => a.range !== angle.range).map(a => a.range);
   } else {
-    wrongOptions = angleTypes.filter(a => a.realLife !== angle.realLife).map(a => a.realLife);
+    wrongOptions = angleTypes
+      .filter(a => a.name !== angle.name)
+      .map(a => pickRandomFrom(a.realLifeExamples));
   }
   
-  const correctAnswer = qType.correctAnswer(angle);
+  const correctAnswer = qType.type === "realLife"
+    ? pickRandomFrom(angle.realLifeExamples)
+    : qType.correctAnswer(angle);
   const potentialDistractors = wrongOptions.slice(0, 3);
 
   return {
