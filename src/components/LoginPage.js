@@ -143,6 +143,8 @@ const LoginPage = () => {
             </button>
           </p>
           <div className="flex justify-center space-x-4 text-xs text-gray-500">
+            <Link to="/about" className="hover:text-gray-700">About</Link>
+            <span>•</span>
             <button className="hover:text-gray-700">Help</button>
             <span>•</span>
             <button className="hover:text-gray-700">Privacy</button>

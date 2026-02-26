@@ -21,6 +21,7 @@ import {
   User,
   Shield,
   PenTool,
+  Info,
 } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import {
@@ -2886,6 +2887,15 @@ Answer: [The answer]`;
           </a>
         )}
         
+        {/* About */}
+        <a
+          href="/about"
+          className="p-2 rounded-full hover:bg-gray-200 transition"
+          title="About Math Whiz"
+        >
+          <Info size={24} className="text-sky-600" />
+        </a>
+
         {/* Help/Tutorial */}
         <button
           onClick={() => {

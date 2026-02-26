@@ -10,6 +10,7 @@ import LoginPage from './components/LoginPage';
 import { USER_ROLES } from './utils/userRoles';
 import JoinClass from './components/JoinClass';
 import PortalApp from './components/PortalApp';
+import AboutPage from './components/AboutPage';
 
 const App = () => {
   return (
@@ -20,6 +21,8 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
         {/* Public join route for students with invite code */}
         <Route path="/join" element={<JoinClass />} />
+        {/* About page */}
+        <Route path="/about" element={<AboutPage />} />
         
         {/* Authentication routes */}
         <Route path="/student-login" element={<StudentLogin />} />
