@@ -43,4 +43,31 @@ describe('geometry angle real-life examples', () => {
 
     expect(realLifeQuestionCount).toBeGreaterThan(0);
   });
+
+  it('includes optionImages for real-life questions only', () => {
+    let realLifeCount = 0;
+    let nonRealLifeCount = 0;
+
+    for (let i = 0; i < 300; i++) {
+      const q = generateAngleMeasurementQuestion();
+      const isRealLife = q.question.startsWith('Which real-life example shows an');
+
+      if (isRealLife) {
+        realLifeCount++;
+        expect(q.optionImages).toBeDefined();
+        expect(typeof q.optionImages).toBe('object');
+        // Every option should have an image path
+        q.options.forEach(opt => {
+          expect(q.optionImages[opt]).toBeDefined();
+          expect(q.optionImages[opt]).toMatch(/^\/images\/angles\/.+\.jpg$/);
+        });
+      } else {
+        nonRealLifeCount++;
+        expect(q.optionImages).toBeUndefined();
+      }
+    }
+
+    expect(realLifeCount).toBeGreaterThan(0);
+    expect(nonRealLifeCount).toBeGreaterThan(0);
+  });
 });

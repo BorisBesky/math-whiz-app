@@ -4060,7 +4060,7 @@ Answer: [The answer]`;
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 items-stretch">
+            <div className={`grid gap-3 mb-6 items-stretch ${currentQuestion.optionImages ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1 sm:grid-cols-2"}`}>
               {(currentQuestion.options || []).map((option, index) => {
                 const isSelected = userAnswer === option;
                 const isCorrect = option === currentQuestion.correctAnswer;
@@ -4079,6 +4079,7 @@ Answer: [The answer]`;
                 } else if (isSelected) {
                   buttonClass = "bg-blue-50 border-2 border-brand-blue shadow-glow-blue";
                 }
+                const hasImage = currentQuestion.optionImages && currentQuestion.optionImages[option];
                 return (
                   <button
                     key={`${index}-${isAnswered}`}
@@ -4090,10 +4091,24 @@ Answer: [The answer]`;
                       }
                     }}
                     disabled={isAnswered}
-                    className={`w-full p-4 rounded-card text-left text-lg font-medium transition-all duration-200 h-auto whitespace-normal break-words overflow-visible active:scale-[0.98] ${buttonClass}`}
+                    className={`w-full ${hasImage ? 'p-2' : 'p-4'} rounded-card ${hasImage ? 'text-center' : 'text-left'} text-lg font-medium transition-all duration-200 h-auto whitespace-normal break-words overflow-visible active:scale-[0.98] ${buttonClass}`}
                   >
                     <span className="text-xs font-bold text-gray-300 mr-2">{String.fromCharCode(65 + index)}.</span>
-                    {formatMathText(option)}
+                    {hasImage ? (
+                      <div className="flex flex-col items-center w-full">
+                        <img
+                          src={currentQuestion.optionImages[option]}
+                          alt={option}
+                          className="w-24 h-24 object-contain mb-1 rounded"
+                          draggable={false}
+                        />
+                        <span className="text-xs text-gray-600 text-center leading-tight">
+                          {option}
+                        </span>
+                      </div>
+                    ) : (
+                      formatMathText(option)
+                    )}
                   </button>
                 );
               })}

@@ -245,7 +245,10 @@ export function normalizeMathExpression(expression) {
   if (!expression) return '';
   
   let normalized = expression.toString().trim();
-  
+
+  // Remove commas used as thousands separators in numbers
+  normalized = normalized.replace(/(\d),(\d)/g, '$1$2');
+
   // Standardize multiplication symbols
   normalized = normalized.replace(/[×*]/g, 'x');
   

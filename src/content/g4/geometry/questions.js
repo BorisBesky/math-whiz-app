@@ -7,6 +7,46 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Maps each real-life example name to its image path in public/images/angles/
+const ANGLE_EXAMPLE_IMAGES = {
+  // Acute
+  "open scissors": "/images/angles/acute-scissors.jpg",
+  "slice of pizza tip": "/images/angles/acute-pizza.jpg",
+  "clock hands at 1:00": "/images/angles/acute-clock-1.jpg",
+  "partially opened book": "/images/angles/acute-book.jpg",
+  "roof peak on a steep house": "/images/angles/acute-roof.jpg",
+  "letter V shape": "/images/angles/acute-v-shape.jpg",
+  "narrow road fork": "/images/angles/acute-road-fork.jpg",
+  "paper folded into a sharp corner": "/images/angles/acute-folded-paper.jpg",
+  // Right
+  "corner of a book": "/images/angles/right-book-corner.jpg",
+  "corner of a window frame": "/images/angles/right-window.jpg",
+  "corner of a square tile": "/images/angles/right-tile.jpg",
+  "edge where wall meets floor": "/images/angles/right-wall-floor.jpg",
+  "corner of a picture frame": "/images/angles/right-picture-frame.jpg",
+  "corner of a notebook": "/images/angles/right-notebook.jpg",
+  "intersection of perpendicular streets": "/images/angles/right-streets.jpg",
+  "corner of a rectangular table": "/images/angles/right-table.jpg",
+  // Obtuse
+  "laptop half-open": "/images/angles/obtuse-laptop.jpg",
+  "door opened wide": "/images/angles/obtuse-door.jpg",
+  "clock hands at 4:00": "/images/angles/obtuse-clock-4.jpg",
+  "wide pair of tongs": "/images/angles/obtuse-tongs.jpg",
+  "reclining beach chair angle": "/images/angles/obtuse-beach-chair.jpg",
+  "open mailbox lid": "/images/angles/obtuse-mailbox.jpg",
+  "tree branch splitting wide": "/images/angles/obtuse-tree-branch.jpg",
+  "opened umbrella rib section": "/images/angles/obtuse-umbrella.jpg",
+  // Straight
+  "flat table edge": "/images/angles/straight-table-edge.jpg",
+  "horizon line": "/images/angles/straight-horizon.jpg",
+  "straight ruler edge": "/images/angles/straight-ruler.jpg",
+  "taut jump rope": "/images/angles/straight-jump-rope.jpg",
+  "straight road segment": "/images/angles/straight-road.jpg",
+  "edge of a shelf": "/images/angles/straight-shelf.jpg",
+  "fully opened book laid flat": "/images/angles/straight-flat-book.jpg",
+  "straight line on notebook paper": "/images/angles/straight-notebook-line.jpg",
+};
+
 export const ANGLE_TYPES = [
   {
     name: "acute angle",
@@ -157,7 +197,7 @@ export function generateLinesAndAnglesQuestion(difficulty = 0.5) {
       hint: "Think about the corner of a square - the lines meet at a perfect right angle.",
     },
     {
-      question: "A line that goes on forever in both directions is called:",
+      question: "The geometric figure that is straight and goes on forever in both directions is called:",
       correctAnswer: "line",
       options: ["ray", "line segment", "angle"],
       hint: "It has no endpoints and continues infinitely in both directions.",
@@ -465,7 +505,7 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     },
     {
       type: "measure",
-      getQuestion: (angle) => `An ${angle.name} measures:`,
+      getQuestion: (angle) => `${angle.name} measures:`,
       correctAnswer: (angle) => angle.range,
     },
     {
@@ -494,11 +534,22 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     ? pickRandomFrom(angle.realLifeExamples)
     : qType.correctAnswer(angle);
   const potentialDistractors = wrongOptions.slice(0, 3);
+  const finalOptions = shuffle(generateUniqueOptions(correctAnswer, potentialDistractors));
+
+  // Build optionImages only for realLife questions
+  const optionImages = qType.type === "realLife"
+    ? Object.fromEntries(
+        finalOptions
+          .filter(opt => ANGLE_EXAMPLE_IMAGES[opt])
+          .map(opt => [opt, ANGLE_EXAMPLE_IMAGES[opt]])
+      )
+    : undefined;
 
   return {
     question: qType.getQuestion(angle),
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    options: finalOptions,
+    ...(optionImages && Object.keys(optionImages).length > 0 && { optionImages }),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Remember: ${angle.name}s ${angle.range}.`,
     standard: "4.G.A.1",
@@ -518,26 +569,26 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
   const concepts = [
     {
       name: "point",
-      definition: "an exact location with no size",
+      definition: "is an exact location with no size",
       example: "the tip of a pencil",
       notation: "represented by a dot",
     },
     {
       name: "line", 
       definition: "goes on forever in both directions",
-      example: "like a straight road that never ends",
+      example: "a straight road that never ends",
       notation: "has no endpoints",
     },
     {
       name: "ray",
       definition: "starts at a point and goes on forever in one direction", 
-      example: "like a flashlight beam",
+      example: "a flashlight beam",
       notation: "has one endpoint",
     },
     {
       name: "line segment",
-      definition: "a part of a line with two endpoints",
-      example: "like a street between two intersections", 
+      definition: "is a part of a line with two endpoints",
+      example: "a street between two intersections", 
       notation: "has two endpoints",
     },
   ];
@@ -545,7 +596,7 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
   const questionTypes = [
     {
       type: "definition",
-      getQuestion: (concept) => `What is ${concept.definition}?`,
+      getQuestion: (concept) => `What ${concept.definition}?`,
       correctAnswer: (concept) => concept.name,
     },
     {

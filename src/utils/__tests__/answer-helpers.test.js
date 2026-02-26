@@ -110,8 +110,8 @@ describe('normalizeMathExpression', () => {
     expect(normalizeMathExpression('   ')).toBe('');
   });
 
-  test('preserves other characters', () => {
-    expect(normalizeMathExpression('2,141 x 4 = 8,564')).toBe('2,141 x 4 = 8,564');
+  test('removes thousands-separator commas from numbers', () => {
+    expect(normalizeMathExpression('2,141 x 4 = 8,564')).toBe('2141 x 4 = 8564');
   });
 });
 
