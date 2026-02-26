@@ -21,6 +21,10 @@ export const generateQuizQuestions = async (
   questionBankProbability = 0.7, // Default 70% chance for question bank questions
   allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
 ) => {
+  if (typeof window !== 'undefined' && Array.isArray(window.__PW_MOCK_QUIZ_QUESTIONS) && window.__PW_MOCK_QUIZ_QUESTIONS.length > 0) {
+    return window.__PW_MOCK_QUIZ_QUESTIONS.map((question) => ({ ...question }));
+  }
+
   // Use existing complexity engine instead of rebuilding scoring logic
   const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);

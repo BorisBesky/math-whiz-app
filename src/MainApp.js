@@ -1042,6 +1042,9 @@ const MainAppContent = () => {
     
     // Handle AI-evaluated questions (drawing, write-in, drawing-with-text)
     if (isAIEvaluatedQuestion(currentQuestion)) {
+      // Clear any previous AI feedback to avoid showing stale content
+      setDrawingFeedback(null);
+
       // For drawing and drawing-with-text, we need drawingImageBase64
       const needsDrawing = currentQuestion.questionType === 'drawing' || currentQuestion.questionType === 'drawing-with-text';
       // For write-in and drawing-with-text, we need writeInAnswer
@@ -1075,8 +1078,23 @@ const MainAppContent = () => {
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to validate answer');
+          let errorMessage = `Validation request failed (${response.status})`;
+          try {
+            const errorData = await response.json();
+            if (errorData?.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (parseJsonError) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorMessage = `${errorMessage}: ${errorText}`;
+              }
+            } catch (parseTextError) {
+              // Keep fallback message
+            }
+          }
+          throw new Error(errorMessage);
         }
         
         const result = await response.json();
@@ -1166,12 +1184,15 @@ const MainAppContent = () => {
         setIsAnswered(true);
         
       } catch (error) {
-        console.error('Error validating drawing:', error);
+        console.error('Error validating AI answer:', {
+          questionType: currentQuestion.questionType,
+          error
+        });
         setIsValidatingDrawing(false);
         setIsAnswered(true);
         setFeedback({
           type: "error",
-          message: error.message || "Failed to validate drawing. Please try again."
+          message: error.message || "Failed to validate AI answer. Please try again."
         });
       }
       return;
@@ -1640,6 +1661,7 @@ const MainAppContent = () => {
     setWriteInAnswer(''); // Clear write-in answer
     setFillInAnswers([]); // Clear fill-in-the-blanks answers
     setFillInResults([]); // Clear fill-in-the-blanks results
+    setDrawingFeedback(null); // Clear AI drawing/write-in feedback
     setShowHint(false);
     setFeedback(null);
     setIsAnswered(false);
