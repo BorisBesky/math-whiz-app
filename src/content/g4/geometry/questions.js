@@ -502,7 +502,7 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
   const questionTypes = [
     {
       type: "definition",
-      getQuestion: (concept) => `What ${concept.definition}?`,
+      getQuestion: (concept) => `What is ${concept.definition}?`,
       correctAnswer: (concept) => concept.name,
     },
     {

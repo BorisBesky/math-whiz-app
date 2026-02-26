@@ -662,6 +662,119 @@ const GeometryExplanation = () => {
           <span style={styles.emoji}>🎯</span><strong>Memory Tip:</strong> A ray is like a flashlight beam - it starts somewhere and keeps going!
         </div>
 
+        <h2 style={styles.h2}>↔️ Parallel & Perpendicular Lines</h2>
+        <p>Lines can have special relationships with each other. Let's learn about two important ones!</p>
+
+        <div style={styles.geometryVisual}>
+          <div style={styles.grid}>
+            {/* Parallel Lines */}
+            <div style={styles.shapeBox20}>
+              <h3 style={styles.h3}>Parallel Lines ∥</h3>
+              <p>Lines that go in the <strong>same direction</strong> and <strong>never cross</strong>, no matter how far they go!</p>
+              <div style={styles.svgContainer}>
+                <svg width="200" height="120" viewBox="0 0 200 120">
+                  {/* Top line with arrows */}
+                  <line x1="20" y1="35" x2="180" y2="35" stroke="#2196f3" strokeWidth="3" />
+                  <polygon points="180,35 170,30 170,40" fill="#2196f3" />
+                  <polygon points="20,35 30,30 30,40" fill="#2196f3" />
+                  {/* Bottom line with arrows */}
+                  <line x1="20" y1="75" x2="180" y2="75" stroke="#2196f3" strokeWidth="3" />
+                  <polygon points="180,75 170,70 170,80" fill="#2196f3" />
+                  <polygon points="20,75 30,70 30,80" fill="#2196f3" />
+                  {/* Tick marks showing equal distance */}
+                  <line x1="90" y1="32" x2="90" y2="28" stroke="#2196f3" strokeWidth="2" />
+                  <line x1="95" y1="32" x2="95" y2="28" stroke="#2196f3" strokeWidth="2" />
+                  <line x1="90" y1="78" x2="90" y2="82" stroke="#2196f3" strokeWidth="2" />
+                  <line x1="95" y1="78" x2="95" y2="82" stroke="#2196f3" strokeWidth="2" />
+                  {/* Distance markers */}
+                  <line x1="55" y1="38" x2="55" y2="72" stroke="#999" strokeWidth="1" strokeDasharray="4,3" />
+                  <line x1="145" y1="38" x2="145" y2="72" stroke="#999" strokeWidth="1" strokeDasharray="4,3" />
+                  <text x="100" y="60" textAnchor="middle" fontSize="11" fill="#666" fontFamily="Comic Sans MS, cursive">same distance</text>
+                  {/* Labels */}
+                  <text x="100" y="110" textAnchor="middle" fontSize="13" fill="#2196f3" fontWeight="bold" fontFamily="Comic Sans MS, cursive">Always the same distance apart!</text>
+                </svg>
+              </div>
+              <p style={{fontSize: '0.9em', color: '#555'}}>🛤️ Railroad tracks &nbsp; 📓 Lines on paper &nbsp; = Equals sign</p>
+            </div>
+
+            {/* Perpendicular Lines */}
+            <div style={styles.shapeBox20}>
+              <h3 style={styles.h3}>Perpendicular Lines ⊥</h3>
+              <p>Lines that cross each other at a <strong>right angle (90°)</strong>, making a perfect corner!</p>
+              <div style={styles.svgContainer}>
+                <svg width="200" height="120" viewBox="0 0 200 120">
+                  {/* Horizontal line with arrows */}
+                  <line x1="30" y1="65" x2="170" y2="65" stroke="#e91e63" strokeWidth="3" />
+                  <polygon points="170,65 160,60 160,70" fill="#e91e63" />
+                  <polygon points="30,65 40,60 40,70" fill="#e91e63" />
+                  {/* Vertical line with arrows */}
+                  <line x1="100" y1="10" x2="100" y2="110" stroke="#e91e63" strokeWidth="3" />
+                  <polygon points="100,10 95,20 105,20" fill="#e91e63" />
+                  <polygon points="100,110 95,100 105,100" fill="#e91e63" />
+                  {/* Right angle square marker */}
+                  <rect x="100" y="52" width="13" height="13" fill="none" stroke="#ff9800" strokeWidth="2" />
+                  {/* 90° label */}
+                  <text x="120" y="50" fontSize="12" fill="#ff9800" fontWeight="bold" fontFamily="Comic Sans MS, cursive">90°</text>
+                </svg>
+              </div>
+              <p style={{fontSize: '0.9em', color: '#555'}}>➕ Plus sign &nbsp; 🪟 Window corners &nbsp; 🏁 Crossroads</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.example}>
+          <strong>🔍 Spot the Difference:</strong>
+          <div style={{display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', marginTop: '10px'}}>
+            <div style={{textAlign: 'center', margin: '10px'}}>
+              <svg width="90" height="70" viewBox="0 0 90 70">
+                <line x1="10" y1="20" x2="80" y2="20" stroke="#2196f3" strokeWidth="3" />
+                <line x1="10" y1="50" x2="80" y2="50" stroke="#2196f3" strokeWidth="3" />
+              </svg>
+              <br/><strong>Parallel</strong>
+              <br/><span style={{fontSize: '0.85em'}}>Never cross</span>
+            </div>
+            <div style={{textAlign: 'center', margin: '10px'}}>
+              <svg width="90" height="70" viewBox="0 0 90 70">
+                <line x1="10" y1="35" x2="80" y2="35" stroke="#e91e63" strokeWidth="3" />
+                <line x1="45" y1="5" x2="45" y2="65" stroke="#e91e63" strokeWidth="3" />
+                <rect x="45" y="25" width="10" height="10" fill="none" stroke="#ff9800" strokeWidth="1.5" />
+              </svg>
+              <br/><strong>Perpendicular</strong>
+              <br/><span style={{fontSize: '0.85em'}}>Cross at 90°</span>
+            </div>
+            <div style={{textAlign: 'center', margin: '10px'}}>
+              <svg width="90" height="70" viewBox="0 0 90 70">
+                <line x1="10" y1="55" x2="80" y2="15" stroke="#9c27b0" strokeWidth="3" />
+                <line x1="10" y1="15" x2="80" y2="55" stroke="#9c27b0" strokeWidth="3" />
+              </svg>
+              <br/><strong>Intersecting</strong>
+              <br/><span style={{fontSize: '0.85em'}}>Cross, but NOT at 90°</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>💡</span><strong>Memory Trick:</strong> The word "para<strong>ll</strong>el" has two <strong>l</strong>'s right next to each other — just like parallel lines standing side by side, never touching!
+        </div>
+
+        <div style={styles.shapeShowcase}>
+          <span style={styles.emoji}>🏠</span><strong>Parallel & Perpendicular Lines Are Everywhere!</strong>
+          <div style={{...styles.grid3, marginTop: '10px'}}>
+            <div style={styles.shapeBox}>
+              <strong>🛤️ Railroad Tracks</strong><br/>
+              The rails are <em>parallel</em> — they stay the same distance apart forever!
+            </div>
+            <div style={styles.shapeBox}>
+              <strong>➕ Plus Sign</strong><br/>
+              The two lines in a plus sign are <em>perpendicular</em> — they meet at 90°!
+            </div>
+            <div style={styles.shapeBox}>
+              <strong>📐 Graph Paper</strong><br/>
+              Horizontal lines are <em>parallel</em> to each other, and <em>perpendicular</em> to the vertical lines!
+            </div>
+          </div>
+        </div>
+
         <h2 style={styles.h2}>🔺 Classifying Triangles</h2>
         <p>Triangles can be classified by their sides and by their angles!</p>
         

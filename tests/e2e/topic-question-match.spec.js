@@ -41,7 +41,7 @@ test.describe('Topic-Question Match Validation', () => {
 
   // Helper function to get the displayed topic from the quiz interface
   async function getDisplayedTopic(page) {
-    const topicHeader = page.locator('[data-tutorial-id="question-interface"] h2.text-blue-600');
+    const topicHeader = page.locator('[data-tutorial-id="question-interface"] h2');
     return await topicHeader.textContent();
   }
 

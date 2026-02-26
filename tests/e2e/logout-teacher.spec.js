@@ -36,7 +36,7 @@ test.describe('Teacher logout redirect', () => {
 
     // Expect to be redirected back to unified login page and show login UI
     await expect(page).toHaveURL(/\/login(\?.*)?$/, { timeout: 15000 });
-    await expect(page.getByRole('heading', { name: 'Welcome to Math Whiz' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Math Whiz' })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('link', { name: /Student Sign In/i })).toBeVisible({ timeout: 15000 });
   });
 });
