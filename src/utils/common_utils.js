@@ -111,7 +111,7 @@
     // (shared-constants uses CommonJS, and this file uses ES modules)
     const GRADE_TOPICS = {
       G3: ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'],
-      G4: ['Operations & Algebraic Thinking', 'Base Ten', 'Fractions 4th', 'Measurement & Data 4th', 'Geometry', 'Binary Addition'],
+      G4: ['Operations & Algebraic Thinking', 'Base Ten', 'Fractions 4th', 'Measurement & Data 4th', 'Geometry', 'Binary Operations'],
     };
     return GRADE_TOPICS[grade] || GRADE_TOPICS.G3;
   };

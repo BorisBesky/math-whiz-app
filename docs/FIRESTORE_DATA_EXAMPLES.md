@@ -111,7 +111,7 @@ artifacts/
       "fractions_4th": 7,
       "measurement_data_4th": 5,
       "geometry": 4,
-      "binary_addition": 3
+      "binary_operations": 3
     }
   },
   "pausedQuizzes": {

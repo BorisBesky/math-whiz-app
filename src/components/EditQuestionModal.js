@@ -28,7 +28,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
         TOPICS.FRACTIONS_4TH,
         TOPICS.MEASUREMENT_DATA_4TH,
         TOPICS.GEOMETRY,
-        TOPICS.BINARY_ADDITION
+        TOPICS.BINARY_OPERATIONS
     ];
 
     useEffect(() => {

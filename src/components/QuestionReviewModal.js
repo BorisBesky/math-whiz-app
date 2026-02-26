@@ -74,7 +74,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
     TOPICS.FRACTIONS_4TH,
     TOPICS.MEASUREMENT_DATA_4TH,
     TOPICS.GEOMETRY,
-    TOPICS.BINARY_ADDITION
+    TOPICS.BINARY_OPERATIONS
   ];
 
   const handleQuestionChange = (index, field, value) => {

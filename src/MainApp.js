@@ -188,7 +188,7 @@ const conceptExplanationFiles = {
   [TOPICS.FRACTIONS_4TH]: "/nf4Explanation.html",
   [TOPICS.MEASUREMENT_DATA_4TH]: "/md4Explanation.html",
   [TOPICS.GEOMETRY]: "/g4Explanation.html",
-  [TOPICS.BINARY_ADDITION]: "/binaryAdditionExplanation.html",
+  [TOPICS.BINARY_OPERATIONS]: "/binaryOperationsExplanation.html",
 };
 
 // --- Store Items ---
@@ -305,7 +305,7 @@ const generateQuizQuestions = async (
       [TOPICS.FRACTIONS_4TH]:               ['g4', 'fractions'],
       [TOPICS.MEASUREMENT_DATA_4TH]:        ['g4', 'measurement-data'],
       [TOPICS.GEOMETRY]:                     ['g4', 'geometry'],
-      [TOPICS.BINARY_ADDITION]:             ['g4', 'binary-addition'],
+      [TOPICS.BINARY_OPERATIONS]:            ['g4', 'binary-operations'],
     };
 
     if (!useFirestoreQuestion) {
@@ -429,7 +429,7 @@ const quizTopicsByGrade = {
     TOPICS.FRACTIONS_4TH,
     TOPICS.MEASUREMENT_DATA_4TH,
     TOPICS.GEOMETRY,
-    TOPICS.BINARY_ADDITION,
+    TOPICS.BINARY_OPERATIONS,
   ],
 };
 
@@ -2674,11 +2674,11 @@ const MainAppContent = () => {
         hasReactComponent = true;
         ReactComponent = measurementDataTopic.ExplanationComponent;
       }
-    } else if (concept === TOPICS.BINARY_ADDITION) {
-      const binaryAdditionTopic = content.getTopic('g4', 'binary-addition');
-      if (binaryAdditionTopic && binaryAdditionTopic.ExplanationComponent) {
+    } else if (concept === TOPICS.BINARY_OPERATIONS) {
+      const binaryOperationsTopic = content.getTopic('g4', 'binary-operations');
+      if (binaryOperationsTopic && binaryOperationsTopic.ExplanationComponent) {
         hasReactComponent = true;
-        ReactComponent = binaryAdditionTopic.ExplanationComponent;
+        ReactComponent = binaryOperationsTopic.ExplanationComponent;
       }
     } else if (concept === TOPICS.MULTIPLICATION) {
       const multiplicationTopic = content.getTopic('g3', 'multiplication');

@@ -8,7 +8,7 @@ import { generateQuestion as generateFractions } from '../../fractions/questions
 import { generateQuestion as generateGeometry } from '../../geometry/questions';
 import { generateQuestion as generateOperations } from '../../operations-algebraic-thinking/questions';
 import { generateQuestion as generateMeasurement } from '../../measurement-data/questions';
-import { generateQuestion as generateBinary } from '../../binary-addition/questions';
+import { generateQuestion as generateBinary } from '../../binary-operations/questions';
 
 // Grade 3 modules (should still work with difficulty)
 import { generateQuestion as generateMultiplication } from '../../../g3/multiplication/questions';
@@ -57,7 +57,7 @@ describe('Grade 4 Difficulty Scaling', () => {
       expect(question.correctAnswer).toBeDefined();
     });
 
-    test('Binary Addition accepts difficulty parameter', () => {
+    test('Binary Operations accepts difficulty parameter', () => {
       const question = generateBinary(0.5);
       expect(question).toBeDefined();
       expect(question.question).toBeDefined();

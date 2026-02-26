@@ -115,7 +115,7 @@ const TOPIC_GUIDELINES = {
 - Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions, decimal operations (adding, subtracting, multiplying, and dividing decimals)
 - Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
-- Binary Addition: Focus on converting between binary and decimal, adding binary numbers`,
+- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.`,
 };
 
 // Build the Gemini prompt

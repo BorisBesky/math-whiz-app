@@ -91,7 +91,7 @@ const QuestionBankManager = ({
     TOPICS.FRACTIONS_4TH,
     TOPICS.MEASUREMENT_DATA_4TH,
     TOPICS.GEOMETRY,
-    TOPICS.BINARY_ADDITION
+    TOPICS.BINARY_OPERATIONS
   ];
 
   const gradeOptions = ['G3', 'G4'];

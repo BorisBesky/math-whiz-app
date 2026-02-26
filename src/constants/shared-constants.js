@@ -24,7 +24,7 @@ const TOPICS = {
   FRACTIONS_4TH: 'Fractions 4th',  // Note: Same as 3rd grade fractions
   MEASUREMENT_DATA_4TH: 'Measurement & Data 4th',
   GEOMETRY: 'Geometry',
-  BINARY_ADDITION: 'Binary Addition',
+  BINARY_OPERATIONS: 'Binary Operations',
   
   // Fraction subtopics
   FRACTIONS_ADDITION: 'Fractions: Addition',
@@ -47,7 +47,7 @@ const VALID_TOPICS_BY_GRADE = {
     TOPICS.FRACTIONS_4TH,
     TOPICS.MEASUREMENT_DATA_4TH,
     TOPICS.GEOMETRY,
-    TOPICS.BINARY_ADDITION,
+    TOPICS.BINARY_OPERATIONS,
   ],
 };
 

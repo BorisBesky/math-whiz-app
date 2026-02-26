@@ -24,7 +24,7 @@ test.describe('Topic-Question Match Validation', () => {
     'Fractions 4th',
     'Measurement & Data 4th',
     'Geometry',
-    'Binary Addition'
+    'Binary Operations'
   ];
 
   test.beforeEach(async ({ page }) => {
