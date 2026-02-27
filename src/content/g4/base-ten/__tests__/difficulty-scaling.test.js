@@ -3,7 +3,13 @@
  * Validates that difficulty parameter properly affects question generation
  */
 
-import { generateQuestion as generateBaseTen, generatePlaceValueTableQuestion } from '../questions';
+import {
+  generateQuestion as generateBaseTen,
+  generatePlaceValueTableQuestion,
+  generateDecimalPlaceIdentificationQuestion,
+  generateDecimalDigitValueQuestion,
+  generateDecimalPlaceRelationshipQuestion,
+} from '../questions';
 import { generateQuestion as generateFractions } from '../../fractions/questions';
 import { generateQuestion as generateGeometry } from '../../geometry/questions';
 import { generateQuestion as generateOperations } from '../../operations-algebraic-thinking/questions';
@@ -175,6 +181,38 @@ describe('Grade 4 Difficulty Scaling', () => {
         return match && match[0].split('.')[1].length === 3;
       });
       expect(hasThousandths).toBe(true);
+    });
+
+    test('Base Ten: generated decimal numbers use globally unique digits', () => {
+      for (let i = 0; i < 100; i++) {
+        const question = generateDecimalPlaceIdentificationQuestion(Math.random());
+        const match = question.question.match(/\d+\.\d+/);
+
+        expect(match).toBeTruthy();
+
+        const digits = match[0].replace('.', '').split('');
+        const uniqueDigits = new Set(digits);
+
+        expect(uniqueDigits.size).toBe(digits.length);
+      }
+    });
+
+    test('Base Ten: decimal digit value has unique options with minimum of 2', () => {
+      for (let i = 0; i < 100; i++) {
+        const question = generateDecimalDigitValueQuestion(Math.random());
+        expect(question.options.length).toBeGreaterThanOrEqual(2);
+        expect(question.options).toContain(question.correctAnswer);
+        expect(new Set(question.options).size).toBe(question.options.length);
+      }
+    });
+
+    test('Base Ten: decimal place relationship has unique options with minimum of 2', () => {
+      for (let i = 0; i < 100; i++) {
+        const question = generateDecimalPlaceRelationshipQuestion(Math.random());
+        expect(question.options.length).toBeGreaterThanOrEqual(2);
+        expect(question.options).toContain(question.correctAnswer);
+        expect(new Set(question.options).size).toBe(question.options.length);
+      }
     });
   });
 

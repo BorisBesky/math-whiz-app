@@ -9,6 +9,9 @@ function getRandomInt(min, max) {
 
 function getRandomIntUniqueDigits(count) {
   const digits = new Set();
+  if (count > 10) {
+    throw new Error("Cannot generate more than 10 unique digits");
+  }
   while (digits.size < count) {
     digits.add(getRandomInt(0, 9));
   }
@@ -19,12 +22,10 @@ function getRandomIntUniqueDigits(count) {
  * Generates a random decimal number scaled by difficulty.
  * @param {number} difficulty - 0 to 1
  * @returns {{ numberStr: string, wholePart: number, decimalDigits: number[], decimalPlaces: string[] }}
+ * decimalDigits is an array of the digits in the decimal part, and decimalPlaces is an array of the corresponding place names (e.g. ["tenths", "hundredths"])
  */
 function generateDecimalNumber(difficulty) {
   const wholeDigitCount = Math.max(1, Math.min(3, 1 + Math.floor(difficulty * 2.5)));
-  const wholeMin = wholeDigitCount === 1 ? 1 : Math.pow(10, wholeDigitCount - 1);
-  const wholeMax = Math.pow(10, wholeDigitCount) - 1;
-  const wholePart = getRandomInt(wholeMin, wholeMax);
 
   let decimalPlaceCount;
   if (difficulty < 0.3) {
@@ -35,13 +36,31 @@ function generateDecimalNumber(difficulty) {
     decimalPlaceCount = 3;
   }
 
+  // Keep all digits (whole + decimal) unique to avoid ambiguity when identifying digit value/place.
+  const allUsedDigits = new Set();
+
+  const wholeDigits = [];
+  for (let i = 0; i < wholeDigitCount; i++) {
+    let digit;
+    do {
+      digit = getRandomInt(i === 0 ? 1 : 0, 9);
+    } while (allUsedDigits.has(digit));
+    allUsedDigits.add(digit);
+    wholeDigits.push(digit);
+  }
+  const wholePart = parseInt(wholeDigits.join(''), 10);
+
   const placeNames = ['tenths', 'hundredths', 'thousandths'];
   const decimalDigits = [];
+  // Ensure decimal digits are unique and also do not overlap with whole-number digits.
   for (let i = 0; i < decimalPlaceCount; i++) {
-    decimalDigits.push(getRandomInt(i === 0 ? 1 : 0, 9));
-  }
-  if (decimalDigits[decimalDigits.length - 1] === 0) {
-    decimalDigits[decimalDigits.length - 1] = getRandomInt(1, 9);
+    let digit;
+    const minDigit = i === 0 || i === decimalPlaceCount - 1 ? 1 : 0;
+    do {
+      digit = getRandomInt(minDigit, 9);
+    } while (allUsedDigits.has(digit));
+    allUsedDigits.add(digit);
+    decimalDigits.push(digit);
   }
 
   const decimalStr = decimalDigits.join('');
@@ -643,7 +662,10 @@ export function generateDecimalPlaceIdentificationQuestion(difficulty = 0.5) {
 export function generateDecimalDigitValueQuestion(difficulty = 0.5) {
   const { numberStr, decimalDigits, decimalPlaces } = generateDecimalNumber(difficulty);
 
-  const placeIndex = getRandomInt(0, decimalPlaces.length - 1);
+  const validIndices = decimalDigits
+    .map((digit, index) => (digit !== 0 ? index : -1))
+    .filter(index => index !== -1);
+  const placeIndex = validIndices[getRandomInt(0, validIndices.length - 1)];
   const digit = decimalDigits[placeIndex];
   const placeMultipliers = [0.1, 0.01, 0.001];
   const correctValue = parseFloat((digit * placeMultipliers[placeIndex]).toFixed(3)).toString();
@@ -771,11 +793,15 @@ export function generateDecimalPlaceRelationshipQuestion(difficulty = 0.5) {
     Math.max(1, ratio / 10).toString(),
     digit.toString(),
   ];
+  const uniqueDistractors = Array.from(
+    new Set(potentialDistractors.filter(option => option !== correctAnswer))
+  );
+  const numOptions = Math.max(2, Math.min(4, uniqueDistractors.length + 1));
 
   return {
     question: `How many times greater is the value of the digit ${digit} in ${higherValue} than the value of the digit ${digit} in ${lowerValue}?`,
     correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    options: shuffle(generateUniqueOptions(correctAnswer, uniqueDistractors, numOptions)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Compare the place values: ${placeNames[higherIdx]} vs ${placeNames[lowerIdx]}. Each place to the left is 10 times greater.`,
     standard: '4.NBT.A.1',
