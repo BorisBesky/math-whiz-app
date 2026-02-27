@@ -1,4 +1,5 @@
 import React from 'react';
+import binarySubtractionImage from './binary-subtraction.png';
 
 const BinaryOperationsExplanation = () => {
 
@@ -287,64 +288,24 @@ const BinaryOperationsExplanation = () => {
         Binary Subtraction Rules
       </h2>
 
-      <p>Binary subtraction is like decimal subtraction, but with only 0s and 1s. Sometimes you need to <strong>borrow</strong> from the next column!</p>
-
-      <div style={styles.conversionTable}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Subtraction</th>
-              <th style={styles.th}>Result</th>
-              <th style={styles.th}>Explanation</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={styles.td}><span style={styles.code}>0 - 0</span></td>
-              <td style={styles.td}><span style={styles.code}>0</span></td>
-              <td style={styles.td}>Nothing minus nothing = nothing</td>
-            </tr>
-            <tr>
-              <td style={styles.td}><span style={styles.code}>1 - 0</span></td>
-              <td style={styles.td}><span style={styles.code}>1</span></td>
-              <td style={styles.td}>ON minus nothing = ON</td>
-            </tr>
-            <tr>
-              <td style={styles.td}><span style={styles.code}>1 - 1</span></td>
-              <td style={styles.td}><span style={styles.code}>0</span></td>
-              <td style={styles.td}>ON minus ON = OFF</td>
-            </tr>
-            <tr>
-              <td style={styles.td}><span style={styles.code}>10 - 1</span></td>
-              <td style={styles.td}><span style={styles.code}>1</span></td>
-              <td style={styles.td}>Borrow from the next column!</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p>Binary subtraction is like decimal subtraction, but with only 0s and 1s. This visual shows how borrowing works step by step.</p>
 
       <h3 style={styles.h3}>Binary Subtraction Example:</h3>
       <div style={styles.additionExample}>
-        <p><strong>Let's subtract binary 1010 - 011:</strong></p>
-        <div style={styles.stepByStep}>
-          <pre style={{ fontSize: '1.2em', textAlign: 'center' }}>
-{`   1 0 1 0
--    0 1 1
----------`}
-          </pre>
-          <p>Step by step from right to left:</p>
-          <p>1. Ones place: <span style={styles.code}>0 - 1</span> = can't do it! Borrow from twos place. <span style={styles.code}>10 - 1 = 1</span></p>
-          <p>2. Twos place (after borrowing): <span style={styles.code}>0 - 1</span> = borrow again! <span style={styles.code}>10 - 1 = 1</span></p>
-          <p>3. Fours place (after borrowing): <span style={styles.code}>0 - 0 = 0</span></p>
-          <p>4. Eights place: <span style={styles.code}>1 - 0 = 0</span> (leading zero, drop it)</p>
-          <pre style={{ fontSize: '1.2em', textAlign: 'center', backgroundColor: '#e8f5e8', padding: '10px', borderRadius: '5px' }}>
-{`   1 0 1 0  (10 in decimal)
--    0 1 1  (3 in decimal)
----------
-     1 1 1  (7 in decimal)`}
-          </pre>
-          <p><strong>Check: 10 - 3 = 7 ✅</strong></p>
-        </div>
+        <p><strong>Example: 1010 - 011</strong></p>
+        <img
+          src={binarySubtractionImage}
+          alt="Binary subtraction example showing borrowing in 1010 minus 011"
+          style={{
+            width: '100%',
+            maxWidth: '700px',
+            display: 'block',
+            margin: '10px auto',
+            borderRadius: '10px',
+            border: '2px solid #f39c12'
+          }}
+        />
+        <p style={{ textAlign: 'center' }}><strong>Result: 1010 - 011 = 111 (10 - 3 = 7) ✅</strong></p>
       </div>
 
       <div style={styles.tip}>
