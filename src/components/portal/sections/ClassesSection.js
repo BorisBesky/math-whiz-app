@@ -10,6 +10,8 @@ const ClassesSection = ({
   loading,
   error,
   userRole,
+  userId,
+  teachers = [],
   onCreateClass,
   onDeleteClass,
   students = [],
@@ -152,6 +154,9 @@ const ClassesSection = ({
           onAssignStudent={onAssignStudent}
           onRemoveStudent={onRemoveStudent}
           onRefresh={onRefreshStudents}
+          userRole={userRole}
+          userId={userId}
+          teachers={teachers}
         />
       )}
     </div>

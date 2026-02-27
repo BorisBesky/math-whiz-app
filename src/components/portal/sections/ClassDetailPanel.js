@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap } from 'lucide-react';
 import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
+import { getTeacherIds } from '../../../utils/classHelpers';
+import { USER_ROLES } from '../../../utils/userRoles';
 
 const ClassDetailPanel = ({
   classItem,
@@ -11,6 +13,9 @@ const ClassDetailPanel = ({
   onAssignStudent,
   onRemoveStudent,
   onRefresh,
+  userRole,
+  userId,
+  teachers = [],
 }) => {
   const classId = classItem?.id;
   const appId = getAppId();
@@ -52,6 +57,72 @@ const ClassDetailPanel = ({
   const [assigning, setAssigning] = useState(false);
   const [removingId, setRemovingId] = useState(null);
   const canManageStudents = typeof onAssignStudent === 'function' && typeof onRemoveStudent === 'function';
+
+  // Teacher management state
+  const [selectedTeacherToAdd, setSelectedTeacherToAdd] = useState('');
+  const [addingTeacher, setAddingTeacher] = useState(false);
+  const [removingTeacherId, setRemovingTeacherId] = useState(null);
+  const isAdmin = userRole === USER_ROLES.ADMIN;
+  const isTeacherOnClass = userId && getTeacherIds(classItem).includes(userId);
+  const canManageTeachers = isAdmin || isTeacherOnClass;
+
+  const currentTeacherIds = useMemo(() => getTeacherIds(classItem), [classItem]);
+
+  const currentTeachersResolved = useMemo(() => {
+    return currentTeacherIds.map((tid) => {
+      const matched = teachers.find((t) => t.uid === tid || t.id === tid);
+      return matched
+        ? { uid: tid, displayName: matched.displayName || matched.name, email: matched.email }
+        : { uid: tid, displayName: null, email: classItem.teacherEmail || null };
+    });
+  }, [currentTeacherIds, teachers, classItem.teacherEmail]);
+
+  const availableTeachersToAdd = useMemo(() => {
+    return teachers.filter((t) => {
+      const tUid = t.uid || t.id;
+      return !currentTeacherIds.includes(tUid);
+    });
+  }, [teachers, currentTeacherIds]);
+
+  const handleAddTeacher = async () => {
+    if (!selectedTeacherToAdd) return;
+    setAddingTeacher(true);
+    setStatus(null);
+    try {
+      const classRef = doc(db, 'artifacts', appId, 'classes', classId);
+      await updateDoc(classRef, {
+        teacherIds: arrayUnion(selectedTeacherToAdd),
+      });
+      setSelectedTeacherToAdd('');
+      setStatus({ type: 'success', message: 'Teacher added to class.' });
+    } catch (err) {
+      console.error('Error adding teacher:', err);
+      setStatus({ type: 'error', message: err.message || 'Failed to add teacher.' });
+    } finally {
+      setAddingTeacher(false);
+    }
+  };
+
+  const handleRemoveTeacher = async (teacherUid) => {
+    if (currentTeacherIds.length <= 1) {
+      setStatus({ type: 'error', message: 'Cannot remove the last teacher from a class.' });
+      return;
+    }
+    setRemovingTeacherId(teacherUid);
+    setStatus(null);
+    try {
+      const classRef = doc(db, 'artifacts', appId, 'classes', classId);
+      await updateDoc(classRef, {
+        teacherIds: arrayRemove(teacherUid),
+      });
+      setStatus({ type: 'success', message: 'Teacher removed from class.' });
+    } catch (err) {
+      console.error('Error removing teacher:', err);
+      setStatus({ type: 'error', message: err.message || 'Failed to remove teacher.' });
+    } finally {
+      setRemovingTeacherId(null);
+    }
+  };
 
   // Load enrollment data with allowedSubtopicsByTopic
   useEffect(() => {
@@ -298,6 +369,72 @@ const ClassDetailPanel = ({
             {classItem.description}
           </div>
         )}
+
+        {/* Teachers Section */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                <GraduationCap className="h-4 w-4 mr-2 text-blue-600" />
+                Teachers
+              </h4>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {currentTeachersResolved.map((teacher) => (
+              <div key={teacher.uid} className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
+                <div className="text-sm">
+                  <span className="font-medium text-gray-900">
+                    {teacher.displayName || teacher.email || teacher.uid}
+                  </span>
+                  {teacher.displayName && teacher.email && (
+                    <span className="text-gray-500 ml-2">{teacher.email}</span>
+                  )}
+                  {classItem.createdBy === teacher.uid && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Owner</span>
+                  )}
+                </div>
+                {isAdmin && currentTeacherIds.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTeacher(teacher.uid)}
+                    disabled={removingTeacherId === teacher.uid}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50"
+                  >
+                    {removingTeacherId === teacher.uid ? 'Removing...' : 'Remove'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {canManageTeachers && availableTeachersToAdd.length > 0 && (
+            <div className="mt-3 flex items-center space-x-2">
+              <select
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                value={selectedTeacherToAdd}
+                onChange={(e) => setSelectedTeacherToAdd(e.target.value)}
+              >
+                <option value="">Add a teacher...</option>
+                {availableTeachersToAdd.map((t) => (
+                  <option key={t.uid || t.id} value={t.uid || t.id}>
+                    {t.displayName || t.name || t.email || t.uid || t.id}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleAddTeacher}
+                disabled={!selectedTeacherToAdd || addingTeacher}
+                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {addingTeacher ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-3">

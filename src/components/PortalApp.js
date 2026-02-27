@@ -100,6 +100,8 @@ const PortalApp = ({ initialSection }) => {
             loading={classesLoading}
             error={classesError}
             userRole={userRole}
+            userId={userId}
+            teachers={teachers}
             onCreateClass={userRole === USER_ROLES.TEACHER ? createClass : undefined}
             onDeleteClass={(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) ? deleteClass : undefined}
             students={students}
