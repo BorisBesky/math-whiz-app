@@ -3,7 +3,7 @@
  * Validates that difficulty parameter properly affects question generation
  */
 
-import { generateQuestion as generateBaseTen } from '../questions';
+import { generateQuestion as generateBaseTen, generatePlaceValueTableQuestion } from '../questions';
 import { generateQuestion as generateFractions } from '../../fractions/questions';
 import { generateQuestion as generateGeometry } from '../../geometry/questions';
 import { generateQuestion as generateOperations } from '../../operations-algebraic-thinking/questions';
@@ -140,6 +140,7 @@ describe('Grade 4 Difficulty Scaling', () => {
       expect(questionTexts.some(q => q.includes('what is the value of'))).toBe(true);
       expect(questionTexts.some(q => q.includes('expanded form'))).toBe(true);
       expect(questionTexts.some(q => q.includes('times greater'))).toBe(true);
+      expect(questionTexts.some(q => q.includes('Fill in the place value chart'))).toBe(true);
     });
 
     test('Base Ten: decimal place value questions have correct metadata', () => {
@@ -147,11 +148,13 @@ describe('Grade 4 Difficulty Scaling', () => {
       expect(question.subtopic).toBe('decimal place value');
       expect(question.concept).toBe('Base Ten');
       expect(question.grade).toBe('G4');
-      expect(question.questionType).toBe('multiple-choice');
+      expect(['multiple-choice', 'fill-in-the-blanks']).toContain(question.questionType);
       expect(question.difficultyRange).toBeDefined();
       expect(question.suggestedDifficulty).toBe(0.5);
-      expect(question.options.length).toBe(4);
-      expect(question.options).toContain(question.correctAnswer);
+      if (question.questionType === 'multiple-choice') {
+        expect(question.options.length).toBe(4);
+        expect(question.options).toContain(question.correctAnswer);
+      }
     });
 
     test('Base Ten: decimal place value at low difficulty uses simpler numbers', () => {
@@ -172,6 +175,91 @@ describe('Grade 4 Difficulty Scaling', () => {
         return match && match[0].split('.')[1].length === 3;
       });
       expect(hasThousandths).toBe(true);
+    });
+  });
+
+  describe('Place value table question', () => {
+    test('generates valid fill-in-the-blanks question with tableData', () => {
+      const question = generatePlaceValueTableQuestion(0.5);
+      expect(question).toBeDefined();
+      expect(question.questionType).toBe('fill-in-the-blanks');
+      expect(question.tableData).toBeDefined();
+      expect(question.tableData.columns).toBeDefined();
+      expect(question.tableData.numberStr).toBeDefined();
+      expect(question.subtopic).toBe('decimal place value');
+      expect(question.concept).toBe('Base Ten');
+      expect(question.grade).toBe('G4');
+    });
+
+    test('blank count matches correctAnswer count', () => {
+      for (let i = 0; i < 20; i++) {
+        const difficulty = Math.random();
+        const question = generatePlaceValueTableQuestion(difficulty);
+        const answers = question.correctAnswer.split(';;');
+        const blanks = (question.question.match(/_{2,}/g) || []);
+        expect(blanks.length).toBe(answers.length);
+      }
+    });
+
+    test('inputTypes length matches blank count', () => {
+      const question = generatePlaceValueTableQuestion(0.5);
+      const answers = question.correctAnswer.split(';;');
+      expect(question.inputTypes.length).toBe(answers.length);
+    });
+
+    test('headers come before values in correctAnswer', () => {
+      const question = generatePlaceValueTableQuestion(0.7);
+      const answers = question.correctAnswer.split(';;').map(a => a.trim());
+      const blankColumns = question.tableData.columns.filter(c => !c.isDecimalPoint);
+      const headerCount = blankColumns.length;
+
+      // First half should be place names
+      const headers = answers.slice(0, headerCount);
+      const placeNames = ['ones', 'tens', 'hundreds', 'thousands', 'tenths', 'hundredths', 'thousandths'];
+      headers.forEach(h => {
+        expect(placeNames).toContain(h);
+      });
+
+      // Second half should be place values
+      const values = answers.slice(headerCount);
+      const validValues = ['1', '10', '100', '1000', '1/10', '1/100', '1/1000'];
+      values.forEach(v => {
+        expect(validValues).toContain(v);
+      });
+    });
+
+    test('low difficulty produces fewer columns', () => {
+      const easyQuestions = Array(20).fill(0).map(() => generatePlaceValueTableQuestion(0.2));
+      const hardQuestions = Array(20).fill(0).map(() => generatePlaceValueTableQuestion(0.9));
+
+      const avgEasyColumns = easyQuestions.reduce((sum, q) => {
+        return sum + q.tableData.columns.filter(c => !c.isDecimalPoint).length;
+      }, 0) / easyQuestions.length;
+
+      const avgHardColumns = hardQuestions.reduce((sum, q) => {
+        return sum + q.tableData.columns.filter(c => !c.isDecimalPoint).length;
+      }, 0) / hardQuestions.length;
+
+      expect(avgHardColumns).toBeGreaterThan(avgEasyColumns);
+    });
+
+    test('tableData columns have required properties', () => {
+      const question = generatePlaceValueTableQuestion(0.5);
+      question.tableData.columns.forEach(col => {
+        expect(col).toHaveProperty('digit');
+        expect(col).toHaveProperty('isDecimalPoint');
+        if (!col.isDecimalPoint) {
+          expect(col).toHaveProperty('header');
+          expect(col).toHaveProperty('value');
+          expect(col).toHaveProperty('isDecimal');
+        }
+      });
+    });
+
+    test('exactly one decimal point column exists', () => {
+      const question = generatePlaceValueTableQuestion(0.5);
+      const dpCols = question.tableData.columns.filter(c => c.isDecimalPoint);
+      expect(dpCols.length).toBe(1);
     });
   });
 

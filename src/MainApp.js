@@ -34,6 +34,7 @@ import { mainAppTutorial } from './tutorials/mainAppTutorial';
 import { dashboardTutorial } from './tutorials/dashboardTutorial';
 import { storeTutorial } from './tutorials/storeTutorial';
 import SketchOverlay from './components/SketchCanvas';
+import AdBanner from './components/AdBanner';
 import { isNumericQuestion, normalizeNumericAnswer, isAIEvaluatedQuestion, isFillInTheBlanksQuestion, parseBlanks, parseCorrectAnswers, validateBlankAnswerCount, validateFillInAnswers } from './utils/answer-helpers';
 import {
   adaptAnsweredHistory,
@@ -2000,7 +2001,7 @@ Answer: [The answer]`;
           storeTutorial={storeTutorial}
           mainAppTutorial={mainAppTutorial}
         />
-        <div className="flex justify-center p-4">
+        <div className="flex justify-center p-4 pb-20">
           <div className="w-full max-w-6xl">
             <Routes>
               <Route path="dashboard" element={
@@ -2146,6 +2147,13 @@ Answer: [The answer]`;
               />} />
         </Routes>
         <TutorialOverlay />
+
+        {/* Sticky bottom ad — hidden during active quizzes to avoid accidental clicks */}
+        {!location.pathname.includes('/quiz/') && (
+          <div className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200">
+            <AdBanner adSlot="YOUR_AD_SLOT_ID" format="horizontal" />
+          </div>
+        )}
       </div>
     </div>
   );

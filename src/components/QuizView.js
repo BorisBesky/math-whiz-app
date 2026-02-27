@@ -9,6 +9,7 @@ import {
 import DrawingCanvas from './DrawingCanvas';
 import WriteInInput from './WriteInInput';
 import NumberPad from './NumberPad';
+import PlaceValueTable from './PlaceValueTable';
 import {
   isNumericQuestion,
   normalizeNumericAnswer,
@@ -275,6 +276,20 @@ const QuizView = ({
 
               // Get input types if specified in question
               const inputTypes = currentQuestion.inputTypes || [];
+
+              // If the question has tableData, render the PlaceValueTable component
+              if (currentQuestion.tableData) {
+                return (
+                  <PlaceValueTable
+                    tableData={currentQuestion.tableData}
+                    fillInAnswers={fillInAnswers}
+                    fillInResults={fillInResults}
+                    correctAnswers={correctAnswers}
+                    isAnswered={isAnswered}
+                    onAnswerChange={setFillInAnswers}
+                  />
+                );
+              }
 
               return (
                 <div className="space-y-4">

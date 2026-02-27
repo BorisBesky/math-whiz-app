@@ -84,6 +84,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'decimal place value': [
       { generator: generateDecimalPlaceIdentificationQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
       { generator: generateDecimalDigitValueQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+      { generator: generatePlaceValueTableQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
       { generator: generateDecimalExpandedFormQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
       { generator: generateDecimalPlaceRelationshipQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     ],
@@ -787,6 +788,97 @@ export function generateDecimalPlaceRelationshipQuestion(difficulty = 0.5) {
 }
 
 /**
+ * Generates an interactive place-value-table question (fill-in-the-blanks).
+ * Students fill in place names (header row) and place values (bottom row)
+ * while digits are pre-filled in the middle row.
+ *
+ * Blank ordering: headers L→R (indices 0..N-1), then values L→R (indices N..2N-1).
+ * @param {number} difficulty - 0 to 1
+ */
+export function generatePlaceValueTableQuestion(difficulty = 0.5) {
+  const { numberStr, wholePart, decimalDigits } = generateDecimalNumber(difficulty);
+  const wholeStr = wholePart.toString();
+
+  // Build the list of columns for the table
+  const columns = [];
+
+  // Whole-number place data (name and multiplier string) based on digit count
+  const wholePlaceNames = ['ones', 'tens', 'hundreds', 'thousands'];
+  const wholePlaceValues = ['1', '10', '100', '1000'];
+
+  // Build whole-digit columns (left to right = most significant first)
+  const wholeDigitCount = wholeStr.length;
+  for (let i = 0; i < wholeDigitCount; i++) {
+    const placeIdx = wholeDigitCount - 1 - i; // index into placeName arrays (0=ones)
+    columns.push({
+      header: wholePlaceNames[placeIdx],
+      digit: wholeStr[i],
+      value: wholePlaceValues[placeIdx],
+      isDecimalPoint: false,
+      isDecimal: false,
+    });
+  }
+
+  // Decimal point column
+  columns.push({
+    header: '.',
+    digit: '.',
+    value: '',
+    isDecimalPoint: true,
+    isDecimal: false,
+  });
+
+  // Decimal-digit columns
+  const decimalPlaceNames = ['tenths', 'hundredths', 'thousandths'];
+  const decimalPlaceValueStrs = ['1/10', '1/100', '1/1000'];
+  for (let i = 0; i < decimalDigits.length; i++) {
+    columns.push({
+      header: decimalPlaceNames[i],
+      digit: decimalDigits[i].toString(),
+      value: decimalPlaceValueStrs[i],
+      isDecimalPoint: false,
+      isDecimal: true,
+    });
+  }
+
+  // Build the correctAnswer string: headers ;; delimited, then values ;; delimited
+  const blankColumns = columns.filter(c => !c.isDecimalPoint);
+  const headers = blankColumns.map(c => c.header);
+  const values = blankColumns.map(c => c.value);
+  const allAnswers = [...headers, ...values];
+  const correctAnswer = allAnswers.join(';;');
+
+  // Build __ markers in question text so parseBlanks() finds the right count
+  const blankCount = allAnswers.length;
+  const blankMarkers = Array(blankCount).fill('__').join(' ');
+  const questionText = `Fill in the place value chart for the number ${numberStr}. ${blankMarkers}`;
+
+  // Input types: letters for place names, mixed for values (handles "1/10" etc.)
+  const inputTypes = [
+    ...Array(headers.length).fill('letters'),
+    ...Array(values.length).fill('mixed'),
+  ];
+
+  return {
+    question: questionText,
+    correctAnswer,
+    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
+    hint: 'Place names from left to right: hundreds, tens, ones, then tenths, hundredths, thousandths. Place values are 100, 10, 1, then 1/10, 1/100, 1/1000.',
+    standard: '4.NF.C.6',
+    concept: 'Base Ten',
+    grade: 'G4',
+    subtopic: 'decimal place value',
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
+    inputTypes,
+    tableData: {
+      columns,
+      numberStr,
+    },
+  };
+}
+
+/**
  * Helper function to add commas to large numbers for readability
  */
 function addCommas(num) {
@@ -806,6 +898,7 @@ const baseTenQuestions = {
   generateDecimalDigitValueQuestion,
   generateDecimalExpandedFormQuestion,
   generateDecimalPlaceRelationshipQuestion,
+  generatePlaceValueTableQuestion,
 };
 
 export default baseTenQuestions;
