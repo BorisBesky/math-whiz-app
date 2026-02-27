@@ -104,12 +104,16 @@ async function syncTeacherIds() {
   const usersCol = artifacts.collection('users');
 
   try {
-    // 1. Create a map of classId -> teacherId
+    // 1. Create a map of classId -> teacherIds (supports multi-teacher)
     console.log('📚 Fetching all classes to map teacher IDs...');
     const classMap = new Map();
     const classesSnapshot = await classesCol.get();
     classesSnapshot.forEach(doc => {
-      classMap.set(doc.id, doc.data().teacherId);
+      const data = doc.data();
+      const teacherIds = Array.isArray(data.teacherIds) && data.teacherIds.length > 0
+        ? data.teacherIds
+        : (data.teacherId ? [data.teacherId] : []);
+      classMap.set(doc.id, teacherIds);
     });
     console.log(`✅ Found ${classMap.size} classes.`);
 
@@ -139,10 +143,8 @@ async function syncTeacherIds() {
       // Determine the correct set of teacher IDs for the student
       const correctTeacherIds = new Set();
       classIds.forEach(classId => {
-        const teacherId = classMap.get(classId);
-        if (teacherId) {
-          correctTeacherIds.add(teacherId);
-        }
+        const teacherIds = classMap.get(classId) || [];
+        teacherIds.forEach(tid => correctTeacherIds.add(tid));
       });
       const correctTeacherIdsArray = Array.from(correctTeacherIds);
 

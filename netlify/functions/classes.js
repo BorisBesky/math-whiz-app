@@ -1,4 +1,5 @@
 const { admin, db } = require('./firebase-admin');
+const { getTeacherIds } = require('./class-helpers');
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -73,7 +74,7 @@ async function handleGetClasses(params, headers) {
 
     const appId = process.env.APP_ID || 'default-app-id';
     const classesRef = db.collection('artifacts').doc(appId).collection('classes');
-    const query = classesRef.where('teacherId', '==', teacherId);
+    const query = classesRef.where('teacherIds', 'array-contains', teacherId);
     const snapshot = await query.get();
 
     const classes = [];
@@ -101,9 +102,12 @@ async function handleGetClasses(params, headers) {
 
 async function handleCreateClass(classData, headers) {
   try {
-    const { teacherId, name, subject, gradeLevel, description, period } = classData;
+    const { teacherId, teacherIds: inputTeacherIds, name, subject, gradeLevel, description, period } = classData;
+    const resolvedTeacherIds = Array.isArray(inputTeacherIds) && inputTeacherIds.length > 0
+      ? inputTeacherIds
+      : (teacherId ? [teacherId] : []);
 
-    if (!teacherId || !name || !subject || !gradeLevel) {
+    if (!resolvedTeacherIds.length || !name || !subject || !gradeLevel) {
       return {
         statusCode: 400,
         headers,
@@ -112,7 +116,9 @@ async function handleCreateClass(classData, headers) {
     }
 
     const newClass = {
-      teacherId,
+      teacherIds: resolvedTeacherIds,
+      createdBy: classData.createdBy || resolvedTeacherIds[0],
+      teacherId: resolvedTeacherIds[0], // backward compat
       name,
       subject,
       gradeLevel,
@@ -197,7 +203,7 @@ async function handleDeleteClass(params, headers) {
     if (!classDoc.exists) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'Class not found' }) };
     }
-    const { teacherId } = classDoc.data();
+    const classTeachers = getTeacherIds(classDoc.data());
 
     // Find all students in the class
     const studentsSnapshot = await enrollmentsCol.where('classId', '==', classId).get();
@@ -210,33 +216,37 @@ async function handleDeleteClass(params, headers) {
       batch.delete(doc.ref);
     });
 
-    // For each student, check if they are in other classes with the same teacher
+    // For each student, check which teachers should be removed from their profile
     for (const studentId of studentIds) {
       const otherEnrollments = await enrollmentsCol
         .where('studentId', '==', studentId)
         .where('classId', '!=', classId)
         .get();
 
-      let otherClassesWithSameTeacher = false;
+      // Build set of teachers the student still has via other classes
+      const retainedTeachers = new Set();
       if (!otherEnrollments.empty) {
         const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
-        if (otherClassIds.length > 0) {
+        // Firestore 'in' supports max 30 values; chunk if needed
+        for (let i = 0; i < otherClassIds.length; i += 30) {
+          const chunk = otherClassIds.slice(i, i + 30);
           const otherClasses = await classesCol
-            .where(admin.firestore.FieldPath.documentId(), 'in', otherClassIds)
-            .where('teacherId', '==', teacherId)
+            .where(admin.firestore.FieldPath.documentId(), 'in', chunk)
             .get();
-          if (!otherClasses.empty) {
-            otherClassesWithSameTeacher = true;
-          }
+          otherClasses.forEach(doc => {
+            getTeacherIds(doc.data()).forEach(tid => retainedTeachers.add(tid));
+          });
         }
       }
 
-      if (!otherClassesWithSameTeacher) {
+      // Remove only teachers from this class that aren't retained via other classes
+      const teachersToRemove = classTeachers.filter(tid => !retainedTeachers.has(tid));
+      if (teachersToRemove.length > 0) {
         const profileRef = db.collection('artifacts').doc(appId)
           .collection('users').doc(studentId)
           .collection('math_whiz_data').doc('profile');
         batch.update(profileRef, {
-          teacherIds: admin.firestore.FieldValue.arrayRemove(teacherId)
+          teacherIds: admin.firestore.FieldValue.arrayRemove(...teachersToRemove)
         });
       }
     }

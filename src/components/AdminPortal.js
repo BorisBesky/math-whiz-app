@@ -28,6 +28,7 @@ import { TOPICS } from '../constants/topics';
 import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
+import { getTeacherIds } from '../utils/classHelpers';
 
 const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
@@ -60,7 +61,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const [isSelectAllClasses, setIsSelectAllClasses] = useState(false);
   const [showAddClass, setShowAddClass] = useState(false);
   const [showEditClass, setShowEditClass] = useState(false);
-  const [newClass, setNewClass] = useState({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+  const [newClass, setNewClass] = useState({ name: '', teacherIds: [], subject: '', gradeLevel: '', description: '', period: '' });
   const [editingClass, setEditingClass] = useState(null);
   const [selectedClassForDetail, setSelectedClassForDetail] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
@@ -134,7 +135,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
         totalCorrect += correctAnswers;
 
         const classNames = data.teacherIds?.length > 0
-          ? classes.filter(c => data.teacherIds.includes(c.teacherId)).map(c => c.name).join(', ') || 'Unassigned'
+          ? classes.filter(c => getTeacherIds(c).some(tid => data.teacherIds.includes(tid))).map(c => c.name).join(', ') || 'Unassigned'
           : 'Unassigned';
 
         return {
@@ -769,8 +770,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           break;
         case 'teacher':
           // Find teacher name from teachers array
-          const teacherA = teachers.find(t => t.id === a.teacherId);
-          const teacherB = teachers.find(t => t.id === b.teacherId);
+          const teacherA = teachers.find(t => getTeacherIds(a).includes(t.id));
+          const teacherB = teachers.find(t => getTeacherIds(b).includes(t.id));
           aValue = (teacherA?.displayName || teacherA?.name || teacherA?.email || '').toLowerCase();
           bValue = (teacherB?.displayName || teacherB?.name || teacherB?.email || '').toLowerCase();
           break;
@@ -927,8 +928,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
 
   // Class management functions
   const handleCreateClass = async () => {
-    if (!newClass.name || !newClass.teacherId || !newClass.subject || !newClass.gradeLevel) {
-      alert('Please fill in all required fields (Name, Teacher, Subject, Grade Level)');
+    if (!newClass.name || !newClass.teacherIds?.length || !newClass.subject || !newClass.gradeLevel) {
+      alert('Please fill in all required fields (Name, Teacher(s), Subject, Grade Level)');
       return;
     }
 
@@ -943,6 +944,9 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
         },
         body: JSON.stringify({
           ...newClass,
+          teacherIds: newClass.teacherIds,
+          createdBy: newClass.teacherIds[0],
+          teacherId: newClass.teacherIds[0], // backward compat
           appId: appId
         })
       });
@@ -956,7 +960,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
       console.log('Class created successfully:', result);
       alert('Class created successfully!');
 
-      setNewClass({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+      setNewClass({ name: '', teacherIds: [], subject: '', gradeLevel: '', description: '', period: '' });
       setShowAddClass(false);
       fetchClasses();
     } catch (error) {
@@ -966,7 +970,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   };
 
   const handleUpdateClass = async () => {
-    if (!editingClass || !editingClass.name || !editingClass.teacherId || !editingClass.subject || !editingClass.gradeLevel) {
+    const editTeacherIds = getTeacherIds(editingClass);
+    if (!editingClass || !editingClass.name || !editTeacherIds.length || !editingClass.subject || !editingClass.gradeLevel) {
       alert('Please fill in all required fields');
       return;
     }
@@ -982,7 +987,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
         },
         body: JSON.stringify({
           name: editingClass.name,
-          teacherId: editingClass.teacherId,
+          teacherIds: editTeacherIds,
+          teacherId: editTeacherIds[0], // backward compat
           subject: editingClass.subject,
           gradeLevel: editingClass.gradeLevel,
           description: editingClass.description || '',
@@ -1818,7 +1824,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getSortedClasses().map(classItem => {
-                        const teacher = teachers.find(t => t.id === classItem.teacherId);
+                        const classTeacherIds = getTeacherIds(classItem);
+                        const classTeacherNames = classTeacherIds
+                          .map(tid => {
+                            const t = teachers.find(tr => tr.id === tid);
+                            return t?.displayName || t?.name || t?.email || 'Unknown';
+                          })
+                          .join(', ');
                         return (
                           <tr key={classItem.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1836,7 +1848,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {teacher?.displayName || teacher?.name || teacher?.email || 'Unknown'}
+                              {classTeacherNames}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -2141,11 +2153,14 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                       <span className="font-medium">{selectedClassForDetail.name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Teacher:</span>
+                      <span className="text-gray-600">Teacher(s):</span>
                       <span className="font-medium">
-                        {teachers.find(t => t.id === selectedClassForDetail.teacherId)?.displayName ||
-                          teachers.find(t => t.id === selectedClassForDetail.teacherId)?.name ||
-                          'Unknown'}
+                        {getTeacherIds(selectedClassForDetail)
+                          .map(tid => {
+                            const t = teachers.find(tr => tr.id === tid);
+                            return t?.displayName || t?.name || t?.email || 'Unknown';
+                          })
+                          .join(', ')}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -2482,20 +2497,32 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teacher <span className="text-red-500">*</span>
+                  Teacher(s) <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={newClass.teacherId}
-                  onChange={(e) => setNewClass({ ...newClass, teacherId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a teacher...</option>
+                <div className="border border-gray-300 rounded-md p-2 max-h-40 overflow-y-auto">
+                  {teachers.length === 0 && (
+                    <p className="text-sm text-gray-500 p-1">No teachers available</p>
+                  )}
                   {teachers.map(teacher => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.displayName || teacher.name || teacher.email}
-                    </option>
+                    <label key={teacher.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newClass.teacherIds?.includes(teacher.id) || false}
+                        onChange={(e) => {
+                          const ids = newClass.teacherIds || [];
+                          setNewClass({
+                            ...newClass,
+                            teacherIds: e.target.checked
+                              ? [...ids, teacher.id]
+                              : ids.filter(id => id !== teacher.id)
+                          });
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-900">{teacher.displayName || teacher.name || teacher.email}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2550,7 +2577,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
               <button
                 onClick={() => {
                   setShowAddClass(false);
-                  setNewClass({ name: '', teacherId: '', subject: '', gradeLevel: '', description: '', period: '' });
+                  setNewClass({ name: '', teacherIds: [], subject: '', gradeLevel: '', description: '', period: '' });
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
               >
@@ -2587,20 +2614,32 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teacher <span className="text-red-500">*</span>
+                  Teacher(s) <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={editingClass.teacherId}
-                  onChange={(e) => setEditingClass({ ...editingClass, teacherId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a teacher...</option>
-                  {teachers.map(teacher => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.displayName || teacher.name || teacher.email}
-                    </option>
-                  ))}
-                </select>
+                <div className="border border-gray-300 rounded-md p-2 max-h-40 overflow-y-auto">
+                  {teachers.length === 0 && (
+                    <p className="text-sm text-gray-500 p-1">No teachers available</p>
+                  )}
+                  {teachers.map(teacher => {
+                    const currentIds = getTeacherIds(editingClass);
+                    return (
+                      <label key={teacher.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={currentIds.includes(teacher.id)}
+                          onChange={(e) => {
+                            const updatedIds = e.target.checked
+                              ? [...currentIds, teacher.id]
+                              : currentIds.filter(id => id !== teacher.id);
+                            setEditingClass({ ...editingClass, teacherIds: updatedIds });
+                          }}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm text-gray-900">{teacher.displayName || teacher.name || teacher.email}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

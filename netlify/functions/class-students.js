@@ -1,5 +1,6 @@
 // Use the shared Firebase Admin wrapper to standardize env handling
 const { admin, db } = require('./firebase-admin');
+const { getTeacherIds } = require('./class-helpers');
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -184,17 +185,17 @@ async function handleAddStudent(studentData, appId, headers) {
       studentCount: admin.firestore.FieldValue.increment(1)
     });
 
-    // Update student's teacherIds array
+    // Update student's teacherIds array with all teachers on this class
     const classDoc = await classRef.get();
     if (classDoc.exists) {
-      const teacherId = classDoc.data().teacherId;
-      if (teacherId) {
+      const classTeachers = getTeacherIds(classDoc.data());
+      if (classTeachers.length > 0) {
         const profileRef = db.collection('artifacts').doc(appId)
           .collection('users').doc(studentId)
           .collection('math_whiz_data').doc('profile');
-        
+
         await profileRef.set({
-          teacherIds: admin.firestore.FieldValue.arrayUnion(teacherId)
+          teacherIds: admin.firestore.FieldValue.arrayUnion(...classTeachers)
         }, { merge: true });
       }
     }
@@ -249,37 +250,40 @@ async function handleRemoveStudent(params, appId, headers) {
       studentCount: admin.firestore.FieldValue.increment(-1)
     });
 
-    // Update student's teacherIds array
+    // Update student's teacherIds array — remove teachers no longer needed
     const classDoc = await classRef.get();
     if (classDoc.exists) {
-      const teacherId = classDoc.data().teacherId;
-      if (teacherId) {
+      const classTeachers = getTeacherIds(classDoc.data());
+      if (classTeachers.length > 0) {
         const enrollmentsCol = db.collection('artifacts').doc(appId).collection('classStudents');
+        const classesCol = db.collection('artifacts').doc(appId).collection('classes');
         const otherEnrollments = await enrollmentsCol
           .where('studentId', '==', studentId)
           .get();
 
-        let otherClassesWithSameTeacher = false;
+        // Build set of teachers the student still has via other classes
+        const retainedTeachers = new Set();
         if (!otherEnrollments.empty) {
           const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
-          if (otherClassIds.length > 0) {
-            const otherClasses = await db.collection('artifacts').doc(appId).collection('classes')
-              .where(admin.firestore.FieldPath.documentId(), 'in', otherClassIds)
-              .where('teacherId', '==', teacherId)
+          for (let i = 0; i < otherClassIds.length; i += 30) {
+            const chunk = otherClassIds.slice(i, i + 30);
+            const otherClasses = await classesCol
+              .where(admin.firestore.FieldPath.documentId(), 'in', chunk)
               .get();
-            if (!otherClasses.empty) {
-              otherClassesWithSameTeacher = true;
-            }
+            otherClasses.forEach(doc => {
+              getTeacherIds(doc.data()).forEach(tid => retainedTeachers.add(tid));
+            });
           }
         }
 
-        if (!otherClassesWithSameTeacher) {
+        const teachersToRemove = classTeachers.filter(tid => !retainedTeachers.has(tid));
+        if (teachersToRemove.length > 0) {
           const profileRef = db.collection('artifacts').doc(appId)
             .collection('users').doc(studentId)
             .collection('math_whiz_data').doc('profile');
-          
+
           await profileRef.update({
-            teacherIds: admin.firestore.FieldValue.arrayRemove(teacherId)
+            teacherIds: admin.firestore.FieldValue.arrayRemove(...teachersToRemove)
           });
         }
       }

@@ -23,7 +23,7 @@ const usePortalClasses = ({ appId = 'default-app-id', userRole, userId, userEmai
     const classesRef = collection(db, 'artifacts', appId, 'classes');
     const queryRef = userRole === USER_ROLES.ADMIN
       ? classesRef
-      : query(classesRef, where('teacherId', '==', userId));
+      : query(classesRef, where('teacherIds', 'array-contains', userId));
 
     const unsubscribe = onSnapshot(queryRef, (snapshot) => {
       const data = snapshot.docs.map((docSnapshot) => ({
@@ -63,7 +63,9 @@ const usePortalClasses = ({ appId = 'default-app-id', userRole, userId, userEmai
     const ownerEmail = options.teacherEmail || userEmail || null;
     const payload = {
       ...classData,
-      teacherId: ownerId,
+      teacherIds: [ownerId],
+      createdBy: ownerId,
+      teacherId: ownerId, // backward compat
       teacherEmail: ownerEmail,
       createdAt: new Date(),
     };

@@ -1,5 +1,6 @@
 // Netlify Function to generate and redeem class join codes
 const { admin, db } = require('./firebase-admin');
+const { getTeacherIds, isTeacherOnClass } = require('./class-helpers');
 
 const json = (status, body) => ({
   statusCode: status,
@@ -56,7 +57,7 @@ exports.handler = async (event) => {
       if (!classSnap.exists) return json(404, { error: 'Class not found' });
       const classData = classSnap.data();
 
-      if (classData.teacherId !== user.uid) {
+      if (!isTeacherOnClass(classData, user.uid)) {
         return json(403, { error: 'Not class owner' });
       }
 
@@ -132,7 +133,7 @@ exports.handler = async (event) => {
 
       await profileRef.set({
         classId,
-        teacherIds: admin.firestore.FieldValue.arrayUnion(classData.teacherId),
+        teacherIds: admin.firestore.FieldValue.arrayUnion(...getTeacherIds(classData)),
         updatedAt: now
       }, { merge: true });
 

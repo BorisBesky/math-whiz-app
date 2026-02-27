@@ -92,7 +92,7 @@ const ClassesSection = ({
               {userRole === USER_ROLES.ADMIN && (
                 <p className="text-xs text-gray-500 flex items-center space-x-1">
                   <GraduationCap className="h-3 w-3" />
-                  <span>{classItem.teacherName || classItem.teacherEmail || classItem.teacherId || 'Assigned teacher'}</span>
+                  <span>{classItem.teacherEmails?.join(', ') || classItem.teacherName || classItem.teacherEmail || classItem.teacherId || 'Assigned teacher'}</span>
                 </p>
               )}
               {classItem.subject && (

@@ -90,7 +90,7 @@ exports.handler = async (event) => {
 
     // Step 1: Check if teacher has any assigned classes
     const classesRef = db.collection(`artifacts/${appId}/classes`);
-    const teacherClassesQuery = classesRef.where("teacherId", "==", teacherUid);
+    const teacherClassesQuery = classesRef.where("teacherIds", "array-contains", teacherUid);
     const teacherClassesSnapshot = await teacherClassesQuery.get();
 
     if (!teacherClassesSnapshot.empty) {

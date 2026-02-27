@@ -230,7 +230,7 @@ const TeacherDashboard = () => {
     
     try {
       const classesRef = collection(db, 'artifacts', appId, 'classes');
-      const q = query(classesRef, where('teacherId', '==', user.uid));
+      const q = query(classesRef, where('teacherIds', 'array-contains', user.uid));
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const classesData = snapshot.docs.map(doc => ({
@@ -357,7 +357,9 @@ const TeacherDashboard = () => {
     try {
       await addDoc(collection(db, 'artifacts', appId, 'classes'), {
         ...classData,
-        teacherId: user.uid,
+        teacherIds: [user.uid],
+        createdBy: user.uid,
+        teacherId: user.uid, // backward compat
         teacherEmail: user.email,
         createdAt: new Date()
       });
