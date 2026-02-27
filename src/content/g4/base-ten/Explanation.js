@@ -117,6 +117,54 @@ const BaseTenExplanation = () => {
         <span style={styles.emoji}>📍</span><strong>Place Value Tip:</strong> Each place is 10 times bigger than the place to its right!
       </div>
 
+      <h2 style={styles.h2}>🔢 Decimal Place Value</h2>
+      <p>Decimals extend our place value system to numbers smaller than 1!</p>
+
+      <div style={styles.placeValue}>
+        <div style={styles.bigNumber}>45.327</div>
+        <table style={styles.table}>
+          <tbody>
+            <tr>
+              <td style={styles.tableHeader}>Tens</td>
+              <td style={styles.tableHeader}>Ones</td>
+              <td style={{...styles.tableHeader, background: '#e67e22'}}>.</td>
+              <td style={styles.tableHeader}>Tenths</td>
+              <td style={styles.tableHeader}>Hundredths</td>
+              <td style={styles.tableHeader}>Thousandths</td>
+            </tr>
+            <tr>
+              <td style={styles.tableCell}>4</td>
+              <td style={styles.tableCell}>5</td>
+              <td style={{...styles.tableCell, color: '#e67e22', fontSize: '2em'}}>.</td>
+              <td style={styles.tableCell}>3</td>
+              <td style={styles.tableCell}>2</td>
+              <td style={styles.tableCell}>7</td>
+            </tr>
+            <tr>
+              <td style={{...styles.tableCell, fontSize: '0.8em'}}>10</td>
+              <td style={{...styles.tableCell, fontSize: '0.8em'}}>1</td>
+              <td style={styles.tableCell}></td>
+              <td style={{...styles.tableCell, fontSize: '0.8em'}}>1/10</td>
+              <td style={{...styles.tableCell, fontSize: '0.8em'}}>1/100</td>
+              <td style={{...styles.tableCell, fontSize: '0.8em'}}>1/1000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style={styles.example}>
+        <strong>What is the value of each digit in 3.57?</strong>
+        <br/>• The 3 is in the <strong>ones</strong> place — value: 3
+        <br/>• The 5 is in the <strong>tenths</strong> place — value: 0.5
+        <br/>• The 7 is in the <strong>hundredths</strong> place — value: 0.07
+        <br/><br/>
+        <strong>Expanded Form:</strong> 3.57 = 3 + 0.5 + 0.07
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🔗</span><strong>10× Rule Works for Decimals Too!</strong> Each place is 10 times bigger than the place to its right. So 0.5 is 10 times greater than 0.05, and 0.05 is 10 times greater than 0.005!
+      </div>
+
       <h2 style={styles.h2}>🎯 Rounding Numbers</h2>
       <p>Rounding helps us work with easier numbers when we don't need exact answers.</p>
       

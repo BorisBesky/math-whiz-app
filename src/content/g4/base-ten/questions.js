@@ -15,6 +15,42 @@ function getRandomIntUniqueDigits(count) {
   return Array.from(digits);
 }
 
+/**
+ * Generates a random decimal number scaled by difficulty.
+ * @param {number} difficulty - 0 to 1
+ * @returns {{ numberStr: string, wholePart: number, decimalDigits: number[], decimalPlaces: string[] }}
+ */
+function generateDecimalNumber(difficulty) {
+  const wholeDigitCount = Math.max(1, Math.min(3, 1 + Math.floor(difficulty * 2.5)));
+  const wholeMin = wholeDigitCount === 1 ? 1 : Math.pow(10, wholeDigitCount - 1);
+  const wholeMax = Math.pow(10, wholeDigitCount) - 1;
+  const wholePart = getRandomInt(wholeMin, wholeMax);
+
+  let decimalPlaceCount;
+  if (difficulty < 0.3) {
+    decimalPlaceCount = 1;
+  } else if (difficulty < 0.7) {
+    decimalPlaceCount = 2;
+  } else {
+    decimalPlaceCount = 3;
+  }
+
+  const placeNames = ['tenths', 'hundredths', 'thousandths'];
+  const decimalDigits = [];
+  for (let i = 0; i < decimalPlaceCount; i++) {
+    decimalDigits.push(getRandomInt(i === 0 ? 1 : 0, 9));
+  }
+  if (decimalDigits[decimalDigits.length - 1] === 0) {
+    decimalDigits[decimalDigits.length - 1] = getRandomInt(1, 9);
+  }
+
+  const decimalStr = decimalDigits.join('');
+  const numberStr = `${wholePart}.${decimalStr}`;
+  const decimalPlaces = placeNames.slice(0, decimalPlaceCount);
+
+  return { numberStr, wholePart, decimalDigits, decimalPlaces };
+}
+
 // Wrapper functions to force addition or subtraction for subtopic filtering
 function generateAdditionArithmeticQuestion(difficulty = 0.5) {
   return generateMultiDigitArithmeticQuestion(difficulty, 'addition');
@@ -45,6 +81,12 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     ],
     'comparison': { generator: generateComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
     'multi-step word problems': { generator: generateMultiStepWordProblemQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    'decimal place value': [
+      { generator: generateDecimalPlaceIdentificationQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+      { generator: generateDecimalDigitValueQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+      { generator: generateDecimalExpandedFormQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+      { generator: generateDecimalPlaceRelationshipQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    ],
   };
   
   // Normalize subtopic names for comparison
@@ -553,6 +595,198 @@ export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
 }
 
 /**
+ * Generates a decimal place identification question.
+ * "In the number X.XX, what digit is in the [place] place?"
+ * @param {number} difficulty - 0 to 1
+ */
+export function generateDecimalPlaceIdentificationQuestion(difficulty = 0.5) {
+  const { numberStr, decimalDigits, decimalPlaces } = generateDecimalNumber(difficulty);
+
+  const placeIndex = getRandomInt(0, decimalPlaces.length - 1);
+  const targetPlace = decimalPlaces[placeIndex];
+  const correctDigit = decimalDigits[placeIndex].toString();
+
+  const allDigits = numberStr.replace('.', '').split('');
+  const potentialDistractors = allDigits
+    .filter(d => d !== correctDigit)
+    .slice(0, 3);
+  while (potentialDistractors.length < 3) {
+    const filler = getRandomInt(0, 9).toString();
+    if (filler !== correctDigit && !potentialDistractors.includes(filler)) {
+      potentialDistractors.push(filler);
+    }
+  }
+
+  const ordinal = placeIndex === 0 ? 'first' : placeIndex === 1 ? 'second' : 'third';
+
+  return {
+    question: `In the number ${numberStr}, what digit is in the ${targetPlace} place?`,
+    correctAnswer: correctDigit,
+    options: shuffle(generateUniqueOptions(correctDigit, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `The ${targetPlace} place is the ${ordinal} digit after the decimal point.`,
+    standard: '4.NF.C.6',
+    concept: 'Base Ten',
+    grade: 'G4',
+    subtopic: 'decimal place value',
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal digit value question.
+ * "In the number X.XX, what is the value of the digit D?"
+ * @param {number} difficulty - 0 to 1
+ */
+export function generateDecimalDigitValueQuestion(difficulty = 0.5) {
+  const { numberStr, decimalDigits, decimalPlaces } = generateDecimalNumber(difficulty);
+
+  const placeIndex = getRandomInt(0, decimalPlaces.length - 1);
+  const digit = decimalDigits[placeIndex];
+  const placeMultipliers = [0.1, 0.01, 0.001];
+  const correctValue = parseFloat((digit * placeMultipliers[placeIndex]).toFixed(3)).toString();
+
+  // Build distractors from all place values except the correct one
+  const allPlaceMultipliers = [1, 0.1, 0.01, 0.001];
+  const correctMultiplierIndex = placeIndex + 1; // offset by 1 since allPlaceMultipliers includes ones
+  const distractors = allPlaceMultipliers
+    .filter((_, i) => i !== correctMultiplierIndex)
+    .map(m => parseFloat((digit * m).toFixed(3)).toString());
+
+  return {
+    question: `In the number ${numberStr}, what is the value of the digit ${digit}?`,
+    correctAnswer: correctValue,
+    options: shuffle(generateUniqueOptions(correctValue, distractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `The digit ${digit} is in the ${decimalPlaces[placeIndex]} place. Multiply the digit by its place value: ${digit} × ${placeMultipliers[placeIndex]} = ${correctValue}`,
+    standard: '4.NF.C.6',
+    concept: 'Base Ten',
+    grade: 'G4',
+    subtopic: 'decimal place value',
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal expanded form question.
+ * "Write X.XX in expanded form"
+ * @param {number} difficulty - 0 to 1
+ */
+export function generateDecimalExpandedFormQuestion(difficulty = 0.5) {
+  const { numberStr, wholePart, decimalDigits } = generateDecimalNumber(difficulty);
+
+  const parts = [];
+  const wholeStr = wholePart.toString();
+  for (let i = 0; i < wholeStr.length; i++) {
+    const d = parseInt(wholeStr[i]);
+    if (d !== 0) {
+      const placeVal = Math.pow(10, wholeStr.length - 1 - i);
+      parts.push((d * placeVal).toString());
+    }
+  }
+  const decimalMultipliers = [0.1, 0.01, 0.001];
+  for (let i = 0; i < decimalDigits.length; i++) {
+    if (decimalDigits[i] !== 0) {
+      parts.push(parseFloat((decimalDigits[i] * decimalMultipliers[i]).toFixed(3)).toString());
+    }
+  }
+  const correctAnswer = parts.join(' + ');
+
+  const distractors = [];
+
+  // Mistake 1: shift a decimal value one place wrong
+  const wrongParts1 = [...parts];
+  const lastIdx = wrongParts1.length - 1;
+  const lastVal = parseFloat(wrongParts1[lastIdx]);
+  if (lastVal < 1) {
+    wrongParts1[lastIdx] = parseFloat((lastVal * 10).toFixed(3)).toString();
+  } else {
+    wrongParts1[lastIdx] = parseFloat((lastVal / 10).toFixed(3)).toString();
+  }
+  distractors.push(wrongParts1.join(' + '));
+
+  // Mistake 2: swap two decimal values
+  const wrongParts2 = [...parts];
+  if (parts.length >= 2) {
+    const swapIdx = wrongParts2.length - 2;
+    [wrongParts2[swapIdx], wrongParts2[swapIdx + 1]] = [wrongParts2[swapIdx + 1], wrongParts2[swapIdx]];
+    distractors.push(wrongParts2.join(' + '));
+  } else {
+    distractors.push(parts.join(' + ') + ' + 0');
+  }
+
+  // Mistake 3: omit a part
+  if (parts.length > 2) {
+    distractors.push(parts.slice(0, -1).join(' + '));
+  } else {
+    distractors.push(parts.join(' + ') + ' + 0.001');
+  }
+
+  return {
+    question: `Write ${numberStr} in expanded form.`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: 'Break the number into each digit times its place value. For decimals: tenths = ×0.1, hundredths = ×0.01, thousandths = ×0.001.',
+    standard: '4.NBT.A.2',
+    concept: 'Base Ten',
+    grade: 'G4',
+    subtopic: 'decimal place value',
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates a decimal place value relationship question.
+ * "How many times greater is the value of D in position A than in position B?"
+ * @param {number} difficulty - 0 to 1
+ */
+export function generateDecimalPlaceRelationshipQuestion(difficulty = 0.5) {
+  const digit = getRandomInt(1, 9);
+
+  const placeNames = ['ones', 'tenths', 'hundredths', 'thousandths'];
+  const placeValues = [1, 0.1, 0.01, 0.001];
+
+  let higherIdx, lowerIdx;
+  if (difficulty < 0.8) {
+    higherIdx = getRandomInt(0, 2);
+    lowerIdx = higherIdx + 1;
+  } else {
+    higherIdx = getRandomInt(0, 1);
+    lowerIdx = higherIdx + 2;
+  }
+
+  const ratio = Math.round(placeValues[higherIdx] / placeValues[lowerIdx]);
+  const correctAnswer = ratio.toString();
+
+  const higherValue = parseFloat((digit * placeValues[higherIdx]).toFixed(3));
+  const lowerValue = parseFloat((digit * placeValues[lowerIdx]).toFixed(3));
+
+  const potentialDistractors = [
+    (ratio * 10).toString(),
+    Math.max(1, ratio / 10).toString(),
+    digit.toString(),
+  ];
+
+  return {
+    question: `How many times greater is the value of the digit ${digit} in ${higherValue} than the value of the digit ${digit} in ${lowerValue}?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `Compare the place values: ${placeNames[higherIdx]} vs ${placeNames[lowerIdx]}. Each place to the left is 10 times greater.`,
+    standard: '4.NBT.A.1',
+    concept: 'Base Ten',
+    grade: 'G4',
+    subtopic: 'decimal place value',
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
  * Helper function to add commas to large numbers for readability
  */
 function addCommas(num) {
@@ -568,6 +802,10 @@ const baseTenQuestions = {
   generateSubtractionWordProblemQuestion,
   generateAdditionWordProblemQuestion,
   generateMultiStepWordProblemQuestion,
+  generateDecimalPlaceIdentificationQuestion,
+  generateDecimalDigitValueQuestion,
+  generateDecimalExpandedFormQuestion,
+  generateDecimalPlaceRelationshipQuestion,
 };
 
 export default baseTenQuestions;

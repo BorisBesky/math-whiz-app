@@ -70,8 +70,8 @@ describe('Grade 4 Difficulty Scaling', () => {
       const questions = Array(20).fill(0).map(() => generateBaseTen(0.1));
       const subtopics = questions.map(q => q.subtopic);
       
-      // At low difficulty, should see more place value and comparison
-      expect(subtopics.some(s => s === 'place value' || s === 'comparison')).toBe(true);
+      // At low difficulty, should see place value, comparison, or decimal place value
+      expect(subtopics.some(s => s === 'place value' || s === 'comparison' || s === 'decimal place value')).toBe(true);
       
       // Should NOT see multi-step word problems at very low difficulty
       const hasMultiStep = subtopics.some(s => s === 'multi-step word problems');
@@ -120,6 +120,58 @@ describe('Grade 4 Difficulty Scaling', () => {
       // Should NOT see angle measurement at very low difficulty
       const hasAngleMeasurement = subtopics.some(s => s === 'angle measurement');
       expect(hasAngleMeasurement).toBe(false);
+    });
+  });
+
+  describe('Decimal place value difficulty scaling', () => {
+    test('Base Ten: decimal place value is available at low difficulty', () => {
+      const questions = Array(30).fill(0).map(() => generateBaseTen(0.1, ['decimal place value']));
+      questions.forEach(q => {
+        expect(q).toBeDefined();
+        expect(q.subtopic).toBe('decimal place value');
+      });
+    });
+
+    test('Base Ten: decimal place value generates all question types at high difficulty', () => {
+      const questions = Array(200).fill(0).map(() => generateBaseTen(0.9, ['decimal place value']));
+      const questionTexts = questions.map(q => q.question);
+
+      expect(questionTexts.some(q => q.includes('what digit is in the'))).toBe(true);
+      expect(questionTexts.some(q => q.includes('what is the value of'))).toBe(true);
+      expect(questionTexts.some(q => q.includes('expanded form'))).toBe(true);
+      expect(questionTexts.some(q => q.includes('times greater'))).toBe(true);
+    });
+
+    test('Base Ten: decimal place value questions have correct metadata', () => {
+      const question = generateBaseTen(0.5, ['decimal place value']);
+      expect(question.subtopic).toBe('decimal place value');
+      expect(question.concept).toBe('Base Ten');
+      expect(question.grade).toBe('G4');
+      expect(question.questionType).toBe('multiple-choice');
+      expect(question.difficultyRange).toBeDefined();
+      expect(question.suggestedDifficulty).toBe(0.5);
+      expect(question.options.length).toBe(4);
+      expect(question.options).toContain(question.correctAnswer);
+    });
+
+    test('Base Ten: decimal place value at low difficulty uses simpler numbers', () => {
+      const questions = Array(20).fill(0).map(() => generateBaseTen(0.1, ['decimal place value']));
+      questions.forEach(q => {
+        const match = q.question.match(/\d+\.\d+/);
+        if (match) {
+          const decimalPart = match[0].split('.')[1];
+          expect(decimalPart.length).toBe(1);
+        }
+      });
+    });
+
+    test('Base Ten: decimal place value at high difficulty uses thousandths', () => {
+      const questions = Array(30).fill(0).map(() => generateBaseTen(0.9, ['decimal place value']));
+      const hasThousandths = questions.some(q => {
+        const match = q.question.match(/\d+\.\d+/);
+        return match && match[0].split('.')[1].length === 3;
+      });
+      expect(hasThousandths).toBe(true);
     });
   });
 

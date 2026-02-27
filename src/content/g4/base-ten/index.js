@@ -7,7 +7,7 @@ export const baseTen = {
   name: 'Base Ten',
   description: 'Place value, rounding, and multi-digit operations',
   grade: 'G4',
-  standards: ['4.NBT.A.1', '4.NBT.A.2', '4.NBT.A.3', '4.NBT.B.4', '4.NBT.B.5', '4.NBT.B.6'],
+  standards: ['4.NBT.A.1', '4.NBT.A.2', '4.NBT.A.3', '4.NBT.B.4', '4.NBT.B.5', '4.NBT.B.6', '4.NF.C.6'],
   
   // Question generation function
   generateQuestion,
@@ -23,7 +23,8 @@ export const baseTen = {
     'subtraction',
     'multiplication',
     'division',
-    'comparison'
+    'comparison',
+    'decimal place value'
   ],
   
   // Learning objectives
@@ -33,7 +34,8 @@ export const baseTen = {
     'Round numbers to any place value',
     'Add and subtract multi-digit numbers',
     'Multiply and divide multi-digit numbers',
-    'Use number patterns and properties'
+    'Use number patterns and properties',
+    'Understand decimal place value for tenths, hundredths, and thousandths'
   ]
 };
 
