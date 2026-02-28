@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
+import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
 
@@ -54,8 +55,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
       // Handle special cases
       if (sortField === 'student') {
-        aValue = a.displayName || a.email || '';
-        bValue = b.displayName || b.email || '';
+        aValue = getStudentDisplayName(a, '');
+        bValue = getStudentDisplayName(b, '');
       } else if (sortField === 'lastActivity') {
         aValue = new Date(a.latestActivity || 0).getTime();
         bValue = new Date(b.latestActivity || 0).getTime();
@@ -95,7 +96,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     if (students.length === 0) return;
 
     const csvData = students.map(student => ({
-      'Name': student.displayName || '',
+      'Name': getStudentDisplayName(student),
+      'Short ID': getStudentShortId(student),
+      'Needs Name Review': student.needsNameReview ? 'Yes' : 'No',
       'Email': student.email || '',
       'Student ID': student.id,
       'Grade': student.grade,
@@ -288,7 +291,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
-              {viewingStudent.displayName || viewingStudent.email || 'Student Details'}
+              {getStudentDisplayName(viewingStudent)}
             </h3>
             <p className="text-gray-600">ID: {viewingStudent.id}</p>
           </div>
@@ -690,7 +693,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   </td>
                   <td className="px-4 py-3">
                     <div>
-                      <p className="font-medium text-gray-900">{student.displayName || 'Unknown'}</p>
+                      <p className="font-medium text-gray-900">{getStudentDisplayName(student)}</p>
+                      <p className="text-xs text-gray-400">ID: {getStudentShortId(student)}</p>
                       {student.email && (
                         <p className="text-xs text-gray-500">{student.email}</p>
                       )}

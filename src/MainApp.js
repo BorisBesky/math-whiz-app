@@ -266,8 +266,15 @@ const MainAppContent = () => {
   // Utility: convert simple a/b patterns to TeX fractions for display
   const formatMathText = (text) => {
     if (typeof text !== "string") return text;
+    const normalizedText = text
+      .replace(/\\\\\(/g, "\\(")
+      .replace(/\\\\\)/g, "\\)")
+      .replace(/\\\\\[/g, "\\[")
+      .replace(/\\\\\]/g, "\\]")
+      .replace(/\\\\(frac|times|div|cdot|pi|theta|alpha|beta|gamma|sqrt|left|right|text|degree)/g, "\\$1");
+
     // Replace bare fractions with TeX inline form \(\frac{a}{b}\)
-    return text.replace(
+    return normalizedText.replace(
       /(?<![\\\d])\b(\d+)\s*\/\s*(\d+)\b/g,
       (_, a, b) => `\\(\\frac{${a}}{${b}}\\)`
     );
@@ -380,7 +387,7 @@ const MainAppContent = () => {
         console.warn("KaTeX render error:", e);
       }
     }
-  }, [quizState, currentQuestionIndex, currentQuiz]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [quizState, currentQuestionIndex, currentQuiz, isAnswered, feedback, userAnswer, drawingFeedback, fillInAnswers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep quizState in sync with the current route (used by tutorial + KaTeX effect)
   useEffect(() => {

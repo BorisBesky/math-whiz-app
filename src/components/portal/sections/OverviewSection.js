@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3, CheckCircle, Users, Clock } from 'lucide-react';
 import { formatDate, formatTime } from '../../../utils/common_utils';
+import { getStudentDisplayName, getStudentInitials } from '../../../utils/studentName';
 
 const StatCard = ({ label, value, icon: Icon, accent }) => (
   <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center space-x-4">
@@ -63,11 +64,11 @@ const OverviewSection = ({ stats, students, loadingStudents, loadingClasses, stu
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-sm font-medium">
-                      {student.email ? student.email.slice(0, 2).toUpperCase() : (student.id || '').slice(0, 2).toUpperCase()}
+                      {getStudentInitials(student)}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{student.email || `Student ${(student.id || '').slice(0, 8)}`}</p>
+                    <p className="font-medium text-gray-900">{getStudentDisplayName(student)}</p>
                   </div>
                 </div>
                 <div className="text-right">

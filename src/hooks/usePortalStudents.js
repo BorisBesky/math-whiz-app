@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { getTodayDateString } from '../utils/common_utils';
+import { getStudentDisplayName } from '../utils/studentName';
 
 const defaultStats = {
   totalStudents: 0,
@@ -73,7 +74,7 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
         return {
           id: data.id,
           email: data.email || null,
-          displayName: data.displayName || data.name || data.email || 'Unnamed Student',
+          displayName: getStudentDisplayName(data),
           classId: data.classId || null,
           className: classInfo?.name || data.className || 'Unassigned',
           grade: data.selectedGrade || classInfo?.gradeLevel || 'N/A',

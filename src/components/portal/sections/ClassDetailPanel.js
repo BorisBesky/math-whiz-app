@@ -5,6 +5,7 @@ import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'f
 import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
+import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 
 const ClassDetailPanel = ({
   classItem,
@@ -315,12 +316,12 @@ const ClassDetailPanel = ({
       await onAssignStudent({
         studentId: student.id,
         classId: classItem.id,
-        studentName: student.displayName,
+        studentName: getStudentDisplayName(student),
         studentEmail: student.email,
         currentClassId: student.classId,
       });
       setSelectedStudentId('');
-      setStatus({ type: 'success', message: `${student.displayName || 'Student'} assigned successfully.` });
+      setStatus({ type: 'success', message: `${getStudentDisplayName(student)} assigned successfully.` });
       if (onRefresh) {
         await onRefresh();
       }
@@ -337,7 +338,7 @@ const ClassDetailPanel = ({
     setStatus(null);
     try {
       await onRemoveStudent({ studentId: student.id, classId: classItem.id });
-      setStatus({ type: 'success', message: `${student.displayName || 'Student'} removed from class.` });
+      setStatus({ type: 'success', message: `${getStudentDisplayName(student)} removed from class.` });
       if (onRefresh) {
         await onRefresh();
       }
@@ -487,7 +488,7 @@ const ClassDetailPanel = ({
                     <option value="">Select student</option>
                     {availableStudents.map((student) => (
                       <option key={student.id} value={student.id}>
-                        {student.displayName || student.email || 'Unnamed Student'}
+                          {getStudentDisplayName(student)}
                         {student.classId ? ` • ${student.className || 'Assigned'}` : ' • Unassigned'}
                       </option>
                     ))}
@@ -567,7 +568,8 @@ const ClassDetailPanel = ({
                     <tr key={student.id} className="bg-white">
                       <td className="px-4 py-2">
                         <div>
-                          <p className="font-medium text-gray-900">{student.displayName || 'Student'}</p>
+                          <p className="font-medium text-gray-900">{getStudentDisplayName(student)}</p>
+                          <p className="text-xs text-gray-400">ID: {getStudentShortId(student)}</p>
                           {student.email && (
                             <p className="text-xs text-gray-500">{student.email}</p>
                           )}
@@ -628,7 +630,7 @@ const ClassDetailPanel = ({
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Set Focus Subtopics</h3>
                 <p className="text-sm text-gray-600">
-                  {selectedStudentForSubtopics.displayName || selectedStudentForSubtopics.email || 'Student'}
+                  {getStudentDisplayName(selectedStudentForSubtopics)}
                 </p>
               </div>
               <button
