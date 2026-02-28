@@ -35,6 +35,7 @@ const QuestionBankManager = ({
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   const [filterTopic, setFilterTopic] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
@@ -45,6 +46,8 @@ const QuestionBankManager = ({
   const [expandedSources, setExpandedSources] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState('');
+  const [showUnassignModal, setShowUnassignModal] = useState(false);
+  const [selectedClassForUnassignment, setSelectedClassForUnassignment] = useState('');
   const [internalViewMode, setInternalViewMode] = useState(viewMode || 'all');
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [pendingAssignmentQuestions, setPendingAssignmentQuestions] = useState(new Set());
@@ -699,38 +702,76 @@ const QuestionBankManager = ({
 
   const handleUnassignFromClass = async (questionId, classId) => {
     try {
-      let question = questionsToShow.find(q => q.id === questionId);
-      if (!question) {
-        question = questions.find(q => q.id === questionId) || sharedQuestions.find(q => q.id === questionId);
-      }
-      
-      const currentAssignedClasses = (question?.assignedClasses || []).filter(id => id !== classId);
-
-      // Remove the reference document from class questions subcollection
-      const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
-      await deleteDoc(classQuestionRef);
-
-      // Update the assignedClasses array in the original question
-      if (question?.collection === 'sharedQuestionBank') {
-        const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
-        await updateDoc(questionRef, {
-          assignedClasses: currentAssignedClasses
-        });
-      } else {
-        const questionUserId = question?.userId || userId;
-        const questionRef = doc(db, 'artifacts', currentAppId, 'users', questionUserId, 'questionBank', questionId);
-        await updateDoc(questionRef, {
-          assignedClasses: currentAssignedClasses
-        });
-      }
-
-      // Clear cache for this class/topic/grade combination
-      if (question?.topic && question?.grade) {
-        clearCachedClassQuestions(classId, question.topic, question.grade, currentAppId);
-      }
+      await unassignQuestionFromClass(questionId, classId);
     } catch (err) {
       console.error('Error unassigning question from class:', err);
       setError('Failed to unassign question from class');
+    }
+  };
+
+  const unassignQuestionFromClass = async (questionId, classId) => {
+    let question = questionsToShow.find(q => q.id === questionId);
+    if (!question) {
+      question = questions.find(q => q.id === questionId) || sharedQuestions.find(q => q.id === questionId);
+    }
+
+    const currentAssignedClasses = (question?.assignedClasses || []).filter(id => id !== classId);
+
+    const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', classId, 'questions', questionId);
+    await deleteDoc(classQuestionRef);
+
+    if (question?.collection === 'sharedQuestionBank') {
+      const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
+      await updateDoc(questionRef, {
+        assignedClasses: currentAssignedClasses
+      });
+    } else {
+      const questionUserId = question?.userId || userId;
+      const questionRef = doc(db, 'artifacts', currentAppId, 'users', questionUserId, 'questionBank', questionId);
+      await updateDoc(questionRef, {
+        assignedClasses: currentAssignedClasses
+      });
+    }
+
+    if (question?.topic && question?.grade) {
+      clearCachedClassQuestions(classId, question.topic, question.grade, currentAppId);
+    }
+  };
+
+  const handleBulkUnassignFromClass = async () => {
+    if (!selectedClassForUnassignment || selectedQuestions.size === 0 || isUnassigning) return;
+
+    setError(null);
+    setSuccessMessage(null);
+    setIsUnassigning(true);
+
+    try {
+      const selectedIds = Array.from(selectedQuestions);
+      let unassignedCount = 0;
+      for (const questionId of selectedIds) {
+        try {
+          await unassignQuestionFromClass(questionId, selectedClassForUnassignment);
+          unassignedCount += 1;
+        } catch (questionErr) {
+          console.error('Error unassigning selected question:', questionErr);
+        }
+      }
+
+      const selectedClassName = classes.find(c => c.id === selectedClassForUnassignment)?.name || 'selected class';
+      if (unassignedCount > 0) {
+        setSuccessMessage(`Successfully un-assigned ${unassignedCount} question${unassignedCount === 1 ? '' : 's'} from ${selectedClassName}.`);
+      } else {
+        setError('No selected questions could be un-assigned from the chosen class.');
+      }
+
+      setSelectedQuestions(new Set());
+      setShowUnassignModal(false);
+      setSelectedClassForUnassignment('');
+    } catch (err) {
+      console.error('Error unassigning questions from class:', err);
+      setError('Failed to unassign questions from class');
+    } finally {
+      setIsUnassigning(false);
     }
   };
 
@@ -1183,6 +1224,13 @@ const QuestionBankManager = ({
             >
               <Users className="h-4 w-4" />
               <span>Assign to Class</span>
+            </button>
+            <button
+              onClick={() => setShowUnassignModal(true)}
+              className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm flex items-center space-x-2"
+            >
+              <Users className="h-4 w-4" />
+              <span>Un-assign from Class</span>
             </button>
             <button
               type="button"
@@ -1683,6 +1731,51 @@ const QuestionBankManager = ({
                 >
                   {isAssigning && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isAssigning ? 'Assigning...' : 'Assign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Un-assign from Class Modal */}
+      {
+        showUnassignModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Un-assign Questions from Class</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                <select
+                  value={selectedClassForUnassignment}
+                  onChange={(e) => setSelectedClassForUnassignment(e.target.value)}
+                  disabled={isUnassigning}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Select a class</option>
+                  {classes.map(classItem => (
+                    <option key={classItem.id} value={classItem.id}>{classItem.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowUnassignModal(false);
+                    setSelectedClassForUnassignment('');
+                  }}
+                  disabled={isUnassigning}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkUnassignFromClass}
+                  disabled={!selectedClassForUnassignment || isUnassigning}
+                  className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                >
+                  {isUnassigning && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isUnassigning ? 'Un-assigning...' : 'Un-assign'}
                 </button>
               </div>
             </div>
