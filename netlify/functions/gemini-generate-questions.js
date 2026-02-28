@@ -10,7 +10,8 @@ const GENERATABLE_TYPES = [
   QUESTION_TYPES.FILL_IN_THE_BLANKS,
 ];
 
-const MAX_QUESTIONS_PER_CALL = 25;
+const MAX_QUESTIONS_PER_CALL = 15;
+const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 500;
 
 // Helper function to verify Firebase auth token
 const verifyAuthToken = async (authHeader) => {
@@ -119,7 +120,7 @@ const TOPIC_GUIDELINES = {
 };
 
 // Build the Gemini prompt
-const buildPrompt = (grade, topic, questionTypes, count) => {
+const buildPrompt = (grade, topic, questionTypes, count, additionalInstructions = "") => {
   const gradeLabel = grade === GRADES.G3 ? "3rd grade" : "4th grade";
   const typeInstructions = questionTypes.map((type) => {
     switch (type) {
@@ -134,6 +135,15 @@ const buildPrompt = (grade, topic, questionTypes, count) => {
     }
   }).filter(Boolean).join("\n");
 
+  const userInstructionsSection = additionalInstructions
+    ? `
+Additional User Instructions:
+- Apply the following user instructions when generating questions: ${additionalInstructions}
+- You must still fully follow all topic guidelines, grade appropriateness, and JSON/schema requirements below.
+- If any user instruction conflicts with these core requirements, prioritize the core requirements.
+`
+    : "";
+
   return `You are an expert math curriculum designer. Generate exactly ${count} unique math questions for ${gradeLabel} students on the topic "${topic}".
 
 ${TOPIC_GUIDELINES[grade]}
@@ -143,6 +153,8 @@ Distribute questions roughly equally across the requested types.
 
 Rules for each question type:
 ${typeInstructions}
+
+${userInstructionsSection}
 
 Requirements:
 - Questions must be age-appropriate for ${gradeLabel} students
@@ -260,7 +272,7 @@ exports.handler = async (event) => {
     const authHeader = event.headers.authorization || event.headers.Authorization;
     const userId = await verifyAuthToken(authHeader);
 
-    const { grade, topic, questionTypes, count, appId } = JSON.parse(event.body);
+    const { grade, topic, questionTypes, count, appId, additionalInstructions } = JSON.parse(event.body);
 
     // Validate inputs
     if (!grade || ![GRADES.G3, GRADES.G4].includes(grade)) {
@@ -302,12 +314,15 @@ exports.handler = async (event) => {
     }
 
     const requestedCount = Math.min(Math.max(parseInt(count) || 10, 1), MAX_QUESTIONS_PER_CALL);
+    const normalizedAdditionalInstructions = String(additionalInstructions || "")
+      .trim()
+      .slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH);
 
     // Verify admin role
     await verifyAdminRole(userId, appId || "default-app-id");
 
     // Build prompt and call Gemini
-    const prompt = buildPrompt(grade, topic, questionTypes, requestedCount);
+    const prompt = buildPrompt(grade, topic, questionTypes, requestedCount, normalizedAdditionalInstructions);
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
