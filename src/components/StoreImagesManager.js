@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles, Edit2, Trash2, X, Save } from 'lucide-react';
 import { loadStoreImages, clearStoreImagesCache, updateStoreImage, deleteStoreImage, deleteStoreTheme } from '../utils/storeImages';
 import ImageGenerationModal from './ImageGenerationModal';
+import ConfirmationModal from './ui/ConfirmationModal';
+import useConfirmation from '../hooks/useConfirmation';
 import { useSearchParams } from 'react-router-dom';
 
 const StoreImagesManager = () => {
@@ -17,6 +19,8 @@ const StoreImagesManager = () => {
     ? images.find((img) => img.id === previewImageId) || null
     : null;
   
+  const { confirmationProps, confirm } = useConfirmation();
+
   // Editing state
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -136,9 +140,13 @@ const StoreImagesManager = () => {
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Are you sure you want to delete "${item.name}"?\n\nThis will permanently delete the image file and metadata.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete Image',
+      message: `Are you sure you want to delete "${item.name}"? This will permanently delete the image file and metadata.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     setActionLoading(true);
     try {
@@ -155,9 +163,13 @@ const StoreImagesManager = () => {
 
   const handleDeleteTheme = async (theme) => {
     const count = themeCounts[theme] || 0;
-    if (!window.confirm(`Are you sure you want to delete the entire "${theme}" theme?\n\nThis will permanently delete ALL ${count} images in this theme.\n\nThis action cannot be undone.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete Theme',
+      message: `Are you sure you want to delete the entire "${theme}" theme? This will permanently delete ALL ${count} images in this theme. This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete Theme',
+    });
+    if (!ok) return;
 
     setActionLoading(true);
     try {
@@ -483,6 +495,8 @@ const StoreImagesManager = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

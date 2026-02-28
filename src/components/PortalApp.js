@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { USER_ROLES } from '../utils/userRoles';
 import usePortalClasses from '../hooks/usePortalClasses';
@@ -16,10 +16,10 @@ import TeacherManagementSection from './portal/sections/TeacherManagementSection
 import ImagesSection from './portal/sections/ImagesSection';
 import { getAppId } from '../utils/common_utils';
 
-const PortalApp = ({ initialSection }) => {
+const PortalApp = ({ portalBase = '/teacher' }) => {
   const { user, userRole, loading, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeSectionId, setActiveSectionId] = useState(initialSection || 'overview');
+  const location = useLocation();
   const appId = getAppId();
   const userId = user?.uid || null;
   const userEmail = user?.email || null;
@@ -188,16 +188,27 @@ const PortalApp = ({ initialSection }) => {
     userRole,
   ]);
 
-  useEffect(() => {
-    if (sections.length === 0) {
-      return;
-    }
+  // Derive active section from URL pathname
+  const activeSectionId = useMemo(() => {
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    // e.g., /teacher/classes -> ['teacher', 'classes'] -> sectionSlug = 'classes'
+    const sectionSlug = pathSegments[1];
+    const matched = sections.find((s) => s.id === sectionSlug);
+    return matched ? matched.id : 'overview';
+  }, [location.pathname, sections]);
 
-    const activeSectionExists = sections.some((section) => section.id === activeSectionId);
-    if (!activeSectionExists) {
-      setActiveSectionId(sections[0].id);
+  // Redirect bare portal path to /overview
+  useEffect(() => {
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    if (pathSegments.length <= 1 && sections.length > 0) {
+      navigate(`${portalBase}/overview`, { replace: true });
     }
-  }, [sections, activeSectionId]);
+  }, [location.pathname, portalBase, navigate, sections.length]);
+
+  // Navigate to section via URL
+  const handleSectionChange = useCallback((sectionId) => {
+    navigate(`${portalBase}/${sectionId}`);
+  }, [navigate, portalBase]);
 
   if (loading || !userRole) {
     return (
@@ -236,7 +247,7 @@ const PortalApp = ({ initialSection }) => {
     <PortalLayout
       sections={sections}
       activeSectionId={activeSection.id}
-      onSectionChange={setActiveSectionId}
+      onSectionChange={handleSectionChange}
       user={user}
       roleLabel={userRole === USER_ROLES.ADMIN ? 'Administrator' : 'Teacher'}
       onLogout={handleLogout}

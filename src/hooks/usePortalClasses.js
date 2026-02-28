@@ -79,10 +79,6 @@ const usePortalClasses = ({ appId = 'default-app-id', userRole, userId, userEmai
       throw new Error('You do not have permission to delete classes');
     }
 
-    if (!window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       // Get auth token for the API call
       const auth = getAuth();

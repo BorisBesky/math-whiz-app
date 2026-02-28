@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Trash2, RefreshCw, UserCheck } from "lucide-react";
+import ConfirmationModal from "../../ui/ConfirmationModal";
+import useConfirmation from "../../../hooks/useConfirmation";
 
 const TeacherManagementSection = ({
   teachers,
@@ -15,6 +17,7 @@ const TeacherManagementSection = ({
   const [pendingDelete, setPendingDelete] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const { confirmationProps, confirm } = useConfirmation();
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -33,13 +36,13 @@ const TeacherManagementSection = ({
   };
 
   const handleBulkDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to remove ${selectedTeachers.length} selected teachers?`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Remove Teachers',
+      message: `Are you sure you want to remove ${selectedTeachers.length} selected teachers?`,
+      variant: 'danger',
+      confirmLabel: 'Remove',
+    });
+    if (!ok) return;
 
     setIsBulkDeleting(true);
     try {
@@ -78,9 +81,13 @@ const TeacherManagementSection = ({
   };
 
   const handleDelete = async (teacher) => {
-    if (!window.confirm(`Remove teacher ${teacher.name || teacher.email}?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Remove Teacher',
+      message: `Remove teacher ${teacher.name || teacher.email}?`,
+      variant: 'danger',
+      confirmLabel: 'Remove',
+    });
+    if (!ok) return;
 
     try {
       setPendingDelete(teacher.id);
@@ -287,6 +294,8 @@ const TeacherManagementSection = ({
           </tbody>
         </table>
       </div>
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

@@ -216,38 +216,51 @@ async function handleDeleteClass(params, headers) {
       batch.delete(doc.ref);
     });
 
-    // For each student, check which teachers should be removed from their profile
-    for (const studentId of studentIds) {
-      const otherEnrollments = await enrollmentsCol
-        .where('studentId', '==', studentId)
-        .where('classId', '!=', classId)
-        .get();
-
-      // Build set of teachers the student still has via other classes
-      const retainedTeachers = new Set();
-      if (!otherEnrollments.empty) {
-        const otherClassIds = otherEnrollments.docs.map(doc => doc.data().classId);
-        // Firestore 'in' supports max 30 values; chunk if needed
-        for (let i = 0; i < otherClassIds.length; i += 30) {
-          const chunk = otherClassIds.slice(i, i + 30);
-          const otherClasses = await classesCol
-            .where(admin.firestore.FieldPath.documentId(), 'in', chunk)
-            .get();
-          otherClasses.forEach(doc => {
-            getTeacherIds(doc.data()).forEach(tid => retainedTeachers.add(tid));
-          });
-        }
+    // Batch-fetch all other enrollments for affected students (instead of per-student queries)
+    if (studentIds.length > 0) {
+      const allOtherEnrollments = [];
+      for (let i = 0; i < studentIds.length; i += 30) {
+        const chunk = studentIds.slice(i, i + 30);
+        const snap = await enrollmentsCol.where('studentId', 'in', chunk).get();
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.classId !== classId) {
+            allOtherEnrollments.push(data);
+          }
+        });
       }
 
-      // Remove only teachers from this class that aren't retained via other classes
-      const teachersToRemove = classTeachers.filter(tid => !retainedTeachers.has(tid));
-      if (teachersToRemove.length > 0) {
-        const profileRef = db.collection('artifacts').doc(appId)
-          .collection('users').doc(studentId)
-          .collection('math_whiz_data').doc('profile');
-        batch.update(profileRef, {
-          teacherIds: admin.firestore.FieldValue.arrayRemove(...teachersToRemove)
+      // Batch-fetch all other class docs to get their teacher lists
+      const otherClassIds = [...new Set(allOtherEnrollments.map(e => e.classId))];
+      const otherClassTeacherMap = new Map();
+      for (let i = 0; i < otherClassIds.length; i += 30) {
+        const chunk = otherClassIds.slice(i, i + 30);
+        const snap = await classesCol
+          .where(admin.firestore.FieldPath.documentId(), 'in', chunk)
+          .get();
+        snap.forEach(d => {
+          otherClassTeacherMap.set(d.id, getTeacherIds(d.data()));
         });
+      }
+
+      // For each student, determine which teachers to remove
+      for (const studentId of studentIds) {
+        const retainedTeachers = new Set();
+        allOtherEnrollments
+          .filter(e => e.studentId === studentId)
+          .forEach(e => {
+            (otherClassTeacherMap.get(e.classId) || []).forEach(tid => retainedTeachers.add(tid));
+          });
+
+        const teachersToRemove = classTeachers.filter(tid => !retainedTeachers.has(tid));
+        if (teachersToRemove.length > 0) {
+          const profileRef = db.collection('artifacts').doc(appId)
+            .collection('users').doc(studentId)
+            .collection('math_whiz_data').doc('profile');
+          batch.update(profileRef, {
+            teacherIds: admin.firestore.FieldValue.arrayRemove(...teachersToRemove)
+          });
+        }
       }
     }
 

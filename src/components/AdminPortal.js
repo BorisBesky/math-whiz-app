@@ -25,8 +25,10 @@ import {
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { TOPICS } from '../constants/topics';
-import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore } from 'firebase/firestore';
+import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore, writeBatch } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
+import ConfirmationModal from './ui/ConfirmationModal';
+import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
 import { getTeacherIds } from '../utils/classHelpers';
 
@@ -55,6 +57,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const [selectedBulkClass, setSelectedBulkClass] = useState('');
   const [selectedTeachers, setSelectedTeachers] = useState(new Set());
   const [isSelectAllTeachers, setIsSelectAllTeachers] = useState(false);
+  const { confirmationProps, confirm } = useConfirmation();
 
   // Class management states
   const [selectedClasses, setSelectedClasses] = useState(new Set());
@@ -288,9 +291,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
 
   const deleteTeacher = async (teacher) => {
     const teacherName = teacher.displayName || teacher.name || teacher.email || 'Unknown Teacher';
-    const confirmMessage = `Are you sure you want to delete teacher "${teacherName}" (${teacher.email})?\n\nThis will:\n- Remove their account and admin access\n- Delete their profile\n- Prevent them from logging in\n\nThis action cannot be undone.`;
-
-    if (window.confirm(confirmMessage)) {
+    const ok = await confirm({
+      title: 'Delete Teacher',
+      message: `Are you sure you want to delete teacher "${teacherName}" (${teacher.email})? This will remove their account, admin access, and profile. This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (ok) {
       try {
         // Debug logging
         console.log('Teacher object:', teacher);
@@ -594,7 +601,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   };
 
   const deleteStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+    const ok = await confirm({
+      title: 'Delete Student',
+      message: 'Are you sure you want to delete this student? This action cannot be undone.',
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (ok) {
       try {
         // Get auth token for the API call
         const auth = getAuth();
@@ -834,17 +847,21 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const handleBulkDelete = async () => {
     if (selectedStudents.size === 0) return;
 
-    const confirmMessage = `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Students',
+      message: `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
-      const deletePromises = Array.from(selectedStudents).map(async (studentId) => {
+      const batch = writeBatch(db);
+      Array.from(selectedStudents).forEach((studentId) => {
         const profileDocRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-        await deleteDoc(profileDocRef);
-        return studentId;
+        batch.delete(profileDocRef);
       });
-
-      await Promise.all(deletePromises);
+      await batch.commit();
 
       setStudents(students.filter(s => !selectedStudents.has(s.id)));
       setSelectedStudents(new Set());
@@ -888,8 +905,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
       return;
     }
     const count = selectedTeachers.size;
-    const confirmMessage = `Are you sure you want to delete ${count} teacher(s)?\n\nThis will remove their accounts and profiles. This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Teachers',
+      message: `Are you sure you want to delete ${count} teacher(s)? This will remove their accounts and profiles. This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       const token = await user.getIdToken();
@@ -1015,9 +1037,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   };
 
   const handleDeleteClass = async (classToDelete) => {
-    const confirmMessage = `Are you sure you want to delete class "${classToDelete.name}"?\n\nThis will:\n- Remove all student enrollments\n- Delete the class permanently\n\nThis action cannot be undone.`;
-
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Class',
+      message: `Are you sure you want to delete class "${classToDelete.name}"? This will remove all student enrollments and delete the class permanently. This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       const token = await user.getIdToken();
@@ -1052,8 +1078,13 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
     }
 
     const count = selectedClasses.size;
-    const confirmMessage = `Are you sure you want to delete ${count} class(es)?\n\nThis will remove all student enrollments and delete the classes permanently. This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Classes',
+      message: `Are you sure you want to delete ${count} class(es)? This will remove all student enrollments and delete the classes permanently. This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       const token = await user.getIdToken();
@@ -2710,6 +2741,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

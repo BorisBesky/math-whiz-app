@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 
 const ContentModal = ({
@@ -15,23 +15,34 @@ const ContentModal = ({
   setGeneratedContent,
   navigate,
 }) => {
-  if (!modalTitle && !modalReactComponent && !generatedContent && !storyData && !isGenerating) return null;
+  const isOpen = !!(modalTitle || modalReactComponent || generatedContent || storyData || isGenerating);
+
+  const handleClose = useCallback(() => {
+    navigate(-1);
+    if (modalTitle === "✨ A Fun Story Problem!") {
+      setShowStoryHint(false);
+      setShowStoryAnswer(false);
+    }
+    setModalReactComponent(null);
+    setGeneratedContent("");
+  }, [navigate, modalTitle, setShowStoryHint, setShowStoryAnswer, setModalReactComponent, setGeneratedContent]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleClose]);
+
+  if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true">
       <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl max-w-4xl w-full p-6 relative flex flex-col max-h-[85vh]">
         <div className="flex-shrink-0">
           <button
-            onClick={() => {
-              navigate(-1);
-              // Reset story state when modal is closed
-              if (modalTitle === "✨ A Fun Story Problem!") {
-                setShowStoryHint(false);
-                setShowStoryAnswer(false);
-              }
-              // Reset React component state
-              setModalReactComponent(null);
-              setGeneratedContent("");
-            }}
+            onClick={handleClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
           >
             <X size={24} />

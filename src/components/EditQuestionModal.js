@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Save, Trash2, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
+import ModalWrapper from './ui/ModalWrapper';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { TOPICS, QUESTION_TYPES } from '../constants/topics';
@@ -184,15 +185,8 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-            <div className="relative p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Edit Question</h3>
-                    <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
-
+        <ModalWrapper isOpen={true} onClose={onCancel} title="Edit Question" size="md">
+            <div className="p-5">
                 {error && (
                     <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4" role="alert">
                         <p className="text-sm text-red-800">{error}</p>
@@ -490,7 +484,7 @@ const EditQuestionModal = ({ question, onSave, onCancel }) => {
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalWrapper>
     );
 };
 

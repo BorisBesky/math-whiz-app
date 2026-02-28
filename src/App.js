@@ -43,26 +43,26 @@ const App = () => {
 
           {/* Protected routes - role-based access */}
           <Route
-            path="/portal"
+            path="/portal/*"
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
-                <PortalApp />
+                <PortalApp portalBase="/portal" />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/teacher"
+            path="/teacher/*"
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.TEACHER, USER_ROLES.ADMIN]}>
-                <PortalApp initialSection="overview" />
+                <PortalApp portalBase="/teacher" />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/admin"
+            path="/admin/*"
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-                <PortalApp initialSection="overview" />
+                <PortalApp portalBase="/admin" />
               </ProtectedRoute>
             }
           />

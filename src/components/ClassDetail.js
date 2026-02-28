@@ -4,6 +4,8 @@ import { getAuth } from "firebase/auth";
 import { ArrowLeft, Users, Edit3, UserMinus, Mail, Calendar, BookOpen, Plus, RefreshCcw, Copy, Upload } from 'lucide-react';
 import EditClassForm from './EditClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
+import ConfirmationModal from './ui/ConfirmationModal';
+import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, getAppId } from '../utils/common_utils';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
@@ -18,6 +20,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
 
   const db = getFirestore();
   const appId = getAppId();
+  const { confirmationProps, confirm } = useConfirmation();
 
   const loadStudents = useCallback(() => {
     const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');
@@ -121,7 +124,13 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   }, [loadStudents]);
 
   const handleRemoveStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to remove ${student.name} from the class?`)) {
+    const ok = await confirm({
+      title: 'Remove Student',
+      message: `Are you sure you want to remove ${student.name} from the class?`,
+      variant: 'warning',
+      confirmLabel: 'Remove',
+    });
+    if (ok) {
       try {
         // Get auth token for the API call
         const auth = getAuth();
@@ -483,6 +492,8 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
           }}
         />
       )}
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

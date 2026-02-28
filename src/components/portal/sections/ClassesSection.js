@@ -3,6 +3,8 @@ import { Users, GraduationCap, Plus, Trash2 } from 'lucide-react';
 import { USER_ROLES } from '../../../utils/userRoles';
 import CreateClassForm from '../../CreateClassForm';
 import ClassDetailPanel from './ClassDetailPanel';
+import ConfirmationModal from '../../ui/ConfirmationModal';
+import useConfirmation from '../../../hooks/useConfirmation';
 
 const ClassesSection = ({
   classes,
@@ -30,8 +32,24 @@ const ClassesSection = ({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [selectedClassId, setSelectedClassId] = useState(null);
+  const { confirmationProps, confirm } = useConfirmation();
   const canCreateClass = userRole === USER_ROLES.TEACHER && typeof onCreateClass === 'function';
   const selectedClass = selectedClassId ? classes.find((cls) => cls.id === selectedClassId) : null;
+
+  const handleDeleteClass = async (classId) => {
+    const ok = await confirm({
+      title: 'Delete Class',
+      message: 'Are you sure you want to delete this class? This action cannot be undone.',
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
+    try {
+      await onDeleteClass(classId);
+    } catch (err) {
+      setActionError(err?.message || 'Failed to delete class');
+    }
+  };
 
   return (
     <div className="p-6 space-y-4">
@@ -114,7 +132,7 @@ const ClassesSection = ({
                 {(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) && typeof onDeleteClass === 'function' && (
                   <button
                     type="button"
-                    onClick={() => onDeleteClass(classItem.id)}
+                    onClick={() => handleDeleteClass(classItem.id)}
                     className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                     title="Delete Class"
                   >
@@ -159,6 +177,8 @@ const ClassesSection = ({
           teachers={teachers}
         />
       )}
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

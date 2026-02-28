@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, BookOpen } from 'lucide-react';
+import ModalWrapper from './ui/ModalWrapper';
 
 const CreateClassForm = ({ onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -74,22 +74,8 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-6 w-6 text-blue-600" />
-              <h3 className="text-lg font-medium text-gray-900">Create New Class</h3>
-            </div>
-            <button
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
+    <ModalWrapper isOpen={true} onClose={onCancel} title="Create New Class" size="sm">
+      <div className="p-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -190,9 +176,8 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
               </button>
             </div>
           </form>
-        </div>
       </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

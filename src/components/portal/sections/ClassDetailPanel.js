@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap } from 'lucide-react';
 import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -281,6 +281,22 @@ const ClassDetailPanel = ({
     }
   };
 
+  // Escape key to close
+  const handleEscapeKey = useCallback((e) => {
+    if (e.key === 'Escape') {
+      if (showSubtopicsModal) {
+        setShowSubtopicsModal(false);
+      } else {
+        onClose();
+      }
+    }
+  }, [onClose, showSubtopicsModal]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [handleEscapeKey]);
+
   if (!classItem) {
     return null;
   }
@@ -333,7 +349,7 @@ const ClassDetailPanel = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center px-4">
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center px-4" role="dialog" aria-modal="true">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
@@ -606,7 +622,7 @@ const ClassDetailPanel = ({
 
       {/* Subtopics Modal */}
       {showSubtopicsModal && selectedStudentForSubtopics && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>

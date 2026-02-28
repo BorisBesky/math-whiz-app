@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup, deleteField, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, getDocs, updateDoc, setDoc, collectionGroup, deleteField, getDoc, query, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import QuestionBankManager from './QuestionBankManager';
 import { clearCachedClassQuestions } from '../utils/questionCache';
@@ -23,9 +23,12 @@ const AdminQuestionBankManager = ({ classes, appId }) => {
       while (retries <= maxRetries) {
         try {
           console.log('[AdminQuestionBankManager] Loading teachers using collectionGroup query (attempt', retries + 1, '/', maxRetries + 1, ')');
-          // Use collectionGroup to query all math_whiz_data/profile documents
-          const profilesGroup = collectionGroup(db, 'math_whiz_data');
-          const profilesSnapshot = await getDocs(profilesGroup);
+          // Use collectionGroup with role filter to fetch only teacher/admin profiles
+          const profilesQuery = query(
+            collectionGroup(db, 'math_whiz_data'),
+            where('role', 'in', ['teacher', 'admin'])
+          );
+          const profilesSnapshot = await getDocs(profilesQuery);
 
           console.log('[AdminQuestionBankManager] Found', profilesSnapshot.size, 'profiles');
           const teachersList = [];

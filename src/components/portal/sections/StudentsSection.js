@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  BarChart3, RefreshCw, Download, Target, Trash2, Eye, 
+import {
+  BarChart3, RefreshCw, Download, Target, Trash2, Eye,
   ChevronUp, ChevronDown, CheckCircle, X
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
+import ConfirmationModal from '../../ui/ConfirmationModal';
+import useConfirmation from '../../../hooks/useConfirmation';
 
 const fieldMap = {
   'grade': 'grade',
@@ -30,6 +32,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const db = getFirestore();
+  const { confirmationProps, confirm } = useConfirmation();
 
   // Sorting logic
   const handleSort = (field) => {
@@ -124,8 +127,13 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       return;
     }
 
-    const confirmMessage = `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Students',
+      message: `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       const batch = writeBatch(db);
@@ -801,6 +809,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal {...confirmationProps} />
 
       {/* Goals Modal */}
       {showGoalsModal && (

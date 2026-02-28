@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Save, Trash2, X as XIcon, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -54,6 +54,16 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
     setSelectedQuestions(new Set(questions.map((_, i) => i)));
     setImageTypes({});
   }, [questions]);
+
+  // Escape key to close
+  const handleEscapeKey = useCallback((e) => {
+    if (e.key === 'Escape' && !saving) onCancel();
+  }, [onCancel, saving]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [handleEscapeKey]);
 
   const gradeOptions = ['G3', 'G4'];
   const questionTypeOptions = [
@@ -355,8 +365,8 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white my-10">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" role="dialog" aria-modal="true">
+      <div className="relative top-10 mx-auto p-5 border w-full max-w-6xl max-w-[95vw] shadow-lg rounded-md bg-white my-10">
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
             <div>

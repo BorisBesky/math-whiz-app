@@ -34,6 +34,8 @@ import ClassDetail from './ClassDetail';
 import CreateClassForm from './CreateClassForm';
 import UploadQuestionsPDF from './UploadQuestionsPDF';
 import QuestionBankManager from './QuestionBankManager';
+import ConfirmationModal from './ui/ConfirmationModal';
+import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, formatTime, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString, getAppId } from '../utils/common_utils';
 import { useSearchParams } from 'react-router-dom';
 
@@ -61,6 +63,7 @@ const TeacherDashboard = () => {
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [uploadClassId, setUploadClassId] = useState(null);
+  const { confirmationProps, confirm } = useConfirmation();
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
   const [realtimeReloadKey, setRealtimeReloadKey] = useState(0);
@@ -263,28 +266,40 @@ const TeacherDashboard = () => {
       
       const unsubscribe = onSnapshot(studentsRef, async (snapshot) => {
         const studentCounts = {};
-        
-        // Filter enrollments to only count students (not teachers)
+
+        // Collect unique student IDs to batch-fetch their profiles
+        const enrollments = [];
+        const uniqueStudentIds = new Set();
         for (const docSnapshot of snapshot.docs) {
           const data = docSnapshot.data();
           if (data.classId && data.studentId) {
-            // Check the user's role
-            const profileRef = doc(db, 'artifacts', appId, 'users', data.studentId, 'math_whiz_data', 'profile');
-            try {
-              const profileSnap = await getDoc(profileRef);
-              if (profileSnap.exists()) {
-                const profileData = profileSnap.data();
-                // Only count users with role 'student'
-                if (profileData.role === 'student') {
-                  studentCounts[data.classId] = (studentCounts[data.classId] || 0) + 1;
-                }
-              }
-            } catch (error) {
-              console.error(`Error checking role for user ${data.studentId}:`, error);
-            }
+            enrollments.push(data);
+            uniqueStudentIds.add(data.studentId);
           }
         }
-        
+
+        // Batch-fetch all profiles in parallel (chunks of 30 to avoid connection limits)
+        const studentIdList = Array.from(uniqueStudentIds);
+        const roleMap = {};
+        for (let i = 0; i < studentIdList.length; i += 30) {
+          const chunk = studentIdList.slice(i, i + 30);
+          const profiles = await Promise.all(
+            chunk.map(sid => getDoc(doc(db, 'artifacts', appId, 'users', sid, 'math_whiz_data', 'profile')))
+          );
+          profiles.forEach((snap, idx) => {
+            if (snap.exists()) {
+              roleMap[chunk[idx]] = snap.data().role;
+            }
+          });
+        }
+
+        // Count students per class using the role map
+        for (const enrollment of enrollments) {
+          if (roleMap[enrollment.studentId] === 'student') {
+            studentCounts[enrollment.classId] = (studentCounts[enrollment.classId] || 0) + 1;
+          }
+        }
+
         setClassStudentCounts(studentCounts);
         console.log('Student counts loaded:', Object.keys(studentCounts).length);
       }, (error) => {
@@ -371,7 +386,13 @@ const TeacherDashboard = () => {
   };
 
   const handleDeleteClass = async (classId) => {
-    if (window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) {
+    const ok = await confirm({
+      title: 'Delete Class',
+      message: 'Are you sure you want to delete this class? This action cannot be undone.',
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (ok) {
       try {
         // Get auth token for the API call
         const auth = getAuth();
@@ -620,8 +641,13 @@ const TeacherDashboard = () => {
   const handleBulkDelete = async () => {
     if (selectedStudents.size === 0) return;
 
-    const confirmMessage = `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Delete Students',
+      message: `Are you sure you want to delete ${selectedStudents.size} student(s)? This action cannot be undone.`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       // Get auth token for the API call
@@ -1604,6 +1630,8 @@ const TeacherDashboard = () => {
 
       {/* Tutorial Overlay */}
       <TutorialOverlay />
+
+      <ConfirmationModal {...confirmationProps} />
     </div>
   );
 };

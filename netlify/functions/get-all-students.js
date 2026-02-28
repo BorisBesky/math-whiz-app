@@ -85,10 +85,12 @@ exports.handler = async (event) => {
 
     if (isTeacher) {
       console.log("User is teacher, will filter students by teacherId in their teacherIds array.");
-      query = usersCollectionGroupRef.where('teacherIds', 'array-contains', authenticatedUserId);
+      query = usersCollectionGroupRef
+        .where('role', '==', 'student')
+        .where('teacherIds', 'array-contains', authenticatedUserId);
     } else {
       console.log("User is admin, will return all students.");
-      query = usersCollectionGroupRef;
+      query = usersCollectionGroupRef.where('role', '==', 'student');
     }
 
     console.log("Executing query to fetch user profiles...");
@@ -108,27 +110,13 @@ exports.handler = async (event) => {
     const allStudentsData = [];
     userDocsSnapshot.forEach((userDoc) => {
       // extract userId from userDoc.id (the document ID is artifacts/{appId}/users/{userId}/math_whiz_data/profile)
-      const userId = userDoc.ref.parent.parent.id
-      console.log(`Extracted userId: ${userId}`);
+      const userId = userDoc.ref.parent.parent.id;
 
-      let studentData = null;
-
-      // Get user data profile
-      mathWhizProfileData = userDoc.data();
-      // Only include users with role 'student', explicitly exclude teachers and admins
-      if (mathWhizProfileData.role === 'student') {
-        console.log(`Success: Found data in math_whiz_data/profile for ${userId}`);
-        studentData = {
-          id: userId,
-          ...mathWhizProfileData,
-        };
-        allStudentsData.push(studentData);
-      } else if (mathWhizProfileData.role === 'teacher' || mathWhizProfileData.role === 'admin') {
-        console.log(`Skipping user ${userId}: role is ${mathWhizProfileData.role}, not student`);
-      } else {
-        console.log(`Skipping user ${userId}: no valid role found (role: ${mathWhizProfileData.role})`);
-      }
-
+      const profileData = userDoc.data();
+      allStudentsData.push({
+        id: userId,
+        ...profileData,
+      });
     });
 
     if (isTeacher) {

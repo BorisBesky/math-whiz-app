@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFirestore, collection, onSnapshot, updateDoc, doc, deleteDoc, setDoc, deleteField } from 'firebase/firestore';
-import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload, Sparkles } from 'lucide-react';
+import { BookOpen, Trash2, Users, Filter, X, ChevronDown, ChevronUp, Share2, User as UserIcon, Edit, Search, ChevronLeft, ChevronRight, Download, Upload, Sparkles, Loader2 } from 'lucide-react';
 import EditQuestionModal from './EditQuestionModal';
 import QuestionReviewModal from './QuestionReviewModal';
 import GenerateQuestionsModal from './GenerateQuestionsModal';
+import ConfirmationModal from './ui/ConfirmationModal';
+import useConfirmation from '../hooks/useConfirmation';
 import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 import 'katex/dist/katex.min.css';
@@ -31,6 +33,8 @@ const QuestionBankManager = ({
   const [sharedQuestions, setSharedQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState(new Set());
   const [filterTopic, setFilterTopic] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
@@ -55,8 +59,19 @@ const QuestionBankManager = ({
   const questionContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timeoutId = setTimeout(() => {
+      setSuccessMessage(null);
+    }, 4000);
+
+    return () => clearTimeout(timeoutId);
+  }, [successMessage]);
+
   const db = getFirestore();
   const currentAppId = appId || 'default-app-id';
+  const { confirmationProps, confirm } = useConfirmation();
 
   // Auto-render KaTeX when questions change
   useEffect(() => {
@@ -576,22 +591,28 @@ const QuestionBankManager = ({
 
   const handleAssignToClass = async () => {
     const questionsToAssign = pendingAssignmentQuestions.size > 0 ? pendingAssignmentQuestions : selectedQuestions;
-    if (!selectedClassForAssignment || questionsToAssign.size === 0) return;
+    if (!selectedClassForAssignment || questionsToAssign.size === 0 || isAssigning) return;
+    const assignedCount = questionsToAssign.size;
+    const assignedClassName = classes.find(c => c.id === selectedClassForAssignment)?.name || 'selected class';
+    setError(null);
+    setSuccessMessage(null);
+    setIsAssigning(true);
 
-    // Use custom handler if provided (for admin mode)
-    if (onAssignToClass) {
-      await onAssignToClass(questionsToAssign, selectedClassForAssignment);
-      setShowAssignModal(false);
-      setSelectedClassForAssignment('');
-      setPendingAssignmentQuestions(new Set());
-      if (questionsToAssign === selectedQuestions) {
-        setSelectedQuestions(new Set());
-      }
-      return;
-    }
-
-    // Default handler for teacher mode - create reference documents in class
     try {
+      // Use custom handler if provided (for admin mode)
+      if (onAssignToClass) {
+        await onAssignToClass(questionsToAssign, selectedClassForAssignment);
+        setShowAssignModal(false);
+        setSelectedClassForAssignment('');
+        setPendingAssignmentQuestions(new Set());
+        if (questionsToAssign === selectedQuestions) {
+          setSelectedQuestions(new Set());
+        }
+        setSuccessMessage(`Successfully assigned ${assignedCount} question${assignedCount === 1 ? '' : 's'} to ${assignedClassName}.`);
+        return;
+      }
+
+      // Default handler for teacher mode - create reference documents in class
       const updates = [];
       for (const questionId of questionsToAssign) {
         const question = questionsToShow.find(q => q.id === questionId);
@@ -667,9 +688,12 @@ const QuestionBankManager = ({
       if (questionsToAssign === selectedQuestions) {
         setSelectedQuestions(new Set());
       }
+      setSuccessMessage(`Successfully assigned ${assignedCount} question${assignedCount === 1 ? '' : 's'} to ${assignedClassName}.`);
     } catch (err) {
       console.error('Error assigning questions to class:', err);
       setError('Failed to assign questions to class');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -722,7 +746,13 @@ const QuestionBankManager = ({
     if (targetIds.size === 0) return;
 
     console.log('[QuestionBankManager] Showing confirm dialog');
-    if (!window.confirm(`Are you sure you want to delete ${targetIds.size} question(s)?`)) {
+    const ok = await confirm({
+      title: 'Delete Questions',
+      message: `Are you sure you want to delete ${targetIds.size} question(s)?`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!ok) {
       console.log('[QuestionBankManager] Delete cancelled by user');
       return;
     }
@@ -872,6 +902,15 @@ const QuestionBankManager = ({
 
   return (
     <div className="space-y-6" ref={questionContainerRef}>
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <p className="text-green-800">{successMessage}</p>
+          <button onClick={() => setSuccessMessage(null)} className="mt-2 text-sm text-green-700 hover:text-green-900">
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-red-800">{error}</p>
@@ -1084,9 +1123,13 @@ const QuestionBankManager = ({
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!window.confirm(`Are you sure you want to add ${selectedQuestions.size} question(s) to shared bank?`)) {
-                    return;
-                  }
+                  const ok = await confirm({
+                    title: 'Add to Shared Bank',
+                    message: `Are you sure you want to add ${selectedQuestions.size} question(s) to shared bank?`,
+                    variant: 'info',
+                    confirmLabel: 'Add',
+                  });
+                  if (!ok) return;
                   try {
                     await onAddToSharedBank(selectedQuestions);
                     setSelectedQuestions(new Set());
@@ -1108,9 +1151,13 @@ const QuestionBankManager = ({
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!window.confirm(`Are you sure you want to remove ${selectedQuestions.size} question(s) from shared bank?`)) {
-                    return;
-                  }
+                  const ok = await confirm({
+                    title: 'Remove from Shared Bank',
+                    message: `Are you sure you want to remove ${selectedQuestions.size} question(s) from shared bank?`,
+                    variant: 'danger',
+                    confirmLabel: 'Remove',
+                  });
+                  if (!ok) return;
                   try {
                     await onRemoveFromSharedBank(selectedQuestions);
                     setSelectedQuestions(new Set());
@@ -1609,6 +1656,7 @@ const QuestionBankManager = ({
                 <select
                   value={selectedClassForAssignment}
                   onChange={(e) => setSelectedClassForAssignment(e.target.value)}
+                  disabled={isAssigning}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Select a class</option>
@@ -1623,16 +1671,18 @@ const QuestionBankManager = ({
                     setShowAssignModal(false);
                     setSelectedClassForAssignment('');
                   }}
+                  disabled={isAssigning}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAssignToClass}
-                  disabled={!selectedClassForAssignment}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!selectedClassForAssignment || isAssigning}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                 >
-                  Assign
+                  {isAssigning && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isAssigning ? 'Assigning...' : 'Assign'}
                 </button>
               </div>
             </div>
@@ -1674,6 +1724,8 @@ const QuestionBankManager = ({
           onGenerated={handleGeneratedQuestions}
         />
       )}
+
+      <ConfirmationModal {...confirmationProps} />
     </div >
   );
 };

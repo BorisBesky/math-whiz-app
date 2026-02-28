@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import ModalWrapper from './ui/ModalWrapper';
 import { getAuth } from 'firebase/auth';
 import { GRADES, VALID_TOPICS_BY_GRADE, QUESTION_TYPES } from '../constants/topics';
 
@@ -122,28 +123,9 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white my-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Generate Questions with AI
-            </h3>
-          </div>
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={generating}
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
+    <ModalWrapper isOpen={isOpen} onClose={handleCancel} title="Generate Questions with AI" size="sm">
+      <div className="p-6">
         {/* Error */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-3 flex items-start space-x-2">
@@ -267,7 +249,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
           </button>
         </div>
       </div>
-    </div>
+    </ModalWrapper>
   );
 };
 
