@@ -8,4 +8,4 @@ Disallow: /admin
 Disallow: /teacher
 Disallow: /portal
 
-Sitemap: https://mathwhiz.app/sitemap.xml
+Sitemap: https://math-whiz-app.netlify.app/sitemap.xml
