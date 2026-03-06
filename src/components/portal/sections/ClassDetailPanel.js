@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
 import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
@@ -33,6 +34,12 @@ const ClassDetailPanel = ({
   const [subtopicTopic, setSubtopicTopic] = useState('');
   const [selectedSubtopics, setSelectedSubtopics] = useState([]);
   const [savingSubtopics, setSavingSubtopics] = useState(false);
+
+  // Invite state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [invite, setInvite] = useState({ joinCode: '', joinUrl: '', expiresAt: '' });
+  const [copiedField, setCopiedField] = useState(null);
 
   const roster = useMemo(() => {
     if (!classId) {
@@ -205,6 +212,50 @@ const ClassDetailPanel = ({
     setEnrollmentReloadTrigger(prev => prev + 1);
   };
 
+  const fetchInvite = useCallback(async (rotate = false) => {
+    setInviteLoading(true);
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/.netlify/functions/join-class', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'request-link',
+          classId,
+          appId,
+          rotate,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to get invite link');
+      const data = await res.json();
+      setInvite({ joinCode: data.joinCode, joinUrl: data.joinUrl, expiresAt: data.expiresAt });
+    } catch (e) {
+      console.error('Error fetching invite:', e);
+      setStatus({ type: 'error', message: 'Could not generate invite link.' });
+    } finally {
+      setInviteLoading(false);
+    }
+  }, [classId, appId]);
+
+  const handleCopy = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (e) {
+      console.error('Copy failed:', e);
+    }
+  };
+
+  const handleOpenInviteModal = () => {
+    setShowInviteModal(true);
+    fetchInvite(false);
+  };
+
   const handleOpenSubtopicsModal = (student) => {
     const grade = student.grade || 'G3';
     const topics = getTopicsForGrade(grade);
@@ -287,11 +338,13 @@ const ClassDetailPanel = ({
     if (e.key === 'Escape') {
       if (showSubtopicsModal) {
         setShowSubtopicsModal(false);
+      } else if (showInviteModal) {
+        setShowInviteModal(false);
       } else {
         onClose();
       }
     }
-  }, [onClose, showSubtopicsModal]);
+  }, [onClose, showSubtopicsModal, showInviteModal]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
@@ -351,8 +404,8 @@ const ClassDetailPanel = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center px-4" role="dialog" aria-modal="true">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
             <h3 className="text-xl font-semibold text-gray-900">{classItem.name}</h3>
@@ -366,6 +419,7 @@ const ClassDetailPanel = ({
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-4 border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
           <div className="flex items-center space-x-2">
             <BookOpen className="h-4 w-4 text-blue-600" />
@@ -473,9 +527,10 @@ const ClassDetailPanel = ({
             )}
           </div>
 
-          {canManageStudents && (
+          {/* Admin: direct student assignment */}
+          {isAdmin && canManageStudents && (
             <div className="mb-4 border border-gray-200 rounded-md p-4 bg-gray-50">
-              <div className="flex flex-col md:flex-row md:items-center md:space-x-3 space-y-3 md:space-y-0">
+              <div className="flex flex-col md:flex-row md:items-end md:space-x-3 space-y-3 md:space-y-0">
                 <div className="flex-1">
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Assign Student
@@ -498,12 +553,26 @@ const ClassDetailPanel = ({
                   type="button"
                   onClick={handleAssign}
                   disabled={!selectedStudentId || assigning}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium disabled:opacity-50"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium disabled:opacity-50 whitespace-nowrap"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {assigning ? 'Assigning...' : 'Assign to class'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Teacher (or admin): invite students via code/link */}
+          {(isTeacherOnClass || isAdmin) && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={handleOpenInviteModal}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                <Link2 className="h-4 w-4 mr-2" />
+                Invite Students
+              </button>
             </div>
           )}
 
@@ -620,7 +689,106 @@ const ClassDetailPanel = ({
             </div>
           )}
         </div>
+        </div>
       </div>
+
+      {/* Invite Students Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Invite Students</h3>
+                <p className="text-sm text-gray-500">Share a link or code with your students</p>
+              </div>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600 rounded-full p-2"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-gray-600">
+                Students who sign in with this link or code will be added to <span className="font-medium">{classItem.name}</span> automatically.
+              </p>
+
+              {/* Join Link */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Link</label>
+                <div className="mt-1 flex">
+                  <input
+                    className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 text-sm bg-gray-50 text-gray-700"
+                    readOnly
+                    value={invite.joinUrl || (inviteLoading ? 'Generating...' : '')}
+                  />
+                  <button
+                    onClick={() => invite.joinUrl && handleCopy(invite.joinUrl, 'link')}
+                    disabled={!invite.joinUrl}
+                    className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-colors"
+                    title="Copy link"
+                  >
+                    {copiedField === 'link' ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Join Code */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Code</label>
+                <div className="mt-1 flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                  <span className="font-mono text-lg tracking-wider text-gray-900">
+                    {invite.joinCode || (inviteLoading ? '...' : '')}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => invite.joinCode && handleCopy(invite.joinCode, 'code')}
+                      disabled={!invite.joinCode}
+                      className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                      title="Copy code"
+                    >
+                      {copiedField === 'code' ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => fetchInvite(true)}
+                      disabled={inviteLoading}
+                      className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                      title="Generate a new code"
+                    >
+                      <RefreshCcw className={`h-4 w-4 ${inviteLoading ? 'animate-spin' : ''}`} />
+                      <span>Rotate</span>
+                    </button>
+                  </div>
+                </div>
+                {invite.expiresAt && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Expires: {new Date(invite.expiresAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subtopics Modal */}
       {showSubtopicsModal && selectedStudentForSubtopics && (
