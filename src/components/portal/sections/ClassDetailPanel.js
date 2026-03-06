@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
 import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -7,6 +8,7 @@ import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
+import ModalWrapper from '../../ui/ModalWrapper';
 
 const ClassDetailPanel = ({
   classItem,
@@ -355,6 +357,13 @@ const ClassDetailPanel = ({
     return null;
   }
 
+  const renderModalInPortal = (modal) => {
+    if (typeof document === 'undefined') {
+      return null;
+    }
+    return createPortal(modal, document.body);
+  };
+
   const handleAssign = async () => {
     if (!selectedStudentId) {
       return;
@@ -403,8 +412,8 @@ const ClassDetailPanel = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center px-4" role="dialog" aria-modal="true">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-40 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
@@ -693,222 +702,202 @@ const ClassDetailPanel = ({
       </div>
 
       {/* Invite Students Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Invite Students</h3>
-                <p className="text-sm text-gray-500">Share a link or code with your students</p>
+      {showInviteModal && renderModalInPortal(
+        <ModalWrapper
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          title="Invite Students"
+          size="sm"
+        >
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-gray-600">
+              Share a link or code so students are added to <span className="font-medium">{classItem.name}</span> automatically.
+            </p>
+
+            {/* Join Link */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Link</label>
+              <div className="mt-1 flex">
+                <input
+                  className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 text-sm bg-gray-50 text-gray-700"
+                  readOnly
+                  value={invite.joinUrl || (inviteLoading ? 'Generating...' : '')}
+                />
+                <button
+                  onClick={() => invite.joinUrl && handleCopy(invite.joinUrl, 'link')}
+                  disabled={!invite.joinUrl}
+                  className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-colors"
+                  title="Copy link"
+                >
+                  {copiedField === 'link' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="text-gray-400 hover:text-gray-600 rounded-full p-2"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
-              <p className="text-sm text-gray-600">
-                Students who sign in with this link or code will be added to <span className="font-medium">{classItem.name}</span> automatically.
-              </p>
-
-              {/* Join Link */}
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Link</label>
-                <div className="mt-1 flex">
-                  <input
-                    className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 text-sm bg-gray-50 text-gray-700"
-                    readOnly
-                    value={invite.joinUrl || (inviteLoading ? 'Generating...' : '')}
-                  />
+            {/* Join Code */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Code</label>
+              <div className="mt-1 flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                <span className="font-mono text-lg tracking-wider text-gray-900">
+                  {invite.joinCode || (inviteLoading ? '...' : '')}
+                </span>
+                <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => invite.joinUrl && handleCopy(invite.joinUrl, 'link')}
-                    disabled={!invite.joinUrl}
-                    className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-colors"
-                    title="Copy link"
+                    onClick={() => invite.joinCode && handleCopy(invite.joinCode, 'code')}
+                    disabled={!invite.joinCode}
+                    className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    title="Copy code"
                   >
-                    {copiedField === 'link' ? (
+                    {copiedField === 'code' ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
                   </button>
+                  <button
+                    onClick={() => fetchInvite(true)}
+                    disabled={inviteLoading}
+                    className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                    title="Generate a new code"
+                  >
+                    <RefreshCcw className={`h-4 w-4 ${inviteLoading ? 'animate-spin' : ''}`} />
+                    <span>Rotate</span>
+                  </button>
                 </div>
               </div>
-
-              {/* Join Code */}
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Join Code</label>
-                <div className="mt-1 flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
-                  <span className="font-mono text-lg tracking-wider text-gray-900">
-                    {invite.joinCode || (inviteLoading ? '...' : '')}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => invite.joinCode && handleCopy(invite.joinCode, 'code')}
-                      disabled={!invite.joinCode}
-                      className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                      title="Copy code"
-                    >
-                      {copiedField === 'code' ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => fetchInvite(true)}
-                      disabled={inviteLoading}
-                      className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                      title="Generate a new code"
-                    >
-                      <RefreshCcw className={`h-4 w-4 ${inviteLoading ? 'animate-spin' : ''}`} />
-                      <span>Rotate</span>
-                    </button>
-                  </div>
-                </div>
-                {invite.expiresAt && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    Expires: {new Date(invite.expiresAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                Done
-              </button>
+              {invite.expiresAt && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Expires: {new Date(invite.expiresAt).toLocaleString()}
+                </p>
+              )}
             </div>
           </div>
-        </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50">
+            <button
+              onClick={() => setShowInviteModal(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </ModalWrapper>
       )}
 
       {/* Subtopics Modal */}
-      {showSubtopicsModal && selectedStudentForSubtopics && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      {showSubtopicsModal && selectedStudentForSubtopics && renderModalInPortal(
+        <ModalWrapper
+          isOpen={showSubtopicsModal}
+          onClose={() => setShowSubtopicsModal(false)}
+          title="Set Focus Subtopics"
+          size="md"
+        >
+          <div className="px-6 py-5 overflow-y-auto flex-1 space-y-5">
+            <p className="text-sm text-gray-600">
+              {getStudentDisplayName(selectedStudentForSubtopics)}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr] gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Set Focus Subtopics</h3>
-                <p className="text-sm text-gray-600">
-                  {getStudentDisplayName(selectedStudentForSubtopics)}
-                </p>
+                <label className="text-sm text-gray-700 font-medium block">Grade</label>
+                <select
+                  value={subtopicGrade}
+                  onChange={(e) => {
+                    const newGrade = e.target.value;
+                    setSubtopicGrade(newGrade);
+                    const topics = getTopicsForGrade(newGrade);
+                    setSubtopicTopic(topics[0] || '');
+                    const enrollment = enrollments[selectedStudentForSubtopics.id];
+                    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
+                    setSelectedSubtopics(currentRestrictions[topics[0]] || []);
+                  }}
+                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm w-full"
+                >
+                  <option value="G3">G3</option>
+                  <option value="G4">G4</option>
+                </select>
               </div>
-              <button
-                onClick={() => setShowSubtopicsModal(false)}
-                className="text-gray-400 hover:text-gray-600 rounded-full p-2"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div>
+                <label className="text-sm text-gray-700 font-medium block">Topic</label>
+                <select
+                  value={subtopicTopic}
+                  onChange={(e) => handleSubtopicTopicChange(e.target.value)}
+                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                >
+                  {getTopicsForGrade(subtopicGrade).map((topic) => (
+                    <option key={topic} value={topic}>
+                      {topic}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="px-6 py-4 overflow-y-auto flex-1">
-              <div className="mb-4 flex items-center space-x-4">
-                <div>
-                  <label className="text-sm text-gray-700 font-medium">Grade:</label>
-                  <select
-                    value={subtopicGrade}
-                    onChange={(e) => {
-                      const newGrade = e.target.value;
-                      setSubtopicGrade(newGrade);
-                      const topics = getTopicsForGrade(newGrade);
-                      setSubtopicTopic(topics[0] || '');
-                      const enrollment = enrollments[selectedStudentForSubtopics.id];
-                      const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-                      setSelectedSubtopics(currentRestrictions[topics[0]] || []);
-                    }}
-                    className="mt-1 border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="G3">G3</option>
-                    <option value="G4">G4</option>
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm text-gray-700 font-medium">Topic:</label>
-                  <select
-                    value={subtopicTopic}
-                    onChange={(e) => handleSubtopicTopicChange(e.target.value)}
-                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
-                  >
-                    {getTopicsForGrade(subtopicGrade).map((topic) => (
-                      <option key={topic} value={topic}>
-                        {topic}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {subtopicTopic && (
-                <div>
-                  <label className="text-sm text-gray-700 font-medium mb-2 block">
-                    Select specific subtopics to focus on (leave empty to include all subtopics):
-                  </label>
-                  <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
-                    {(() => {
-                      const subtopics = getSubtopicsForTopic(subtopicTopic, subtopicGrade);
-                      if (subtopics.length === 0) {
-                        return (
-                          <p className="text-sm text-gray-500 italic">
-                            This topic does not have subtopics defined.
-                          </p>
-                        );
-                      }
+            {subtopicTopic && (
+              <div>
+                <label className="text-sm text-gray-700 font-medium mb-2 block">
+                  Select specific subtopics to focus on (leave empty to include all subtopics):
+                </label>
+                <div className="border border-gray-200 rounded-lg p-3 max-h-72 overflow-y-auto bg-gray-50/60">
+                  {(() => {
+                    const subtopics = getSubtopicsForTopic(subtopicTopic, subtopicGrade);
+                    if (subtopics.length === 0) {
                       return (
-                        <div className="space-y-2">
-                          {subtopics.map((subtopic) => (
-                            <label
-                              key={subtopic}
-                              className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedSubtopics.includes(subtopic)}
-                                onChange={() => handleSubtopicToggle(subtopic)}
-                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                              />
-                              <span className="text-sm text-gray-700">{subtopic}</span>
-                            </label>
-                          ))}
-                        </div>
+                        <p className="text-sm text-gray-500 italic">
+                          This topic does not have subtopics defined.
+                        </p>
                       );
-                    })()}
-                  </div>
-                  {selectedSubtopics.length > 0 && (
-                    <p className="mt-2 text-xs text-gray-500">
-                      {selectedSubtopics.length} subtopic{selectedSubtopics.length !== 1 ? 's' : ''} selected
-                    </p>
-                  )}
+                    }
+                    return (
+                      <div className="space-y-2">
+                        {subtopics.map((subtopic) => (
+                          <label
+                            key={subtopic}
+                            className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded-md transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedSubtopics.includes(subtopic)}
+                              onChange={() => handleSubtopicToggle(subtopic)}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <span className="text-sm text-gray-700">{subtopic}</span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-              )}
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
-              <button
-                onClick={() => setShowSubtopicsModal(false)}
-                className="px-4 py-2 rounded border hover:bg-gray-50 text-sm font-medium"
-                disabled={savingSubtopics}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveSubtopics}
-                disabled={savingSubtopics}
-                className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 text-sm font-medium disabled:opacity-50"
-              >
-                {savingSubtopics ? 'Saving...' : 'Save'}
-              </button>
-            </div>
+                {selectedSubtopics.length > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {selectedSubtopics.length} subtopic{selectedSubtopics.length !== 1 ? 's' : ''} selected
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-        </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50">
+            <button
+              onClick={() => setShowSubtopicsModal(false)}
+              className="px-4 py-2 rounded-md border border-gray-300 hover:bg-white text-sm font-medium text-gray-700"
+              disabled={savingSubtopics}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveSubtopics}
+              disabled={savingSubtopics}
+              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+            >
+              {savingSubtopics ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </ModalWrapper>
       )}
     </div>
   );

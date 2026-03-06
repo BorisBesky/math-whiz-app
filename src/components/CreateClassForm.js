@@ -78,7 +78,10 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
 
   return (
     <ModalWrapper isOpen={true} onClose={onCancel} title="Create New Class" size="sm">
-      <div className="p-5">
+      <div className="p-6">
+          <p className="text-sm text-gray-600 mb-4">
+            Set up a class for your students. You can edit details later from the class panel.
+          </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,7 +137,7 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
                   onChange={handleProbabilityChange}
                   className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
-                <span className="font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full w-16 text-center text-sm">
+                <span className="font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full w-16 text-center text-sm">
                   {Math.round(formData.questionBankProbability * 100)}%
                 </span>
               </div>
@@ -168,11 +171,11 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
               </div>
             )}
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex space-x-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onCancel}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
               >
                 Cancel
               </button>
