@@ -158,16 +158,11 @@ export const AuthProvider = ({ children }) => {
             throw new Error('This account is registered as a teacher. Please use the teacher login.');
           }
         } else if (expectedRole === USER_ROLES.TEACHER) {
-          // For teacher role, check both custom claims and profile
-          const idTokenResult = await result.user.getIdTokenResult();
-          if (!idTokenResult.claims.role === 'teacher') {
-            await signOut(auth);
-            throw new Error('This account does not have teacher permissions.');
-          }
+          // For teacher role, check Firestore profile (custom claims may not be set for self-registered teachers)
           const profile = await getUserProfile(result.user.uid);
           if (!profile || profile.role !== USER_ROLES.TEACHER) {
             await signOut(auth);
-            throw new Error('This account is not registered as a teacher.');
+            throw new Error('This account is not registered as a teacher. Please use the appropriate login page.');
           }
         } else {
           // For student, check Firestore profile and ensure no admin claims
@@ -335,11 +330,36 @@ export const AuthProvider = ({ children }) => {
         const credential = EmailAuthProvider.credential(email, password);
         const result = await linkWithCredential(auth.currentUser, credential);
 
+        // For teacher registration, set custom claims via backend
+        if (role === USER_ROLES.TEACHER) {
+          try {
+            const idToken = await result.user.getIdToken();
+            const response = await fetch('/.netlify/functions/set-teacher-claims', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ appId }),
+            });
+            if (response.ok) {
+              await result.user.getIdToken(true);
+            } else {
+              console.error('Failed to set teacher claims:', await response.text());
+            }
+          } catch (claimError) {
+            console.error('Error setting teacher claims:', claimError);
+          }
+        }
+
+        // Manually set the role to avoid race condition
+        setUserRole(role);
+
         return result.user;
       }
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Set user profile with role
       await setUserProfile(result.user.uid, {
         email,
@@ -348,7 +368,34 @@ export const AuthProvider = ({ children }) => {
         isAnonymous: false,
         ...additionalData
       });
-      
+
+      // For teacher registration, set custom claims via backend
+      if (role === USER_ROLES.TEACHER) {
+        try {
+          const idToken = await result.user.getIdToken();
+          const response = await fetch('/.netlify/functions/set-teacher-claims', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ appId }),
+          });
+          if (response.ok) {
+            // Force token refresh to pick up new custom claims
+            await result.user.getIdToken(true);
+          } else {
+            console.error('Failed to set teacher claims:', await response.text());
+          }
+        } catch (claimError) {
+          console.error('Error setting teacher claims:', claimError);
+        }
+      }
+
+      // Manually set the role since onAuthStateChanged may have already
+      // fired before the profile was written (race condition)
+      setUserRole(role);
+
       return result.user;
     } catch (error) {
       setError(error.message);

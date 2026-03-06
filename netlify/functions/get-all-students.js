@@ -52,8 +52,20 @@ exports.handler = async (event) => {
     // 1. Verify the user's ID token
     const decodedToken = await admin.auth().verifyIdToken(token);
 
-    // 2. IMPORTANT: Check for admin custom claim
-    if (decodedToken.admin !== true && decodedToken.role !== 'teacher') {
+    // 2. Check for admin/teacher authorization via custom claims or Firestore profile
+    let isAuthorized = decodedToken.admin === true || decodedToken.role === 'teacher';
+
+    if (!isAuthorized) {
+      // Fallback: check Firestore profile for teacher role (handles self-registered teachers
+      // whose custom claims may not yet be propagated)
+      const authProfileRef = db.doc(`artifacts/${appId}/users/${decodedToken.uid}/math_whiz_data/profile`);
+      const authProfileSnap = await authProfileRef.get();
+      if (authProfileSnap.exists && authProfileSnap.data().role === 'teacher') {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
       return {
         statusCode: 403,
         headers,
