@@ -323,24 +323,24 @@ export const AuthProvider = ({ children }) => {
 
       // If user is anonymous, link the account. Otherwise, create a new one.
       if (auth.currentUser && auth.currentUser.isAnonymous) {
-        const credential = EmailAuthProvider.credential(email, password);
-        const result = await linkWithCredential(auth.currentUser, credential);
-        
-        // Update profile
-        await setUserProfile(result.user.uid, {
+        // Update profile BEFORE linking so onAuthStateChanged reads the correct role
+        await setUserProfile(auth.currentUser.uid, {
           email,
           role,
           isAnonymous: false,
           convertedAt: new Date(),
           ...additionalData
         });
-        
+
+        const credential = EmailAuthProvider.credential(email, password);
+        const result = await linkWithCredential(auth.currentUser, credential);
+
         return result.user;
       }
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Set user profile with role (only for students at this point)
+      // Set user profile with role
       await setUserProfile(result.user.uid, {
         email,
         role,
