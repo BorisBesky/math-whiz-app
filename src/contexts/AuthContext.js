@@ -90,6 +90,27 @@ export const AuthProvider = ({ children }) => {
             if (profile && profile.role) {
               role = profile.role;
               console.log('Auth Debug - Role from profile:', role);
+
+              // Patch missing custom claims for teachers on session restore
+              if (role === USER_ROLES.TEACHER && idTokenResult.claims.role !== 'teacher') {
+                try {
+                  const idToken = await firebaseUser.getIdToken();
+                  const response = await fetch('/.netlify/functions/set-teacher-claims', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({ appId }),
+                  });
+                  if (response.ok) {
+                    await firebaseUser.getIdToken(true);
+                    console.log('Auth Debug - Patched missing teacher custom claims');
+                  }
+                } catch (claimError) {
+                  console.error('Error patching teacher claims:', claimError);
+                }
+              }
             } else if (firebaseUser.isAnonymous) {
               role = USER_ROLES.STUDENT;
               // Create default profile for anonymous users
@@ -163,6 +184,26 @@ export const AuthProvider = ({ children }) => {
           if (!profile || profile.role !== USER_ROLES.TEACHER) {
             await signOut(auth);
             throw new Error('This account is not registered as a teacher. Please use the appropriate login page.');
+          }
+          // Patch missing custom claims for existing teachers who registered before the fix
+          const idTokenResult = await result.user.getIdTokenResult();
+          if (idTokenResult.claims.role !== 'teacher') {
+            try {
+              const idToken = await result.user.getIdToken();
+              const response = await fetch('/.netlify/functions/set-teacher-claims', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ appId }),
+              });
+              if (response.ok) {
+                await result.user.getIdToken(true);
+              }
+            } catch (claimError) {
+              console.error('Error patching teacher claims on login:', claimError);
+            }
           }
         } else {
           // For student, check Firestore profile and ensure no admin claims

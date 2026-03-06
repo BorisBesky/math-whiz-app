@@ -154,7 +154,8 @@ const ClassesSection = ({
               setActionError(null);
             } catch (err) {
               console.error('Failed to create class:', err);
-              setActionError(err?.message || 'Failed to create class. Please try again.');
+              // Re-throw so CreateClassForm can display the error inside the modal
+              throw err;
             }
           }}
           onCancel={() => {

@@ -10,6 +10,7 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   const gradeLevels = [
     'G3',
@@ -39,11 +40,13 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
     }
 
     setLoading(true);
-    
+    setSubmitError(null);
+
     try {
       await onSubmit(formData);
     } catch (error) {
       console.error('Error creating class:', error);
+      setSubmitError(error?.message || 'Failed to create class. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -158,6 +161,12 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
                 placeholder="Brief description of the class..."
               />
             </div>
+
+            {submitError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                {submitError}
+              </div>
+            )}
 
             <div className="flex space-x-3 pt-4">
               <button
