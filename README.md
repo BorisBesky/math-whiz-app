@@ -1,7 +1,7 @@
 # 🧙‍♂️ Math Whiz App
 
 An intelligent, adaptive math education platform designed for 3rd and 4th grade students. Math Whiz combines gamification, AI-powered content generation, and personalized learning to make mathematics engaging and effective.
-See live deployment at https://math-whiz-app.netlify.app/
+See live deployment at https://math-whiz-app.netlify.app/about
 
 ## ✨ Features
 
