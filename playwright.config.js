@@ -71,6 +71,20 @@ export default defineConfig({
       timeout: 180 * 1000, // Increased timeout for server startup (3 minutes)
       stdout: 'pipe', // Show stdout to help debug startup issues
       stderr: 'pipe', // Show stderr to help debug startup issues
+      env: {
+        ...process.env,
+        // When using emulators, tell the Firebase Admin SDK (in Netlify Functions)
+        // to connect to the local emulators so verifyIdToken accepts emulator tokens.
+        ...(useEmulator && {
+          FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+          FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+          REACT_APP_USE_EMULATOR: 'true',
+          // Override the project ID so the client SDK, Auth emulator tokens,
+          // and Admin SDK all use the same project namespace (demo-mathwhiz).
+          REACT_APP_FIREBASE_PROJECT_ID: 'demo-mathwhiz',
+          FIREBASE_PROJECT_ID: 'demo-mathwhiz',
+        }),
+      },
     };
   })(),
 });

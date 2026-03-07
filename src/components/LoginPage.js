@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { User, GraduationCap, LogIn, UserPlus } from 'lucide-react';
 
 const LoginPage = () => {
   const [mode, setMode] = useState('signin');
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
+  const redirectSuffix = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
 
   useEffect(() => {
     document.title = 'Sign In — Math Whiz';
@@ -59,7 +62,7 @@ const LoginPage = () => {
               <p className="text-center text-sm font-medium text-gray-600 mb-4">Choose how to sign in</p>
 
               <Link
-                to="/student-login"
+                to={`/student-login?${redirect ? `redirect=${encodeURIComponent(redirect)}` : ''}`}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3 text-base font-bold rounded-button text-white bg-brand-mint hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-sm"
               >
                 <User size={20} />
@@ -68,7 +71,7 @@ const LoginPage = () => {
               </Link>
 
               <Link
-                to="/teacher-login"
+                to={`/teacher-login?${redirect ? `redirect=${encodeURIComponent(redirect)}` : ''}`}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3 text-base font-bold rounded-button text-white bg-brand-blue hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-sm"
               >
                 <GraduationCap size={20} />
@@ -85,19 +88,21 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <Link
-                to="/student-login?guest=true"
-                className="w-full flex items-center justify-center px-6 py-3 border border-gray-200 text-base font-bold rounded-button text-gray-600 bg-white hover:bg-gray-50 active:scale-[0.98] transition-all duration-200"
-              >
-                Continue as Guest
-              </Link>
+              {!redirect && (
+                <Link
+                  to="/student-login?guest=true"
+                  className="w-full flex items-center justify-center px-6 py-3 border border-gray-200 text-base font-bold rounded-button text-gray-600 bg-white hover:bg-gray-50 active:scale-[0.98] transition-all duration-200"
+                >
+                  Continue as Guest
+                </Link>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-center text-sm font-medium text-gray-600 mb-4">Create your account</p>
 
               <Link
-                to="/student-login?mode=signup"
+                to={`/student-login?mode=signup${redirectSuffix}`}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3 text-base font-bold rounded-button text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:scale-[0.98] transition-all duration-200"
               >
                 <User size={20} />
@@ -106,7 +111,7 @@ const LoginPage = () => {
               </Link>
 
               <Link
-                to="/teacher-login?mode=signup"
+                to={`/teacher-login?mode=signup${redirectSuffix}`}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3 text-base font-bold rounded-button text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all duration-200"
               >
                 <GraduationCap size={20} />

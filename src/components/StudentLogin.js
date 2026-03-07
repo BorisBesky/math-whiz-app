@@ -19,7 +19,10 @@ const StudentLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
+  // Support redirect from join page via query param, fallback to location state
+  const redirectParam = searchParams.get('redirect');
+  const from = redirectParam ? decodeURIComponent(redirectParam) : (location.state?.from?.pathname || '/');
+  const isJoinRedirect = redirectParam && decodeURIComponent(redirectParam).startsWith('/join');
 
   const handleGuestLogin = useCallback(async () => {
     setLoading(true);
@@ -45,8 +48,8 @@ const StudentLogin = () => {
       setIsSignUp(true);
     }
     
-    // Auto-trigger guest login if guest=true in URL
-    if (isGuest === 'true') {
+    // Auto-trigger guest login if guest=true in URL (but not when joining a class)
+    if (isGuest === 'true' && !redirectParam) {
       handleGuestLogin();
     }
   }, [searchParams, handleGuestLogin]);
@@ -161,30 +164,43 @@ const StudentLogin = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Guest Login Option */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+          {isJoinRedirect && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-2">
+              <p className="text-sm text-blue-800 font-medium">Sign in to join your class</p>
+              <p className="text-xs text-blue-600 mt-1">
+                You'll be redirected to join the class after signing in.
+              </p>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-blue-50 text-gray-500">Quick Start</span>
-            </div>
-          </div>
+          )}
 
-          <button
-            onClick={handleGuestLogin}
-            disabled={loading}
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <Users className="h-5 w-5 text-green-500 group-hover:text-green-400" />
-              )}
-            </span>
-            {loading ? 'Starting...' : 'Start as Guest'}
-          </button>
+          {/* Guest Login Option — hidden when joining a class */}
+          {!isJoinRedirect && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-blue-50 text-gray-500">Quick Start</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleGuestLogin}
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <Users className="h-5 w-5 text-green-500 group-hover:text-green-400" />
+                  )}
+                </span>
+                {loading ? 'Starting...' : 'Start as Guest'}
+              </button>
+            </>
+          )}
 
           {/* Google Sign-In */}
           <button
