@@ -52,7 +52,7 @@ const StudentLogin = () => {
     if (isGuest === 'true' && !redirectParam) {
       handleGuestLogin();
     }
-  }, [searchParams, handleGuestLogin]);
+  }, [searchParams, handleGuestLogin, redirectParam]);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();

@@ -70,6 +70,14 @@ async function signInTeacher(page, email, password) {
 test.describe('Class join flow (full E2E)', () => {
   test.describe.configure({ mode: 'serial' });
 
+  // Skip when Netlify Dev is not running — these tests require Netlify Functions
+  // (set-teacher-claims) which are only available via `netlify dev` (port 8888).
+  // CI runs CRA directly (port 3000), so teacher custom claims can't be set.
+  test.skip(
+    () => process.env.PLAYWRIGHT_USE_NETLIFY_DEV !== 'true',
+    'Requires Netlify Dev for serverless functions (set PLAYWRIGHT_USE_NETLIFY_DEV=true)'
+  );
+
   // Skip on mobile viewports — the teacher portal uses a different nav layout
   // (dropdown selector) on small screens, and the join logic is identical.
   test.beforeEach(({}, testInfo) => {
