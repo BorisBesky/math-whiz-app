@@ -14,6 +14,14 @@
 # PDF_OPTIONS_BATCH_SIZE - Number of questions to process concurrently per batch (default: 5)
 # PDF_OPTIONS_BATCH_DELAY - Delay in milliseconds between batches (default: 2000)
 
+[[edge_functions]]
+  path = "/sitemap.xml"
+  function = "sitemap"
+
+[[edge_functions]]
+  path = "/robots.txt"
+  function = "robots"
+
 [[redirects]]
   from = "/admin"
   to = "/index.html"

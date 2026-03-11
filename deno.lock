@@ -12,14 +12,18 @@
     "packageJson": {
       "dependencies": [
         "npm:@google/generative-ai@~0.24.1",
+        "npm:@lhci/cli@0.14",
+        "npm:@playwright/test@^1.56.1",
         "npm:@testing-library/dom@^10.4.0",
         "npm:@testing-library/jest-dom@^6.6.3",
         "npm:@testing-library/react@^16.3.0",
         "npm:@testing-library/user-event@^13.5.0",
-        "npm:autoprefix@^1.0.1",
+        "npm:autoprefixer@^10.4.20",
         "npm:busboy@^1.6.0",
         "npm:dotenv@^17.2.2",
+        "npm:eslint@^8.57.1",
         "npm:firebase-admin@^12.7.0",
+        "npm:firebase-tools@^15.7.0",
         "npm:firebase@^11.10.0",
         "npm:katex@~0.16.22",
         "npm:lucide-react@0.525",
@@ -31,7 +35,9 @@
         "npm:react-router-dom@^7.9.4",
         "npm:react-scripts@5.0.1",
         "npm:react@^19.1.0",
+        "npm:sharp@~0.33.5",
         "npm:tailwindcss@^3.4.17",
+        "npm:wait-on@^9.0.4",
         "npm:web-vitals@^2.1.4"
       ]
     }
