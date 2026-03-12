@@ -105,7 +105,7 @@ const QuizView = ({
             className="h-full rounded-full progress-bar-animated"
             style={{
               width: `${progressPercentage}%`,
-              background: `linear-gradient(90deg, #48d1a5 0%, #3a7bd5 ${Math.min(progressPercentage + 20, 100)}%, #8b5cf6 100%)`,
+              background: `linear-gradient(90deg, #48d1a5 0%, #2563eb ${Math.min(progressPercentage + 20, 100)}%, #7c3aed 100%)`,
             }}
           />
         </div>

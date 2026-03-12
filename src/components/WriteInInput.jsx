@@ -86,7 +86,7 @@ const WriteInInput = React.memo(({
               <circle cx="10" cy="10" r="8" fill="none" stroke="#e5e7eb" strokeWidth="2" />
               <circle
                 cx="10" cy="10" r="8" fill="none"
-                stroke={isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#3a7bd5'}
+                stroke={isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#2563eb'}
                 strokeWidth="2"
                 strokeDasharray={`${charPercentage * 0.503} 50.3`}
                 strokeLinecap="round"

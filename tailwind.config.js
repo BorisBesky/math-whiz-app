@@ -7,19 +7,19 @@ export const theme = {
     colors: {
       // Brand palette — playful, warm, kid-friendly
       brand: {
-        blue: '#3a7bd5',
+        blue: '#2563eb',
         coral: '#f56565',
         mint: '#48d1a5',
         sunny: '#f6c844',
-        purple: '#8b5cf6',
+        purple: '#7c3aed',
         pink: '#ec4899',
         sky: '#38bdf8',
         orange: '#fb923c',
       },
       // Per-topic accent colors for topic cards
       topic: {
-        multiplication: '#3a7bd5',
-        division: '#8b5cf6',
+        multiplication: '#2563eb',
+        division: '#7c3aed',
         fractions: '#f56565',
         geometry: '#48d1a5',
         measurement: '#f6c844',
@@ -39,7 +39,7 @@ export const theme = {
     boxShadow: {
       'card': '0 2px 12px rgba(0, 0, 0, 0.08)',
       'card-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
-      'glow-blue': '0 0 20px rgba(58, 123, 213, 0.25)',
+      'glow-blue': '0 0 20px rgba(37, 99, 235, 0.25)',
       'glow-green': '0 0 20px rgba(72, 209, 165, 0.3)',
       'glow-coral': '0 0 20px rgba(245, 101, 101, 0.25)',
       'inner-soft': 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',

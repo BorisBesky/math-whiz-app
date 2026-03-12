@@ -15,13 +15,13 @@ body {
 
 /* Brand selection highlight */
 ::selection {
-  background-color: rgba(58, 123, 213, 0.2);
+  background-color: rgba(37, 99, 235, 0.2);
   color: inherit;
 }
 
 /* Accessible focus ring */
 :focus-visible {
-  outline: 2px solid #3a7bd5;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -34,7 +34,7 @@ body {
 
   /* Gradient text utility */
   .text-gradient-brand {
-    background: linear-gradient(135deg, #3a7bd5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
