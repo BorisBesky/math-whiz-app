@@ -8,7 +8,7 @@ import {
   getFirestore,
   connectFirestoreEmulator,
 } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+// Storage is loaded lazily — only needed for admin image uploads
 
 // --- Firebase Configuration ---
 let firebaseConfig = {};
@@ -37,11 +37,18 @@ if (typeof __firebase_config !== "undefined") {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+let _storage = null;
+const getStorageLazy = async () => {
+  if (!_storage) {
+    const { getStorage } = await import("firebase/storage");
+    _storage = getStorage(app);
+  }
+  return _storage;
+};
 
 if (process.env.REACT_APP_USE_EMULATOR === 'true') {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
 }
 
-export { app, auth, db, storage };
+export { app, auth, db, getStorageLazy };

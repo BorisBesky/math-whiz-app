@@ -1,6 +1,5 @@
 // 4th Grade Base Ten Topic Module
-import { generateQuestion } from './questions';
-import BaseTenExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const baseTen = {
   id: 'base-ten',
@@ -8,12 +7,10 @@ export const baseTen = {
   description: 'Place value, rounding, and multi-digit operations',
   grade: 'G4',
   standards: ['4.NBT.A.1', '4.NBT.A.2', '4.NBT.A.3', '4.NBT.B.4', '4.NBT.B.5', '4.NBT.B.6', '4.NF.C.6'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: BaseTenExplanation,
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   
   // Topic metadata
   subtopics: [

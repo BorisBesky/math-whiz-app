@@ -1,6 +1,5 @@
 // 3rd Grade Multiplication Topic Module
-import { generateQuestion } from './questions';
-import MultiplicationExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const multiplication = {
   id: 'multiplication',
@@ -8,13 +7,11 @@ export const multiplication = {
   description: 'Understanding multiplication through skip counting, arrays, and equal groups',
   grade: 'G3',
   standards: ['3.OA.A.1', '3.OA.A.3', '3.OA.B.5', '3.OA.C.7'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: MultiplicationExplanation,
-  
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
+
   // Topic metadata
   subtopics: [
     'basic multiplication',
@@ -23,7 +20,7 @@ export const multiplication = {
     'word problems',
     'fact families'
   ],
-  
+
   // Learning objectives
   objectives: [
     'Understand multiplication as repeated addition',

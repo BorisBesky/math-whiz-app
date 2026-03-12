@@ -1,6 +1,5 @@
 // 3rd Grade Fractions Topic Module
-import { generateQuestion } from './questions';
-import FractionsExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const fractions = {
   id: 'fractions',
@@ -8,8 +7,8 @@ export const fractions = {
   description: 'Understanding fractions as parts of a whole, equivalent fractions, and comparison',
   grade: 'G3',
   standards: ['3.NF.A.1', '3.NF.A.2', '3.NF.A.3.a', '3.NF.A.3.b', '3.NF.A.3.c', '3.NF.A.3.d'],
-  generateQuestion,
-  ExplanationComponent: FractionsExplanation,
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   subtopics: ['equivalent fractions', 'comparison', 'addition', 'subtraction', 'simplification'],
   objectives: [
     'Understand fractions as parts of a whole',

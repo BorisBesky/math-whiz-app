@@ -1,6 +1,5 @@
 // 4th Grade Fractions Topic Module
-import { generateQuestion } from './questions';
-import FractionsExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const fractions = {
   id: 'fractions',
@@ -8,12 +7,10 @@ export const fractions = {
   description: 'Equivalent fractions, comparison, addition, subtraction, and decimal notation',
   grade: 'G4',
   standards: ['4.NF.A.1', '4.NF.A.2', '4.NF.B.3.a', '4.NF.B.3.b', '4.NF.B.4.a', '4.NF.C.5', '4.NF.C.6', '4.NF.C.7'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: FractionsExplanation,
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   
   // Topic metadata
   subtopics: [

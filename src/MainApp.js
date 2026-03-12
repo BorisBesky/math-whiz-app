@@ -1,8 +1,7 @@
 /* global __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
-import "katex/dist/katex.min.css";
-import renderMathInElement from "katex/contrib/auto-render";
+// KaTeX is loaded dynamically when quiz starts (see useEffect below)
 import {
   Award,
   Coins,
@@ -63,19 +62,21 @@ import {
 import content from "./content";
 import { loadStoreImages, getCachedStoreImages } from "./utils/storeImages";
 import { resetTransientQuizState } from './utils/quizStateHelpers';
-import QuizResults from './components/QuizResults';
-import ContentModal from './components/ContentModal';
-import QuizView from './components/QuizView';
 import AppHeader from './components/AppHeader';
-import Dashboard from './components/Dashboard';
-import RewardsStore from './components/RewardsStore';
 import TopicSelection from './components/TopicSelection';
+import Dashboard from './components/Dashboard';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getTopicAvailability } from "./services/topicAvailability";
 
-// Re-export db and storage for backward compatibility
-export { db, storage } from './firebase';
+// Lazy-loaded components — only fetched when the user navigates to them
+const QuizView = React.lazy(() => import('./components/QuizView'));
+const QuizResults = React.lazy(() => import('./components/QuizResults'));
+const RewardsStore = React.lazy(() => import('./components/RewardsStore'));
+const ContentModal = React.lazy(() => import('./components/ContentModal'));
+
+// Re-export db for backward compatibility
+export { db } from './firebase';
 
 // Store items are now loaded dynamically from Firebase Storage
 
@@ -371,21 +372,29 @@ const MainAppContent = () => {
   }, [storeItems, storeTheme]);
 
   // Auto-render KaTeX inside the quiz container when content changes
+  // KaTeX CSS + JS are loaded dynamically to avoid bloating the initial bundle
   useEffect(() => {
     if (quizState === APP_STATES.IN_PROGRESS && quizContainerRef.current) {
-      try {
-        renderMathInElement(quizContainerRef.current, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true },
-          ],
-          throwOnError: false,
-        });
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn("KaTeX render error:", e);
-      }
+      Promise.all([
+        import('katex/dist/katex.min.css'),
+        import('katex/contrib/auto-render'),
+      ]).then(([, autoRenderModule]) => {
+        if (quizContainerRef.current) {
+          try {
+            autoRenderModule.default(quizContainerRef.current, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true },
+              ],
+              throwOnError: false,
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn("KaTeX render error:", e);
+          }
+        }
+      });
     }
   }, [quizState, currentQuestionIndex, currentQuiz, isAnswered, feedback, userAnswer, drawingFeedback, fillInAnswers]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1872,7 +1881,7 @@ const MainAppContent = () => {
     }
   };
 
-  const handleExplainConcept = () => {
+  const handleExplainConcept = async () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
 
     // Use TOPIC_CONTENT_MAP for data-driven lookup instead of per-topic if/else
@@ -1881,8 +1890,9 @@ const MainAppContent = () => {
     if (contentEntry) {
       const [gradeId, topicId] = contentEntry;
       const topicContent = content.getTopic(gradeId, topicId);
-      if (topicContent?.ExplanationComponent) {
-        ReactComponent = topicContent.ExplanationComponent;
+      if (topicContent?.loadExplanationComponent) {
+        // Load explanation component on demand (code-split per topic)
+        ReactComponent = await topicContent.loadExplanationComponent();
       }
     }
 
@@ -2010,6 +2020,7 @@ Answer: [The answer]`;
         />
         <div className="flex justify-center p-4 pb-20">
           <div className="w-full max-w-6xl">
+            <React.Suspense fallback={<div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" /></div>}>
             <Routes>
               <Route path="dashboard" element={
                 <Dashboard
@@ -2112,10 +2123,12 @@ Answer: [The answer]`;
                 />
               } />
             </Routes>
+            </React.Suspense>
           </div>
         </div>
 
         {/* Overlays (modals + sketch) are all route-driven */}
+        <React.Suspense fallback={null}>
         <Routes>
           <Route path="resume/:topic" element={<ResumeModal userData={userData} startNewQuiz={startNewQuiz} resumePausedQuiz={resumePausedQuiz} navigateApp={navigateApp} />} />
           <Route path="quiz/:topic/explain" element={<ContentModal
@@ -2153,6 +2166,7 @@ Answer: [The answer]`;
                 navigate={navigate}
               />} />
         </Routes>
+        </React.Suspense>
         <TutorialOverlay />
 
         {/* Sticky bottom ad — hidden during active quizzes to avoid accidental clicks */}

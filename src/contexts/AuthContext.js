@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, linkWithPopup } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, linkWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth as firebaseAuth, db as firebaseDb } from '../firebase';
 import { USER_ROLES } from '../utils/userRoles';
 
 const AuthContext = createContext();
@@ -19,8 +20,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const auth = getAuth();
-  const db = getFirestore();
+  const auth = firebaseAuth;
+  const db = firebaseDb;
   const appId = 'default-app-id';
 
   // Get user profile with role from Firestore

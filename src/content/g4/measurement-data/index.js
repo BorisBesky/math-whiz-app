@@ -1,6 +1,5 @@
 // 4th Grade Measurement & Data Topic Module
-import { generateQuestion } from './questions';
-import MeasurementDataExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const measurementData = {
   id: 'measurement-data',
@@ -8,12 +7,10 @@ export const measurementData = {
   description: 'Unit conversions, area, perimeter, angles, and data representation',
   grade: 'G4',
   standards: ['4.MD.A.1', '4.MD.A.2', '4.MD.A.3', '4.MD.B.4', '4.MD.C.5', '4.MD.C.6', '4.MD.C.7'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: MeasurementDataExplanation,
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   
   // Topic metadata
   subtopics: [

@@ -114,12 +114,17 @@ const TopicSelection = ({
     <div className="text-center mt-16 pb-20 px-4">
       {/* Title */}
       <div className="mb-4 flex justify-center items-center" data-tutorial-id="welcome-header">
-        <img
-          src="/math-whiz-title.gif"
-          alt="Math Whiz!"
-          className="h-16 md:h-20 w-auto"
-          style={{ imageRendering: "auto" }}
-        />
+        <picture>
+          <source srcSet="/math-whiz-title.webp" type="image/webp" />
+          <img
+            src="/math-whiz-title.gif"
+            alt="Math Whiz!"
+            className="h-16 md:h-20 w-auto"
+            width={548}
+            height={120}
+            style={{ imageRendering: "auto" }}
+          />
+        </picture>
       </div>
 
       {/* Grade Selector — pill toggle */}

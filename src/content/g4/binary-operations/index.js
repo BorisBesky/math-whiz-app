@@ -1,6 +1,5 @@
 // 4th Grade Binary Operations Topic Module
-import { generateQuestion } from './questions';
-import BinaryOperationsExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const binaryOperations = {
   id: 'binary-operations',
@@ -9,11 +8,9 @@ export const binaryOperations = {
   grade: 'G4',
   standards: ['4.NBT.A.1', '4.NBT.B.4', '4.NBT.B.5', '4.NBT.B.6', '4.OA.A.3'],
 
-  // Question generation function
-  generateQuestion,
-
-  // React component for explanations
-  ExplanationComponent: BinaryOperationsExplanation,
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
 
   // Topic metadata
   subtopics: [

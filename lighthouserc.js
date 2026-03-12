@@ -41,7 +41,7 @@ module.exports = {
         'speed-index': ['warn', { maxNumericValue: 4000 }],
 
         // Performance score (0-1 scale)
-        'categories:performance': ['warn', { minScore: 0.5 }],
+        'categories:performance': ['warn', { minScore: 0.7 }],
         'categories:accessibility': ['warn', { minScore: 0.7 }],
         'categories:best-practices': ['warn', { minScore: 0.7 }],
 

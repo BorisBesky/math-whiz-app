@@ -1,6 +1,5 @@
 // 3rd Grade Division Topic Module
-import { generateQuestion } from './questions';
-import DivisionExplanation from './Explanation';
+// Heavy imports (questions.js, Explanation.js) are loaded on demand
 
 export const division = {
   id: 'division',
@@ -8,12 +7,10 @@ export const division = {
   description: 'Understanding division through equal sharing, grouping, and fact families',
   grade: 'G3',
   standards: ['3.OA.A.2', '3.OA.A.3', '3.OA.B.6', '3.OA.C.7'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: DivisionExplanation,
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   
   // Topic metadata
   subtopics: [

@@ -1,7 +1,5 @@
 // 4th Grade Geometry Topic Module
-import { generateQuestion } from './questions';
-import GeometryExplanation from './Explanation';
-import * as geometricShapes from './shapes';
+// Heavy imports (questions.js, Explanation.js, shapes.js) are loaded on demand
 
 export const geometry = {
   id: 'geometry',
@@ -9,15 +7,10 @@ export const geometry = {
   description: 'Points, lines, angles, and classification of shapes',
   grade: 'G4',
   standards: ['4.G.A.1', '4.G.A.2', '4.G.A.3'],
-  
-  // Question generation function
-  generateQuestion,
-  
-  // React component for explanations
-  ExplanationComponent: GeometryExplanation,
-  
-  // Shape utilities
-  shapes: geometricShapes,
+
+  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
+  loadExplanationComponent: () => import('./Explanation').then(m => m.default),
   
   // Topic metadata
   subtopics: [

@@ -117,7 +117,9 @@ export const generateQuizQuestions = async (
         const topicContent = content.getTopic(gradeId, topicId);
         if (topicContent) {
           const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
-          question = topicContent.generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+          // Load question generator on demand (code-split per topic)
+          const generateQuestion = await topicContent.loadGenerateQuestion();
+          question = generateQuestion(difficulty, allowedSubtopicsForThisTopic);
           if (question) {
             question.concept = topic;
           }

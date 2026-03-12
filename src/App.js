@@ -2,11 +2,11 @@ import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import MainApp from './MainApp';
 import LoginPage from './components/LoginPage';
 import { USER_ROLES } from './utils/userRoles';
 
 // Lazy-loaded routes — only fetched when the user navigates to them
+const MainApp = React.lazy(() => import('./MainApp'));
 const StudentLogin = React.lazy(() => import('./components/StudentLogin'));
 const TeacherLogin = React.lazy(() => import('./components/TeacherLogin'));
 const AdminLogin = React.lazy(() => import('./components/AdminLogin'));
