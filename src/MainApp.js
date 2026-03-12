@@ -1995,7 +1995,7 @@ Answer: [The answer]`;
 
   return (
     <div
-      className="min-h-screen bg-gray-100 font-sans relative transition-all duration-500"
+      className="min-h-screen bg-gray-100 font-sans relative"
       style={{
         backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : "none",
         backgroundSize: "cover",

@@ -97,16 +97,16 @@ const TopicSelection = ({
 
   // Per-topic color theming
   const topicColors = {
-    'Multiplication':                 { bg: 'bg-blue-50',    border: 'border-blue-200',   accent: 'bg-blue-500',    text: 'text-blue-600',    hoverBg: 'hover:bg-blue-100',    icon: '\u2715', lightBg: 'bg-blue-100' },
-    'Division':                       { bg: 'bg-purple-50',  border: 'border-purple-200', accent: 'bg-purple-500',  text: 'text-purple-600',  hoverBg: 'hover:bg-purple-100',  icon: '\u00F7', lightBg: 'bg-purple-100' },
-    'Fractions':                      { bg: 'bg-rose-50',    border: 'border-rose-200',   accent: 'bg-rose-500',    text: 'text-rose-600',    hoverBg: 'hover:bg-rose-100',    icon: '\u00BD', lightBg: 'bg-rose-100' },
-    'Measurement & Data':             { bg: 'bg-amber-50',   border: 'border-amber-200',  accent: 'bg-amber-500',   text: 'text-amber-600',   hoverBg: 'hover:bg-amber-100',   icon: '\uD83D\uDCCF', lightBg: 'bg-amber-100' },
-    'Operations & Algebraic Thinking': { bg: 'bg-teal-50',   border: 'border-teal-200',   accent: 'bg-teal-500',    text: 'text-teal-600',    hoverBg: 'hover:bg-teal-100',    icon: '\uD83E\uDDEE', lightBg: 'bg-teal-100' },
-    'Base Ten':                       { bg: 'bg-indigo-50',  border: 'border-indigo-200', accent: 'bg-indigo-500',  text: 'text-indigo-600',  hoverBg: 'hover:bg-indigo-100',  icon: '\uD83D\uDD22', lightBg: 'bg-indigo-100' },
-    'Fractions 4th':                  { bg: 'bg-pink-50',    border: 'border-pink-200',   accent: 'bg-pink-500',    text: 'text-pink-600',    hoverBg: 'hover:bg-pink-100',    icon: '\u00BE', lightBg: 'bg-pink-100' },
-    'Measurement & Data 4th':         { bg: 'bg-orange-50',  border: 'border-orange-200', accent: 'bg-orange-500',  text: 'text-orange-600',  hoverBg: 'hover:bg-orange-100',  icon: '\uD83D\uDCD0', lightBg: 'bg-orange-100' },
-    'Geometry':                       { bg: 'bg-emerald-50', border: 'border-emerald-200',accent: 'bg-emerald-500', text: 'text-emerald-600', hoverBg: 'hover:bg-emerald-100', icon: '\uD83D\uDCD0', lightBg: 'bg-emerald-100' },
-    'Binary Operations':              { bg: 'bg-cyan-50',    border: 'border-cyan-200',   accent: 'bg-cyan-500',    text: 'text-cyan-600',    hoverBg: 'hover:bg-cyan-100',    icon: '\u26A1', lightBg: 'bg-cyan-100' },
+    'Multiplication':                 { bg: 'bg-blue-50',    border: 'border-blue-200',   accent: 'bg-blue-500',    text: 'text-blue-700',    hoverBg: 'hover:bg-blue-100',    icon: '\u2715', lightBg: 'bg-blue-100' },
+    'Division':                       { bg: 'bg-purple-50',  border: 'border-purple-200', accent: 'bg-purple-500',  text: 'text-purple-700',  hoverBg: 'hover:bg-purple-100',  icon: '\u00F7', lightBg: 'bg-purple-100' },
+    'Fractions':                      { bg: 'bg-rose-50',    border: 'border-rose-200',   accent: 'bg-rose-500',    text: 'text-rose-700',    hoverBg: 'hover:bg-rose-100',    icon: '\u00BD', lightBg: 'bg-rose-100' },
+    'Measurement & Data':             { bg: 'bg-amber-50',   border: 'border-amber-200',  accent: 'bg-amber-500',   text: 'text-amber-700',   hoverBg: 'hover:bg-amber-100',   icon: '\uD83D\uDCCF', lightBg: 'bg-amber-100' },
+    'Operations & Algebraic Thinking': { bg: 'bg-teal-50',   border: 'border-teal-200',   accent: 'bg-teal-500',    text: 'text-teal-700',    hoverBg: 'hover:bg-teal-100',    icon: '\uD83E\uDDEE', lightBg: 'bg-teal-100' },
+    'Base Ten':                       { bg: 'bg-indigo-50',  border: 'border-indigo-200', accent: 'bg-indigo-500',  text: 'text-indigo-700',  hoverBg: 'hover:bg-indigo-100',  icon: '\uD83D\uDD22', lightBg: 'bg-indigo-100' },
+    'Fractions 4th':                  { bg: 'bg-pink-50',    border: 'border-pink-200',   accent: 'bg-pink-500',    text: 'text-pink-700',    hoverBg: 'hover:bg-pink-100',    icon: '\u00BE', lightBg: 'bg-pink-100' },
+    'Measurement & Data 4th':         { bg: 'bg-orange-50',  border: 'border-orange-200', accent: 'bg-orange-500',  text: 'text-orange-700',  hoverBg: 'hover:bg-orange-100',  icon: '\uD83D\uDCD0', lightBg: 'bg-orange-100' },
+    'Geometry':                       { bg: 'bg-emerald-50', border: 'border-emerald-200',accent: 'bg-emerald-500', text: 'text-emerald-700', hoverBg: 'hover:bg-emerald-100', icon: '\uD83D\uDCD0', lightBg: 'bg-emerald-100' },
+    'Binary Operations':              { bg: 'bg-cyan-50',    border: 'border-cyan-200',   accent: 'bg-cyan-500',    text: 'text-cyan-700',    hoverBg: 'hover:bg-cyan-100',    icon: '\u26A1', lightBg: 'bg-cyan-100' },
   };
   const defaultColor = { bg: 'bg-gray-50', border: 'border-gray-200', accent: 'bg-gray-500', text: 'text-gray-600', hoverBg: 'hover:bg-gray-100', icon: '\uD83D\uDCDA', lightBg: 'bg-gray-100' };
 
@@ -120,8 +120,9 @@ const TopicSelection = ({
             src="/math-whiz-title.gif"
             alt="Math Whiz!"
             className="h-16 md:h-20 w-auto"
-            width={548}
-            height={120}
+            width={400}
+            height={88}
+            fetchPriority="high"
             style={{ imageRendering: "auto" }}
           />
         </picture>
@@ -135,7 +136,7 @@ const TopicSelection = ({
             className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
               selectedGrade === "G3"
                 ? "bg-brand-blue text-white shadow-glow-blue"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
             3rd Grade
@@ -145,7 +146,7 @@ const TopicSelection = ({
             className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
               selectedGrade === "G4"
                 ? "bg-brand-purple text-white shadow-glow-blue"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
             4th Grade
@@ -222,14 +223,14 @@ const TopicSelection = ({
                   className={`text-lg font-display font-bold transition-colors duration-300 ${
                     isAvailable
                       ? `text-gray-800 group-hover:${colors.text}`
-                      : "text-gray-500"
+                      : "text-gray-600"
                   }`}
                 >
                   {topic}
                 </h3>
                 <p
                   className={`text-sm mt-0.5 ${
-                    isAvailable ? "text-gray-500" : "text-gray-400"
+                    isAvailable ? "text-gray-600" : "text-gray-500"
                   }`}
                 >
                   {isCompleted && !isAvailable
@@ -258,7 +259,7 @@ const TopicSelection = ({
                     ? "bg-green-100 text-green-700"
                     : isAvailable
                     ? `${colors.lightBg} ${colors.text}`
-                    : "bg-gray-200 text-gray-500"
+                    : "bg-gray-200 text-gray-600"
                 }`}>
                   {stat.correctAnswers}/{stat.goal}
                 </div>
