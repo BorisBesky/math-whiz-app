@@ -48,6 +48,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'decimal operations': { generator: generateDecimalOperationsQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'multiplication': { generator: generateFractionMultiplicationQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'mixed numbers': { generator: generateMixedNumbersQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'decimal number line': { generator: generateDecimalNumberLineQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -593,6 +594,118 @@ export function generateDecimalOperationsQuestion(difficulty = 0.5) {
   return selected(difficulty);
 }
 
+/**
+ * Generates random decimal values with minimum spacing between them
+ * @param {number} count - Number of decimals to generate
+ * @param {boolean} useHundredths - Whether to use hundredths precision
+ * @param {number} minSpacing - Minimum spacing between any two values
+ * @returns {number[]} Array of decimal values
+ */
+function generateSpacedDecimals(count, useHundredths, minSpacing) {
+  const maxAttempts = 100;
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    const values = [];
+
+    for (let i = 0; i < count; i++) {
+      let val;
+      if (useHundredths) {
+        val = getRandomInt(1, 99) / 100;
+      } else {
+        val = getRandomInt(1, 9) / 10;
+      }
+      values.push(val);
+    }
+
+    values.sort((a, b) => a - b);
+    let valid = true;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] - values[i - 1] < minSpacing) {
+        valid = false;
+        break;
+      }
+    }
+
+    const unique = new Set(values.map(v => v.toFixed(2)));
+    if (unique.size !== values.length) valid = false;
+
+    if (valid) return values;
+  }
+
+  // Fallback: evenly-spaced values
+  const step = 0.8 / (count + 1);
+  return Array.from({ length: count }, (_, i) => {
+    const val = 0.1 + step * (i + 1);
+    return useHundredths
+      ? Math.round(val * 100) / 100
+      : Math.round(val * 10) / 10;
+  });
+}
+
+/**
+ * Generates a decimal number line drawing question
+ * Students mark decimal points on a 0-1 ruler
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDecimalNumberLineQuestion(difficulty = 0.5) {
+  let numPoints, useHundredths, minSpacing;
+
+  if (difficulty < 0.75) {
+    numPoints = 2;
+    useHundredths = false;
+    minSpacing = 0.3;
+  } else if (difficulty < 0.9) {
+    numPoints = 3;
+    useHundredths = true;
+    minSpacing = 0.15;
+  } else {
+    numPoints = 4;
+    useHundredths = true;
+    minSpacing = 0.05;
+  }
+
+  const decimals = generateSpacedDecimals(numPoints, useHundredths, minSpacing);
+
+  const formattedDecimals = decimals.map(d =>
+    useHundredths ? d.toFixed(2) : d.toFixed(1)
+  );
+
+  // Shuffle so they aren't displayed in sorted order
+  const displayOrder = shuffle([...formattedDecimals]);
+  const decimalListStr = displayOrder.join('  ');
+
+  const positionDescriptions = formattedDecimals.map(d => {
+    const pct = (parseFloat(d) * 100).toFixed(0);
+    return `${d} (at ${pct}% from the left end)`;
+  }).join(', ');
+
+  const expectedAnswer = `The student should place ${numPoints} marks on a 0-to-1 number line ruler (smallest unit 0.01) at: ${positionDescriptions}. Each mark should be within approximately 3 hundredths of the correct position. Accept marks that are dots, short vertical lines, X marks, or arrows.`;
+
+  return {
+    question: `Mark on the number line the following decimals: ${decimalListStr}`,
+    correctAnswer: formattedDecimals.join(', '),
+    expectedAnswer: expectedAnswer,
+    options: [],
+    questionType: QUESTION_TYPES.DRAWING,
+    hint: `Each small tick mark on the ruler represents 0.01 (one hundredth). Find each decimal by counting tick marks from 0. For example, 0.50 is exactly halfway.`,
+    standard: '4.NF.C.6',
+    concept: 'Fractions 4th',
+    grade: 'G4',
+    subtopic: 'decimal number line',
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
+    images: [
+      {
+        type: 'question',
+        url: '/images/decimal_ruler.jpg',
+        description: 'Number line ruler from 0 to 1 with tick marks at every hundredth'
+      }
+    ]
+  };
+}
+
 const fractionsQuestions = {
   generateQuestion,
   generateEquivalentFractionsQuestion,
@@ -607,6 +720,7 @@ const fractionsQuestions = {
   generateDecimalDivisionQuestion,
   generateFractionMultiplicationQuestion,
   generateMixedNumbersQuestion,
+  generateDecimalNumberLineQuestion,
   simplifyFraction,
   gcd,
 };

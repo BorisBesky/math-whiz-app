@@ -21,7 +21,8 @@ export const fractions = {
     'multiplication',
     'decimal notation',
     'decimal operations',
-    'mixed numbers'
+    'mixed numbers',
+    'decimal number line'
   ],
   
   // Learning objectives
@@ -33,7 +34,8 @@ export const fractions = {
     'Express fractions with denominators of 10 as decimals',
     'Compare decimal notations for fractions',
     'Add, subtract, multiply, and divide decimals',
-    'Solve word problems involving fractions'
+    'Solve word problems involving fractions',
+    'Locate and mark decimals on a number line'
   ]
 };
 

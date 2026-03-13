@@ -214,6 +214,30 @@ const FractionsExplanation = () => {
         <span style={styles.emoji}>💡</span><strong>Decimal Trick:</strong> For tenths, put one digit after the decimal point. For hundredths, put two digits!
       </div>
 
+      <h3 style={{...styles.h2, fontSize: '1.4em', borderBottom: '2px dashed #ad1457', marginTop: '20px'}}>📏 Decimals on a Number Line</h3>
+      <p>You can show decimals on a number line! This helps you see how big or small they are.</p>
+
+      <div style={styles.fractionVisual}>
+        <p><strong>A number line from 0 to 1:</strong></p>
+        <div style={{fontFamily: 'monospace', fontSize: '1.1em'}}>
+          0 ---|---|---|---|---|---|---|---|---|---| 1
+        </div>
+        <p style={{fontSize: '0.9em'}}>Each big mark = 0.1 (one tenth)</p>
+        <p style={{fontSize: '0.9em'}}>Each tiny mark = 0.01 (one hundredth)</p>
+      </div>
+
+      <div style={styles.example}>
+        <strong>Placing 0.75 on the number line:</strong>
+        <br/>• Start at 0
+        <br/>• Count 7 big marks to reach 0.7
+        <br/>• Count 5 more small marks to reach 0.75
+        <br/>• That is three-quarters of the way from 0 to 1!
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span><strong>Number Line Tip:</strong> Think of the number line like a ruler! 0.50 is right in the middle. Numbers less than 0.50 are in the left half, and numbers greater than 0.50 are in the right half.
+      </div>
+
       <h2 style={styles.h2}>🧮 Decimal Operations</h2>
       <p>Once you know how to write decimals, you can add, subtract, multiply, and divide them!</p>
 
