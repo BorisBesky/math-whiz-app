@@ -6,7 +6,8 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
     name: '',
     description: '',
     gradeLevel: '',
-    questionBankProbability: 0.7 // Default 70%
+    questionBankProbability: 0.7, // Default 70%
+    questionMasteryThreshold: 3 // Default: retire after 3 correct answers
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -76,6 +77,14 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
     }));
   };
 
+  const handleThresholdChange = (e) => {
+    const value = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1));
+    setFormData(prev => ({
+      ...prev,
+      questionMasteryThreshold: value
+    }));
+  };
+
   return (
     <ModalWrapper isOpen={true} onClose={onCancel} title="Create New Class" size="sm">
       <div className="p-6">
@@ -142,11 +151,32 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
                 </span>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {formData.questionBankProbability === 0 
+                {formData.questionBankProbability === 0
                   ? 'Only generated questions (no uploaded questions)'
                   : formData.questionBankProbability === 1
                   ? 'Only uploaded questions (no generated questions)'
                   : `${Math.round(formData.questionBankProbability * 100)}% uploaded, ${Math.round((1 - formData.questionBankProbability) * 100)}% generated`}
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="questionMasteryThreshold" className="block text-sm font-medium text-gray-700 mb-1">
+                Question Mastery Threshold
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  id="questionMasteryThreshold"
+                  min="1"
+                  max="20"
+                  value={formData.questionMasteryThreshold}
+                  onChange={handleThresholdChange}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                />
+                <span className="text-sm text-gray-600">correct answers to retire a question type</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                After a student answers a tagged question type correctly this many times, it won't appear again.
               </p>
             </div>
 

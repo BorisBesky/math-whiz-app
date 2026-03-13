@@ -897,6 +897,8 @@ export function generatePlaceValueTableQuestion(difficulty = 0.5) {
     difficultyRange: { min: 0.2, max: 1.0 },
     suggestedDifficulty: difficulty,
     inputTypes,
+    questionTag: 'place-value-table',
+    awardPoints: 3,
     tableData: {
       columns,
       numberStr,

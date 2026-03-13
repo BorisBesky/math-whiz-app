@@ -883,6 +883,7 @@ const MainAppContent = () => {
     let studentClassId = null;
     let questionBankProbability = 0.7; // Default 70%
     let allowedSubtopicsByTopic = null;
+    let tagMasteryThreshold = 3; // Default: retire tagged questions after 3 correct
     const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
     try {
       const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
@@ -907,6 +908,9 @@ const MainAppContent = () => {
             if (typeof classData.questionBankProbability === 'number') {
               questionBankProbability = Math.max(0, Math.min(1, classData.questionBankProbability));
               console.log(`Using class-configured question bank probability: ${questionBankProbability * 100}%`);
+            }
+            if (typeof classData.questionMasteryThreshold === 'number') {
+              tagMasteryThreshold = Math.max(1, classData.questionMasteryThreshold);
             }
           }
         } catch (classErr) {
@@ -968,6 +972,7 @@ const MainAppContent = () => {
       {};
 
     console.log('[startNewQuiz] Generating questions');
+    const tagMastery = userData?.questionMastery || {};
     const newQuestions = await generateQuizQuestions(
       topic,
       dailyGoalsForGrade,
@@ -979,7 +984,9 @@ const MainAppContent = () => {
       answeredQuestionIds,
       appIdForQuiz,
       questionBankProbability,
-      allowedSubtopicsByTopic
+      allowedSubtopicsByTopic,
+      tagMastery,
+      tagMasteryThreshold
     );
     console.log('[startNewQuiz] Questions generated:', newQuestions?.length);
     setCurrentQuiz(newQuestions);
@@ -1302,9 +1309,11 @@ const MainAppContent = () => {
       
       updates.answeredQuestions = arrayUnion(sanitizedQuestionRecord);
 
+      const pointsAwarded = currentQuestion.awardPoints || 1;
+
       // Update progress counters (matching the structure used by regular questions)
       if (isCorrect) {
-        updates.coins = increment(1);
+        updates.coins = increment(pointsAwarded);
         updates[`${gradeAllProgress_path}.correct`] = increment(1);
         updates[`${gradeTopicProgress_path}.correct`] = increment(1);
 
@@ -1313,7 +1322,7 @@ const MainAppContent = () => {
           updates[`${topicProgress_path}.correct`] = increment(1);
         }
 
-        setScore(score + 1);
+        setScore(score + pointsAwarded);
 
         // Track answered question bank questions to avoid repeating them
         if (currentQuestion.questionId) {
@@ -1322,6 +1331,11 @@ const MainAppContent = () => {
           if (!currentAnsweredIds.includes(currentQuestion.questionId)) {
             updates[`answeredQuestionBankQuestions`] = arrayUnion(currentQuestion.questionId);
           }
+        }
+
+        // Track tag-based mastery for question retirement
+        if (currentQuestion.questionTag) {
+          updates[`questionMastery.${currentQuestion.questionTag}`] = increment(1);
         }
       } else {
         updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
@@ -1356,7 +1370,7 @@ const MainAppContent = () => {
         ];
         feedbackMessage = (
           <span className="flex items-center justify-center gap-2">
-            {correctMessages[Math.floor(Math.random() * correctMessages.length)]} +1 Coin! <Coins className="text-yellow-500" />
+            {correctMessages[Math.floor(Math.random() * correctMessages.length)]} +{pointsAwarded} Coin{pointsAwarded > 1 ? 's' : ''}! <Coins className="text-yellow-500" />
           </span>
         );
         feedbackType = 'success';

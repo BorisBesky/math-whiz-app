@@ -19,7 +19,9 @@ export const generateQuizQuestions = async (
   answeredQuestionIds = [],
   appId = null,
   questionBankProbability = 0.7, // Default 70% chance for question bank questions
-  allowedSubtopicsByTopic = null // Subtopic restrictions from enrollment
+  allowedSubtopicsByTopic = null, // Subtopic restrictions from enrollment
+  tagMastery = {}, // Per-tag correct counts (e.g. { 'place-value-table': 2 })
+  tagMasteryThreshold = 3 // Skip tagged questions once count >= threshold
 ) => {
   if (typeof window !== 'undefined' && Array.isArray(window.__PW_MOCK_QUIZ_QUESTIONS) && window.__PW_MOCK_QUIZ_QUESTIONS.length > 0) {
     return window.__PW_MOCK_QUIZ_QUESTIONS.map((question) => ({ ...question }));
@@ -176,6 +178,11 @@ export const generateQuizQuestions = async (
       // Skip this question if subtopic is not allowed
       filteredBySubtopicCount++;
       consecutiveFilteredCount++;
+      continue;
+    }
+
+    // Skip tagged questions that the student has already mastered
+    if (question.questionTag && (tagMastery[question.questionTag] || 0) >= tagMasteryThreshold) {
       continue;
     }
 
