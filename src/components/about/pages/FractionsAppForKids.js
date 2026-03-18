@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Slice, PenTool, TrendingUp, Brain, BookOpen, CheckCircle, Eye } from 'lucide-react';
+import { PenTool, Brain, BookOpen, CheckCircle, Eye } from 'lucide-react';
 import { PageWrapper, FeatureCard, CallToAction, RelatedPages, Callout } from '../SharedComponents';
 
 const FractionsAppForKids = () => (

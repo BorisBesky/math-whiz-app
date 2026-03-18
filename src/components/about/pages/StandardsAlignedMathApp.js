@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, BookOpen, Shield, FileText, GraduationCap } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { PageWrapper, CallToAction, RelatedPages, Callout } from '../SharedComponents';
 
 const StandardsAlignedMathApp = () => (

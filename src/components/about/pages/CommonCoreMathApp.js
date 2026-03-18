@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, BookOpen, FileText, GraduationCap, BarChart2 } from 'lucide-react';
-import { PageWrapper, FeatureCard, CallToAction, RelatedPages, Callout } from '../SharedComponents';
+import { CheckCircle } from 'lucide-react';
+import { PageWrapper, CallToAction, RelatedPages, Callout } from '../SharedComponents';
 
 const CommonCoreMathApp = () => (
   <PageWrapper>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Divide, PenTool, Brain, BookOpen, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react';
+import { PenTool, Brain, BookOpen, TrendingUp, CheckCircle } from 'lucide-react';
 import { PageWrapper, FeatureCard, CallToAction, RelatedPages, Callout } from '../SharedComponents';
 
 const DivisionPractice3rdGrade = () => (

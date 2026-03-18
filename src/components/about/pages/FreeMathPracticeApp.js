@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, ShieldCheck, Users, BookOpen, Sparkles, Heart, Ban } from 'lucide-react';
+import { ShieldCheck, Users, BookOpen, Sparkles } from 'lucide-react';
 import { PageWrapper, FeatureCard, CallToAction, RelatedPages, Callout } from '../SharedComponents';
 
 const FreeMathPracticeApp = () => (
