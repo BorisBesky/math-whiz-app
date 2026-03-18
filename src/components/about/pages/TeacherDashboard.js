@@ -33,14 +33,12 @@ const TeacherDashboard = () => (
       </h2>
       <p className="text-gray-600 mb-6 leading-relaxed">
         Getting started is simple. Create a teacher account, name your class, and you'll get a unique
-        join code. Share the code with your students — they enter it on any device to join. No
-        student email addresses required. Students can start as guests and create accounts later to
-        save their progress across sessions.
+        join code. Share the link to join your class with your students. Once they click the link, they can register and join your class from any device.
       </p>
       <div className="grid sm:grid-cols-3 gap-4">
         {[
           { step: '1', title: 'Create your class', desc: 'Name it, pick a grade level, and get your join code' },
-          { step: '2', title: 'Share the code', desc: 'Students enter the code from any device — phone, tablet, or computer' },
+          { step: '2', title: 'Share the link', desc: 'Students click the link from any device — phone, tablet, or computer to join your class' },
           { step: '3', title: 'Start teaching', desc: 'See live analytics as students begin practicing' },
         ].map(({ step, title, desc }) => (
           <div key={step} className="bg-white border border-blue-200 rounded-xl p-5 text-center">
@@ -115,7 +113,7 @@ const TeacherDashboard = () => (
       <Callout color="blue">
         <h3 className="text-xl font-bold text-gray-900 mb-3">AI Question Generation</h3>
         <p className="text-gray-700 leading-relaxed">
-          Need more practice problems? Math Whiz can generate batches of 25 curriculum-aligned
+          Need more practice problems? Math Whiz can generate batches of 15 curriculum-aligned
           questions with one click. Choose the topic, subtopic, and difficulty level, and the AI
           creates new questions that match your specifications. Every generated question includes
           the correct answer, a hint, and the relevant Common Core standard.
@@ -154,7 +152,7 @@ const TeacherDashboard = () => (
         <FeatureCard
           icon={<UserPlus size={24} className="text-blue-600" />}
           title="Flexible Student Access"
-          description="Students can join from any device with a class code. No accounts required to start. Works in computer labs, on tablets, or on students' home devices."
+          description="Students can join from any device with a class link. Works in computer labs, on tablets, or on students' home devices."
           color="blue"
         />
       </div>
