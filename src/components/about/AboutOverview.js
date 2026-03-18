@@ -25,6 +25,14 @@ const AboutOverview = () => {
       meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, track progress, and add custom content.');
     }
 
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', 'https://mathwhizapp.kids/about');
+
     const script = document.createElement('script');
     script.type = 'application/ld+json';
     script.text = JSON.stringify({
@@ -60,6 +68,8 @@ const AboutOverview = () => {
     return () => {
       document.title = 'Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
       document.head.removeChild(script);
+      const canon = document.querySelector('link[rel="canonical"]');
+      if (canon) canon.setAttribute('href', 'https://mathwhizapp.kids/');
     };
   }, []);
 

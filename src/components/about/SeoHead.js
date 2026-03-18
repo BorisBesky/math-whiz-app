@@ -13,6 +13,14 @@ const SeoHead = ({ title, description, keyword, slug }) => {
     const prevDesc = meta?.getAttribute('content');
     if (meta) meta.setAttribute('content', description);
 
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', `https://mathwhizapp.kids/about/${slug}`);
+
     const script = document.createElement('script');
     script.type = 'application/ld+json';
     script.text = JSON.stringify({
@@ -42,6 +50,8 @@ const SeoHead = ({ title, description, keyword, slug }) => {
       document.title = prevTitle;
       if (meta && prevDesc) meta.setAttribute('content', prevDesc);
       document.head.removeChild(script);
+      const canon = document.querySelector('link[rel="canonical"]');
+      if (canon) canon.setAttribute('href', 'https://mathwhizapp.kids/');
     };
   }, [title, description, keyword, slug]);
 
