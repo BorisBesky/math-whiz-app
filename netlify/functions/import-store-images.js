@@ -66,7 +66,8 @@ exports.handler = async (event, context) => {
     const bucketName = bucket.name;
     const baseUrl = `https://storage.googleapis.com/${bucketName}`;
 
-    // Process each image
+    // Process each image — metadata is the source of truth, no per-image
+    // existence checks needed (avoids N sequential round-trips to Storage)
     const storeItems = [];
     let index = 1;
 
@@ -80,17 +81,6 @@ exports.handler = async (event, context) => {
 
         // Get filename (use filename from metadata or generate from name)
         const filename = imageMeta.filename || `${imageMeta.name.replace(/\s+/g, '-').toLowerCase()}.jpg`;
-        
-        // Construct image path
-        const imagePath = `store-images/${filename}`;
-        const imageFile = bucket.file(imagePath);
-
-        // Check if image file exists
-        const [imageExists] = await imageFile.exists();
-        if (!imageExists) {
-          console.warn(`[import-store-images] Image file not found: ${imagePath}`);
-          continue;
-        }
 
         // Generate ID from filename or use index
         const sanitizedFilename = filename.replace(/\.[^/.]+$/, '').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
@@ -128,7 +118,10 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers,
+      headers: {
+        ...headers,
+        'Cache-Control': 'public, max-age=300, s-maxage=600',
+      },
       body: JSON.stringify({ images: storeItems }),
     };
   } catch (error) {
