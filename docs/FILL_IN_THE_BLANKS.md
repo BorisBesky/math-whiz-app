@@ -41,10 +41,12 @@ The fill-in-the-blanks question type allows students to complete sentences or eq
 ## Features
 
 ### 1. Blank Detection
+
 - Blanks are detected by patterns of 2 or more underscores: `__`, `___`, `____`, etc.
 - The number of blanks must match the number of answers provided
 
 ### 2. Answer Validation
+
 - **Normalization for numeric answers**: Numeric answers are normalized (commas removed, decimals standardized) for accurate comparison (e.g., "4,700", "4700", and "4700.0" are equivalent)
 - **Normalization for text answers**: Mathematical expressions are normalized (standardizing symbols like ×→x, ÷→/, and whitespace) for case-insensitive comparison (e.g., "63 × 9 = 567" and "63 x 9 = 567" are equivalent)
 - **No partial credit**: All blanks must be correct for the question to be marked as correct
@@ -53,7 +55,9 @@ The fill-in-the-blanks question type allows students to complete sentences or eq
   - ❌ Red border: Incorrect answer
 
 ### 3. Input Types (Optional)
+
 Specify `inputTypes` array to control input behavior per blank:
+
 - `'numeric'`: Sets inputMode to 'decimal' for mobile keyboards
 - `'letters'`: Standard text input
 - `'mixed'`: Standard text input (default if not specified)
@@ -63,12 +67,15 @@ inputTypes: ['numeric', 'numeric', 'letters']
 ```
 
 ### 4. Correct Answer Format
+
 Multiple answers are separated by double semicolons (` ;; `):
+
 ```javascript
 correctAnswer: "answer1 ;; answer2 ;; answer3"
 ```
 
 ### 5. Visual Feedback
+
 - Before answering: Shows "Fill in all N blanks" or "N/N blanks filled"
 - After submission:
   - All correct: Success message with 🎉 emoji
@@ -80,6 +87,7 @@ correctAnswer: "answer1 ;; answer2 ;; answer3"
 See `/src/content/g3/multiplication/questions.js` for the `generateFillInTheBlanksQuestion()` function.
 
 ### Simple Example
+
 ```javascript
 {
   question: "6 × 7 = ____",
@@ -96,6 +104,7 @@ See `/src/content/g3/multiplication/questions.js` for the `generateFillInTheBlan
 ```
 
 ### Complex Example (Mixed Types)
+
 ```javascript
 {
   question: "The ____ of 3 and 4 is ____, which can also be written as 3 × ____ = ____",
@@ -113,7 +122,7 @@ See `/src/content/g3/multiplication/questions.js` for the `generateFillInTheBlan
 
 ## Validation Rules
 
-1. **Exact Match**: No case-insensitive matching, no normalization
+1. **Normalization applied**: Answers are normalized before comparison (see Answer Validation above). Numeric answers are compared after stripping commas and normalizing decimals; text answers are lowercased and math symbols are standardized.
 2. **Whitespace**: Leading/trailing whitespace is trimmed automatically
 3. **All or Nothing**: All blanks must be correct (no partial credit)
 4. **Count Validation**: Number of blanks must equal number of answers
@@ -128,10 +137,13 @@ Located in `/src/utils/answer-helpers.js`:
 - `parseCorrectAnswers(correctAnswer)` - Extract individual answers from ;; delimited string
 - `validateBlankAnswerCount(blanks, correctAnswers)` - Ensure counts match
 - `validateFillInAnswers(userAnswers, correctAnswers, inputTypes)` - Validate all answers
+- `normalizeNumericAnswer(answer)` - Strip commas, normalize decimals
+- `normalizeMathExpression(expression)` - Standardize symbols and whitespace
 
 ## UI Behavior
 
 ### During Answer Entry
+
 - Input fields appear inline with question text
 - Width adjusts based on expected answer length (4-12rem)
 - Empty fields: gray border
@@ -139,12 +151,14 @@ Located in `/src/utils/answer-helpers.js`:
 - Placeholder shows "blank 1", "blank 2", etc.
 
 ### After Submission
+
 - Correct blanks: green background with green border
 - Incorrect blanks: red background with red border
 - Correct answers displayed below for any incorrect blanks
 - Shows what the user entered vs. correct answer
 
 ### Submit Button
+
 - Disabled until all blanks are filled
 - Response field shows progress: "N/M blanks filled"
 - Changes to green checkmark when all filled: "✓ All N blanks filled"
@@ -152,6 +166,7 @@ Located in `/src/utils/answer-helpers.js`:
 ## Data Storage
 
 Stored in Firestore `answeredQuestions` with:
+
 ```javascript
 {
   questionType: 'fill-in-the-blanks',

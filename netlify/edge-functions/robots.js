@@ -3,7 +3,7 @@ export default async (request) => {
 
   const body = `User-agent: *
 Allow: /
-Allow: /about
+Allow: /about/
 Allow: /login
 Disallow: /app/
 Disallow: /admin

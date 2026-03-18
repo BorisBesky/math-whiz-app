@@ -7,6 +7,7 @@ To enable drawing question image uploads, you need to configure Firebase Storage
 ## 1. Enable Firebase Storage
 
 In your Firebase Console:
+
 1. Go to **Storage** in the left sidebar
 2. Click **Get Started**
 3. Choose **Start in production mode** (we'll add rules next)
@@ -25,7 +26,13 @@ service firebase.storage {
       allow read: if true; // Public read access for displaying drawings
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
+    // Allow authenticated users to upload question images to their own folder
+    match /question-images/{userId}/{fileName} {
+      allow read: if true; // Public read access for displaying images
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;
@@ -35,8 +42,9 @@ service firebase.storage {
 ```
 
 These rules:
-- ✅ Allow **any user** to read drawing images (for displaying in UI)
-- ✅ Allow **authenticated users** to write only to their own `/drawings/{userId}/` folder
+
+- ✅ Allow **any user** to read drawing and question images (for displaying in UI)
+- ✅ Allow **authenticated users** to write only to their own `/drawings/{userId}/` and `/question-images/{userId}/` folders
 - ❌ Deny all other storage access
 
 ## 3. Update netlify/functions/firebase-admin.js
@@ -75,11 +83,13 @@ This should already be set from your Firebase config.
 ## Storage Costs
 
 Firebase Storage pricing (as of 2024):
+
 - **Storage**: $0.026/GB/month
 - **Downloads**: $0.12/GB
 - **Uploads**: Free
 
 **Estimated costs for drawing questions:**
+
 - Average PNG: ~50-200 KB per drawing
 - 1000 drawings/month: ~50-200 MB storage = **$0.001-$0.005/month**
 - Viewing drawings: Minimal cost (images are small)
@@ -89,22 +99,25 @@ Very cost-effective for typical usage!
 ## Troubleshooting
 
 ### "Failed to upload drawing image"
+
 - Check Storage is enabled in Firebase Console
 - Verify Storage security rules are deployed
 - Check `.env` has correct `REACT_APP_FIREBASE_STORAGE_BUCKET`
 - Ensure Firebase Admin SDK has Storage permissions
 
 ### "Permission denied"
+
 - Verify user is authenticated (auth token is valid)
-- Check storage rules allow writing to `/drawings/{userId}/`
+- Check storage rules allow writing to `/drawings/{userId}/` or `/question-images/{userId}/`
 - Ensure user ID in path matches authenticated user
 
 ### Images not displaying
+
 - Verify file was uploaded (check Firebase Storage console)
 - Check the file is marked as public (makePublic() in code)
 - Verify the URL format: `https://storage.googleapis.com/{bucket}/drawings/...`
 
-## Alternative: Use Firebase Storage with SignedURLs
+## Alternative: Use Firebase Storage with Signed URLs
 
 For more security, you can use signed URLs instead of public access:
 

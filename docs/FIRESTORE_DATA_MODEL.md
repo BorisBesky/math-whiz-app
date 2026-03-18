@@ -398,25 +398,48 @@ The application should implement Firestore security rules to:
 ## Constants and Enums
 
 ### User Roles
+
 ```javascript
 const USER_ROLES = {
   STUDENT: 'student',
-  TEACHER: 'teacher', 
+  TEACHER: 'teacher',
   ADMIN: 'admin'
 };
 ```
 
 ### Topics
-Available math topics are defined in `/src/constants/topics.js`
+
+Available math topics are defined in `/src/constants/shared-constants.js`
 
 ## API Endpoints
 
-The application uses Netlify Functions for server-side operations:
+The application uses Netlify Functions for server-side operations. All endpoints require a Firebase Auth token in the `Authorization` header.
 
-- `/.netlify/functions/get-all-students` - Get student data (admin/teacher only)
+### Student & Teacher Management
+
+- `/.netlify/functions/get-all-students` - Get all student data (admin/teacher only)
+- `/.netlify/functions/get-all-teachers` - Get all teacher data (admin only)
+- `/.netlify/functions/create-teacher` - Create a teacher account (admin only)
+- `/.netlify/functions/delete-teacher` - Delete a teacher account (admin only)
+- `/.netlify/functions/set-teacher-claims` - Set Firebase custom claims for teachers
+
+### Classes & Enrollment
+
 - `/.netlify/functions/classes` - CRUD operations for classes
-- `/.netlify/functions/class-students` - Manage class enrollment
-- `/.netlify/functions/create-teacher` - Create teacher accounts (admin only)
-- `/.netlify/functions/get-all-teachers` - Get teacher data (admin only)
+- `/.netlify/functions/class-students` - Manage class enrollment (add/remove students)
+- `/.netlify/functions/join-class` - Student self-enrollment with a class code
 
-All endpoints require Firebase Auth token in Authorization header.
+### AI Features
+
+- `/.netlify/functions/gemini-proxy` - Generate grade-aware story problems (authenticated students)
+- `/.netlify/functions/gemini-generate-questions` - Batch-generate questions via Gemini (admin only)
+- `/.netlify/functions/gemini-image-generation` - Generate store background images (admin only)
+- `/.netlify/functions/gemini-image-generation-status` - Poll background image generation job status
+- `/.netlify/functions/validate-drawing` - AI evaluation of student drawing answers
+
+### Admin & Content
+
+- `/.netlify/functions/import-store-images` - Import images into the in-app store (admin only)
+- `/.netlify/functions/manage-store-images` - List/update/delete store images (admin only)
+- `/.netlify/functions/upload-pdf-questions` - Import questions from a PDF (admin only)
+- `/.netlify/functions/upload-pdf-questions-status` - Poll PDF question import job status

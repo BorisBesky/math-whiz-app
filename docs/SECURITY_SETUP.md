@@ -5,8 +5,8 @@
 The Netlify Gemini proxy has been enhanced with the following security features:
 
 1. **Authentication**: Only authenticated users can access the API
-2. **Rate Limiting**: Users can only make 4 queries per day (1 per topic)
-3. **Topic Filtering**: Only math-related queries for the 4 specific topics are allowed
+2. **Rate Limiting**: Users can make up to 4 story problems per grade per day (1 per topic)
+3. **Topic Filtering**: Only math-related queries for supported topics (per grade) are allowed
 
 ## Required Environment Variables
 
@@ -15,11 +15,13 @@ The Netlify Gemini proxy has been enhanced with the following security features:
 You need to add these environment variables to your Netlify deployment:
 
 #### Firebase Admin SDK (Server-side only)
+
 - `FIREBASE_PROJECT_ID` - Your Firebase project ID
 - `FIREBASE_CLIENT_EMAIL` - Service account client email
 - `FIREBASE_PRIVATE_KEY` - Service account private key (with newlines)
 
 #### Gemini API
+
 - `GEMINI_API_KEY` - Your Google Gemini API key
 
 ### How to Get Firebase Admin Credentials
@@ -43,24 +45,35 @@ You need to add these environment variables to your Netlify deployment:
 
 ## Valid Topics
 
-The system only accepts story problems for these 4 topics:
+Story problems are supported for both grades. The `grade` field in the request body selects which topic set is validated (`G3` or `G4`).
+
+### 3rd Grade (`G3`)
 
 1. **Multiplication** - Focus on repeated addition, groups, arrays, skip counting (2-12 times tables)
 2. **Division** - Focus on equal sharing, grouping, relationship with multiplication
 3. **Fractions** - Focus on parts of whole, equivalent fractions, comparing, simple addition/subtraction
 4. **Measurement & Data** - Focus on area (length × width), perimeter (adding all sides), volume (counting cubes)
 
+### 4th Grade (`G4`)
+
+1. **Operations & Algebraic Thinking** - Multi-step problems, factors, multiples, patterns
+2. **Number & Operations in Base Ten** - Multi-digit multiplication/division, place value
+3. **Fractions (4th Grade)** - Equivalent fractions, mixed numbers, add/subtract with unlike denominators
+4. **Measurement & Data (4th Grade)** - Conversions, area/perimeter, data interpretation
+5. **Geometry** - Lines, angles, shapes, symmetry
+6. **Binary Operations** - Introduction to binary number system
+
 ## Rate Limiting
 
-- **Daily Limit**: 4 story problems per day per user
-- **Topic Limit**: 1 story problem per topic per day
+- **Daily Limit**: 4 story problems per day per user **per grade**
+- **Topic Limit**: 1 story problem per topic per day (within each grade)
 - **Reset**: Limits reset at midnight UTC
 
 ## Security Benefits
 
 1. **API Key Protection**: Gemini API key is never exposed to client-side code
 2. **User Authentication**: Only authenticated Firebase users can access the API
-3. **Content Filtering**: AI responses are constrained to educational math content appropriate for 3rd graders
+3. **Content Filtering**: AI responses are constrained to educational math content appropriate for the requested grade
 4. **Rate Limiting**: Prevents abuse and controls API usage costs
 5. **Topic Validation**: Ensures only math-related content is generated
 
@@ -75,8 +88,10 @@ The system only accepts story problems for these 4 topics:
 ### Production Testing
 
 After deploying, test with authenticated requests including:
+
 - Valid Firebase auth token in Authorization header
 - Valid topic in request body
+- `grade` field set to `G3` or `G4`
 - Proper prompt content
 
 ## Error Handling
@@ -84,7 +99,7 @@ After deploying, test with authenticated requests including:
 The API returns specific error messages:
 
 - **401**: Authentication failed
-- **400**: Missing prompt/topic or invalid topic
+- **400**: Missing prompt/topic/grade or invalid topic for the specified grade
 - **429**: Rate limit exceeded
 - **500**: Internal server error
 
@@ -93,13 +108,14 @@ The API returns specific error messages:
 ### Common Issues
 
 1. **Authentication Errors**: Check Firebase Admin SDK credentials
-2. **Rate Limit Issues**: Check user's daily usage in Firestore
-3. **Topic Validation**: Ensure topic matches exactly: "Multiplication", "Division", "Fractions", "Measurement & Data"
+2. **Rate Limit Issues**: Check user's daily usage in Firestore (`dailyStories.<date>.<grade>`)
+3. **Topic Validation**: Ensure topic name matches the constants defined in `src/constants/shared-constants.js`
 4. **CORS Errors**: Verify Authorization header is included in CORS settings
 
 ### Debugging
 
 Check Netlify function logs for detailed error messages:
+
 1. Go to Netlify Dashboard
 2. Navigate to **Functions** tab
 3. Click on the gemini-proxy function

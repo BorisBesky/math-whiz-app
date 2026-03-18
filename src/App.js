@@ -12,7 +12,9 @@ const TeacherLogin = React.lazy(() => import('./components/TeacherLogin'));
 const AdminLogin = React.lazy(() => import('./components/AdminLogin'));
 const PortalApp = React.lazy(() => import('./components/PortalApp'));
 const JoinClass = React.lazy(() => import('./components/JoinClass'));
-const AboutPage = React.lazy(() => import('./components/AboutPage'));
+const AboutLayout = React.lazy(() => import('./components/about/AboutLayout'));
+const AboutOverview = React.lazy(() => import('./components/about/AboutOverview'));
+const AboutSeoPage = React.lazy(() => import('./components/about/AboutSeoPage'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -33,8 +35,11 @@ const App = () => {
           <Route path="/login" element={<LoginPage />} />
           {/* Public join route for students with invite code */}
           <Route path="/join" element={<JoinClass />} />
-          {/* About page */}
-          <Route path="/about" element={<AboutPage />} />
+          {/* About pages — overview + SEO content tabs */}
+          <Route path="/about" element={<AboutLayout />}>
+            <Route index element={<AboutOverview />} />
+            <Route path=":slug" element={<AboutSeoPage />} />
+          </Route>
 
           {/* Authentication routes */}
           <Route path="/student-login" element={<StudentLogin />} />
