@@ -78,7 +78,8 @@ exports.handler = async (event) => {
         });
       }
 
-      const baseUrl = process.env.PUBLIC_APP_BASE_URL || '';
+      const origin = event.headers.origin || event.headers.referer?.replace(/\/+$/, '') || process.env.PUBLIC_APP_BASE_URL || '';
+      const baseUrl = origin.replace(/\/+$/, '');
       const joinUrl = baseUrl ? `${baseUrl}/join?code=${joinCode}` : `/join?code=${joinCode}`;
 
       // resolve current expiry (if we didn't rotate)
