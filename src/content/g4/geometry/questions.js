@@ -1,6 +1,11 @@
 // Question generation for 4th Grade Geometry topic
 import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
+import {
+  COMPOSITE_SHAPE_TEMPLATES,
+  computePerimeterUnits,
+  createCompositeShapeSVG,
+} from './composite-shapes.js';
 
 // Helper functions that need to be imported from utils
 function getRandomInt(min, max) {
@@ -130,6 +135,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'quadrilaterals': { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'find missing side': { generator: generateMissingSideQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    'composite shapes': { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -740,6 +746,73 @@ export function generateMissingSideQuestion(difficulty = 0.5) {
   };
 }
 
+/**
+ * Generates an area or perimeter question about a composite shape made of
+ * equal squares (4.MD.A.3). The shape is drawn as an SVG with every side
+ * length labeled, and students must compute either the total area or the
+ * total perimeter.
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateCompositeShapeAreaPerimeterQuestion(difficulty = 0.5) {
+  const template = COMPOSITE_SHAPE_TEMPLATES[getRandomInt(0, COMPOSITE_SHAPE_TEMPLATES.length - 1)];
+  const cells = template.cells;
+  const unitLength = getRandomInt(2, 4);
+
+  const numCells = cells.length;
+  const area = numCells * unitLength * unitLength;
+  const perimeter = computePerimeterUnits(cells) * unitLength;
+
+  const isAreaQuestion = Math.random() < 0.5;
+  const correctAnswerVal = isAreaQuestion ? area : perimeter;
+  const unit = isAreaQuestion ? 'square units' : 'units';
+  const correctAnswer = `${correctAnswerVal} ${unit}`;
+
+  const rawDistractors = isAreaQuestion
+    ? [
+        perimeter,
+        area + unitLength * unitLength,
+        Math.max(1, area - unitLength * unitLength),
+        numCells * unitLength,
+      ]
+    : [
+        area,
+        perimeter + unitLength * 2,
+        Math.max(1, perimeter - unitLength * 2),
+        numCells * unitLength,
+      ];
+
+  const distractorOptions = [...new Set(rawDistractors)]
+    .filter((v) => Number.isFinite(v) && v > 0 && v !== correctAnswerVal)
+    .map((v) => `${v} ${unit}`);
+
+  const svgDataUri = createCompositeShapeSVG(cells, unitLength);
+
+  return {
+    question: `The figure below shows the length of every side in units. What is the ${
+      isAreaQuestion ? 'area' : 'perimeter'
+    } of the figure?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractorOptions)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: isAreaQuestion
+      ? 'Split the figure into rectangles. Find each rectangle\'s area (length × width), then add them together.'
+      : 'Add the lengths of every side going all the way around the outside of the figure.',
+    standard: '4.MD.A.3',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'composite shapes',
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
+    images: [
+      {
+        type: 'question',
+        data: svgDataUri,
+        description: 'Composite shape with all side lengths labeled',
+      },
+    ],
+  };
+}
+
 const geometryQuestions = {
   generateQuestion,
   generateLinesAndAnglesQuestion,
@@ -751,6 +824,7 @@ const geometryQuestions = {
   generateAngleMeasurementQuestion,
   generatePointsLinesRaysQuestion,
   generateMissingSideQuestion,
+  generateCompositeShapeAreaPerimeterQuestion,
 };
 
 export default geometryQuestions;

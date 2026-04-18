@@ -1,7 +1,18 @@
 import React, { useEffect } from 'react';
 import * as shapes from './shapes';
+import { createCompositeShapeSVG } from './composite-shapes';
 
 const GeometryExplanation = () => {
+  // Example composite shapes used in the area/perimeter walk-through below.
+  const exampleLShapeCells = [
+    [0, 0], [0, 1], [0, 2], [1, 2], [2, 2],
+  ];
+  const exampleTShapeCells = [
+    [0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [1, 3], [2, 3],
+  ];
+  const exampleLShapeUri = createCompositeShapeSVG(exampleLShapeCells, 3);
+  const exampleTShapeUri = createCompositeShapeSVG(exampleTShapeCells, 2);
+
   useEffect(() => {
 
     // Initialize interactive geometry demonstrations when component mounts
@@ -935,6 +946,99 @@ const GeometryExplanation = () => {
           <br/>• Open scissors = obtuse angle
           <br/>• Laptop half-open = acute angle
           <br/>• Flat table = 180° (straight angle)
+        </div>
+
+        <h2 style={styles.h2}>🧩 Area & Perimeter of Composite Shapes</h2>
+        <p>
+          A <strong>composite shape</strong> is a figure that you can split into smaller
+          rectangles (or squares). The figures in your quiz will show the length of every
+          side in units. Use those numbers to find either the <strong>perimeter</strong>
+          (the distance all the way around) or the <strong>area</strong> (how much space
+          is inside).
+        </p>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>📏</span>
+          <strong>Perimeter:</strong> add up the lengths of <em>every</em> side along the
+          outside of the figure.
+          <br/>
+          <span style={styles.emoji}>🟦</span>
+          <strong>Area:</strong> split the figure into rectangles, find the area of each
+          rectangle (length × width), then add the areas together.
+        </div>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Example 1: L-shape</h3>
+          <div style={styles.svgContainer}>
+            <img
+              src={exampleLShapeUri}
+              alt="L-shape with sides labeled 3, 6, 6, 3, 9, 9"
+              style={{maxWidth: '320px', height: 'auto'}}
+            />
+          </div>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>🚶 Perimeter — walk around the shape:</strong>
+              <br/>3 + 6 + 6 + 3 + 9 + 9 = <strong>36 units</strong>
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>🟦 Area — split into 2 rectangles:</strong>
+              <br/>• Tall rectangle: 3 × 9 = 27
+              <br/>• Bottom rectangle: 6 × 3 = 18
+              <br/>Total area = 27 + 18 = <strong>45 square units</strong>
+            </div>
+          </div>
+          <p style={{fontSize: '0.95em', color: '#555'}}>
+            <strong>Tip:</strong> The two shorter sides on the inside of the L (the 6 and
+            the 6) are <em>not</em> on the outside, so they don't get added when you walk
+            around the perimeter — but they do help you split the shape into rectangles
+            for area!
+          </p>
+        </div>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Example 2: T-shape</h3>
+          <div style={styles.svgContainer}>
+            <img
+              src={exampleTShapeUri}
+              alt="T-shape with sides labeled in units of 2"
+              style={{maxWidth: '320px', height: 'auto'}}
+            />
+          </div>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>🚶 Perimeter — add every outside side:</strong>
+              <br/>8 + 4 + 2 + 4 + 4 + 4 + 2 + 4 = <strong>32 units</strong>
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>🟦 Area — split into a top bar and a stem:</strong>
+              <br/>• Top bar: 8 × 4 = 32
+              <br/>• Stem (sticking down): 4 × 4 = 16
+              <br/>Total area = 32 + 16 = <strong>48 square units</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.example}>
+          <strong>🧠 Step-by-Step Strategy:</strong>
+          <ol style={{margin: '8px 0 0 18px', padding: 0}}>
+            <li>Look at the picture and read the side labels carefully.</li>
+            <li>For <strong>perimeter</strong>, trace your finger around the outside and
+              add every side length you cross.</li>
+            <li>For <strong>area</strong>, draw a line to split the figure into 2 (or
+              more) rectangles. Find <em>length × width</em> for each rectangle and add
+              them together.</li>
+            <li>Double-check your units: perimeter is in <em>units</em>, area is in
+              <em> square units</em>.</li>
+          </ol>
+        </div>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>⚠️</span>
+          <strong>Common Mistake:</strong> Don't add the <em>inside</em> side lengths
+          when finding the perimeter — only the sides on the outside count. And don't
+          forget the units: a perimeter answer ends in <em>units</em>, but an area answer
+          ends in <em>square units</em>.
         </div>
 
         <h2 style={styles.h2}>🎨 Interactive Shape Gallery</h2>
