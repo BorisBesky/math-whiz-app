@@ -20,7 +20,8 @@ export const geometry = {
     'symmetry',
     'triangles',
     'quadrilaterals',
-    'angle measurement'
+    'angle measurement',
+    'find missing side'
   ],
   
   // Learning objectives
@@ -30,7 +31,8 @@ export const geometry = {
     'Classify quadrilaterals by their properties',
     'Identify lines of symmetry in shapes',
     'Recognize parallel and perpendicular lines',
-    'Measure and classify angles (acute, right, obtuse, straight)'
+    'Measure and classify angles (acute, right, obtuse, straight)',
+    'Find a missing side length given the area or perimeter of a square or rectangle'
   ]
 };
 

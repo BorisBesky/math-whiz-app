@@ -129,6 +129,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     ],
     'quadrilaterals': { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    'find missing side': { generator: generateMissingSideQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -641,6 +642,104 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
   };
 }
 
+/**
+ * Generates questions where students find a missing side length given the
+ * area or perimeter of a square or rectangle (4.MD.A.3 inverse problems).
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMissingSideQuestion(difficulty = 0.5) {
+  const shape = Math.random() < 0.5 ? 'square' : 'rectangle';
+  const measure = Math.random() < 0.5 ? 'area' : 'perimeter';
+  const unit = 'units';
+
+  let question;
+  let correctAnswerVal;
+  let hint;
+  let rawDistractors;
+
+  if (shape === 'square') {
+    if (measure === 'area') {
+      const side = getRandomInt(2, 12);
+      const area = side * side;
+      correctAnswerVal = side;
+      question = `The area of a square is ${area} square units. What is the length of each side?`;
+      hint = 'For a square, area = side × side. Find a number that, multiplied by itself, equals the area.';
+      rawDistractors = [
+        Math.round(area / 2),
+        Math.round(area / 4),
+        side + 1,
+        Math.max(1, side - 1),
+      ];
+    } else {
+      const side = getRandomInt(2, 20);
+      const perimeter = 4 * side;
+      correctAnswerVal = side;
+      question = `The perimeter of a square is ${perimeter} units. What is the length of each side?`;
+      hint = 'For a square, perimeter = 4 × side. Divide the perimeter by 4.';
+      rawDistractors = [
+        Math.round(perimeter / 2),
+        Math.round(perimeter / 3),
+        side + 1,
+        Math.max(1, side - 2),
+      ];
+    }
+  } else {
+    let length = getRandomInt(3, 15);
+    let width = getRandomInt(2, 12);
+    while (width === length) {
+      width = getRandomInt(2, 12);
+    }
+
+    const givenIsLength = Math.random() < 0.5;
+    const givenSideName = givenIsLength ? 'length' : 'width';
+    const otherSideName = givenIsLength ? 'width' : 'length';
+    const givenSide = givenIsLength ? length : width;
+    const otherSide = givenIsLength ? width : length;
+    correctAnswerVal = otherSide;
+
+    if (measure === 'area') {
+      const area = length * width;
+      question = `A rectangle has an area of ${area} square units. If its ${givenSideName} is ${givenSide} units, what is its ${otherSideName}?`;
+      hint = 'Area = length × width. Divide the area by the known side to find the other side.';
+      rawDistractors = [
+        area - givenSide,
+        Math.max(1, area - givenSide * 2),
+        otherSide + 1,
+        Math.max(1, otherSide - 1),
+      ];
+    } else {
+      const perimeter = 2 * (length + width);
+      question = `A rectangle has a perimeter of ${perimeter} units. If its ${givenSideName} is ${givenSide} units, what is its ${otherSideName}?`;
+      hint = 'Perimeter = 2 × (length + width). Halve the perimeter to get length + width, then subtract the known side.';
+      rawDistractors = [
+        perimeter - givenSide,
+        Math.max(1, perimeter / 2 - givenSide + 1),
+        otherSide + 2,
+        Math.max(1, otherSide - 1),
+      ];
+    }
+  }
+
+  const correctAnswer = `${correctAnswerVal} ${unit}`;
+  const distractorOptions = rawDistractors
+    .filter((d) => Number.isFinite(d) && d > 0 && d !== correctAnswerVal)
+    .map((d) => `${d} ${unit}`);
+
+  return {
+    question,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractorOptions)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint,
+    standard: '4.MD.A.3',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'find missing side',
+    difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
 const geometryQuestions = {
   generateQuestion,
   generateLinesAndAnglesQuestion,
@@ -651,6 +750,7 @@ const geometryQuestions = {
   generateLineSymmetryQuestion,
   generateAngleMeasurementQuestion,
   generatePointsLinesRaysQuestion,
+  generateMissingSideQuestion,
 };
 
 export default geometryQuestions;
