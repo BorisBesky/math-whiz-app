@@ -990,6 +990,72 @@ const GeometryExplanation = () => {
           <em> increased</em>, subtract that amount from the square side.
         </div>
 
+        <h2 style={styles.h2}>🖼️ Photo Collage Area Problems</h2>
+        <p>
+          A photo collage can be made from large square photos and small square photos.
+          If a large photo's side length is a multiple of a small photo's side length,
+          you can use that ratio to compare their areas.
+        </p>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Example: Large Photos Are 2 Times as Long</h3>
+          <p>
+            A rectangular collage has <strong>2 large square photos</strong> and
+            <strong> 4 small square photos</strong>. Each large photo's side length is
+            <strong> 2 times</strong> each small photo's side length. The total area is
+            <strong> 108 square units</strong>. Find both side lengths.
+          </p>
+          <div style={styles.svgContainer}>
+            <svg width="260" height="220" viewBox="0 0 260 220" role="img" aria-label="Collage with two large square photos and four small square photos">
+              <rect x="40" y="20" width="180" height="135" rx="8" fill="#f8fafc" stroke="#111827" strokeWidth="3" />
+              <rect x="40" y="20" width="90" height="90" fill="#bfdbfe" stroke="#2563eb" strokeWidth="3" />
+              <text x="85" y="68" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#1d4ed8">Large</text>
+              <rect x="130" y="20" width="90" height="90" fill="#bfdbfe" stroke="#2563eb" strokeWidth="3" />
+              <text x="175" y="68" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#1d4ed8">Large</text>
+              <rect x="40" y="110" width="45" height="45" fill="#a7f3d0" stroke="#059669" strokeWidth="2" />
+              <text x="62.5" y="137" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fontWeight="bold" fill="#047857">Small</text>
+              <rect x="85" y="110" width="45" height="45" fill="#a7f3d0" stroke="#059669" strokeWidth="2" />
+              <text x="107.5" y="137" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fontWeight="bold" fill="#047857">Small</text>
+              <rect x="130" y="110" width="45" height="45" fill="#a7f3d0" stroke="#059669" strokeWidth="2" />
+              <text x="152.5" y="137" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fontWeight="bold" fill="#047857">Small</text>
+              <rect x="175" y="110" width="45" height="45" fill="#a7f3d0" stroke="#059669" strokeWidth="2" />
+              <text x="197.5" y="137" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="11" fontWeight="bold" fill="#047857">Small</text>
+              <rect x="40" y="176" width="16" height="16" fill="#bfdbfe" stroke="#2563eb" strokeWidth="2" />
+              <text x="64" y="189" fontFamily="Arial, sans-serif" fontSize="12" fill="#1f2937">Large square photo</text>
+              <rect x="40" y="199" width="16" height="16" fill="#a7f3d0" stroke="#059669" strokeWidth="2" />
+              <text x="64" y="212" fontFamily="Arial, sans-serif" fontSize="12" fill="#1f2937">Small square photo</text>
+            </svg>
+          </div>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>1. Compare areas.</strong>
+              <br/>If the large side is 2 times the small side, then:
+              <br/>Large area = 2 × 2 = <strong>4 small-photo areas</strong>
+              <br/>So 2 large photos = 2 × 4 = <strong>8 small-photo areas</strong>
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>2. Count all small-photo areas.</strong>
+              <br/>8 small-photo areas from the large photos
+              <br/>+ 4 small photos
+              <br/>= <strong>12 small-photo areas</strong>
+            </div>
+          </div>
+          <div style={styles.example}>
+            <strong>3. Use the total area:</strong>
+            <br/>108 ÷ 12 = 9, so each small photo has area <strong>9 square units</strong>.
+            <br/>A square with area 9 has side length <strong>3 units</strong>.
+            <br/>The large side is 2 × 3 = <strong>6 units</strong>.
+          </div>
+        </div>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>🧠</span>
+          <strong>Collage Strategy:</strong> First turn every large photo into an
+          equivalent number of small-photo areas. Then divide the total collage area by
+          that count. The result is the area of one small photo. Find the small side
+          length, then multiply by the ratio to get the large side length.
+        </div>
+
         <h2 style={styles.h2}>🧩 Area & Perimeter of Composite Shapes</h2>
         <p>
           A <strong>composite shape</strong> is a figure that you can split into smaller
