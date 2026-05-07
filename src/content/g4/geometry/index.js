@@ -6,7 +6,7 @@ export const geometry = {
   name: 'Geometry',
   description: 'Points, lines, angles, and classification of shapes',
   grade: 'G4',
-  standards: ['4.G.A.1', '4.G.A.2', '4.G.A.3'],
+  standards: ['4.G.A.1', '4.G.A.2', '4.G.A.3', '4.MD.A.3'],
 
   // Lazy loaders — loaded on demand when quiz starts or explanation opens
   loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
@@ -22,7 +22,9 @@ export const geometry = {
     'quadrilaterals',
     'angle measurement',
     'find missing side',
-    'composite shapes'
+    'composite shapes',
+    'rectangle to square',
+    'photo collage'
   ],
   
   // Learning objectives
@@ -34,7 +36,9 @@ export const geometry = {
     'Recognize parallel and perpendicular lines',
     'Measure and classify angles (acute, right, obtuse, straight)',
     'Find a missing side length given the area or perimeter of a square or rectangle',
-    'Find the area and perimeter of composite shapes built from squares and rectangles'
+    'Find the area and perimeter of composite shapes built from squares and rectangles',
+    'Find the original area of a rectangle after it is transformed into a square',
+    'Find square photo side lengths in a rectangular collage using total area and a side-length ratio'
   ]
 };
 

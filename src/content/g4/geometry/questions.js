@@ -12,6 +12,10 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function createSvgDataUri(svg) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 // Maps each real-life example name to its image path in public/images/angles/
 const ANGLE_EXAMPLE_IMAGES = {
   // Acute
@@ -136,6 +140,8 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'find missing side': { generator: generateMissingSideQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
     'composite shapes': { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'rectangle to square': { generator: generateRectangleToSquareAreaQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
+    'photo collage': { generator: generatePhotoCollageQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   };
   
   // Normalize subtopic names for comparison
@@ -747,6 +753,191 @@ export function generateMissingSideQuestion(difficulty = 0.5) {
 }
 
 /**
+ * Generates a question where a rectangle is changed into a square by
+ * shortening its length and increasing its width. Students use the square's
+ * perimeter to find the square side, then reverse the changes to find the
+ * original rectangle's area.
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateRectangleToSquareAreaQuestion(difficulty = 0.5) {
+  function formatUnits(value) {
+    return `${value} ${value === 1 ? 'unit' : 'units'}`;
+  }
+
+  const squareSide = getRandomInt(5, 16);
+  const shortenBy = getRandomInt(1, Math.min(6, squareSide - 1));
+  const increaseBy = getRandomInt(1, Math.min(5, squareSide - 2));
+  const squarePerimeter = 4 * squareSide;
+  const originalLength = squareSide + shortenBy;
+  const originalWidth = squareSide - increaseBy;
+  const originalArea = originalLength * originalWidth;
+  const correctAnswer = `${originalArea} square units`;
+
+  const rawDistractors = [
+    squareSide * squareSide,
+    squareSide * originalWidth,
+    originalLength * squareSide,
+    (squareSide - shortenBy) * (squareSide + increaseBy),
+    originalArea + originalLength,
+    Math.max(1, originalArea - originalWidth),
+  ];
+
+  const distractorOptions = [...new Set(rawDistractors)]
+    .filter((value) => Number.isFinite(value) && value > 0 && value !== originalArea)
+    .map((value) => `${value} square units`);
+
+  return {
+    question: `A rectangle is changed into a square. Its length is shortened by ${formatUnits(shortenBy)} and its width is increased by ${formatUnits(increaseBy)}. The square has a perimeter of ${squarePerimeter} units. What was the area of the original rectangle?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractorOptions)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: 'First find the square side length by dividing the square perimeter by 4. The original length was that side plus the amount shortened, and the original width was that side minus the amount increased. Then multiply length × width.',
+    standard: '4.MD.A.3',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'rectangle to square',
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+const PHOTO_COLLAGE_LAYOUTS = [
+  { columns: 4, rows: 3, ratio: 2, largeSquares: [[0, 0], [2, 0]] },
+  { columns: 4, rows: 4, ratio: 2, largeSquares: [[0, 0], [2, 0], [0, 2]] },
+  { columns: 5, rows: 4, ratio: 2, largeSquares: [[0, 0], [2, 0], [0, 2], [2, 2]] },
+  { columns: 6, rows: 4, ratio: 2, largeSquares: [[0, 0], [2, 0], [0, 2], [2, 2]] },
+  { columns: 7, rows: 3, ratio: 3, largeSquares: [[0, 0], [3, 0]] },
+  { columns: 6, rows: 4, ratio: 3, largeSquares: [[0, 0], [3, 0]] },
+  { columns: 7, rows: 4, ratio: 3, largeSquares: [[0, 0], [3, 0]] },
+];
+
+function formatCollageAnswer(largeSide, smallSide) {
+  return `Large: ${largeSide} units, Small: ${smallSide} units`;
+}
+
+function createPhotoCollageSVG(layout) {
+  const cellPx = layout.ratio === 3 ? 36 : 42;
+  const padding = 20;
+  const titleHeight = 32;
+  const legendHeight = 34;
+  const width = layout.columns * cellPx + padding * 2;
+  const height = layout.rows * cellPx + padding * 2 + titleHeight + legendHeight;
+  const gridTop = padding + titleHeight;
+  const coveredCells = new Set();
+
+  layout.largeSquares.forEach(([col, row]) => {
+    for (let y = row; y < row + layout.ratio; y += 1) {
+      for (let x = col; x < col + layout.ratio; x += 1) {
+        coveredCells.add(`${x},${y}`);
+      }
+    }
+  });
+
+  const smallCells = [];
+  const smallRects = [];
+  for (let row = 0; row < layout.rows; row += 1) {
+    for (let col = 0; col < layout.columns; col += 1) {
+      if (!coveredCells.has(`${col},${row}`)) {
+        const x = padding + col * cellPx;
+        const y = gridTop + row * cellPx;
+        smallCells.push([col, row]);
+        smallRects.push(
+          `<rect x="${x}" y="${y}" width="${cellPx}" height="${cellPx}" fill="#a7f3d0" stroke="#059669" stroke-width="2" />`
+        );
+      }
+    }
+  }
+
+  const largeRects = layout.largeSquares.map(([col, row], index) => {
+    const x = padding + col * cellPx;
+    const y = gridTop + row * cellPx;
+    const size = layout.ratio * cellPx;
+    return (
+      `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="#bfdbfe" stroke="#2563eb" stroke-width="3" />` +
+      `<text x="${x + size / 2}" y="${y + size / 2 - 6}" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#1d4ed8">Large</text>` +
+      `<text x="${x + size / 2}" y="${y + size / 2 + 14}" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#1d4ed8">photo ${index + 1}</text>`
+    );
+  });
+
+  const smallLabels = smallCells.slice(0, 3).map(([col, row]) => {
+    const x = padding + col * cellPx + cellPx / 2;
+    const y = gridTop + row * cellPx + cellPx / 2 + 5;
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#047857">Small</text>`;
+  });
+
+  const gridWidth = layout.columns * cellPx;
+  const gridHeight = layout.rows * cellPx;
+  const legendY = gridTop + gridHeight + 22;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<rect width="${width}" height="${height}" fill="#f8fafc" rx="12" />` +
+    `<text x="${width / 2}" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="#111827">Photo collage layout</text>` +
+    smallRects.join('') +
+    largeRects.join('') +
+    smallLabels.join('') +
+    `<rect x="${padding}" y="${gridTop}" width="${gridWidth}" height="${gridHeight}" fill="none" stroke="#111827" stroke-width="3" />` +
+    `<rect x="${padding}" y="${legendY - 14}" width="16" height="16" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" />` +
+    `<text x="${padding + 24}" y="${legendY}" font-family="Arial, sans-serif" font-size="13" fill="#1f2937">Large square photos</text>` +
+    `<rect x="${width / 2}" y="${legendY - 14}" width="16" height="16" fill="#a7f3d0" stroke="#059669" stroke-width="2" />` +
+    `<text x="${width / 2 + 24}" y="${legendY}" font-family="Arial, sans-serif" font-size="13" fill="#1f2937">Small square photos</text>` +
+    `</svg>`;
+
+  return createSvgDataUri(svg);
+}
+
+/**
+ * Generates a question about a rectangular photo collage made from large and
+ * small square photos. The large square side length is an integer multiple of
+ * the small square side length, so students can use total area to solve both
+ * lengths.
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generatePhotoCollageQuestion(difficulty = 0.5) {
+  const layout = PHOTO_COLLAGE_LAYOUTS[getRandomInt(0, PHOTO_COLLAGE_LAYOUTS.length - 1)];
+  const largePhotoCount = layout.largeSquares.length;
+  const smallPhotoCount = layout.columns * layout.rows - largePhotoCount * layout.ratio * layout.ratio;
+  const smallSide = getRandomInt(2, 6);
+  const largeSide = layout.ratio * smallSide;
+  const totalArea = layout.columns * layout.rows * smallSide * smallSide;
+  const correctAnswer = formatCollageAnswer(largeSide, smallSide);
+
+  const rawDistractors = [
+    [largeSide + layout.ratio, smallSide + 1],
+    [largeSide + layout.ratio * 2, smallSide + 2],
+    [largeSide + layout.ratio * 3, smallSide + 3],
+    [Math.max(layout.ratio, largeSide - layout.ratio), Math.max(1, smallSide - 1)],
+    [largeSide, smallSide + 1],
+    [largeSide + layout.ratio, smallSide],
+    [smallSide, largeSide],
+  ];
+
+  const distractorOptions = rawDistractors
+    .filter(([large, small]) => large > small && large === layout.ratio * small)
+    .map(([large, small]) => formatCollageAnswer(large, small));
+
+  return {
+    question: `A rectangular collage is made of ${largePhotoCount} large square photos and ${smallPhotoCount} small square photos. Each large photo's side length is ${layout.ratio} times each small photo's side length. The total area of the collage is ${totalArea} square units. What are the side lengths of the large and small photos?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractorOptions)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `Think of the small photo side as one unit of length. Each large photo has area ${layout.ratio} × ${layout.ratio} = ${layout.ratio * layout.ratio} small-photo areas. Count the total number of small-photo areas, then use the total area to find one small side length.`,
+    standard: '4.MD.A.3',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'photo collage',
+    difficultyRange: { min: 0.6, max: 1.0 },
+    suggestedDifficulty: difficulty,
+    images: [
+      {
+        type: 'question',
+        data: createPhotoCollageSVG(layout),
+        description: 'Rectangular collage made of large and small square photos',
+      },
+    ],
+  };
+}
+
+/**
  * Generates an area or perimeter question about a composite shape made of
  * equal squares (4.MD.A.3). The shape is drawn as an SVG with every side
  * length labeled, and students must compute either the total area or the
@@ -824,6 +1015,8 @@ const geometryQuestions = {
   generateAngleMeasurementQuestion,
   generatePointsLinesRaysQuestion,
   generateMissingSideQuestion,
+  generateRectangleToSquareAreaQuestion,
+  generatePhotoCollageQuestion,
   generateCompositeShapeAreaPerimeterQuestion,
 };
 

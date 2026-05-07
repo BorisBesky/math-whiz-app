@@ -948,6 +948,48 @@ const GeometryExplanation = () => {
           <br/>• Flat table = 180° (straight angle)
         </div>
 
+        <h2 style={styles.h2}>🔄 From Rectangle to Square</h2>
+        <p>
+          Sometimes a rectangle can be changed into a square by making its long side
+          shorter and its short side longer. To find the <strong>original area</strong>,
+          start with the square, then undo the changes.
+        </p>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Example: Find the Original Rectangle</h3>
+          <p>
+            A rectangle is changed into a square. Its length is shortened by <strong>3 units</strong>
+            and its width is increased by <strong>2 units</strong>. The square has a perimeter of
+            <strong> 36 units</strong>. What was the area of the original rectangle?
+          </p>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>1. Find the square side.</strong>
+              <br/>A square has 4 equal sides.
+              <br/>36 ÷ 4 = <strong>9 units</strong>
+              <br/>So the new square is 9 units by 9 units.
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>2. Undo the changes.</strong>
+              <br/>The length was shortened by 3, so the original length was:
+              <br/>9 + 3 = <strong>12 units</strong>
+              <br/>The width was increased by 2, so the original width was:
+              <br/>9 − 2 = <strong>7 units</strong>
+            </div>
+          </div>
+          <div style={styles.example}>
+            <strong>3. Find the original area:</strong>
+            <br/>Original area = length × width = 12 × 7 = <strong>84 square units</strong>
+          </div>
+        </div>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>💡</span>
+          <strong>Undo Tip:</strong> If the rectangle's length was <em>shortened</em>, add
+          that amount back to the square side. If the rectangle's width was
+          <em> increased</em>, subtract that amount from the square side.
+        </div>
+
         <h2 style={styles.h2}>🧩 Area & Perimeter of Composite Shapes</h2>
         <p>
           A <strong>composite shape</strong> is a figure that you can split into smaller
