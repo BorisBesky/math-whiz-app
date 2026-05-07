@@ -819,7 +819,7 @@ function createPhotoCollageSVG(layout) {
   const cellPx = layout.ratio === 3 ? 36 : 42;
   const padding = 20;
   const titleHeight = 32;
-  const legendHeight = 34;
+  const legendHeight = 58;
   const width = layout.columns * cellPx + padding * 2;
   const height = layout.rows * cellPx + padding * 2 + titleHeight + legendHeight;
   const gridTop = padding + titleHeight;
@@ -867,7 +867,8 @@ function createPhotoCollageSVG(layout) {
 
   const gridWidth = layout.columns * cellPx;
   const gridHeight = layout.rows * cellPx;
-  const legendY = gridTop + gridHeight + 22;
+  const legendY = gridTop + gridHeight + 20;
+  const secondLegendY = legendY + 24;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
     `<rect width="${width}" height="${height}" fill="#f8fafc" rx="12" />` +
@@ -878,8 +879,8 @@ function createPhotoCollageSVG(layout) {
     `<rect x="${padding}" y="${gridTop}" width="${gridWidth}" height="${gridHeight}" fill="none" stroke="#111827" stroke-width="3" />` +
     `<rect x="${padding}" y="${legendY - 14}" width="16" height="16" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" />` +
     `<text x="${padding + 24}" y="${legendY}" font-family="Arial, sans-serif" font-size="13" fill="#1f2937">Large square photos</text>` +
-    `<rect x="${width / 2}" y="${legendY - 14}" width="16" height="16" fill="#a7f3d0" stroke="#059669" stroke-width="2" />` +
-    `<text x="${width / 2 + 24}" y="${legendY}" font-family="Arial, sans-serif" font-size="13" fill="#1f2937">Small square photos</text>` +
+    `<rect x="${padding}" y="${secondLegendY - 14}" width="16" height="16" fill="#a7f3d0" stroke="#059669" stroke-width="2" />` +
+    `<text x="${padding + 24}" y="${secondLegendY}" font-family="Arial, sans-serif" font-size="13" fill="#1f2937">Small square photos</text>` +
     `</svg>`;
 
   return createSvgDataUri(svg);
