@@ -18,7 +18,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   const [grade, setGrade] = useState(GRADES.G3);
   const [topic, setTopic] = useState('');
   const [questionTypes, setQuestionTypes] = useState([QUESTION_TYPES.MULTIPLE_CHOICE]);
-  const [count, setCount] = useState(10);
+  const [count, setCount] = useState('10');
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
@@ -57,7 +57,8 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
     cancelledRef.current = false;
 
     const allQuestions = [];
-    const totalCount = Math.min(Math.max(count, 1), MAX_QUESTIONS);
+    const parsedCount = parseInt(count, 10);
+    const totalCount = Math.min(Math.max(Number.isFinite(parsedCount) ? parsedCount : 1, 1), MAX_QUESTIONS);
     const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
 
     try {
@@ -204,7 +205,17 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
             <input
               type="number"
               value={count}
-              onChange={(e) => setCount(Math.min(Math.max(parseInt(e.target.value) || 1, 1), MAX_QUESTIONS))}
+              onChange={(e) => setCount(e.target.value)}
+              onBlur={() => {
+                const parsed = parseInt(count, 10);
+                if (!Number.isFinite(parsed) || parsed < 1) {
+                  setCount('1');
+                } else if (parsed > MAX_QUESTIONS) {
+                  setCount(String(MAX_QUESTIONS));
+                } else {
+                  setCount(String(parsed));
+                }
+              }}
               disabled={generating}
               min={1}
               max={MAX_QUESTIONS}

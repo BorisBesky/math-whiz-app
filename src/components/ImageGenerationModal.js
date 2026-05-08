@@ -11,7 +11,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [theme, setTheme] = useState('');
   const [themeDescription, setThemeDescription] = useState('');
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState('3');
   const [descriptions, setDescriptions] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState([]);
@@ -51,7 +51,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       setStep(1);
       setTheme('');
       setThemeDescription('');
-      setCount(3);
+      setCount('3');
       setDescriptions([]);
       setGeneratedImages([]);
       setSelectedIndices([]);
@@ -168,7 +168,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleGenerateDescriptions = async () => {
-    if (!theme.trim() || !themeDescription.trim() || count < 1 || count > 10) {
+    const parsedCount = parseInt(count, 10);
+    if (!theme.trim() || !themeDescription.trim() || !Number.isFinite(parsedCount) || parsedCount < 1 || parsedCount > 10) {
       setError('Please enter a valid theme name, theme description, and count (1-10)');
       return;
     }
@@ -208,7 +209,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
           action: 'generate-descriptions',
           theme: theme.trim(),
           themeDescription: themeDescription.trim(),
-          count: parseInt(count),
+          count: parsedCount,
         }),
       });
 
@@ -504,7 +505,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     setStep(1);
     setTheme('');
     setThemeDescription('');
-    setCount(3);
+    setCount('3');
     setDescriptions([]);
     setGeneratedImages([]);
     setSelectedIndices([]);
@@ -557,7 +558,14 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
   const canGoNext = () => {
     if (step === 1) {
-      return theme.trim() && themeDescription.trim() && count >= 1 && count <= 10;
+      const parsedCount = parseInt(count, 10);
+      return Boolean(
+        theme.trim() &&
+        themeDescription.trim() &&
+        Number.isFinite(parsedCount) &&
+        parsedCount >= 1 &&
+        parsedCount <= 10
+      );
     } else if (step === 2) {
       return descriptions.length > 0;
     } else if (step === 3) {
@@ -686,7 +694,17 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
                   min="1"
                   max="10"
                   value={count}
-                  onChange={(e) => setCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                  onChange={(e) => setCount(e.target.value)}
+                  onBlur={() => {
+                    const parsed = parseInt(count, 10);
+                    if (!Number.isFinite(parsed) || parsed < 1) {
+                      setCount('1');
+                    } else if (parsed > 10) {
+                      setCount('10');
+                    } else {
+                      setCount(String(parsed));
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">

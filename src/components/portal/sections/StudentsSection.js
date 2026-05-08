@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import {
   BarChart3, RefreshCw, Download, Target, Trash2, Eye,
-  ChevronUp, ChevronDown, CheckCircle, X
+  ChevronUp, ChevronDown, CheckCircle, Crosshair
 } from 'lucide-react';
-import { getFirestore, doc, writeBatch } from 'firebase/firestore';
-import { formatDate, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
+import { getFirestore, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString, getAppId } from '../../../utils/common_utils';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
+import GoalsModal from '../GoalsModal';
+import SubtopicsFocusModal from '../SubtopicsFocusModal';
 
 const fieldMap = {
   'grade': 'grade',
@@ -26,6 +28,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [goalGrade, setGoalGrade] = useState('G3');
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
+  const [focusStudent, setFocusStudent] = useState(null);
+  const [focusInitialAllowed, setFocusInitialAllowed] = useState({});
+  const [focusLoadingStudentId, setFocusLoadingStudentId] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
@@ -158,13 +163,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   // Goals Logic
   const openGoalsModalForStudent = (student) => {
     const grade = student.grade || 'G3';
-    const topics = getTopicsForGrade(grade);
     const current = student.dailyGoalsByGrade?.[grade] || {};
-    
-    // Fill in defaults if missing
-    topics.forEach(t => {
-      if (current[t] === undefined) current[t] = 4;
-    });
 
     setGoalGrade(grade);
     setGoalTargets(current);
@@ -174,52 +173,64 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   const openGoalsModalForSelected = () => {
     const ids = Array.from(selectedStudents);
-    const grade = 'G3'; // Default to G3 for bulk
-    const topics = getTopicsForGrade(grade);
-    const current = {};
-    topics.forEach(t => current[t] = 4);
-    
+    const grade = 'G3';
+
     setGoalGrade(grade);
-    setGoalTargets(current);
+    setGoalTargets({});
     setGoalStudentIds(ids);
     setShowGoalsModal(true);
   };
 
-  const handleGoalGradeChange = (grade) => {
-    const topics = getTopicsForGrade(grade);
-    const next = { ...goalTargets };
-    topics.forEach(t => {
-      if (next[t] === undefined) next[t] = 4;
+  const saveGoals = async ({ grade, targets }) => {
+    if (!appId) {
+      throw new Error('App ID is missing');
+    }
+    const batch = writeBatch(db);
+
+    goalStudentIds.forEach(studentId => {
+      const studentRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+      const updateData = {
+        [`dailyGoalsByGrade.${grade}`]: targets,
+      };
+      batch.update(studentRef, updateData);
     });
-    setGoalGrade(grade);
-    setGoalTargets(next);
+
+    await batch.commit();
+    if (onRefresh) onRefresh();
   };
 
-  const saveGoals = async () => {
-    if (!appId) {
-      console.error('App ID is missing');
+  // Focus logic
+  const openFocusModalForStudent = async (student) => {
+    if (!student) return;
+
+    if (!student.classId) {
+      // No class to scope focus to; still open the modal so we can show a hint.
+      setFocusInitialAllowed({});
+      setFocusStudent(student);
       return;
     }
-    try {
-      const batch = writeBatch(db);
-      
-      goalStudentIds.forEach(studentId => {
-        // Use the correct path for the new data model
-        const studentRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-        // We need to update the specific grade goals
-        const updateData = {
-          [`dailyGoalsByGrade.${goalGrade}`]: goalTargets
-        };
-        batch.update(studentRef, updateData);
-      });
 
-      await batch.commit();
-      setShowGoalsModal(false);
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Error saving goals:', error);
-      alert('Failed to save goals.');
+    setFocusLoadingStudentId(student.id);
+    try {
+      const enrollmentId = `${student.classId}__${student.id}`;
+      const enrollmentRef = doc(db, 'artifacts', getAppId(), 'classStudents', enrollmentId);
+      const snap = await getDoc(enrollmentRef);
+      const data = snap.exists() ? (snap.data().allowedSubtopicsByTopic || {}) : {};
+      setFocusInitialAllowed(data);
+      setFocusStudent(student);
+    } catch (err) {
+      console.error('Error loading focus data:', err);
+      // Still open modal with empty initial state, save will overwrite the chosen topic.
+      setFocusInitialAllowed({});
+      setFocusStudent(student);
+    } finally {
+      setFocusLoadingStudentId(null);
     }
+  };
+
+  const closeFocusModal = () => {
+    setFocusStudent(null);
+    setFocusInitialAllowed({});
   };
 
   const sortedStudents = getSortedStudents();
@@ -732,16 +743,29 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                     <button
                       onClick={() => setViewingStudent(student)}
                       className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                      title="View Details"
+                      title="View details"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => openGoalsModalForStudent(student)}
                       className="text-purple-600 hover:text-purple-900 inline-flex items-center"
-                      title="Set Goals"
+                      title="Set daily goals"
                     >
                       <Target className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openFocusModalForStudent(student)}
+                      disabled={focusLoadingStudentId === student.id || !student.classId}
+                      className="text-emerald-600 hover:text-emerald-900 inline-flex items-center disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={
+                        student.classId
+                          ? 'Set focus subtopics'
+                          : 'Assign student to a class to set focus subtopics'
+                      }
+                      aria-label="Set focus subtopics"
+                    >
+                      <Crosshair className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -816,48 +840,26 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
       <ConfirmationModal {...confirmationProps} />
 
-      {/* Goals Modal */}
-      {showGoalsModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Set Daily Goals</h3>
-              <button onClick={() => setShowGoalsModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mb-4 flex items-center space-x-4">
-              <label className="text-sm text-gray-700">Grade:</label>
-              <select
-                value={goalGrade}
-                onChange={(e) => handleGoalGradeChange(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                <option value="G3">G3</option>
-                <option value="G4">G4</option>
-              </select>
-              <span className="text-sm text-gray-500">Applying to {goalStudentIds.length} student(s)</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-              {getTopicsForGrade(goalGrade).map(topic => (
-                <div key={topic} className="flex items-center justify-between border rounded px-3 py-2">
-                  <span className="text-sm text-gray-700 mr-3 truncate" title={topic}>{topic}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={goalTargets[topic] ?? 4}
-                    onChange={(e) => setGoalTargets(prev => ({ ...prev, [topic]: parseInt(e.target.value, 10) || 0 }))}
-                    className="w-20 border rounded px-2 py-1 text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 text-right space-x-2">
-              <button onClick={() => setShowGoalsModal(false)} className="px-4 py-2 rounded border hover:bg-gray-50">Cancel</button>
-              <button onClick={saveGoals} className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700">Save</button>
-            </div>
-          </div>
-        </div>
+      <GoalsModal
+        isOpen={showGoalsModal}
+        onClose={() => setShowGoalsModal(false)}
+        initialGrade={goalGrade}
+        initialTargets={goalTargets}
+        studentCount={goalStudentIds.length}
+        onSave={saveGoals}
+      />
+
+      {focusStudent && (
+        <SubtopicsFocusModal
+          isOpen={!!focusStudent}
+          onClose={closeFocusModal}
+          student={focusStudent}
+          classId={focusStudent.classId}
+          initialAllowedSubtopicsByTopic={focusInitialAllowed}
+          onSaved={() => {
+            if (onRefresh) onRefresh();
+          }}
+        />
       )}
     </div>
   );
