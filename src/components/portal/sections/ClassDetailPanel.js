@@ -77,11 +77,16 @@ const ClassDetailPanel = ({
   const currentTeachersResolved = useMemo(() => {
     return currentTeacherIds.map((tid) => {
       const matched = teachers.find((t) => t.uid === tid || t.id === tid);
+      const isPrimaryTeacher = tid === classItem.teacherId;
       return matched
         ? { uid: tid, displayName: matched.displayName || matched.name, email: matched.email }
-        : { uid: tid, displayName: null, email: classItem.teacherEmail || null };
+        : {
+          uid: tid,
+          displayName: null,
+          email: isPrimaryTeacher ? classItem.teacherEmail || null : null,
+        };
     });
-  }, [currentTeacherIds, teachers, classItem.teacherEmail]);
+  }, [currentTeacherIds, teachers, classItem.teacherEmail, classItem.teacherId]);
 
   const availableTeachersToAdd = useMemo(() => {
     return teachers.filter((t) => {
