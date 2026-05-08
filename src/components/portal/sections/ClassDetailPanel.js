@@ -1,14 +1,14 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
-import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
+import { formatDate, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ModalWrapper from '../../ui/ModalWrapper';
+import SubtopicsFocusModal from '../SubtopicsFocusModal';
 
 const ClassDetailPanel = ({
   classItem,
@@ -32,10 +32,6 @@ const ClassDetailPanel = ({
   const [enrollmentReloadTrigger, setEnrollmentReloadTrigger] = useState(0);
   const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
   const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
-  const [subtopicGrade, setSubtopicGrade] = useState('G3');
-  const [subtopicTopic, setSubtopicTopic] = useState('');
-  const [selectedSubtopics, setSelectedSubtopics] = useState([]);
-  const [savingSubtopics, setSavingSubtopics] = useState(false);
 
   // Invite state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -259,80 +255,19 @@ const ClassDetailPanel = ({
   };
 
   const handleOpenSubtopicsModal = (student) => {
-    const grade = student.grade || 'G3';
-    const topics = getTopicsForGrade(grade);
-    const enrollment = enrollments[student.id];
-    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-    
     setSelectedStudentForSubtopics(student);
-    setSubtopicGrade(grade);
-    setSubtopicTopic(topics[0] || '');
-    setSelectedSubtopics(currentRestrictions[topics[0]] || []);
     setShowSubtopicsModal(true);
   };
 
-  const handleSubtopicTopicChange = (topicName) => {
-    setSubtopicTopic(topicName);
-    const enrollment = enrollments[selectedStudentForSubtopics.id];
-    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-    setSelectedSubtopics(currentRestrictions[topicName] || []);
-  };
-
-  const handleSubtopicToggle = (subtopic) => {
-    setSelectedSubtopics((prev) => {
-      if (prev.includes(subtopic)) {
-        return prev.filter((s) => s !== subtopic);
-      } else {
-        return [...prev, subtopic];
-      }
-    });
-  };
-
-  const handleSaveSubtopics = async () => {
-    if (!selectedStudentForSubtopics || !subtopicTopic) return;
-
-    setSavingSubtopics(true);
-    try {
-      const enrollmentId = `${classId}__${selectedStudentForSubtopics.id}`;
-      const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
-      
-      // Get current restrictions
-      const enrollmentSnap = await getDoc(enrollmentRef);
-      const currentData = enrollmentSnap.exists() ? enrollmentSnap.data() : {};
-      const currentRestrictions = currentData.allowedSubtopicsByTopic || {};
-
-      // Update restrictions for this topic
-      const updatedRestrictions = {
-        ...currentRestrictions,
-        [subtopicTopic]: selectedSubtopics,
-      };
-
-      // Remove topic entry if no subtopics selected (allow all)
-      if (selectedSubtopics.length === 0) {
-        delete updatedRestrictions[subtopicTopic];
-      }
-
-      // Update enrollment document
-      await updateDoc(enrollmentRef, {
-        allowedSubtopicsByTopic: updatedRestrictions,
-      });
-
-      // Update local state
-      setEnrollments((prev) => ({
-        ...prev,
-        [selectedStudentForSubtopics.id]: {
-          allowedSubtopicsByTopic: updatedRestrictions,
-        },
-      }));
-
-      setShowSubtopicsModal(false);
-      setStatus({ type: 'success', message: 'Subtopics updated successfully.' });
-    } catch (error) {
-      console.error('Error saving subtopics:', error);
-      setStatus({ type: 'error', message: 'Failed to save subtopics.' });
-    } finally {
-      setSavingSubtopics(false);
-    }
+  const handleSubtopicsSaved = (updatedAllowed) => {
+    if (!selectedStudentForSubtopics) return;
+    setEnrollments((prev) => ({
+      ...prev,
+      [selectedStudentForSubtopics.id]: {
+        allowedSubtopicsByTopic: updatedAllowed,
+      },
+    }));
+    setStatus({ type: 'success', message: 'Subtopics updated successfully.' });
   };
 
   // Escape key to close
@@ -788,116 +723,18 @@ const ClassDetailPanel = ({
         </ModalWrapper>
       )}
 
-      {/* Subtopics Modal */}
+      {/* Subtopics Modal (shared component) */}
       {showSubtopicsModal && selectedStudentForSubtopics && renderModalInPortal(
-        <ModalWrapper
+        <SubtopicsFocusModal
           isOpen={showSubtopicsModal}
           onClose={() => setShowSubtopicsModal(false)}
-          title="Set Focus Subtopics"
-          size="md"
-        >
-          <div className="px-6 py-5 overflow-y-auto flex-1 space-y-5">
-            <p className="text-sm text-gray-600">
-              {getStudentDisplayName(selectedStudentForSubtopics)}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr] gap-4">
-              <div>
-                <label className="text-sm text-gray-700 font-medium block">Grade</label>
-                <select
-                  value={subtopicGrade}
-                  onChange={(e) => {
-                    const newGrade = e.target.value;
-                    setSubtopicGrade(newGrade);
-                    const topics = getTopicsForGrade(newGrade);
-                    setSubtopicTopic(topics[0] || '');
-                    const enrollment = enrollments[selectedStudentForSubtopics.id];
-                    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-                    setSelectedSubtopics(currentRestrictions[topics[0]] || []);
-                  }}
-                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm w-full"
-                >
-                  <option value="G3">G3</option>
-                  <option value="G4">G4</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-700 font-medium block">Topic</label>
-                <select
-                  value={subtopicTopic}
-                  onChange={(e) => handleSubtopicTopicChange(e.target.value)}
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                >
-                  {getTopicsForGrade(subtopicGrade).map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topic}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {subtopicTopic && (
-              <div>
-                <label className="text-sm text-gray-700 font-medium mb-2 block">
-                  Select specific subtopics to focus on (leave empty to include all subtopics):
-                </label>
-                <div className="border border-gray-200 rounded-lg p-3 max-h-72 overflow-y-auto bg-gray-50/60">
-                  {(() => {
-                    const subtopics = getSubtopicsForTopic(subtopicTopic, subtopicGrade);
-                    if (subtopics.length === 0) {
-                      return (
-                        <p className="text-sm text-gray-500 italic">
-                          This topic does not have subtopics defined.
-                        </p>
-                      );
-                    }
-                    return (
-                      <div className="space-y-2">
-                        {subtopics.map((subtopic) => (
-                          <label
-                            key={subtopic}
-                            className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded-md transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedSubtopics.includes(subtopic)}
-                              onChange={() => handleSubtopicToggle(subtopic)}
-                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                            />
-                            <span className="text-sm text-gray-700">{subtopic}</span>
-                          </label>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-                {selectedSubtopics.length > 0 && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    {selectedSubtopics.length} subtopic{selectedSubtopics.length !== 1 ? 's' : ''} selected
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50">
-            <button
-              onClick={() => setShowSubtopicsModal(false)}
-              className="px-4 py-2 rounded-md border border-gray-300 hover:bg-white text-sm font-medium text-gray-700"
-              disabled={savingSubtopics}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveSubtopics}
-              disabled={savingSubtopics}
-              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
-            >
-              {savingSubtopics ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </ModalWrapper>
+          student={selectedStudentForSubtopics}
+          classId={classId}
+          initialAllowedSubtopicsByTopic={
+            enrollments[selectedStudentForSubtopics.id]?.allowedSubtopicsByTopic || {}
+          }
+          onSaved={handleSubtopicsSaved}
+        />
       )}
     </div>
   );
