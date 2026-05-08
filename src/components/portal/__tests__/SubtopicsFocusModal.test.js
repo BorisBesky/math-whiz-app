@@ -7,14 +7,14 @@
 const React = require('react');
 const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
 
-const mockUpdateDoc = jest.fn().mockResolvedValue(undefined);
+const mockSetDoc = jest.fn().mockResolvedValue(undefined);
 const mockGetDoc = jest.fn().mockResolvedValue({ exists: () => false, data: () => ({}) });
 
 jest.mock('firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
   doc: jest.fn(() => ({})),
   getDoc: (...args) => mockGetDoc(...args),
-  updateDoc: (...args) => mockUpdateDoc(...args),
+  setDoc: (...args) => mockSetDoc(...args),
 }));
 
 jest.mock('../../ui/ModalWrapper', () => {
@@ -56,7 +56,7 @@ const renderModal = (overrides = {}) =>
 
 describe('SubtopicsFocusModal', () => {
   beforeEach(() => {
-    mockUpdateDoc.mockClear();
+    mockSetDoc.mockClear();
     mockGetDoc.mockClear();
     mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
     subtopicUtils.getSubtopicsForTopic.mockImplementation((topic) => {
@@ -108,11 +108,14 @@ describe('SubtopicsFocusModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /save focus/i }));
 
-    await waitFor(() => expect(mockUpdateDoc).toHaveBeenCalledTimes(1));
-    const [, payload] = mockUpdateDoc.mock.calls[0];
+    await waitFor(() => expect(mockSetDoc).toHaveBeenCalledTimes(1));
+    const [, payload, options] = mockSetDoc.mock.calls[0];
     expect(payload).toEqual({
       allowedSubtopicsByTopic: { Multiplication: ['Times tables', 'Arrays'] },
     });
+    // setDoc must use merge so we don't clobber other enrollment fields and
+    // we don't fail when the doc is missing (legacy enrollments).
+    expect(options).toEqual({ merge: true });
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(onSaved.mock.calls[0][0]).toEqual({
@@ -139,9 +142,29 @@ describe('SubtopicsFocusModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /clear/i }));
     fireEvent.click(screen.getByRole('button', { name: /save focus/i }));
 
-    await waitFor(() => expect(mockUpdateDoc).toHaveBeenCalled());
-    const [, payload] = mockUpdateDoc.mock.calls[0];
+    await waitFor(() => expect(mockSetDoc).toHaveBeenCalled());
+    const [, payload] = mockSetDoc.mock.calls[0];
     expect(payload.allowedSubtopicsByTopic).toEqual({});
+  });
+
+  test('save still succeeds when the enrollment doc does not exist yet', async () => {
+    // Missing legacy enrollment — getDoc returns exists=false. The component must
+    // setDoc-with-merge instead of updateDoc, otherwise saving would throw.
+    mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
+    const onSaved = jest.fn();
+    renderModal({ onSaved, initialAllowedSubtopicsByTopic: {} });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]); // Times tables
+    fireEvent.click(screen.getByRole('button', { name: /save focus/i }));
+
+    await waitFor(() => expect(mockSetDoc).toHaveBeenCalledTimes(1));
+    const [, payload, options] = mockSetDoc.mock.calls[0];
+    expect(payload).toEqual({
+      allowedSubtopicsByTopic: { Multiplication: ['Times tables'] },
+    });
+    expect(options).toEqual({ merge: true });
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
   });
 
   test('refuses to save when student has no class and shows an inline warning', async () => {
@@ -160,7 +183,7 @@ describe('SubtopicsFocusModal', () => {
     const saveBtn = screen.getByRole('button', { name: /save focus/i });
     expect(saveBtn).toBeDisabled();
 
-    expect(mockUpdateDoc).not.toHaveBeenCalled();
+    expect(mockSetDoc).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
   });
 });

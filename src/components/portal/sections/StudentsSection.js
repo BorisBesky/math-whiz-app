@@ -4,7 +4,7 @@ import {
   ChevronUp, ChevronDown, CheckCircle, Crosshair
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch, getDoc } from 'firebase/firestore';
-import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString, getAppId } from '../../../utils/common_utils';
+import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
@@ -204,7 +204,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     if (!student) return;
 
     if (!student.classId) {
-      // No class to scope focus to; still open the modal so we can show a hint.
+      // No class — open the modal anyway so the user sees the inline hint
+      // explaining that the student must be assigned to a class first.
       setFocusInitialAllowed({});
       setFocusStudent(student);
       return;
@@ -213,7 +214,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setFocusLoadingStudentId(student.id);
     try {
       const enrollmentId = `${student.classId}__${student.id}`;
-      const enrollmentRef = doc(db, 'artifacts', getAppId(), 'classStudents', enrollmentId);
+      const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
       const snap = await getDoc(enrollmentRef);
       const data = snap.exists() ? (snap.data().allowedSubtopicsByTopic || {}) : {};
       setFocusInitialAllowed(data);
@@ -756,7 +757,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                     </button>
                     <button
                       onClick={() => openFocusModalForStudent(student)}
-                      disabled={focusLoadingStudentId === student.id || !student.classId}
+                      disabled={focusLoadingStudentId === student.id}
                       className="text-emerald-600 hover:text-emerald-900 inline-flex items-center disabled:opacity-40 disabled:cursor-not-allowed"
                       title={
                         student.classId

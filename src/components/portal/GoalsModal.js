@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Target, Loader2, AlertCircle } from 'lucide-react';
 import ModalWrapper from '../ui/ModalWrapper';
 import { getTopicsForGrade } from '../../utils/common_utils';
@@ -33,6 +33,7 @@ const GoalsModal = ({
   const [targets, setTargets] = useState(() => buildInitialTargets(initialGrade, initialTargets));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const applyAllInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -163,6 +164,7 @@ const GoalsModal = ({
               </label>
               <div className="flex items-stretch border border-gray-300 rounded-md overflow-hidden">
                 <input
+                  ref={applyAllInputRef}
                   type="number"
                   min="0"
                   defaultValue={DEFAULT_TARGET}
@@ -176,9 +178,10 @@ const GoalsModal = ({
                 />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    const input = e.currentTarget.previousSibling;
-                    handleApplyAll(input.value);
+                  onClick={() => {
+                    if (applyAllInputRef.current) {
+                      handleApplyAll(applyAllInputRef.current.value);
+                    }
                   }}
                   className="px-3 bg-gray-100 text-sm font-medium text-gray-700 hover:bg-gray-200 border-l border-gray-300"
                 >

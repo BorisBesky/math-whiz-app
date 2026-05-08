@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Target, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import ModalWrapper from '../ui/ModalWrapper';
 import { getTopicsForGrade, getAppId } from '../../utils/common_utils';
 import { getSubtopicsForTopic } from '../../utils/subtopicUtils';
@@ -97,9 +97,9 @@ const SubtopicsFocusModal = ({
         delete updated[topic];
       }
 
-      await updateDoc(enrollmentRef, {
-        allowedSubtopicsByTopic: updated,
-      });
+      // setDoc with merge so we don't fail when the enrollment doc is missing
+      // (legacy data) and we don't clobber other fields on existing docs.
+      await setDoc(enrollmentRef, { allowedSubtopicsByTopic: updated }, { merge: true });
 
       setAllowedByTopic(updated);
       if (onSaved) onSaved(updated);
