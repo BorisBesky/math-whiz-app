@@ -1,13 +1,18 @@
 import React, { useState, useCallback } from 'react';
 import {
-  BarChart3, RefreshCw, Download, Target, Trash2, Eye,
-  ChevronUp, ChevronDown, CheckCircle, X
+  BarChart3, RefreshCw, Download, Target, Trash2, Eye, Minus, Plus,
+  ChevronUp, ChevronDown, CheckCircle, X, Focus as FocusIcon, Sparkles
 } from 'lucide-react';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
+import ModalWrapper from '../../ui/ModalWrapper';
+import StudentFocusModal from '../StudentFocusModal';
 import useConfirmation from '../../../hooks/useConfirmation';
+
+const MIN_GOAL = 0;
+const MAX_GOAL = 50;
 
 const fieldMap = {
   'grade': 'grade',
@@ -31,6 +36,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [endDate, setEndDate] = useState(getTodayDateString());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [focusStudent, setFocusStudent] = useState(null);
+  const [savingGoals, setSavingGoals] = useState(false);
+  const [goalsError, setGoalsError] = useState(null);
 
   const db = getFirestore();
   const { confirmationProps, confirm } = useConfirmation();
@@ -200,9 +208,11 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       console.error('App ID is missing');
       return;
     }
+    setSavingGoals(true);
+    setGoalsError(null);
     try {
       const batch = writeBatch(db);
-      
+
       goalStudentIds.forEach(studentId => {
         // Use the correct path for the new data model
         const studentRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
@@ -218,8 +228,38 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Error saving goals:', error);
-      alert('Failed to save goals.');
+      setGoalsError('Failed to save goals. Please try again.');
+    } finally {
+      setSavingGoals(false);
     }
+  };
+
+  const adjustGoal = (topic, delta) => {
+    setGoalTargets(prev => {
+      const current = parseInt(prev[topic] ?? 4, 10) || 0;
+      const next = Math.min(MAX_GOAL, Math.max(MIN_GOAL, current + delta));
+      return { ...prev, [topic]: next };
+    });
+  };
+
+  const handleGoalInputChange = (topic, value) => {
+    if (value === '') {
+      setGoalTargets(prev => ({ ...prev, [topic]: '' }));
+      return;
+    }
+    if (!/^\d+$/.test(value)) return;
+    const n = Math.min(MAX_GOAL, parseInt(value, 10));
+    setGoalTargets(prev => ({ ...prev, [topic]: n }));
+  };
+
+  const handleGoalInputBlur = (topic) => {
+    setGoalTargets(prev => {
+      const v = prev[topic];
+      if (v === '' || v === undefined || v === null || Number.isNaN(Number(v))) {
+        return { ...prev, [topic]: 0 };
+      }
+      return prev;
+    });
   };
 
   const sortedStudents = getSortedStudents();
@@ -739,9 +779,18 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                     <button
                       onClick={() => openGoalsModalForStudent(student)}
                       className="text-purple-600 hover:text-purple-900 inline-flex items-center"
-                      title="Set Goals"
+                      title="Set Daily Goals"
                     >
                       <Target className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setFocusStudent(student)}
+                      disabled={!student.classId}
+                      className="text-pink-600 hover:text-pink-800 inline-flex items-center disabled:text-gray-300 disabled:cursor-not-allowed"
+                      title={student.classId ? 'Set Focus Subtopics' : 'Assign student to a class to set focus areas'}
+                      aria-label={`Set focus subtopics for ${getStudentDisplayName(student)}`}
+                    >
+                      <FocusIcon className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -818,46 +867,158 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
       {/* Goals Modal */}
       {showGoalsModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Set Daily Goals</h3>
-              <button onClick={() => setShowGoalsModal(false)} className="text-gray-500 hover:text-gray-700">
+        <ModalWrapper
+          isOpen={showGoalsModal}
+          onClose={() => setShowGoalsModal(false)}
+          hideCloseButton
+          size="lg"
+        >
+          <div className="px-6 py-5 bg-gradient-to-r from-brand-purple to-brand-blue text-white rounded-t-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
+                  <Sparkles className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold font-display">Daily Practice Goals</h2>
+                  <p className="text-sm text-white/90 mt-0.5">
+                    {goalStudentIds.length === 1
+                      ? 'Set per-topic targets for this student'
+                      : `Applying to ${goalStudentIds.length} student${goalStudentIds.length === 1 ? '' : 's'}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoalsModal(false)}
+                className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-1 transition"
+                aria-label="Close"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="mb-4 flex items-center space-x-4">
-              <label className="text-sm text-gray-700">Grade:</label>
-              <select
-                value={goalGrade}
-                onChange={(e) => handleGoalGradeChange(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                <option value="G3">G3</option>
-                <option value="G4">G4</option>
-              </select>
-              <span className="text-sm text-gray-500">Applying to {goalStudentIds.length} student(s)</span>
+          </div>
+
+          <div className="px-6 py-5 space-y-5">
+            {goalsError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 rounded-button p-3 text-sm">
+                {goalsError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                Grade
+              </label>
+              <div className="inline-flex rounded-button border border-gray-200 bg-gray-50 p-1" role="tablist">
+                {['G3', 'G4'].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    role="tab"
+                    aria-selected={goalGrade === g}
+                    onClick={() => handleGoalGradeChange(g)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-button transition ${
+                      goalGrade === g
+                        ? 'bg-white shadow-card text-brand-purple'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {g === 'G3' ? '3rd Grade' : '4th Grade'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-              {getTopicsForGrade(goalGrade).map(topic => (
-                <div key={topic} className="flex items-center justify-between border rounded px-3 py-2">
-                  <span className="text-sm text-gray-700 mr-3 truncate" title={topic}>{topic}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={goalTargets[topic] ?? 4}
-                    onChange={(e) => setGoalTargets(prev => ({ ...prev, [topic]: parseInt(e.target.value, 10) || 0 }))}
-                    className="w-20 border rounded px-2 py-1 text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 text-right space-x-2">
-              <button onClick={() => setShowGoalsModal(false)} className="px-4 py-2 rounded border hover:bg-gray-50">Cancel</button>
-              <button onClick={saveGoals} className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700">Save</button>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                Questions per topic per day
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto pr-1">
+                {getTopicsForGrade(goalGrade).map((topic) => {
+                  const value = goalTargets[topic] ?? 4;
+                  return (
+                    <div
+                      key={topic}
+                      className="flex items-center justify-between border border-gray-200 rounded-button bg-white p-3 shadow-card hover:shadow-card-hover transition"
+                    >
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <Target className="h-4 w-4 text-brand-purple flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-800 truncate" title={topic}>
+                          {topic}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => adjustGoal(topic, -1)}
+                          disabled={savingGoals || (parseInt(value, 10) || 0) <= MIN_GOAL}
+                          className="h-7 w-7 rounded-button bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 inline-flex items-center justify-center"
+                          aria-label={`Decrease goal for ${topic}`}
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={MIN_GOAL}
+                          max={MAX_GOAL}
+                          value={value}
+                          onChange={(e) => handleGoalInputChange(topic, e.target.value)}
+                          onBlur={() => handleGoalInputBlur(topic)}
+                          disabled={savingGoals}
+                          aria-label={`Goal for ${topic}`}
+                          className="w-14 text-center border border-gray-200 rounded-button px-1 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adjustGoal(topic, 1)}
+                          disabled={savingGoals || (parseInt(value, 10) || 0) >= MAX_GOAL}
+                          className="h-7 w-7 rounded-button bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 inline-flex items-center justify-center"
+                          aria-label={`Increase goal for ${topic}`}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Set to 0 to leave a topic without a daily target.
+              </p>
             </div>
           </div>
-        </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-2 rounded-b-lg">
+            <button
+              type="button"
+              onClick={() => setShowGoalsModal(false)}
+              disabled={savingGoals}
+              className="px-4 py-2 rounded-button border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={saveGoals}
+              disabled={savingGoals}
+              className="px-4 py-2 rounded-button bg-brand-purple text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 inline-flex items-center"
+            >
+              {savingGoals ? 'Saving…' : 'Save Goals'}
+            </button>
+          </div>
+        </ModalWrapper>
+      )}
+
+      {/* Focus Modal */}
+      {focusStudent && (
+        <StudentFocusModal
+          isOpen={Boolean(focusStudent)}
+          onClose={() => setFocusStudent(null)}
+          student={focusStudent}
+          appId={appId}
+        />
       )}
     </div>
   );

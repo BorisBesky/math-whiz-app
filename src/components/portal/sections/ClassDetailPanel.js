@@ -1,14 +1,14 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
-import { formatDate, getTopicsForGrade, getAppId } from '../../../utils/common_utils';
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
+import { formatDate, getAppId } from '../../../utils/common_utils';
+import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getSubtopicsForTopic } from '../../../utils/subtopicUtils';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ModalWrapper from '../../ui/ModalWrapper';
+import StudentFocusModal from '../StudentFocusModal';
 
 const ClassDetailPanel = ({
   classItem,
@@ -24,18 +24,9 @@ const ClassDetailPanel = ({
   const classId = classItem?.id;
   const appId = getAppId();
   const db = getFirestore();
-  
-  const [enrollments, setEnrollments] = useState({});
-  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
-  const [enrollmentError, setEnrollmentError] = useState(null);
-  const [failedStudentIds, setFailedStudentIds] = useState(new Set());
-  const [enrollmentReloadTrigger, setEnrollmentReloadTrigger] = useState(0);
-  const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
-  const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
-  const [subtopicGrade, setSubtopicGrade] = useState('G3');
-  const [subtopicTopic, setSubtopicTopic] = useState('');
-  const [selectedSubtopics, setSelectedSubtopics] = useState([]);
-  const [savingSubtopics, setSavingSubtopics] = useState(false);
+
+  const [showFocusModal, setShowFocusModal] = useState(false);
+  const [focusStudent, setFocusStudent] = useState(null);
 
   // Invite state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -56,11 +47,6 @@ const ClassDetailPanel = ({
     }
     return students.filter((student) => student.classId !== classId);
   }, [students, classId]);
-
-  // Memoize roster IDs to prevent unnecessary re-fetches
-  const rosterIds = useMemo(() => {
-    return roster.map(s => s.id).sort().join(',');
-  }, [roster]);
 
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [status, setStatus] = useState(null);
@@ -134,86 +120,6 @@ const ClassDetailPanel = ({
     }
   };
 
-  // Load enrollment data with allowedSubtopicsByTopic
-  useEffect(() => {
-    if (!classId || roster.length === 0) {
-      setEnrollments({});
-      setEnrollmentError(null);
-      setFailedStudentIds(new Set());
-      return;
-    }
-
-    const loadEnrollments = async () => {
-      setLoadingEnrollments(true);
-      setEnrollmentError(null);
-      setFailedStudentIds(new Set());
-      
-      try {
-        const enrollmentData = {};
-        const failedIds = new Set();
-        
-        await Promise.all(
-          roster.map(async (student) => {
-            const enrollmentId = `${classId}__${student.id}`;
-            const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
-            try {
-              const enrollmentSnap = await getDoc(enrollmentRef);
-              if (enrollmentSnap.exists()) {
-                const data = enrollmentSnap.data();
-                enrollmentData[student.id] = {
-                  allowedSubtopicsByTopic: data.allowedSubtopicsByTopic || {},
-                };
-              } else {
-                enrollmentData[student.id] = {
-                  allowedSubtopicsByTopic: {},
-                };
-              }
-            } catch (err) {
-              console.error(`Error loading enrollment for student ${student.id}:`, err);
-              failedIds.add(student.id);
-              // Still set empty data so UI doesn't break
-              enrollmentData[student.id] = {
-                allowedSubtopicsByTopic: {},
-              };
-            }
-          })
-        );
-        
-        setEnrollments(enrollmentData);
-        setFailedStudentIds(failedIds);
-        
-        // Set error if any students failed to load
-        if (failedIds.size > 0) {
-          const failedCount = failedIds.size;
-          const totalCount = roster.length;
-          setEnrollmentError(
-            `Failed to load enrollment data for ${failedCount} of ${totalCount} student${failedCount > 1 ? 's' : ''}. ` +
-            `Focus settings may not work correctly for affected students.`
-          );
-        }
-      } catch (error) {
-        console.error('Error loading enrollments:', error);
-        setEnrollmentError(
-          `Failed to load enrollment data. Focus buttons may not work correctly. ` +
-          `Error: ${error.message || 'Unknown error'}`
-        );
-        // Set empty enrollments to prevent UI crashes
-        setEnrollments({});
-      } finally {
-        setLoadingEnrollments(false);
-      }
-    };
-
-    loadEnrollments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId, rosterIds, db, appId, enrollmentReloadTrigger]);
-  // Note: Using rosterIds instead of roster to prevent unnecessary refetches when students array is recreated
-
-  const handleRetryEnrollments = () => {
-    // Trigger reload by incrementing the reload trigger
-    setEnrollmentReloadTrigger(prev => prev + 1);
-  };
-
   const fetchInvite = useCallback(async (rotate = false) => {
     setInviteLoading(true);
     try {
@@ -258,95 +164,28 @@ const ClassDetailPanel = ({
     fetchInvite(false);
   };
 
-  const handleOpenSubtopicsModal = (student) => {
-    const grade = student.grade || 'G3';
-    const topics = getTopicsForGrade(grade);
-    const enrollment = enrollments[student.id];
-    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-    
-    setSelectedStudentForSubtopics(student);
-    setSubtopicGrade(grade);
-    setSubtopicTopic(topics[0] || '');
-    setSelectedSubtopics(currentRestrictions[topics[0]] || []);
-    setShowSubtopicsModal(true);
+  const handleOpenFocusModal = (student) => {
+    setFocusStudent(student);
+    setShowFocusModal(true);
   };
 
-  const handleSubtopicTopicChange = (topicName) => {
-    setSubtopicTopic(topicName);
-    const enrollment = enrollments[selectedStudentForSubtopics.id];
-    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-    setSelectedSubtopics(currentRestrictions[topicName] || []);
-  };
-
-  const handleSubtopicToggle = (subtopic) => {
-    setSelectedSubtopics((prev) => {
-      if (prev.includes(subtopic)) {
-        return prev.filter((s) => s !== subtopic);
-      } else {
-        return [...prev, subtopic];
-      }
-    });
-  };
-
-  const handleSaveSubtopics = async () => {
-    if (!selectedStudentForSubtopics || !subtopicTopic) return;
-
-    setSavingSubtopics(true);
-    try {
-      const enrollmentId = `${classId}__${selectedStudentForSubtopics.id}`;
-      const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
-      
-      // Get current restrictions
-      const enrollmentSnap = await getDoc(enrollmentRef);
-      const currentData = enrollmentSnap.exists() ? enrollmentSnap.data() : {};
-      const currentRestrictions = currentData.allowedSubtopicsByTopic || {};
-
-      // Update restrictions for this topic
-      const updatedRestrictions = {
-        ...currentRestrictions,
-        [subtopicTopic]: selectedSubtopics,
-      };
-
-      // Remove topic entry if no subtopics selected (allow all)
-      if (selectedSubtopics.length === 0) {
-        delete updatedRestrictions[subtopicTopic];
-      }
-
-      // Update enrollment document
-      await updateDoc(enrollmentRef, {
-        allowedSubtopicsByTopic: updatedRestrictions,
-      });
-
-      // Update local state
-      setEnrollments((prev) => ({
-        ...prev,
-        [selectedStudentForSubtopics.id]: {
-          allowedSubtopicsByTopic: updatedRestrictions,
-        },
-      }));
-
-      setShowSubtopicsModal(false);
-      setStatus({ type: 'success', message: 'Subtopics updated successfully.' });
-    } catch (error) {
-      console.error('Error saving subtopics:', error);
-      setStatus({ type: 'error', message: 'Failed to save subtopics.' });
-    } finally {
-      setSavingSubtopics(false);
-    }
+  const handleCloseFocusModal = () => {
+    setShowFocusModal(false);
+    setFocusStudent(null);
   };
 
   // Escape key to close
   const handleEscapeKey = useCallback((e) => {
     if (e.key === 'Escape') {
-      if (showSubtopicsModal) {
-        setShowSubtopicsModal(false);
+      if (showFocusModal) {
+        handleCloseFocusModal();
       } else if (showInviteModal) {
         setShowInviteModal(false);
       } else {
         onClose();
       }
     }
-  }, [onClose, showSubtopicsModal, showInviteModal]);
+  }, [onClose, showFocusModal, showInviteModal]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
@@ -596,33 +435,6 @@ const ClassDetailPanel = ({
             </div>
           )}
 
-          {enrollmentError && (
-            <div className="mb-4 text-sm rounded-md px-4 py-3 bg-yellow-50 text-yellow-800 border border-yellow-200 flex items-start justify-between">
-              <div className="flex items-start flex-1">
-                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-medium mb-1">Enrollment Data Loading Issue</p>
-                  <p>{enrollmentError}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleRetryEnrollments}
-                disabled={loadingEnrollments}
-                className="ml-4 px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <RefreshCw className={`h-4 w-4 mr-1 ${loadingEnrollments ? 'animate-spin' : ''}`} />
-                Retry
-              </button>
-            </div>
-          )}
-
-          {loadingEnrollments && !enrollmentError && (
-            <div className="mb-4 text-sm rounded-md px-4 py-2 bg-blue-50 text-blue-800 border border-blue-200 flex items-center">
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Loading enrollment data...
-            </div>
-          )}
-
           {roster.length === 0 ? (
             <div className="border border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
               No students have been added to this class yet.
@@ -661,20 +473,9 @@ const ClassDetailPanel = ({
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               type="button"
-                              onClick={() => handleOpenSubtopicsModal(student)}
-                              disabled={failedStudentIds.has(student.id) || loadingEnrollments}
-                              className={`inline-flex items-center text-xs font-medium ${
-                                failedStudentIds.has(student.id) || loadingEnrollments
-                                  ? 'text-gray-400 cursor-not-allowed opacity-50'
-                                  : 'text-purple-600 hover:text-purple-800'
-                              }`}
-                              title={
-                                failedStudentIds.has(student.id)
-                                  ? 'Enrollment data failed to load. Click Retry above to reload.'
-                                  : loadingEnrollments
-                                  ? 'Loading enrollment data...'
-                                  : 'Set Focus Subtopics'
-                              }
+                              onClick={() => handleOpenFocusModal(student)}
+                              className="inline-flex items-center text-xs font-medium text-purple-600 hover:text-purple-800"
+                              title="Set Focus Subtopics"
                             >
                               <Target className="h-4 w-4 mr-1" />
                               Focus
@@ -788,116 +589,16 @@ const ClassDetailPanel = ({
         </ModalWrapper>
       )}
 
-      {/* Subtopics Modal */}
-      {showSubtopicsModal && selectedStudentForSubtopics && renderModalInPortal(
-        <ModalWrapper
-          isOpen={showSubtopicsModal}
-          onClose={() => setShowSubtopicsModal(false)}
-          title="Set Focus Subtopics"
-          size="md"
-        >
-          <div className="px-6 py-5 overflow-y-auto flex-1 space-y-5">
-            <p className="text-sm text-gray-600">
-              {getStudentDisplayName(selectedStudentForSubtopics)}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr] gap-4">
-              <div>
-                <label className="text-sm text-gray-700 font-medium block">Grade</label>
-                <select
-                  value={subtopicGrade}
-                  onChange={(e) => {
-                    const newGrade = e.target.value;
-                    setSubtopicGrade(newGrade);
-                    const topics = getTopicsForGrade(newGrade);
-                    setSubtopicTopic(topics[0] || '');
-                    const enrollment = enrollments[selectedStudentForSubtopics.id];
-                    const currentRestrictions = enrollment?.allowedSubtopicsByTopic || {};
-                    setSelectedSubtopics(currentRestrictions[topics[0]] || []);
-                  }}
-                  className="mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm w-full"
-                >
-                  <option value="G3">G3</option>
-                  <option value="G4">G4</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-700 font-medium block">Topic</label>
-                <select
-                  value={subtopicTopic}
-                  onChange={(e) => handleSubtopicTopicChange(e.target.value)}
-                  className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                >
-                  {getTopicsForGrade(subtopicGrade).map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topic}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {subtopicTopic && (
-              <div>
-                <label className="text-sm text-gray-700 font-medium mb-2 block">
-                  Select specific subtopics to focus on (leave empty to include all subtopics):
-                </label>
-                <div className="border border-gray-200 rounded-lg p-3 max-h-72 overflow-y-auto bg-gray-50/60">
-                  {(() => {
-                    const subtopics = getSubtopicsForTopic(subtopicTopic, subtopicGrade);
-                    if (subtopics.length === 0) {
-                      return (
-                        <p className="text-sm text-gray-500 italic">
-                          This topic does not have subtopics defined.
-                        </p>
-                      );
-                    }
-                    return (
-                      <div className="space-y-2">
-                        {subtopics.map((subtopic) => (
-                          <label
-                            key={subtopic}
-                            className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded-md transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedSubtopics.includes(subtopic)}
-                              onChange={() => handleSubtopicToggle(subtopic)}
-                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                            />
-                            <span className="text-sm text-gray-700">{subtopic}</span>
-                          </label>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-                {selectedSubtopics.length > 0 && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    {selectedSubtopics.length} subtopic{selectedSubtopics.length !== 1 ? 's' : ''} selected
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50">
-            <button
-              onClick={() => setShowSubtopicsModal(false)}
-              className="px-4 py-2 rounded-md border border-gray-300 hover:bg-white text-sm font-medium text-gray-700"
-              disabled={savingSubtopics}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveSubtopics}
-              disabled={savingSubtopics}
-              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
-            >
-              {savingSubtopics ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </ModalWrapper>
+      {/* Focus Modal */}
+      {showFocusModal && focusStudent && renderModalInPortal(
+        <StudentFocusModal
+          isOpen={showFocusModal}
+          onClose={handleCloseFocusModal}
+          student={focusStudent}
+          classId={classId}
+          appId={appId}
+          onSaved={() => setStatus({ type: 'success', message: 'Focus areas updated.' })}
+        />
       )}
     </div>
   );
