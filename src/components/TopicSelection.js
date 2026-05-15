@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Award } from "lucide-react";
 import { updateDoc } from "firebase/firestore";
 import { getTodayDateString, getUserDocRef, sanitizeTopicName } from "../utils/firebaseHelpers";
@@ -8,27 +8,16 @@ import {
   quizTopicsByGrade,
 } from "../constants/appConstants";
 
-/** Shows static title immediately for fast LCP, then swaps to animated version */
-const AnimatedTitle = () => {
-  const [src, setSrc] = useState("/math-whiz-title.webp");
-
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/math-whiz-title-animated.webp";
-    img.onload = () => setSrc(img.src);
-  }, []);
-
-  return (
-    <img
-      src={src}
-      alt="Math Whiz!"
-      className="h-16 md:h-20 w-auto"
-      width={400}
-      height={88}
-      fetchPriority="high"
-    />
-  );
-};
+const AnimatedTitle = () => (
+  <img
+    src="/math-whiz-animated.svg"
+    alt="Math Whiz!"
+    className="h-16 md:h-20 w-auto"
+    width={400}
+    height={88}
+    fetchPriority="high"
+  />
+);
 
 const TopicSelection = ({
   userData,
