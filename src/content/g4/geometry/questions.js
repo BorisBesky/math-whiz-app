@@ -13,7 +13,268 @@ function getRandomInt(min, max) {
 }
 
 function createSvgDataUri(svg) {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  if (typeof btoa === 'function') {
+    const utf8 = encodeURIComponent(svg).replace(/%([0-9A-F]{2})/g, (_match, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
+    return `data:image/svg+xml;base64,${btoa(utf8)}`;
+  }
+
+  // eslint-disable-next-line no-undef
+  return `data:image/svg+xml;base64,${Buffer.from(svg, 'utf-8').toString('base64')}`;
+}
+
+function polarToSvgPoint(centerX, centerY, length, angleDegrees) {
+  const angleRadians = (angleDegrees * Math.PI) / 180;
+  return {
+    x: centerX + length * Math.cos(angleRadians),
+    y: centerY - length * Math.sin(angleRadians),
+  };
+}
+
+function createAngleArcPath(centerX, centerY, radius, startAngle, endAngle) {
+  const startPoint = polarToSvgPoint(centerX, centerY, radius, startAngle);
+  const endPoint = polarToSvgPoint(centerX, centerY, radius, endAngle);
+  const sweep = endAngle - startAngle;
+  const largeArcFlag = sweep > 180 ? 1 : 0;
+  return `M ${startPoint.x} ${startPoint.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${endPoint.x} ${endPoint.y}`;
+}
+
+function createAngleAdditionSvg({ angleCBD, angleDBA, angleCBA, missingAngleType }) {
+  const width = 420;
+  const height = 260;
+  const centerX = 210;
+  const centerY = 205;
+  const rayLength = 140;
+  const labelMinX = 22;
+  const labelMaxX = width - 22;
+  const labelMinY = 42;
+  const labelMaxY = height - 20;
+  const rayStroke = '#1f2937';
+  const knownArcStroke = '#2563eb';
+  const missingArcStroke = '#dc2626';
+  const wholeArcStroke = '#7c3aed';
+
+  const pointB = { x: centerX, y: centerY };
+  const pointA = polarToSvgPoint(centerX, centerY, rayLength, 0);
+  const pointD = polarToSvgPoint(centerX, centerY, rayLength, angleDBA);
+  const pointC = polarToSvgPoint(centerX, centerY, rayLength, angleCBA);
+
+  const pointLabel = (label, point, dx = 0, dy = 0) => {
+    const x = Math.min(labelMaxX, Math.max(labelMinX, point.x + dx));
+    const y = Math.min(labelMaxY, Math.max(labelMinY, point.y + dy));
+
+    return `<text x="${x}" y="${y}" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#111827">${label}</text>`;
+  };
+
+  const angleLabel = (
+    text,
+    startAngle,
+    endAngle,
+    radius,
+    {
+      color = '#111827',
+      angleOffset = 0,
+      radialOffset = 0,
+      tangentOffset = 0,
+    } = {}
+  ) => {
+    const midAngle = startAngle + (endAngle - startAngle) / 2 + angleOffset;
+    const labelRadius = radius + radialOffset;
+    const angleRadians = (midAngle * Math.PI) / 180;
+    const basePoint = polarToSvgPoint(centerX, centerY, labelRadius, midAngle);
+    const tangentX = -Math.sin(angleRadians);
+    const tangentY = -Math.cos(angleRadians);
+    const x = Math.min(labelMaxX, Math.max(labelMinX, basePoint.x + tangentOffset * tangentX));
+    const y = Math.min(labelMaxY, Math.max(labelMinY, basePoint.y + tangentOffset * tangentY));
+
+    return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="${color}">${text}</text>`;
+  };
+
+  const labelDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+  const resolveLabelCollisions = (specs) => {
+    const minDistance = 28;
+    const nextSpecs = specs.map((spec) => ({
+      ...spec,
+      options: { ...spec.options },
+    }));
+
+    const toPoint = (spec) => {
+      const {
+        startAngle,
+        endAngle,
+        radius,
+        options: {
+          angleOffset = 0,
+          radialOffset = 0,
+          tangentOffset = 0,
+        } = {},
+      } = spec;
+      const midAngle = startAngle + (endAngle - startAngle) / 2 + angleOffset;
+      const labelRadius = radius + radialOffset;
+      const angleRadians = (midAngle * Math.PI) / 180;
+      const basePoint = polarToSvgPoint(centerX, centerY, labelRadius, midAngle);
+      const tangentX = -Math.sin(angleRadians);
+      const tangentY = -Math.cos(angleRadians);
+      return {
+        x: Math.min(labelMaxX, Math.max(labelMinX, basePoint.x + tangentOffset * tangentX)),
+        y: Math.min(labelMaxY, Math.max(labelMinY, basePoint.y + tangentOffset * tangentY)),
+      };
+    };
+
+    for (let i = 0; i < nextSpecs.length; i += 1) {
+      for (let j = i + 1; j < nextSpecs.length; j += 1) {
+        const p1 = toPoint(nextSpecs[i]);
+        const p2 = toPoint(nextSpecs[j]);
+        if (labelDistance(p1, p2) < minDistance) {
+          const push = i === 2 || j === 2 ? 18 : 12;
+          nextSpecs[j].options.radialOffset = (nextSpecs[j].options.radialOffset || 0) + push;
+          nextSpecs[j].options.tangentOffset = (nextSpecs[j].options.tangentOffset || 0) + (j % 2 === 0 ? -8 : 8);
+        }
+      }
+    }
+
+    return nextSpecs;
+  };
+
+  const knownLabels = [];
+  const arcPaths = [];
+  let labelSpecs = [];
+
+  if (missingAngleType === 'angle CBA') {
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 56, 0, angleDBA)}" fill="none" stroke="${knownArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 88, angleDBA, angleCBA)}" fill="none" stroke="${knownArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 122, 0, angleCBA)}" fill="none" stroke="${missingArcStroke}" stroke-width="5" stroke-linecap="round" />`);
+    labelSpecs = [
+      { text: `${angleDBA}°`, startAngle: 0, endAngle: angleDBA, radius: 66, options: { tangentOffset: 10 } },
+      { text: `${angleCBD}°`, startAngle: angleDBA, endAngle: angleCBA, radius: 98, options: { tangentOffset: -10 } },
+      { text: '?', startAngle: 0, endAngle: angleCBA, radius: 140, options: { color: missingArcStroke, tangentOffset: 8 } },
+    ];
+  } else if (missingAngleType === 'angle CBD') {
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 56, 0, angleDBA)}" fill="none" stroke="${knownArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 90, 0, angleCBA)}" fill="none" stroke="${wholeArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 124, angleDBA, angleCBA)}" fill="none" stroke="${missingArcStroke}" stroke-width="5" stroke-linecap="round" />`);
+    labelSpecs = [
+      { text: `${angleDBA}°`, startAngle: 0, endAngle: angleDBA, radius: 68, options: { tangentOffset: 10 } },
+      { text: `${angleCBA}°`, startAngle: 0, endAngle: angleCBA, radius: 104, options: { tangentOffset: -12 } },
+      { text: '?', startAngle: angleDBA, endAngle: angleCBA, radius: 138, options: { color: missingArcStroke, tangentOffset: 8 } },
+    ];
+  } else {
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 56, angleDBA, angleCBA)}" fill="none" stroke="${knownArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 90, 0, angleCBA)}" fill="none" stroke="${wholeArcStroke}" stroke-width="4" stroke-linecap="round" />`);
+    arcPaths.push(`<path d="${createAngleArcPath(centerX, centerY, 124, 0, angleDBA)}" fill="none" stroke="${missingArcStroke}" stroke-width="5" stroke-linecap="round" />`);
+    labelSpecs = [
+      { text: `${angleCBD}°`, startAngle: angleDBA, endAngle: angleCBA, radius: 66, options: { tangentOffset: -10 } },
+      { text: `${angleCBA}°`, startAngle: 0, endAngle: angleCBA, radius: 105, options: { tangentOffset: 13 } },
+      { text: '?', startAngle: 0, endAngle: angleDBA, radius: 138, options: { color: missingArcStroke, tangentOffset: -11 } },
+    ];
+  }
+
+  resolveLabelCollisions(labelSpecs).forEach((spec) => {
+    knownLabels.push(
+      angleLabel(
+        spec.text,
+        spec.startAngle,
+        spec.endAngle,
+        spec.radius,
+        spec.options
+      )
+    );
+  });
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<rect width="${width}" height="${height}" rx="16" fill="#f8fafc" />` +
+    `<text x="${width / 2}" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#111827">Angle addition diagram</text>` +
+    `<line x1="${pointB.x}" y1="${pointB.y}" x2="${pointA.x}" y2="${pointA.y}" stroke="${rayStroke}" stroke-width="4" stroke-linecap="round" />` +
+    `<line x1="${pointB.x}" y1="${pointB.y}" x2="${pointD.x}" y2="${pointD.y}" stroke="${rayStroke}" stroke-width="4" stroke-linecap="round" />` +
+    `<line x1="${pointB.x}" y1="${pointB.y}" x2="${pointC.x}" y2="${pointC.y}" stroke="${rayStroke}" stroke-width="4" stroke-linecap="round" />` +
+    arcPaths.join('') +
+    `<circle cx="${pointB.x}" cy="${pointB.y}" r="4.5" fill="#111827" />` +
+    pointLabel('B', pointB, -18, 22) +
+    pointLabel('A', pointA, 10, 6) +
+    pointLabel('D', pointD, 8, -6) +
+    pointLabel('C', pointC, -2, -10) +
+    knownLabels.join('') +
+    `</svg>`;
+
+  return createSvgDataUri(svg);
+}
+
+const ANGLE_ADDITION_PREFIX = 'Rays BC, BD, and BA all start at point B.';
+const ANGLE_ADDITION_DIAGRAM_DESCRIPTION =
+  'Angle diagram with labeled points and the missing angle highlighted in red';
+
+function getMissingAngleValue(missingAngleName, values) {
+  if (missingAngleName === 'CBA' && values.CBD && values.DBA) {
+    return values.CBD + values.DBA;
+  }
+
+  if (missingAngleName === 'CBD' && values.CBA && values.DBA) {
+    return values.CBA - values.DBA;
+  }
+
+  if (missingAngleName === 'DBA' && values.CBA && values.CBD) {
+    return values.CBA - values.CBD;
+  }
+
+  return null;
+}
+
+function parseAngleAdditionQuestion(questionText) {
+  if (typeof questionText !== 'string' || !questionText.startsWith(ANGLE_ADDITION_PREFIX)) {
+    return null;
+  }
+
+  const values = {};
+  [...questionText.matchAll(/angle\s([A-Z]{3})\s=\s(\d+)°/g)].forEach(([, angleName, value]) => {
+    values[angleName] = Number(value);
+  });
+
+  const missingAngleName = questionText.match(/what is angle\s([A-Z]{3})\?/i)?.[1];
+  if (!missingAngleName) {
+    return null;
+  }
+
+  if (!['CBA', 'CBD', 'DBA'].includes(missingAngleName)) {
+    return null;
+  }
+
+  values[missingAngleName] = getMissingAngleValue(missingAngleName, values);
+
+  if (!values.CBA || !values.CBD || !values.DBA) {
+    return null;
+  }
+
+  return {
+    angleCBD: values.CBD,
+    angleDBA: values.DBA,
+    angleCBA: values.CBA,
+    missingAngleType: `angle ${missingAngleName}`,
+  };
+}
+
+export function refreshAngleAdditionDiagram(question) {
+  const parsedQuestion = parseAngleAdditionQuestion(question?.question);
+
+  if (!parsedQuestion) {
+    return question;
+  }
+
+  const refreshedImage = {
+    type: 'question',
+    data: createAngleAdditionSvg(parsedQuestion),
+    description: ANGLE_ADDITION_DIAGRAM_DESCRIPTION,
+  };
+
+  return {
+    ...question,
+    images: [
+      refreshedImage,
+      ...(question.images || []).filter((image) => image?.type !== 'question'),
+    ],
+  };
 }
 
 // Maps each real-life example name to its image path in public/images/angles/
@@ -503,6 +764,86 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
   };
 }
 
+function generateAngleAdditionQuestion() {
+  let angleCBD = getRandomInt(20, 85);
+  let angleDBA = getRandomInt(15, 80);
+
+  while (angleCBD + angleDBA >= 180) {
+    angleCBD = getRandomInt(20, 85);
+    angleDBA = getRandomInt(15, 80);
+  }
+
+  const angleCBA = angleCBD + angleDBA;
+  const missingAngleType = ['angle CBD', 'angle DBA', 'angle CBA'][getRandomInt(0, 2)];
+
+  let question;
+  let correctAnswerValue;
+  let rawDistractors;
+
+  if (missingAngleType === 'angle CBA') {
+    question = `Rays BC, BD, and BA all start at point B. Ray BD is inside angle CBA. If angle CBD = ${angleCBD}\u00b0 and angle DBA = ${angleDBA}\u00b0, what is angle CBA?`;
+    correctAnswerValue = angleCBA;
+    rawDistractors = [
+      Math.abs(angleCBD - angleDBA),
+      angleCBD,
+      angleDBA,
+      angleCBA + 10,
+      Math.max(1, angleCBA - 10),
+    ];
+  } else if (missingAngleType === 'angle CBD') {
+    question = `Rays BC, BD, and BA all start at point B. Ray BD is inside angle CBA. If angle CBA = ${angleCBA}\u00b0 and angle DBA = ${angleDBA}\u00b0, what is angle CBD?`;
+    correctAnswerValue = angleCBD;
+    rawDistractors = [
+      angleCBA + angleDBA,
+      angleCBA,
+      angleDBA,
+      Math.max(1, angleCBD - 10),
+      angleCBD + 10,
+    ];
+  } else {
+    question = `Rays BC, BD, and BA all start at point B. Ray BD is inside angle CBA. If angle CBA = ${angleCBA}\u00b0 and angle CBD = ${angleCBD}\u00b0, what is angle DBA?`;
+    correctAnswerValue = angleDBA;
+    rawDistractors = [
+      angleCBA + angleCBD,
+      angleCBA,
+      angleCBD,
+      Math.max(1, angleDBA - 10),
+      angleDBA + 10,
+    ];
+  }
+
+  const correctAnswer = `${correctAnswerValue}\u00b0`;
+  const distractorOptions = [...new Set(rawDistractors)]
+    .filter((value) => Number.isFinite(value) && value > 0 && value !== correctAnswerValue)
+    .map((value) => `${value}\u00b0`);
+  const diagram = createAngleAdditionSvg({
+    angleCBD,
+    angleDBA,
+    angleCBA,
+    missingAngleType,
+  });
+
+  return {
+    question,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractorOptions)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: 'Since ray BD splits angle CBA into two smaller angles, angle CBA = angle CBD + angle DBA. Add the two smaller angles or subtract the known part from the whole angle.',
+    standard: '4.MD.C.7',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'angle measurement',
+    difficultyRange: { min: 0.6, max: 1.0 },
+    images: [
+      {
+        type: 'question',
+        data: diagram,
+        description: ANGLE_ADDITION_DIAGRAM_DESCRIPTION,
+      },
+    ],
+  };
+}
+
 /**
  * Generates questions about angle measurement and classification
  * @param {number} difficulty - Difficulty level from 0 to 1
@@ -525,6 +866,9 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
       type: "realLife",
       getQuestion: (angle) => `Which real-life example shows an ${angle.name}?`,
     },
+    {
+      type: "addition",
+    },
   ];
 
   const pickRandomFrom = (items) => items[getRandomInt(0, items.length - 1)];
@@ -533,6 +877,13 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
   const qType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
   
   let wrongOptions;
+  if (qType.type === "addition") {
+    return {
+      ...generateAngleAdditionQuestion(),
+      suggestedDifficulty: difficulty,
+    };
+  }
+
   if (qType.type === "classify") {
     wrongOptions = angleTypes.filter(a => a.name !== angle.name).map(a => a.name);
   } else if (qType.type === "measure") {
@@ -1007,6 +1358,7 @@ export function generateCompositeShapeAreaPerimeterQuestion(difficulty = 0.5) {
 
 const geometryQuestions = {
   generateQuestion,
+  refreshAngleAdditionDiagram,
   generateLinesAndAnglesQuestion,
   generateShapeClassificationQuestion,
   generateTriangleClassificationBySidesQuestion,

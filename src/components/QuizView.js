@@ -22,6 +22,7 @@ import {
 } from '../utils/answer-helpers';
 import { encodeTopicForPath } from '../utils/firebaseHelpers';
 import { QUESTION_TYPES } from '../constants/shared-constants';
+import geometryQuestions from '../content/g4/geometry/questions';
 
 const QuizView = ({
   currentQuiz,
@@ -56,7 +57,7 @@ const QuizView = ({
   if (currentQuiz.length === 0) {
     return null;
   }
-  const currentQuestion = currentQuiz[currentQuestionIndex];
+  const currentQuestion = geometryQuestions.refreshAngleAdditionDiagram(currentQuiz[currentQuestionIndex]);
   const progressPercentage =
     ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
 
