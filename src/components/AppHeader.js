@@ -7,12 +7,15 @@ import {
   Home,
   Info,
   LogOut,
+  MessageCircle,
   Shield,
   Store,
   User,
 } from "lucide-react";
 import { USER_ROLES } from "../utils/userRoles";
 import { APP_STATES } from "../constants/topics";
+import { getAppId } from "../utils/common_utils";
+import { useUnreadMessageCount } from "../hooks/useInternalMessages";
 
 const AppHeader = ({
   authUser,
@@ -29,6 +32,13 @@ const AppHeader = ({
   mainAppTutorial,
 }) => {
   const iconBtn = "p-2 rounded-xl hover:bg-white/80 hover:shadow-sm active:scale-95 transition-all duration-200";
+  const appId = getAppId();
+  const unreadMessageCount = useUnreadMessageCount({
+    appId,
+    userId: authUser?.uid,
+    enabled: Boolean(authUser?.uid),
+  });
+
   return (
     <div className="fixed top-3 left-3 right-3 flex items-center gap-1.5 bg-white/70 backdrop-blur-md px-3 py-2 rounded-2xl shadow-card border border-white/50 z-10 overflow-x-auto" data-tutorial-id="navigation-menu">
       {/* Login options when no user is authenticated */}
@@ -83,6 +93,16 @@ const AppHeader = ({
       <button onClick={() => navigateApp('/dashboard')} className={iconBtn} title="Dashboard" data-tutorial-id="dashboard-button">
         <BarChart2 size={20} className="text-brand-blue" />
       </button>
+      {authUser && (
+        <button onClick={() => navigateApp('/messages')} className={`${iconBtn} relative`} title="Messages">
+          <MessageCircle size={20} className="text-blue-500" />
+          {unreadMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-4 text-center">
+              {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+            </span>
+          )}
+        </button>
+      )}
 
       {userRole && [USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole) && (
         <a href="/teacher" className={iconBtn} title="Teacher Dashboard">

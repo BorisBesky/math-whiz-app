@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -9,6 +9,8 @@ import { USER_ROLES } from '../../../utils/userRoles';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ModalWrapper from '../../ui/ModalWrapper';
 import SubtopicsFocusModal from '../SubtopicsFocusModal';
+import MessageComposer from '../../messaging/MessageComposer';
+import { sendInternalMessage } from '../../../services/internalMessages';
 
 const ClassDetailPanel = ({
   classItem,
@@ -32,6 +34,7 @@ const ClassDetailPanel = ({
   const [enrollmentReloadTrigger, setEnrollmentReloadTrigger] = useState(0);
   const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
   const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
+  const [selectedStudentForMessage, setSelectedStudentForMessage] = useState(null);
 
   // Invite state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -134,6 +137,15 @@ const ClassDetailPanel = ({
       setRemovingTeacherId(null);
     }
   };
+
+  const getMessageRelationship = (student) => ({
+    classId,
+    className: classItem.name || 'Class',
+    studentId: student.id,
+    studentName: getStudentDisplayName(student),
+    teacherId: userId || currentTeacherIds[0],
+    teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
+  });
 
   // Load enrollment data with allowedSubtopicsByTopic
   useEffect(() => {
@@ -599,6 +611,17 @@ const ClassDetailPanel = ({
                       {canManageStudents && (
                         <td className="px-4 py-2 text-right">
                           <div className="flex items-center justify-end space-x-2">
+                            {isTeacherOnClass && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedStudentForMessage(student)}
+                                className="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                title="Message student"
+                              >
+                                <MessageCircle className="h-4 w-4 mr-1" />
+                                Message
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleOpenSubtopicsModal(student)}
@@ -724,6 +747,28 @@ const ClassDetailPanel = ({
             >
               Done
             </button>
+          </div>
+        </ModalWrapper>
+      )}
+
+      {selectedStudentForMessage && renderModalInPortal(
+        <ModalWrapper
+          isOpen={!!selectedStudentForMessage}
+          onClose={() => setSelectedStudentForMessage(null)}
+          title={`Message ${getStudentDisplayName(selectedStudentForMessage)}`}
+          size="md"
+        >
+          <div className="px-6 py-5">
+            <MessageComposer
+              defaultRelationship={getMessageRelationship(selectedStudentForMessage)}
+              sender={{
+                id: userId,
+                role: 'teacher',
+                name: classItem.teacherName || classItem.teacherEmail || 'Teacher',
+              }}
+              recipientRole="student"
+              onSend={(messageInput) => sendInternalMessage({ db, appId, ...messageInput })}
+            />
           </div>
         </ModalWrapper>
       )}

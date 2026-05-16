@@ -124,6 +124,79 @@ service cloud.firestore {
                        (isTeacher() && request.auth.uid in get(/databases/$(database)/documents/artifacts/$(appId)/classes/$(resource.data.classId)).data.teacherIds)
                      );
       }
+
+      function classData(classId) {
+        return get(/databases/$(database)/documents/artifacts/$(appId)/classes/$(classId)).data;
+      }
+
+      function isTeacherForClass(classId, teacherId) {
+        return (classData(classId).teacherIds is list && teacherId in classData(classId).teacherIds) ||
+               classData(classId).teacherId == teacherId;
+      }
+
+      function enrollmentExists(classId, studentId) {
+        return exists(/databases/$(database)/documents/artifacts/$(appId)/classStudents/$(classId + "__" + studentId));
+      }
+
+      function hasValidMessageShape(data) {
+        return data.keys().hasOnly([
+                 'body',
+                 'classId',
+                 'className',
+                 'studentId',
+                 'studentName',
+                 'teacherId',
+                 'teacherName',
+                 'senderId',
+                 'senderRole',
+                 'senderName',
+                 'recipientId',
+                 'recipientRole',
+                 'recipientName',
+                 'participantIds',
+                 'readBy',
+                 'createdAt'
+               ]) &&
+               data.body is string &&
+               data.body.size() > 0 &&
+               data.body.size() <= 2000 &&
+               data.participantIds is list &&
+               data.participantIds.size() == 2 &&
+               data.participantIds.hasAll([data.studentId, data.teacherId]) &&
+               data.readBy is list &&
+               data.readBy.hasOnly([request.auth.uid]) &&
+               data.createdAt == request.time;
+      }
+
+      function isValidStudentTeacherMessage(data) {
+        return hasValidMessageShape(data) &&
+               enrollmentExists(data.classId, data.studentId) &&
+               isTeacherForClass(data.classId, data.teacherId) &&
+               (
+                 (data.senderRole == 'student' &&
+                  request.auth.uid == data.studentId &&
+                  data.senderId == data.studentId &&
+                  data.recipientId == data.teacherId) ||
+                 ((data.senderRole == 'teacher' || data.senderRole == 'admin') &&
+                  (isAdmin() || isTeacher()) &&
+                  request.auth.uid == data.teacherId &&
+                  data.senderId == data.teacherId &&
+                  data.recipientId == data.studentId)
+               );
+      }
+
+      // Internal student <-> teacher messages. No student-to-student messaging.
+      match /messages/{messageId} {
+        allow create: if request.auth != null && isValidStudentTeacherMessage(request.resource.data);
+        allow read: if request.auth != null && request.auth.uid in resource.data.participantIds;
+        allow update: if request.auth != null &&
+                      request.auth.uid in resource.data.participantIds &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                      request.resource.data.readBy is list &&
+                      request.resource.data.readBy.hasAll(resource.data.readBy) &&
+                      request.auth.uid in request.resource.data.readBy;
+        allow delete: if false;
+      }
     }
   }
 }

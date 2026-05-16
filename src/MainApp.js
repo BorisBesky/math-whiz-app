@@ -74,6 +74,7 @@ const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() => import('./components/RewardsStore'));
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
+const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
 
 // Re-export db for backward compatibility
 export { db } from './firebase';
@@ -2061,6 +2062,12 @@ Answer: [The answer]`;
                   handleClosePopupImage={handleClosePopupImage}
                   popupImage={popupImage}
                   returnToTopics={returnToTopics}
+                />
+              } />
+              <Route path="messages" element={
+                <StudentInbox
+                  user={user}
+                  userData={userData}
                 />
               } />
               <Route path="results/:topic/*" element={

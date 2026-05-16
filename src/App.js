@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './components/LoginPage';
+import PortalApp from './components/PortalApp';
 import { USER_ROLES } from './utils/userRoles';
 
 // Lazy-loaded routes — only fetched when the user navigates to them
@@ -10,7 +11,6 @@ const MainApp = React.lazy(() => import('./MainApp'));
 const StudentLogin = React.lazy(() => import('./components/StudentLogin'));
 const TeacherLogin = React.lazy(() => import('./components/TeacherLogin'));
 const AdminLogin = React.lazy(() => import('./components/AdminLogin'));
-const PortalApp = React.lazy(() => import('./components/PortalApp'));
 const JoinClass = React.lazy(() => import('./components/JoinClass'));
 const AboutLayout = React.lazy(() => import('./components/about/AboutLayout'));
 const AboutOverview = React.lazy(() => import('./components/about/AboutOverview'));

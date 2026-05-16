@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image } from 'lucide-react';
+import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image, MessageCircle } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,7 +14,9 @@ import ClassesSection from './portal/sections/ClassesSection';
 import QuestionBankSection from './portal/sections/QuestionBankSection';
 import TeacherManagementSection from './portal/sections/TeacherManagementSection';
 import ImagesSection from './portal/sections/ImagesSection';
+import MessagesSection from './portal/sections/MessagesSection';
 import { getAppId } from '../utils/common_utils';
+import { useUnreadMessageCount } from '../hooks/useInternalMessages';
 
 const PortalApp = ({ portalBase = '/teacher' }) => {
   const { user, userRole, loading, logout } = useAuth();
@@ -23,6 +25,7 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
   const appId = getAppId();
   const userId = user?.uid || null;
   const userEmail = user?.email || null;
+  const unreadMessageCount = useUnreadMessageCount({ appId, userId, enabled: Boolean(userId) });
 
   const {
     classes,
@@ -73,6 +76,21 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
           />
         ),
       },
+      ...(userRole === USER_ROLES.TEACHER ? [{
+        id: 'messages',
+        label: unreadMessageCount > 0 ? `Messages (${unreadMessageCount})` : 'Messages',
+        description: 'Internal notes and feedback with students',
+        icon: MessageCircle,
+        render: () => (
+          <MessagesSection
+            appId={appId}
+            user={user}
+            userRole={userRole}
+            classes={classes}
+            students={students}
+          />
+        ),
+      }] : []),
       {
         id: 'students',
         label: 'Students',
@@ -185,7 +203,9 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     deleteTeacher,
     refreshTeachers,
     userId,
+    user,
     userRole,
+    unreadMessageCount,
   ]);
 
   // Derive active section from URL pathname
