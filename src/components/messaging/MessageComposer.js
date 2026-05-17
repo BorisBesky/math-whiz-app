@@ -1,29 +1,98 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Send } from 'lucide-react';
+
+const getRelationshipKey = (relationship) => (
+  relationship ? `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}` : ''
+);
+
+const getRelationshipLabel = (relationship, senderRole) => (
+  `${senderRole === 'student' ? relationship.teacherName : relationship.studentName} · ${relationship.className}`
+);
+
+const stripInvisibleFormatting = (value) => (
+  typeof value !== 'string'
+    ? ''
+    : value.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '')
+);
+
+const normalizeDedupeSegment = (value) => {
+  let s = stripInvisibleFormatting(String(value ?? '')).trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!s) return '';
+  try {
+    return s.normalize('NFKC');
+  } catch {
+    return s;
+  }
+};
+
+/** Stable token from counterparty display name + class (not the middot-formatted label string). */
+const getRelationshipDedupeToken = (relationship, senderRole) => {
+  const counterpartyName = senderRole === 'student'
+    ? relationship.teacherName
+    : relationship.studentName;
+  const segmentPerson = normalizeDedupeSegment(counterpartyName);
+  const segmentClass = normalizeDedupeSegment(relationship.className);
+  if (!segmentPerson || !segmentClass) return '';
+  return `${segmentPerson}|${segmentClass}`;
+};
 
 const MessageComposer = ({
   relationships = [],
   sender,
   recipientRole,
   defaultRelationship = null,
+  selectedRelationshipKey,
+  onSelectedRelationshipKeyChange,
   onSend,
   disabled = false,
 }) => {
-  const [selectedKey, setSelectedKey] = useState(defaultRelationship ? `${defaultRelationship.classId}:${defaultRelationship.studentId}:${defaultRelationship.teacherId}` : '');
+  const [selectedKey, setSelectedKey] = useState(getRelationshipKey(defaultRelationship));
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState(null);
 
-  const relationshipOptions = useMemo(() => (
-    relationships.map((relationship) => ({
-      ...relationship,
-      key: `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}`,
-    }))
-  ), [relationships]);
+  const relationshipOptions = useMemo(() => {
+    const byCompositeKey = new Map();
+    relationships.forEach((relationship) => {
+      const key = getRelationshipKey(relationship);
+      const rawLabel = getRelationshipLabel(relationship, sender.role);
+      const label = stripInvisibleFormatting(rawLabel).trim();
+      if (!key || !label) return;
+      if (!byCompositeKey.has(key)) {
+        byCompositeKey.set(key, {
+          ...relationship,
+          key,
+          label,
+        });
+      }
+    });
 
+    const optionByDedupeToken = new Map();
+    Array.from(byCompositeKey.values()).forEach((entry) => {
+      const dedupeToken = getRelationshipDedupeToken(entry, sender.role);
+      if (!dedupeToken || optionByDedupeToken.has(dedupeToken)) return;
+      optionByDedupeToken.set(dedupeToken, entry);
+    });
+
+    return Array.from(optionByDedupeToken.values());
+  }, [relationships, sender.role]);
+
+  useEffect(() => {
+    if (selectedRelationshipKey !== undefined) {
+      setSelectedKey(selectedRelationshipKey);
+    }
+  }, [selectedRelationshipKey]);
+
+  const activeSelectedKey = selectedRelationshipKey !== undefined ? selectedRelationshipKey : selectedKey;
   const activeRelationship = defaultRelationship
-    || relationshipOptions.find((relationship) => relationship.key === selectedKey)
+    || relationshipOptions.find((relationship) => relationship.key === activeSelectedKey)
     || null;
+
+  const handleRelationshipChange = (event) => {
+    const nextKey = event.target.value;
+    setSelectedKey(nextKey);
+    onSelectedRelationshipKeyChange?.(nextKey);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -74,15 +143,15 @@ const MessageComposer = ({
             </div>
           ) : (
             <select
-              value={selectedKey}
-              onChange={(event) => setSelectedKey(event.target.value)}
+              value={activeSelectedKey}
+              onChange={handleRelationshipChange}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={!hasRelationships || disabled || sending}
             >
               <option value="">Choose a recipient...</option>
               {relationshipOptions.map((relationship) => (
                 <option key={relationship.key} value={relationship.key}>
-                  {sender.role === 'student' ? relationship.teacherName : relationship.studentName} · {relationship.className}
+                  {relationship.label}
                 </option>
               ))}
             </select>

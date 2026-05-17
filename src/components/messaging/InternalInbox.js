@@ -1,7 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Inbox, MessageCircle } from 'lucide-react';
 import { isMessageUnreadForUser } from '../../services/internalMessages';
 import MessageComposer from './MessageComposer';
+
+const getRelationshipKey = (relationship) => (
+  relationship ? `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}` : ''
+);
+
+const getMessageRelationshipKey = (message) => (
+  message ? `${message.classId}:${message.studentId}:${message.teacherId}` : ''
+);
 
 const formatMessageDate = (createdAt) => {
   if (!createdAt) return 'Just now';
@@ -28,11 +36,16 @@ const InternalInbox = ({
   recipientRole,
 }) => {
   const [filter, setFilter] = useState('all');
+  const [selectedRelationshipKey, setSelectedRelationshipKey] = useState(getRelationshipKey(defaultRelationship));
   const sender = useMemo(() => ({
     id: currentUserId,
     role: currentUserRole,
     name: currentUserName,
   }), [currentUserId, currentUserName, currentUserRole]);
+
+  useEffect(() => {
+    setSelectedRelationshipKey(getRelationshipKey(defaultRelationship));
+  }, [defaultRelationship]);
 
   const visibleMessages = useMemo(() => (
     filter === 'unread'
@@ -41,6 +54,22 @@ const InternalInbox = ({
   ), [currentUserId, filter, messages]);
 
   const unreadCount = messages.filter((message) => isMessageUnreadForUser(message, currentUserId)).length;
+  const relationshipKeys = useMemo(() => new Set(relationships.map(getRelationshipKey)), [relationships]);
+
+  const handleMessageClick = (message) => {
+    const messageRelationshipKey = getMessageRelationshipKey(message);
+    const hasRelationship = defaultRelationship
+      ? messageRelationshipKey === getRelationshipKey(defaultRelationship)
+      : relationshipKeys.has(messageRelationshipKey);
+
+    if (hasRelationship) {
+      setSelectedRelationshipKey(messageRelationshipKey);
+    }
+
+    if (isMessageUnreadForUser(message, currentUserId)) {
+      onMarkRead?.(message.id);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -75,6 +104,8 @@ const InternalInbox = ({
         sender={sender}
         recipientRole={recipientRole}
         defaultRelationship={defaultRelationship}
+        selectedRelationshipKey={selectedRelationshipKey}
+        onSelectedRelationshipKeyChange={setSelectedRelationshipKey}
         onSend={onSend}
         disabled={loading || !currentUserId}
       />
@@ -104,7 +135,12 @@ const InternalInbox = ({
               const isUnread = isMessageUnreadForUser(message, currentUserId);
 
               return (
-                <article key={message.id} className={`px-4 py-4 ${isUnread ? 'bg-blue-50/60' : 'bg-white'}`}>
+                <button
+                  key={message.id}
+                  type="button"
+                  onClick={() => handleMessageClick(message)}
+                  className={`block w-full px-4 py-4 text-left cursor-pointer hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${isUnread ? 'bg-blue-50/60' : 'bg-white'}`}
+                >
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
@@ -117,18 +153,14 @@ const InternalInbox = ({
                       </p>
                     </div>
                     {isUnread && (
-                      <button
-                        type="button"
-                        onClick={() => onMarkRead(message.id)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900"
-                      >
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700">
                         <CheckCircle className="h-3.5 w-3.5" />
-                        Mark read
-                      </button>
+                        Open to mark read
+                      </span>
                     )}
                   </div>
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{message.body}</p>
-                </article>
+                </button>
               );
             })}
           </div>

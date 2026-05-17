@@ -106,4 +106,20 @@ describe('internalMessages service helpers', () => {
       },
     ]);
   });
+
+  it('dedupes duplicate roster rows for the same class/student/teacher enrollment', () => {
+    const relationships = getTeacherStudentRelationships({
+      teacherId: 'teacher-1',
+      classes: [
+        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'], teacherName: 'Ms. Baker' },
+      ],
+      students: [
+        { id: 'student-1', displayName: 'Ada', classId: 'class-1' },
+        { id: 'student-1', displayName: 'Ada ', classId: 'class-1' },
+      ],
+    });
+
+    expect(relationships).toHaveLength(1);
+    expect(relationships[0].studentId).toBe('student-1');
+  });
 });
