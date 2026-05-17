@@ -110,7 +110,7 @@ export const isMessageUnreadForUser = (message, userId) => (
 export const getTeacherStudentRelationships = ({ classes = [], students = [], teacherId, includeAllTeachers = false }) => {
   if (!teacherId && !includeAllTeachers) return [];
 
-  return students
+  const rows = students
     .filter((student) => student.classId)
     .map((student) => {
       const classItem = classes.find((cls) => cls.id === student.classId);
@@ -129,6 +129,16 @@ export const getTeacherStudentRelationships = ({ classes = [], students = [], te
       };
     })
     .filter(Boolean);
+
+  const uniqueByEnrollment = new Map();
+  rows.forEach((row) => {
+    const enrollmentKey = `${row.classId}:${row.studentId}:${row.teacherId}`;
+    if (!uniqueByEnrollment.has(enrollmentKey)) {
+      uniqueByEnrollment.set(enrollmentKey, row);
+    }
+  });
+
+  return Array.from(uniqueByEnrollment.values());
 };
 
 export const getStudentTeacherRelationships = async ({ db, appId, studentId }) => {
