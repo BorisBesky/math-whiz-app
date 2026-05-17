@@ -1,59 +1,70 @@
 import {
   createMessagePayload,
+  getEnrollmentId,
   getParticipantIds,
   getTeacherStudentRelationships,
   isMessageUnreadForUser,
   normalizeMessageBody,
+  parseEnrollmentId,
   sortMessagesNewestFirst,
 } from '../internalMessages';
 
 jest.mock('firebase/firestore', () => ({
   addDoc: jest.fn(),
   arrayUnion: jest.fn((value) => ({ arrayUnion: value })),
-  collection: jest.fn(),
-  doc: jest.fn(),
+  collection: jest.fn(() => ({ __type: 'collection' })),
+  doc: jest.fn(() => ({ __type: 'doc' })),
   getDoc: jest.fn(),
   getDocs: jest.fn(),
-  query: jest.fn(),
+  query: jest.fn(() => ({ __type: 'query' })),
   serverTimestamp: jest.fn(() => 'SERVER_TIME'),
   updateDoc: jest.fn(),
   where: jest.fn(),
 }));
 
+// eslint-disable-next-line import/first
+const firestoreMock = require('firebase/firestore');
+
+const mockEnrollmentDocs = (docs) => {
+  firestoreMock.getDocs.mockResolvedValue({
+    empty: docs.length === 0,
+    docs: docs.map((d) => ({ id: d.id, data: () => d })),
+    forEach: (cb) => docs.forEach((d) => cb({ id: d.id, data: () => d })),
+  });
+};
+
 describe('internalMessages service helpers', () => {
-  it('creates a constrained student-teacher message payload', () => {
+  it('creates an enrollment-centric message payload', () => {
     const payload = createMessagePayload({
       sender: { id: 'teacher-1', role: 'teacher', name: 'Ms. Baker' },
       recipient: { id: 'student-1', role: 'student', name: 'Ada' },
-      classId: 'class-1',
+      enrollmentId: 'class-1__student-1',
       className: 'Room 12',
-      studentId: 'student-1',
-      studentName: 'Ada',
-      teacherId: 'teacher-1',
-      teacherName: 'Ms. Baker',
       body: '  Nice work on fractions.  ',
     });
 
     expect(payload).toMatchObject({
+      enrollmentId: 'class-1__student-1',
+      className: 'Room 12',
       body: 'Nice work on fractions.',
-      classId: 'class-1',
-      studentId: 'student-1',
-      teacherId: 'teacher-1',
       senderId: 'teacher-1',
+      senderName: 'Ms. Baker',
       recipientId: 'student-1',
+      recipientName: 'Ada',
       participantIds: ['student-1', 'teacher-1'],
       readBy: ['teacher-1'],
     });
     expect(payload).toHaveProperty('createdAt');
+    expect(payload).not.toHaveProperty('classId');
+    expect(payload).not.toHaveProperty('teacherId');
+    expect(payload).not.toHaveProperty('senderRole');
   });
 
-  it('rejects empty messages and missing relationships', () => {
+  it('rejects empty bodies and missing enrollments', () => {
     expect(() => createMessagePayload({
       sender: { id: 'student-1', role: 'student' },
       recipient: { id: 'teacher-1', role: 'teacher' },
-      classId: 'class-1',
-      studentId: 'student-1',
-      teacherId: 'teacher-1',
+      enrollmentId: 'class-1__student-1',
       body: '   ',
     })).toThrow('Message cannot be empty');
 
@@ -61,7 +72,13 @@ describe('internalMessages service helpers', () => {
       sender: { id: 'student-1', role: 'student' },
       recipient: { id: 'teacher-1', role: 'teacher' },
       body: 'Hello',
-    })).toThrow('valid class');
+    })).toThrow('valid enrollment');
+  });
+
+  it('builds and parses enrollment ids round-trip', () => {
+    expect(getEnrollmentId('class-1', 'student-1')).toBe('class-1__student-1');
+    expect(parseEnrollmentId('class-1__student-1')).toEqual({ classId: 'class-1', studentId: 'student-1' });
+    expect(parseEnrollmentId('bad-format')).toEqual({ classId: '', studentId: '' });
   });
 
   it('normalizes message bodies and participant ids', () => {
@@ -81,45 +98,42 @@ describe('internalMessages service helpers', () => {
     expect(isMessageUnreadForUser(messages[1], 'student-1')).toBe(false);
   });
 
-  it('derives only valid teacher-student relationships from class rosters', () => {
-    const relationships = getTeacherStudentRelationships({
+  it('fetches teacher relationships from classStudents and joins class metadata', async () => {
+    mockEnrollmentDocs([
+      {
+        id: 'class-1__student-1',
+        classId: 'class-1',
+        studentId: 'student-1',
+        studentName: 'Ada',
+      },
+      {
+        id: 'class-2__student-2',
+        classId: 'class-2',
+        studentId: 'student-2',
+        studentName: 'Grace',
+      },
+    ]);
+
+    const relationships = await getTeacherStudentRelationships({
+      db: {},
+      appId: 'app-1',
       teacherId: 'teacher-1',
       classes: [
-        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'] },
+        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'], teacherName: 'Ms. Baker' },
         { id: 'class-2', name: 'Other Room', teacherIds: ['teacher-2'] },
-      ],
-      students: [
-        { id: 'student-1', displayName: 'Ada', classId: 'class-1' },
-        { id: 'student-2', displayName: 'Grace', classId: 'class-2' },
-        { id: 'student-3', displayName: 'Lin' },
       ],
     });
 
     expect(relationships).toEqual([
       {
+        enrollmentId: 'class-1__student-1',
         classId: 'class-1',
         className: 'Room 12',
         studentId: 'student-1',
         studentName: 'Ada',
         teacherId: 'teacher-1',
-        teacherName: 'Teacher',
+        teacherName: 'Ms. Baker',
       },
     ]);
-  });
-
-  it('dedupes duplicate roster rows for the same class/student/teacher enrollment', () => {
-    const relationships = getTeacherStudentRelationships({
-      teacherId: 'teacher-1',
-      classes: [
-        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'], teacherName: 'Ms. Baker' },
-      ],
-      students: [
-        { id: 'student-1', displayName: 'Ada', classId: 'class-1' },
-        { id: 'student-1', displayName: 'Ada ', classId: 'class-1' },
-      ],
-    });
-
-    expect(relationships).toHaveLength(1);
-    expect(relationships[0].studentId).toBe('student-1');
   });
 });

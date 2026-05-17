@@ -1,14 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Inbox, MessageCircle } from 'lucide-react';
-import { isMessageUnreadForUser } from '../../services/internalMessages';
+import { getEnrollmentId, isMessageUnreadForUser } from '../../services/internalMessages';
 import MessageComposer from './MessageComposer';
 
-const getRelationshipKey = (relationship) => (
-  relationship ? `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}` : ''
-);
-
-const getMessageRelationshipKey = (message) => (
-  message ? `${message.classId}:${message.studentId}:${message.teacherId}` : ''
+const getMessageEnrollmentId = (message) => (
+  message?.enrollmentId || getEnrollmentId(message?.classId, message?.studentId)
 );
 
 const formatMessageDate = (createdAt) => {
@@ -36,7 +32,7 @@ const InternalInbox = ({
   recipientRole,
 }) => {
   const [filter, setFilter] = useState('all');
-  const [selectedRelationshipKey, setSelectedRelationshipKey] = useState(getRelationshipKey(defaultRelationship));
+  const [selectedRelationshipKey, setSelectedRelationshipKey] = useState(defaultRelationship?.enrollmentId || '');
   const sender = useMemo(() => ({
     id: currentUserId,
     role: currentUserRole,
@@ -44,7 +40,7 @@ const InternalInbox = ({
   }), [currentUserId, currentUserName, currentUserRole]);
 
   useEffect(() => {
-    setSelectedRelationshipKey(getRelationshipKey(defaultRelationship));
+    setSelectedRelationshipKey(defaultRelationship?.enrollmentId || '');
   }, [defaultRelationship]);
 
   const visibleMessages = useMemo(() => (
@@ -54,16 +50,15 @@ const InternalInbox = ({
   ), [currentUserId, filter, messages]);
 
   const unreadCount = messages.filter((message) => isMessageUnreadForUser(message, currentUserId)).length;
-  const relationshipKeys = useMemo(() => new Set(relationships.map(getRelationshipKey)), [relationships]);
+  const relationshipKeys = useMemo(
+    () => new Set(relationships.map((relationship) => relationship.enrollmentId)),
+    [relationships],
+  );
 
   const handleMessageClick = (message) => {
-    const messageRelationshipKey = getMessageRelationshipKey(message);
-    const hasRelationship = defaultRelationship
-      ? messageRelationshipKey === getRelationshipKey(defaultRelationship)
-      : relationshipKeys.has(messageRelationshipKey);
-
-    if (hasRelationship) {
-      setSelectedRelationshipKey(messageRelationshipKey);
+    const enrollmentId = getMessageEnrollmentId(message);
+    if (enrollmentId && relationshipKeys.has(enrollmentId)) {
+      setSelectedRelationshipKey(enrollmentId);
     }
 
     if (isMessageUnreadForUser(message, currentUserId)) {

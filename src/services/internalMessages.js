@@ -13,10 +13,25 @@ import {
 import { getTeacherIds } from '../utils/classHelpers';
 
 const MAX_MESSAGE_LENGTH = 2000;
+const ENROLLMENT_ID_SEPARATOR = '__';
 
 export const getMessagesCollection = (db, appId) => (
   collection(db, 'artifacts', appId, 'messages')
 );
+
+export const getEnrollmentId = (classId, studentId) => (
+  classId && studentId ? `${classId}${ENROLLMENT_ID_SEPARATOR}${studentId}` : ''
+);
+
+export const parseEnrollmentId = (enrollmentId) => {
+  if (typeof enrollmentId !== 'string') return { classId: '', studentId: '' };
+  const idx = enrollmentId.indexOf(ENROLLMENT_ID_SEPARATOR);
+  if (idx <= 0) return { classId: '', studentId: '' };
+  return {
+    classId: enrollmentId.slice(0, idx),
+    studentId: enrollmentId.slice(idx + ENROLLMENT_ID_SEPARATOR.length),
+  };
+};
 
 export const getMessageTimestampMillis = (value) => {
   if (!value) return 0;
@@ -38,15 +53,15 @@ export const normalizeMessageBody = (body) => (
   typeof body === 'string' ? body.trim().slice(0, MAX_MESSAGE_LENGTH) : ''
 );
 
+export const isMessageUnreadForUser = (message, userId) => (
+  message?.recipientId === userId && !(message.readBy || []).includes(userId)
+);
+
 export const createMessagePayload = ({
   sender,
   recipient,
-  classId,
+  enrollmentId,
   className = '',
-  studentId,
-  studentName = '',
-  teacherId,
-  teacherName = '',
   body,
 }) => {
   const senderId = sender?.id || sender?.uid;
@@ -57,8 +72,9 @@ export const createMessagePayload = ({
     throw new Error('Sender and recipient are required.');
   }
 
-  if (!classId || !studentId || !teacherId) {
-    throw new Error('A valid class, student, and teacher relationship is required.');
+  const { classId, studentId } = parseEnrollmentId(enrollmentId);
+  if (!classId || !studentId) {
+    throw new Error('A valid enrollment is required.');
   }
 
   if (!cleanBody) {
@@ -66,18 +82,12 @@ export const createMessagePayload = ({
   }
 
   return {
-    body: cleanBody,
-    classId,
+    enrollmentId,
     className,
-    studentId,
-    studentName,
-    teacherId,
-    teacherName,
+    body: cleanBody,
     senderId,
-    senderRole: sender.role,
     senderName: sender.name || '',
     recipientId,
-    recipientRole: recipient.role,
     recipientName: recipient.name || '',
     participantIds: getParticipantIds(senderId, recipientId),
     readBy: [senderId],
@@ -103,72 +113,105 @@ export const markMessageRead = async ({ db, appId, messageId, userId }) => {
   });
 };
 
-export const isMessageUnreadForUser = (message, userId) => (
-  message?.recipientId === userId && !(message.readBy || []).includes(userId)
-);
+const chunkArray = (items, size) => {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
 
-export const getTeacherStudentRelationships = ({ classes = [], students = [], teacherId, includeAllTeachers = false }) => {
+const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId) => ({
+  enrollmentId: enrollment.id || getEnrollmentId(enrollment.classId, enrollment.studentId),
+  classId: classItem.id,
+  className: classItem.name || 'Class',
+  studentId: enrollment.studentId,
+  studentName: enrollment.studentName || enrollment.studentEmail || `Student ${(enrollment.studentId || '').slice(-6)}`,
+  teacherId,
+  teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
+});
+
+/**
+ * Fetch relationships from the classStudents collection — the canonical enrollment store.
+ * Returns one row per (enrollment, teacher) pair. classStudents has deterministic IDs
+ * (`${classId}__${studentId}`), so there is no duplicate input to dedupe.
+ */
+export const getTeacherStudentRelationships = async ({ db, appId, classes = [], teacherId, includeAllTeachers = false }) => {
+  if (!db || !appId) return [];
   if (!teacherId && !includeAllTeachers) return [];
 
-  const rows = students
-    .filter((student) => student.classId)
-    .map((student) => {
-      const classItem = classes.find((cls) => cls.id === student.classId);
-      if (!classItem) return null;
-      const teacherIds = getTeacherIds(classItem);
-      const activeTeacherId = teacherId || teacherIds[0];
-      if (!includeAllTeachers && !teacherIds.includes(activeTeacherId)) return null;
+  const eligibleClasses = classes.filter((cls) => {
+    if (includeAllTeachers) return true;
+    return getTeacherIds(cls).includes(teacherId);
+  });
 
-      return {
-        classId: classItem.id,
-        className: classItem.name || 'Class',
-        studentId: student.id,
-        studentName: student.displayName || student.name || student.email || `Student ${student.id.slice(-6)}`,
-        teacherId: activeTeacherId,
-        teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
-      };
-    })
-    .filter(Boolean);
+  if (eligibleClasses.length === 0) return [];
 
-  const uniqueByEnrollment = new Map();
-  rows.forEach((row) => {
-    const enrollmentKey = `${row.classId}:${row.studentId}:${row.teacherId}`;
-    if (!uniqueByEnrollment.has(enrollmentKey)) {
-      uniqueByEnrollment.set(enrollmentKey, row);
+  const classById = new Map(eligibleClasses.map((cls) => [cls.id, cls]));
+  const enrollmentsCol = collection(db, 'artifacts', appId, 'classStudents');
+  const classIds = eligibleClasses.map((cls) => cls.id);
+
+  const enrollmentDocs = [];
+  await Promise.all(
+    chunkArray(classIds, 30).map(async (chunk) => {
+      const snapshot = await getDocs(query(enrollmentsCol, where('classId', 'in', chunk)));
+      snapshot.forEach((enrollmentDoc) => {
+        enrollmentDocs.push({ id: enrollmentDoc.id, ...enrollmentDoc.data() });
+      });
+    }),
+  );
+
+  const relationships = [];
+  enrollmentDocs.forEach((enrollment) => {
+    const classItem = classById.get(enrollment.classId);
+    if (!classItem || !enrollment.studentId) return;
+
+    const teacherIds = getTeacherIds(classItem);
+    if (teacherIds.length === 0) return;
+
+    if (includeAllTeachers) {
+      teacherIds.forEach((tid) => {
+        relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, tid));
+      });
+    } else if (teacherIds.includes(teacherId)) {
+      relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, teacherId));
     }
   });
 
-  return Array.from(uniqueByEnrollment.values());
+  return relationships;
 };
 
 export const getStudentTeacherRelationships = async ({ db, appId, studentId }) => {
   if (!db || !appId || !studentId) return [];
 
   const enrollmentsRef = collection(db, 'artifacts', appId, 'classStudents');
-  const enrollmentQuery = query(enrollmentsRef, where('studentId', '==', studentId));
-  const enrollmentSnapshot = await getDocs(enrollmentQuery);
-  const relationships = [];
+  const enrollmentSnapshot = await getDocs(query(enrollmentsRef, where('studentId', '==', studentId)));
+  if (enrollmentSnapshot.empty) return [];
 
-  await Promise.all(enrollmentSnapshot.docs.map(async (enrollmentDoc) => {
-    const enrollment = enrollmentDoc.data();
-    if (!enrollment.classId) return;
-
-    const classRef = doc(db, 'artifacts', appId, 'classes', enrollment.classId);
-    const classSnapshot = await getDoc(classRef);
-    if (!classSnapshot.exists()) return;
-
-    const classItem = { id: classSnapshot.id, ...classSnapshot.data() };
-    getTeacherIds(classItem).forEach((teacherId) => {
-      relationships.push({
-        classId: classItem.id,
-        className: classItem.name || enrollment.className || 'Class',
-        studentId,
-        studentName: enrollment.studentName || '',
-        teacherId,
-        teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
-      });
-    });
+  const enrollments = enrollmentSnapshot.docs.map((enrollmentDoc) => ({
+    id: enrollmentDoc.id,
+    ...enrollmentDoc.data(),
   }));
+
+  const classIds = Array.from(new Set(enrollments.map((e) => e.classId).filter(Boolean)));
+  const classesById = new Map();
+  await Promise.all(classIds.map(async (classId) => {
+    const classRef = doc(db, 'artifacts', appId, 'classes', classId);
+    const classSnap = await getDoc(classRef);
+    if (classSnap.exists()) {
+      classesById.set(classId, { id: classSnap.id, ...classSnap.data() });
+    }
+  }));
+
+  const relationships = [];
+  enrollments.forEach((enrollment) => {
+    const classItem = classesById.get(enrollment.classId);
+    if (!classItem) return;
+    getTeacherIds(classItem).forEach((teacherId) => {
+      relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, teacherId));
+    });
+  });
 
   return relationships;
 };
+

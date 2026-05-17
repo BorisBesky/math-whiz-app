@@ -1,40 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Send } from 'lucide-react';
 
-const getRelationshipKey = (relationship) => (
-  relationship ? `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}` : ''
-);
-
 const getRelationshipLabel = (relationship, senderRole) => (
   `${senderRole === 'student' ? relationship.teacherName : relationship.studentName} · ${relationship.className}`
 );
-
-const stripInvisibleFormatting = (value) => (
-  typeof value !== 'string'
-    ? ''
-    : value.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '')
-);
-
-const normalizeDedupeSegment = (value) => {
-  let s = stripInvisibleFormatting(String(value ?? '')).trim().toLowerCase().replace(/\s+/g, ' ');
-  if (!s) return '';
-  try {
-    return s.normalize('NFKC');
-  } catch {
-    return s;
-  }
-};
-
-/** Stable token from counterparty display name + class (not the middot-formatted label string). */
-const getRelationshipDedupeToken = (relationship, senderRole) => {
-  const counterpartyName = senderRole === 'student'
-    ? relationship.teacherName
-    : relationship.studentName;
-  const segmentPerson = normalizeDedupeSegment(counterpartyName);
-  const segmentClass = normalizeDedupeSegment(relationship.className);
-  if (!segmentPerson || !segmentClass) return '';
-  return `${segmentPerson}|${segmentClass}`;
-};
 
 const MessageComposer = ({
   relationships = [],
@@ -46,35 +15,25 @@ const MessageComposer = ({
   onSend,
   disabled = false,
 }) => {
-  const [selectedKey, setSelectedKey] = useState(getRelationshipKey(defaultRelationship));
+  const [selectedKey, setSelectedKey] = useState(defaultRelationship?.enrollmentId || '');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState(null);
 
+  // classStudents has deterministic IDs, so each enrollmentId already represents a
+  // unique (class, student, teacher) row — a single Map dedupe is sufficient.
   const relationshipOptions = useMemo(() => {
-    const byCompositeKey = new Map();
+    const byEnrollment = new Map();
     relationships.forEach((relationship) => {
-      const key = getRelationshipKey(relationship);
-      const rawLabel = getRelationshipLabel(relationship, sender.role);
-      const label = stripInvisibleFormatting(rawLabel).trim();
-      if (!key || !label) return;
-      if (!byCompositeKey.has(key)) {
-        byCompositeKey.set(key, {
-          ...relationship,
-          key,
-          label,
-        });
-      }
+      const key = relationship?.enrollmentId;
+      if (!key || byEnrollment.has(key)) return;
+      byEnrollment.set(key, {
+        ...relationship,
+        key,
+        label: getRelationshipLabel(relationship, sender.role),
+      });
     });
-
-    const optionByDedupeToken = new Map();
-    Array.from(byCompositeKey.values()).forEach((entry) => {
-      const dedupeToken = getRelationshipDedupeToken(entry, sender.role);
-      if (!dedupeToken || optionByDedupeToken.has(dedupeToken)) return;
-      optionByDedupeToken.set(dedupeToken, entry);
-    });
-
-    return Array.from(optionByDedupeToken.values());
+    return Array.from(byEnrollment.values());
   }, [relationships, sender.role]);
 
   useEffect(() => {
@@ -104,12 +63,8 @@ const MessageComposer = ({
     try {
       const isTeacherSender = sender.role === 'teacher' || sender.role === 'admin';
       await onSend({
-        classId: activeRelationship.classId,
+        enrollmentId: activeRelationship.enrollmentId,
         className: activeRelationship.className,
-        studentId: activeRelationship.studentId,
-        studentName: activeRelationship.studentName,
-        teacherId: activeRelationship.teacherId,
-        teacherName: activeRelationship.teacherName,
         sender,
         recipient: {
           id: isTeacherSender ? activeRelationship.studentId : activeRelationship.teacherId,
