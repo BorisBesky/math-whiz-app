@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Edit2, Check, Loader2, AlertCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Edit2, Check, Loader2, AlertCircle, Sparkles, RotateCcw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const APP_ID = 'default-app-id';
 const POLL_INTERVAL = 2000; // Poll every 2 seconds
 const JOB_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes (server timeout is 10m)
+const DEFAULT_COUNT = '3';
 
 const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       setStep(1);
       setTheme('');
       setThemeDescription('');
-      setCount('3');
+      setCount(DEFAULT_COUNT);
       setDescriptions([]);
       setGeneratedImages([]);
       setSelectedIndices([]);
@@ -578,19 +579,25 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="dialog" aria-modal="true">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Generate Store Images</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Step {step} of 4: {step === 1 && 'Input Theme'}
-              {step === 2 && 'Review Descriptions'}
-              {step === 3 && 'Select Images'}
-              {step === 4 && 'Review & Confirm'}
-            </p>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white/20 rounded-full p-2">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Generate store images</h2>
+              <p className="text-sm text-indigo-100">
+                Step {step} of 4 — {step === 1 && 'Input Theme'}
+                {step === 2 && 'Review Descriptions'}
+                {step === 3 && 'Select Images'}
+                {step === 4 && 'Review & Confirm'}
+              </p>
+            </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-white/80 hover:text-white transition-colors"
+            aria-label="Close"
           >
             <X className="w-6 h-6" />
           </button>
@@ -689,26 +696,39 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Number of Images
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={count}
-                  onChange={(e) => setCount(e.target.value)}
-                  onBlur={() => {
-                    const parsed = parseInt(count, 10);
-                    if (!Number.isFinite(parsed) || parsed < 1) {
-                      setCount('1');
-                    } else if (parsed > 10) {
-                      setCount('10');
-                    } else {
-                      setCount(String(parsed));
-                    }
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div className="flex items-stretch gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={count}
+                    onChange={(e) => setCount(e.target.value)}
+                    onBlur={() => {
+                      const parsed = parseInt(count, 10);
+                      if (!Number.isFinite(parsed) || parsed < 1) {
+                        setCount('1');
+                      } else if (parsed > 10) {
+                        setCount('10');
+                      } else {
+                        setCount(String(parsed));
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCount(DEFAULT_COUNT)}
+                    disabled={count === DEFAULT_COUNT}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`Reset to default (${DEFAULT_COUNT})`}
+                    aria-label="Reset to default"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reset
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  How many images to generate (1-10)
+                  How many images to generate (1-10, default: {DEFAULT_COUNT})
                 </p>
               </div>
             </div>

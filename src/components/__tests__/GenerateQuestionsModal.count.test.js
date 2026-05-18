@@ -135,4 +135,57 @@ describe('GenerateQuestionsModal - count input reset behavior', () => {
     expect(payload.count).toBe(4);
     expect(payload.questionTypes).toContain(QUESTION_TYPES.MULTIPLE_CHOICE);
   });
+
+  test('Reset button restores the count to the default (10)', () => {
+    render(
+      React.createElement(GenerateQuestionsModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onGenerated: jest.fn(),
+      })
+    );
+
+    const input = findCountInput();
+    expect(input.value).toBe('10');
+
+    fireEvent.change(input, { target: { value: '7' } });
+    expect(input.value).toBe('7');
+
+    fireEvent.click(screen.getByRole('button', { name: /reset to default/i }));
+    expect(input.value).toBe('10');
+  });
+
+  test('Reset button is disabled when count is already at the default', () => {
+    render(
+      React.createElement(GenerateQuestionsModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onGenerated: jest.fn(),
+      })
+    );
+
+    const resetBtn = screen.getByRole('button', { name: /reset to default/i });
+    expect(resetBtn).toBeDisabled();
+
+    const input = findCountInput();
+    fireEvent.change(input, { target: { value: '5' } });
+    expect(resetBtn).not.toBeDisabled();
+  });
+
+  test('header shows the friendly title and subtitle copy', () => {
+    render(
+      React.createElement(GenerateQuestionsModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onGenerated: jest.fn(),
+      })
+    );
+
+    expect(
+      screen.getByText(/generate questions with ai/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/create new practice questions/i)
+    ).toBeInTheDocument();
+  });
 });
