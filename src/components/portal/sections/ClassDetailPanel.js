@@ -10,7 +10,7 @@ import { getStudentDisplayName, getStudentShortId } from '../../../utils/student
 import ModalWrapper from '../../ui/ModalWrapper';
 import SubtopicsFocusModal from '../SubtopicsFocusModal';
 import MessageComposer from '../../messaging/MessageComposer';
-import { sendInternalMessage } from '../../../services/internalMessages';
+import { getEnrollmentId, sendInternalMessage } from '../../../services/internalMessages';
 
 const ClassDetailPanel = ({
   classItem,
@@ -139,6 +139,7 @@ const ClassDetailPanel = ({
   };
 
   const getMessageRelationship = (student) => ({
+    enrollmentId: getEnrollmentId(classId, student.id),
     classId,
     className: classItem.name || 'Class',
     studentId: student.id,
