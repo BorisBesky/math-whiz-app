@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
 import {
   getStudentTeacherRelationships,
+  getTeacherStudentRelationships,
   isMessageUnreadForUser,
   markMessageRead,
   sendInternalMessage,
@@ -87,6 +88,66 @@ export const useUnreadMessageCount = ({ appId, userId, enabled = true }) => {
     suppressPermissionErrors: true,
   });
   return unreadCount;
+};
+
+export const useTeacherStudentRelationships = ({ appId, classes = [], teacherId, includeAllTeachers = false, enabled = true }) => {
+  const [relationships, setRelationships] = useState([]);
+  const [loading, setLoading] = useState(Boolean(enabled));
+  const [error, setError] = useState(null);
+  const db = getFirestore();
+
+  // A stable key for the classes array — avoids reloads when the parent re-creates the
+  // list with the same content. Class membership changes are rare during a session.
+  const classesKey = useMemo(
+    () => classes.map((cls) => cls.id).sort().join(','),
+    [classes],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRelationships = async () => {
+      if (!enabled || !appId || (!teacherId && !includeAllTeachers)) {
+        setRelationships([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await getTeacherStudentRelationships({
+          db,
+          appId,
+          classes,
+          teacherId,
+          includeAllTeachers,
+        });
+        if (!cancelled) {
+          setRelationships(next);
+        }
+      } catch (err) {
+        console.error('[useTeacherStudentRelationships] Failed to load relationships', err);
+        if (!cancelled) {
+          setError(err?.message || 'Failed to load students');
+          setRelationships([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadRelationships();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId, db, enabled, teacherId, includeAllTeachers, classesKey]);
+
+  return { relationships, loading, error };
 };
 
 export const useStudentTeacherRelationships = ({ appId, studentId, enabled = true }) => {
