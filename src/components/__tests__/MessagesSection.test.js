@@ -175,7 +175,6 @@ describe('MessagesSection', () => {
   });
 
   it('passes the user uid as currentUserId', () => {
-    const { useTeacherStudentRelationships: mockRelHook } = require('../../hooks/useInternalMessages');
     render(
       <MessagesSection
         appId="app-1"

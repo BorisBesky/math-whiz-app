@@ -28,11 +28,7 @@ jest.mock('../ui/ModalWrapper', () => {
 const { getAuth } = require('firebase/auth');
 const GenerateQuestionsModal = require('../GenerateQuestionsModal').default;
 
-const findCountInput = () => {
-  const numberInputs = document.querySelectorAll('input[type="number"]');
-  // There is exactly one number input on this form: "Number of Questions"
-  return numberInputs[0];
-};
+const findCountInput = () => screen.getByRole('spinbutton');
 
 describe('GenerateQuestionsModal - count input reset behavior', () => {
   beforeEach(() => {

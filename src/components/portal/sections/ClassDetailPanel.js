@@ -90,7 +90,7 @@ const ClassDetailPanel = ({
           email: isPrimaryTeacher ? classItem.teacherEmail || null : null,
         };
     });
-  }, [currentTeacherIds, teachers, classItem?.teacherEmail, classItem?.teacherId]);
+  }, [currentTeacherIds, teachers, classItem]);
 
   const availableTeachersToAdd = useMemo(() => {
     return teachers.filter((t) => {

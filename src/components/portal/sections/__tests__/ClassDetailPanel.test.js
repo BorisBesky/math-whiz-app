@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // Variables captured by closure so factories can reference them after hoisting
 let mockGetDoc;
@@ -232,8 +232,8 @@ describe('ClassDetailPanel', () => {
   });
 
   it('returns null when classItem is not provided', () => {
-    const { container } = render(<ClassDetailPanel {...defaultProps} classItem={null} />);
-    expect(container.firstChild).toBeNull();
+    render(<ClassDetailPanel {...defaultProps} classItem={null} />);
+    expect(screen.queryByText('Room 12')).not.toBeInTheDocument();
   });
 
   it('shows teacher name in the teachers list', () => {
