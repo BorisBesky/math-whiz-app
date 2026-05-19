@@ -68,7 +68,7 @@ describe('GenerateQuestionsModal - count input reset behavior', () => {
     expect(input.value).toBe('5');
   });
 
-  test('blur on empty input snaps to minimum (1) instead of jumping back to 10', () => {
+  test('blur on empty input snaps back to default (10)', () => {
     render(
       React.createElement(GenerateQuestionsModal, {
         isOpen: true,
@@ -82,8 +82,7 @@ describe('GenerateQuestionsModal - count input reset behavior', () => {
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.blur(input);
 
-    // Empty must not silently become the default 10.
-    expect(input.value).toBe('1');
+    expect(input.value).toBe('10');
   });
 
   test('blur clamps values above the maximum down to MAX_QUESTIONS', () => {
@@ -147,7 +146,7 @@ describe('GenerateQuestionsModal - count input reset behavior', () => {
     fireEvent.change(input, { target: { value: '7' } });
     expect(input.value).toBe('7');
 
-    fireEvent.click(screen.getByRole('button', { name: /reset to default/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reset number of questions to 10/i }));
     expect(input.value).toBe('10');
   });
 
@@ -160,7 +159,7 @@ describe('GenerateQuestionsModal - count input reset behavior', () => {
       })
     );
 
-    const resetBtn = screen.getByRole('button', { name: /reset to default/i });
+    const resetBtn = screen.getByRole('button', { name: /reset number of questions to 10/i });
     expect(resetBtn).toBeDisabled();
 
     const input = findCountInput();

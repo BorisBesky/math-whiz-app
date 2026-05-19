@@ -1,17 +1,18 @@
 const React = require('react');
-const { render, screen, fireEvent } = require('@testing-library/react');
+const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
+
+const mockGetDoc = jest.fn();
 
 jest.mock('firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
   doc: jest.fn(() => ({})),
+  getDoc: (...args) => mockGetDoc(...args),
   writeBatch: jest.fn(() => ({ update: jest.fn(), delete: jest.fn(), commit: jest.fn() })),
 }));
 
 jest.mock('../../../utils/common_utils', () => ({
   formatDate: (d) => String(d),
   normalizeDate: (d) => String(d),
-  getTopicsForGrade: (g) =>
-    g === 'G3' ? ['Multiplication', 'Division'] : ['Geometry'],
   calculateTopicProgressForRange: () => [],
   getTodayDateString: () => '2026-01-01',
 }));
@@ -31,17 +32,31 @@ jest.mock('../../../hooks/useConfirmation', () => ({
   default: () => ({ confirmationProps: {}, confirm: jest.fn() }),
 }));
 
-// Mock the StudentFocusModal so we can assert it's mounted with the right student
-jest.mock('../StudentFocusModal', () => {
+jest.mock('../GoalsModal', () => {
   const React = require('react');
   return {
     __esModule: true,
-    default: function MockStudentFocusModal({ isOpen, student }) {
+    default: function MockGoalsModal({ isOpen, studentCount, initialGrade }) {
+      if (!isOpen) return null;
+      return React.createElement(
+        'div',
+        { 'data-testid': 'goals-modal' },
+        `Goals modal (${studentCount}) grade=${initialGrade}`
+      );
+    },
+  };
+});
+
+jest.mock('../SubtopicsFocusModal', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: function MockSubtopicsFocusModal({ isOpen, student, classId }) {
       if (!isOpen || !student) return null;
       return React.createElement(
         'div',
-        { 'data-testid': 'student-focus-modal' },
-        `Focus for ${student.id}`
+        { 'data-testid': 'subtopics-focus-modal' },
+        `Focus for ${student.id} class=${classId || 'none'}`
       );
     },
   };
@@ -85,77 +100,46 @@ const renderSection = (students = [baseStudent]) =>
   );
 
 describe('StudentsSection — Focus integration', () => {
+  beforeEach(() => {
+    mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
+  });
+
   test('renders a Focus action button for each student row', () => {
     renderSection();
-    expect(
-      screen.getByRole('button', { name: /Set focus subtopics for Ada/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /set focus subtopics/i })).toBeInTheDocument();
   });
 
-  test('Focus button is disabled when student is not in a class', () => {
+  test('Focus button stays enabled when student is not in a class', () => {
     renderSection([{ ...baseStudent, classId: null, className: 'Unassigned' }]);
-    expect(
-      screen.getByRole('button', { name: /Set focus subtopics for Ada/i })
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /set focus subtopics/i })).toBeEnabled();
   });
 
-  test('clicking the Focus action opens the StudentFocusModal with the right student', () => {
+  test('clicking the Focus action opens the SubtopicsFocusModal with the right student', async () => {
     renderSection();
-    fireEvent.click(
-      screen.getByRole('button', { name: /Set focus subtopics for Ada/i })
-    );
-    expect(screen.getByTestId('student-focus-modal')).toHaveTextContent(
-      'Focus for student-1'
-    );
+    fireEvent.click(screen.getByRole('button', { name: /set focus subtopics/i }));
+    expect(await screen.findByTestId('subtopics-focus-modal')).toHaveTextContent('Focus for student-1 class=class-1');
   });
 
-  test('Set Goals modal has the redesigned header and adjustment controls', () => {
+  test('Set Goals opens GoalsModal with selected-student count', () => {
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: /Set Daily Goals/i }));
-
-    expect(screen.getByText('Daily Practice Goals')).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', { name: /3rd Grade/i, selected: true })
-    ).toBeInTheDocument();
-    // Increment/decrement controls per topic
-    expect(
-      screen.getAllByRole('button', { name: /Increase goal for Multiplication/i })
-    ).toHaveLength(1);
-    expect(
-      screen.getAllByRole('button', { name: /Decrease goal for Multiplication/i })
-    ).toHaveLength(1);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    fireEvent.click(screen.getByTitle('Set Goals'));
+    expect(screen.getByTestId('goals-modal')).toHaveTextContent('Goals modal (1) grade=G3');
   });
 
-  test('adjustGoal +/- buttons modify the topic goal value', () => {
+  test('Set Goals remains disabled until at least one student is selected', async () => {
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: /Set Daily Goals/i }));
+    const setGoalsButton = screen.getByRole('button', { name: /set goals/i });
+    expect(setGoalsButton).toBeDisabled();
 
-    const multiplicationInput = screen.getByLabelText('Goal for Multiplication');
-    expect(multiplicationInput.value).toBe('4');
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /Increase goal for Multiplication/i })
-    );
-    expect(multiplicationInput.value).toBe('5');
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /Decrease goal for Multiplication/i })
-    );
-    fireEvent.click(
-      screen.getByRole('button', { name: /Decrease goal for Multiplication/i })
-    );
-    expect(multiplicationInput.value).toBe('3');
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    await waitFor(() => expect(setGoalsButton).toBeEnabled());
   });
 
-  test('goal input can be cleared while typing and snaps back to 0 on blur', () => {
-    renderSection();
-    fireEvent.click(screen.getByRole('button', { name: /Set Daily Goals/i }));
-
-    const multiplicationInput = screen.getByLabelText('Goal for Multiplication');
-    fireEvent.change(multiplicationInput, { target: { value: '' } });
-    expect(multiplicationInput.value).toBe('');
-    fireEvent.blur(multiplicationInput);
-    expect(multiplicationInput.value).toBe('0');
+  test('clicking focus for unassigned student still opens modal with classId none', () => {
+    renderSection([{ ...baseStudent, classId: null, className: 'Unassigned' }]);
+    fireEvent.click(screen.getByRole('button', { name: /set focus subtopics/i }));
+    expect(screen.getByTestId('subtopics-focus-modal')).toHaveTextContent('Focus for student-1 class=none');
   });
 });
 
