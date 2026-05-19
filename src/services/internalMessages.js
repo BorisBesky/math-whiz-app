@@ -101,8 +101,20 @@ export const sendInternalMessage = async ({ db, appId, ...messageInput }) => {
   }
 
   const payload = createMessagePayload(messageInput);
-  const ref = await addDoc(getMessagesCollection(db, appId), payload);
-  return { id: ref.id, ...payload };
+  try {
+    const ref = await addDoc(getMessagesCollection(db, appId), payload);
+    return { id: ref.id, ...payload };
+  } catch (err) {
+    // Surface the exact payload + path the security rule is evaluating against.
+    // Without this, "Missing or insufficient permissions" is the only signal.
+    if (err?.code === 'permission-denied') {
+      // eslint-disable-next-line no-console
+      console.error('[sendInternalMessage] permission-denied. Rule needs an existing doc at:',
+        `artifacts/${appId}/classStudents/${payload.enrollmentId}`,
+        'payload:', payload);
+    }
+    throw err;
+  }
 };
 
 export const markMessageRead = async ({ db, appId, messageId, userId }) => {
@@ -122,7 +134,10 @@ const chunkArray = (items, size) => {
 };
 
 const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId) => ({
-  enrollmentId: enrollment.id || getEnrollmentId(enrollment.classId, enrollment.studentId),
+  // Always derive from (classId, studentId) — the Firestore rule's enrollmentExists()
+  // looks the doc up at exactly this path, and legacy auto-ID enrollment docs would
+  // otherwise produce a key that doesn't match any classStudents doc the rule can find.
+  enrollmentId: getEnrollmentId(classItem.id, enrollment.studentId),
   classId: classItem.id,
   className: classItem.name || 'Class',
   studentId: enrollment.studentId,
@@ -130,6 +145,18 @@ const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId) => ({
   teacherId,
   teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
 });
+
+/**
+ * Composite key for the recipient dropdown. enrollmentId alone collapses multi-teacher
+ * classes into a single row (the student would lose the ability to reach the second
+ * teacher); adding teacherId keeps one row per (enrollment, teacher) while still
+ * collapsing duplicate enrollment docs that point at the same teacher.
+ */
+export const getRelationshipKey = (relationship) => (
+  relationship?.enrollmentId && relationship?.teacherId
+    ? `${relationship.enrollmentId}::${relationship.teacherId}`
+    : ''
+);
 
 /**
  * Fetch relationships from the classStudents collection — the canonical enrollment store.
@@ -203,13 +230,22 @@ export const getStudentTeacherRelationships = async ({ db, appId, studentId }) =
     }
   }));
 
+  // One row per enrollment. We don't fan out to per-teacher rows for the student side:
+  // the class-level teacher label (teacherName/teacherEmail) is the same for every
+  // teacher on the class, so multi-teacher classes would show indistinguishable
+  // duplicates. The student writes to the class's primary teacher; any teacher on the
+  // class can read and reply (Firestore rule allows any teacher on the class as
+  // recipient).
   const relationships = [];
   enrollments.forEach((enrollment) => {
     const classItem = classesById.get(enrollment.classId);
     if (!classItem) return;
-    getTeacherIds(classItem).forEach((teacherId) => {
-      relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, teacherId));
-    });
+    const teacherIds = getTeacherIds(classItem);
+    const primaryTeacherId = classItem.teacherId && teacherIds.includes(classItem.teacherId)
+      ? classItem.teacherId
+      : teacherIds[0];
+    if (!primaryTeacherId) return;
+    relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, primaryTeacherId));
   });
 
   return relationships;

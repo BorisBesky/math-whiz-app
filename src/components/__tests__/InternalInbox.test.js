@@ -77,7 +77,7 @@ describe('InternalInbox', () => {
 
     fireEvent.click(screen.getByText('Can I get help with fractions?'));
 
-    expect(screen.getByRole('combobox')).toHaveValue('class-2__student-2');
+    expect(screen.getByRole('combobox')).toHaveValue('class-2__student-2::teacher-1');
     expect(onMarkRead).toHaveBeenCalledWith('message-1');
   });
 
@@ -112,7 +112,7 @@ describe('InternalInbox', () => {
     fireEvent.click(screen.getByText('Please revise problem 3.'));
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('class-1__student-1');
+      expect(screen.getByRole('combobox')).toHaveValue('class-1__student-1::teacher-1');
     });
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'I fixed it.' } });
@@ -154,6 +154,6 @@ describe('InternalInbox', () => {
     );
 
     fireEvent.click(screen.getByText('Older message'));
-    expect(screen.getByRole('combobox')).toHaveValue('class-1__student-1');
+    expect(screen.getByRole('combobox')).toHaveValue('class-1__student-1::teacher-1');
   });
 });

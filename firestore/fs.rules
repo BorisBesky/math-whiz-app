@@ -172,15 +172,20 @@ service cloud.firestore {
       }
 
       function isValidStudentTeacherMessage(data) {
+        // The sender's identity is proven by request.auth.uid == data.senderId.
+        // Whether they're acting as the student or as a teacher is proven by either
+        // matching the enrolled studentId or by being listed in the class's teacherIds —
+        // we don't additionally require the `teacher` custom claim, since self-registered
+        // teachers may not have the claim set (their role lives in their Firestore profile),
+        // and being on a class's teacherIds list is already proof of teacher status
+        // (class writes are gated separately).
         return hasValidMessageShape(data) &&
                enrollmentExists(data.enrollmentId) &&
+               data.senderId == request.auth.uid &&
                (
                  (request.auth.uid == enrollmentStudentId(data.enrollmentId) &&
-                  data.senderId == request.auth.uid &&
                   isTeacherForClass(enrollmentClassId(data.enrollmentId), data.recipientId)) ||
-                 ((isAdmin() || isTeacher()) &&
-                  data.senderId == request.auth.uid &&
-                  isTeacherForClass(enrollmentClassId(data.enrollmentId), data.senderId) &&
+                 (isTeacherForClass(enrollmentClassId(data.enrollmentId), request.auth.uid) &&
                   data.recipientId == enrollmentStudentId(data.enrollmentId))
                );
       }

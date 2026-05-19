@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Send } from 'lucide-react';
+import { getRelationshipKey } from '../../services/internalMessages';
 
 const getRelationshipLabel = (relationship, senderRole) => (
   `${senderRole === 'student' ? relationship.teacherName : relationship.studentName} · ${relationship.className}`
@@ -15,25 +16,25 @@ const MessageComposer = ({
   onSend,
   disabled = false,
 }) => {
-  const [selectedKey, setSelectedKey] = useState(defaultRelationship?.enrollmentId || '');
+  const [selectedKey, setSelectedKey] = useState(getRelationshipKey(defaultRelationship));
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState(null);
 
-  // classStudents has deterministic IDs, so each enrollmentId already represents a
-  // unique (class, student, teacher) row — a single Map dedupe is sufficient.
+  // Dedup by (enrollmentId, teacherId). enrollmentId alone collapses multi-teacher
+  // classes; teacherId alone would collapse a teacher across classes.
   const relationshipOptions = useMemo(() => {
-    const byEnrollment = new Map();
+    const byKey = new Map();
     relationships.forEach((relationship) => {
-      const key = relationship?.enrollmentId;
-      if (!key || byEnrollment.has(key)) return;
-      byEnrollment.set(key, {
+      const key = getRelationshipKey(relationship);
+      if (!key || byKey.has(key)) return;
+      byKey.set(key, {
         ...relationship,
         key,
         label: getRelationshipLabel(relationship, sender.role),
       });
     });
-    return Array.from(byEnrollment.values());
+    return Array.from(byKey.values());
   }, [relationships, sender.role]);
 
   useEffect(() => {
