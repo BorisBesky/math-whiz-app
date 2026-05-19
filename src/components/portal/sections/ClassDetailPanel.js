@@ -72,12 +72,13 @@ const ClassDetailPanel = ({
   const [addingTeacher, setAddingTeacher] = useState(false);
   const [removingTeacherId, setRemovingTeacherId] = useState(null);
   const isAdmin = userRole === USER_ROLES.ADMIN;
-  const isTeacherOnClass = userId && getTeacherIds(classItem).includes(userId);
+  const isTeacherOnClass = userId && classItem && getTeacherIds(classItem).includes(userId);
   const canManageTeachers = isAdmin || isTeacherOnClass;
 
-  const currentTeacherIds = useMemo(() => getTeacherIds(classItem), [classItem]);
+  const currentTeacherIds = useMemo(() => (classItem ? getTeacherIds(classItem) : []), [classItem]);
 
   const currentTeachersResolved = useMemo(() => {
+    if (!classItem) return [];
     return currentTeacherIds.map((tid) => {
       const matched = teachers.find((t) => t.uid === tid || t.id === tid);
       const isPrimaryTeacher = tid === classItem.teacherId;
@@ -89,7 +90,7 @@ const ClassDetailPanel = ({
           email: isPrimaryTeacher ? classItem.teacherEmail || null : null,
         };
     });
-  }, [currentTeacherIds, teachers, classItem.teacherEmail, classItem.teacherId]);
+  }, [currentTeacherIds, teachers, classItem]);
 
   const availableTeachersToAdd = useMemo(() => {
     return teachers.filter((t) => {
@@ -287,6 +288,14 @@ const ClassDetailPanel = ({
     }));
     setStatus({ type: 'success', message: 'Subtopics updated successfully.' });
   };
+
+  // Lock body scroll while panel is open (matches ModalWrapper behaviour)
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   // Escape key to close
   const handleEscapeKey = useCallback((e) => {

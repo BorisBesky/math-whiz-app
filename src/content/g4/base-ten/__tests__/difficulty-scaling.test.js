@@ -157,20 +157,19 @@ describe('Grade 4 Difficulty Scaling', () => {
       expect(['multiple-choice', 'fill-in-the-blanks']).toContain(question.questionType);
       expect(question.difficultyRange).toBeDefined();
       expect(question.suggestedDifficulty).toBe(0.5);
-      if (question.questionType === 'multiple-choice') {
-        expect(question.options.length).toBe(4);
-        expect(question.options).toContain(question.correctAnswer);
-      }
+      const isMultipleChoice = question.questionType === 'multiple-choice';
+      expect(isMultipleChoice || question.questionType === 'fill-in-the-blanks').toBe(true);
+      expect(!isMultipleChoice || question.options.length === 4).toBe(true);
+      expect(!isMultipleChoice || question.options.includes(question.correctAnswer)).toBe(true);
     });
 
     test('Base Ten: decimal place value at low difficulty uses simpler numbers', () => {
       const questions = Array(20).fill(0).map(() => generateBaseTen(0.1, ['decimal place value']));
       questions.forEach(q => {
         const match = q.question.match(/\d+\.\d+/);
-        if (match) {
-          const decimalPart = match[0].split('.')[1];
-          expect(decimalPart.length).toBe(1);
-        }
+        expect(match).toBeTruthy();
+        const decimalPart = match[0].split('.')[1];
+        expect(decimalPart.length).toBe(1);
       });
     });
 
@@ -286,12 +285,14 @@ describe('Grade 4 Difficulty Scaling', () => {
       question.tableData.columns.forEach(col => {
         expect(col).toHaveProperty('digit');
         expect(col).toHaveProperty('isDecimalPoint');
-        if (!col.isDecimalPoint) {
+      });
+      question.tableData.columns
+        .filter((col) => !col.isDecimalPoint)
+        .forEach((col) => {
           expect(col).toHaveProperty('header');
           expect(col).toHaveProperty('value');
           expect(col).toHaveProperty('isDecimal');
-        }
-      });
+        });
     });
 
     test('exactly one decimal point column exists', () => {

@@ -80,16 +80,16 @@ describe('QuestionBankManager bulk unassign', () => {
       })
     );
 
-    await waitFor(() => expect(screen.getByText('Question Management')).toBeInTheDocument());
+    expect(await screen.findByText('Question Management')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Select All'));
 
-    await waitFor(() => expect(screen.getByText('1 question(s) selected')).toBeInTheDocument());
+    expect(await screen.findByText('1 question(s) selected')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Un-assign from Class' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Un-assign from Class' }));
 
-    await waitFor(() => expect(screen.getByText('Un-assign Questions from Class')).toBeInTheDocument());
+    expect(await screen.findByText('Un-assign Questions from Class')).toBeInTheDocument();
 
     const classSelect = screen.getAllByRole('combobox').find((el) =>
       Array.from(el.options).some((opt) => opt.value === 'class1')

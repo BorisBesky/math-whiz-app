@@ -45,30 +45,26 @@ describe('geometry angle real-life examples', () => {
   });
 
   it('includes optionImages for real-life questions only', () => {
-    let realLifeCount = 0;
-    let nonRealLifeCount = 0;
+    const realLifePrefix = 'Which real-life example shows an';
+    const questions = Array.from({ length: 300 }, () => generateAngleMeasurementQuestion());
+    const realLifeQuestions = questions.filter((q) => q.question.startsWith(realLifePrefix));
+    const nonRealLifeQuestions = questions.filter((q) => !q.question.startsWith(realLifePrefix));
 
-    for (let i = 0; i < 300; i++) {
-      const q = generateAngleMeasurementQuestion();
-      const isRealLife = q.question.startsWith('Which real-life example shows an');
+    expect(realLifeQuestions.length).toBeGreaterThan(0);
+    expect(nonRealLifeQuestions.length).toBeGreaterThan(0);
 
-      if (isRealLife) {
-        realLifeCount++;
-        expect(q.optionImages).toBeDefined();
-        expect(typeof q.optionImages).toBe('object');
-        // Every option should have an image path
-        q.options.forEach(opt => {
-          expect(q.optionImages[opt]).toBeDefined();
-          expect(q.optionImages[opt]).toMatch(/^\/images\/angles\/.+\.jpg$/);
-        });
-      } else {
-        nonRealLifeCount++;
-        expect(q.optionImages).toBeUndefined();
-      }
-    }
+    realLifeQuestions.forEach((q) => {
+      expect(q.optionImages).toBeDefined();
+      expect(typeof q.optionImages).toBe('object');
+      q.options.forEach((opt) => {
+        expect(q.optionImages[opt]).toBeDefined();
+        expect(q.optionImages[opt]).toMatch(/^\/images\/angles\/.+\.jpg$/);
+      });
+    });
 
-    expect(realLifeCount).toBeGreaterThan(0);
-    expect(nonRealLifeCount).toBeGreaterThan(0);
+    nonRealLifeQuestions.forEach((q) => {
+      expect(q.optionImages).toBeUndefined();
+    });
   });
 
   it('generates angle addition questions with consistent missing-angle answers', () => {
@@ -101,15 +97,14 @@ describe('geometry angle real-life examples', () => {
       expect(question.images[0].description).toContain('highlighted in red');
       expect(question.images[0].data).toContain('data:image/svg+xml;base64,');
 
-      if (question.question.includes('what is angle CBA?')) {
-        expect(answerValue).toBe(values.CBD + values.DBA);
-      } else if (question.question.includes('what is angle CBD?')) {
-        expect(answerValue).toBe(values.CBA - values.DBA);
-      } else if (question.question.includes('what is angle DBA?')) {
-        expect(answerValue).toBe(values.CBA - values.CBD);
-      } else {
-        throw new Error(`Unexpected angle addition question: ${question.question}`);
-      }
+      const expectedAnswerByPrompt = [
+        { prompt: 'what is angle CBA?', expected: values.CBD + values.DBA },
+        { prompt: 'what is angle CBD?', expected: values.CBA - values.DBA },
+        { prompt: 'what is angle DBA?', expected: values.CBA - values.CBD },
+      ];
+      const matched = expectedAnswerByPrompt.find(({ prompt }) => question.question.includes(prompt));
+      expect(matched).toBeDefined();
+      expect(answerValue).toBe(matched.expected);
     }
 
     expect(additionQuestionCount).toBeGreaterThan(0);
