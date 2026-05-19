@@ -98,4 +98,53 @@ describe('ImageGenerationModal - count input reset behavior', () => {
     fireEvent.change(input, { target: { value: '4' } });
     expect(next).not.toBeDisabled();
   });
+
+  test('Reset button restores the count to the default (3)', () => {
+    render(
+      React.createElement(ImageGenerationModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onSuccess: jest.fn(),
+      })
+    );
+
+    const input = findCountInput();
+    expect(input.value).toBe('3');
+
+    fireEvent.change(input, { target: { value: '8' } });
+    expect(input.value).toBe('8');
+
+    fireEvent.click(screen.getByRole('button', { name: /reset to default/i }));
+    expect(input.value).toBe('3');
+  });
+
+  test('Reset button is disabled when count is already at the default', () => {
+    render(
+      React.createElement(ImageGenerationModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onSuccess: jest.fn(),
+      })
+    );
+
+    const resetBtn = screen.getByRole('button', { name: /reset to default/i });
+    expect(resetBtn).toBeDisabled();
+
+    const input = findCountInput();
+    fireEvent.change(input, { target: { value: '7' } });
+    expect(resetBtn).not.toBeDisabled();
+  });
+
+  test('header shows the friendly title and step subtitle copy', () => {
+    render(
+      React.createElement(ImageGenerationModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        onSuccess: jest.fn(),
+      })
+    );
+
+    expect(screen.getByText(/generate store images/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 4/i)).toBeInTheDocument();
+  });
 });

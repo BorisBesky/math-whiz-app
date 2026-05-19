@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import ModalWrapper from './ui/ModalWrapper';
 import { getAuth } from 'firebase/auth';
 import { GRADES, VALID_TOPICS_BY_GRADE, QUESTION_TYPES } from '../constants/topics';
 
 const BATCH_SIZE = 25;
 const MAX_QUESTIONS = 15;
+const DEFAULT_COUNT = '10';
 const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 500;
 
 const GENERATABLE_TYPES = [
@@ -18,7 +19,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   const [grade, setGrade] = useState(GRADES.G3);
   const [topic, setTopic] = useState('');
   const [questionTypes, setQuestionTypes] = useState([QUESTION_TYPES.MULTIPLE_CHOICE]);
-  const [count, setCount] = useState('10');
+  const [count, setCount] = useState(DEFAULT_COUNT);
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
@@ -128,7 +129,28 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   };
 
   return (
-    <ModalWrapper isOpen={isOpen} onClose={handleCancel} title="Generate Questions with AI" size="sm">
+    <ModalWrapper isOpen={isOpen} onClose={handleCancel} title="" size="sm" hideCloseButton>
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-5 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-white/20 rounded-full p-2">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Generate questions with AI</h2>
+            <p className="text-sm text-purple-100">
+              Create new practice questions for any topic in seconds.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="text-white/80 hover:text-white text-2xl leading-none"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
       <div className="p-6">
         {/* Error */}
         {error && (
@@ -202,26 +224,39 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Number of Questions
             </label>
-            <input
-              type="number"
-              value={count}
-              onChange={(e) => setCount(e.target.value)}
-              onBlur={() => {
-                const parsed = parseInt(count, 10);
-                if (!Number.isFinite(parsed) || parsed < 1) {
-                  setCount('1');
-                } else if (parsed > MAX_QUESTIONS) {
-                  setCount(String(MAX_QUESTIONS));
-                } else {
-                  setCount(String(parsed));
-                }
-              }}
-              disabled={generating}
-              min={1}
-              max={MAX_QUESTIONS}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">Maximum {MAX_QUESTIONS} questions per generation</p>
+            <div className="flex items-stretch gap-2">
+              <input
+                type="number"
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseInt(count, 10);
+                  if (!Number.isFinite(parsed) || parsed < 1) {
+                    setCount('1');
+                  } else if (parsed > MAX_QUESTIONS) {
+                    setCount(String(MAX_QUESTIONS));
+                  } else {
+                    setCount(String(parsed));
+                  }
+                }}
+                disabled={generating}
+                min={1}
+                max={MAX_QUESTIONS}
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+              <button
+                type="button"
+                onClick={() => setCount(DEFAULT_COUNT)}
+                disabled={generating || count === DEFAULT_COUNT}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={`Reset to default (${DEFAULT_COUNT})`}
+                aria-label="Reset to default"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                Reset
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Maximum {MAX_QUESTIONS} questions per generation (default: {DEFAULT_COUNT}).</p>
           </div>
 
           {/* Additional Instructions */}
