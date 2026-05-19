@@ -134,54 +134,59 @@ service cloud.firestore {
                classData(classId).teacherId == teacherId;
       }
 
-      function enrollmentExists(classId, studentId) {
-        return exists(/databases/$(database)/documents/artifacts/$(appId)/classStudents/$(classId + "__" + studentId));
+      function enrollmentExists(enrollmentId) {
+        return exists(/databases/$(database)/documents/artifacts/$(appId)/classStudents/$(enrollmentId));
+      }
+
+      function enrollmentClassId(enrollmentId) {
+        return enrollmentId.split('__')[0];
+      }
+
+      function enrollmentStudentId(enrollmentId) {
+        return enrollmentId.split('__')[1];
       }
 
       function hasValidMessageShape(data) {
         return data.keys().hasOnly([
-                 'body',
-                 'classId',
+                 'enrollmentId',
                  'className',
-                 'studentId',
-                 'studentName',
-                 'teacherId',
-                 'teacherName',
+                 'body',
                  'senderId',
-                 'senderRole',
                  'senderName',
                  'recipientId',
-                 'recipientRole',
                  'recipientName',
                  'participantIds',
                  'readBy',
                  'createdAt'
                ]) &&
+               data.enrollmentId is string &&
                data.body is string &&
                data.body.size() > 0 &&
                data.body.size() <= 2000 &&
                data.participantIds is list &&
                data.participantIds.size() == 2 &&
-               data.participantIds.hasAll([data.studentId, data.teacherId]) &&
+               data.participantIds.hasAll([data.senderId, data.recipientId]) &&
                data.readBy is list &&
                data.readBy.hasOnly([request.auth.uid]) &&
                data.createdAt == request.time;
       }
 
       function isValidStudentTeacherMessage(data) {
+        // The sender's identity is proven by request.auth.uid == data.senderId.
+        // Whether they're acting as the student or as a teacher is proven by either
+        // matching the enrolled studentId or by being listed in the class's teacherIds —
+        // we don't additionally require the `teacher` custom claim, since self-registered
+        // teachers may not have the claim set (their role lives in their Firestore profile),
+        // and being on a class's teacherIds list is already proof of teacher status
+        // (class writes are gated separately).
         return hasValidMessageShape(data) &&
-               enrollmentExists(data.classId, data.studentId) &&
-               isTeacherForClass(data.classId, data.teacherId) &&
+               enrollmentExists(data.enrollmentId) &&
+               data.senderId == request.auth.uid &&
                (
-                 (data.senderRole == 'student' &&
-                  request.auth.uid == data.studentId &&
-                  data.senderId == data.studentId &&
-                  data.recipientId == data.teacherId) ||
-                 ((data.senderRole == 'teacher' || data.senderRole == 'admin') &&
-                  (isAdmin() || isTeacher()) &&
-                  request.auth.uid == data.teacherId &&
-                  data.senderId == data.teacherId &&
-                  data.recipientId == data.studentId)
+                 (request.auth.uid == enrollmentStudentId(data.enrollmentId) &&
+                  isTeacherForClass(enrollmentClassId(data.enrollmentId), data.recipientId)) ||
+                 (isTeacherForClass(enrollmentClassId(data.enrollmentId), request.auth.uid) &&
+                  data.recipientId == enrollmentStudentId(data.enrollmentId))
                );
       }
 

@@ -15,23 +15,23 @@ describe('WriteInInput Snapshots', () => {
   });
 
   it('renders empty state correctly', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput value="" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with text value', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput value="My answer is 42" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with custom placeholder', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput
         value=""
         onChange={mockOnChange}
@@ -39,11 +39,11 @@ describe('WriteInInput Snapshots', () => {
       />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders disabled state correctly', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput
         value="Disabled answer"
         onChange={mockOnChange}
@@ -51,30 +51,30 @@ describe('WriteInInput Snapshots', () => {
       />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders near character limit state', () => {
     // Near 80% of 240 = ~192 characters
     const longText = 'A'.repeat(200);
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput value={longText} onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders at character limit state', () => {
     const maxText = 'A'.repeat(240);
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput value={maxText} onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with custom max length', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput
         value="Short"
         onChange={mockOnChange}
@@ -82,11 +82,11 @@ describe('WriteInInput Snapshots', () => {
       />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with additional className', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput
         value="Test"
         onChange={mockOnChange}
@@ -94,17 +94,17 @@ describe('WriteInInput Snapshots', () => {
       />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with math symbols in answer', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <WriteInInput
         value="3/4 + 1/4 = 1, and 5 × 6 = 30"
         onChange={mockOnChange}
       />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 });

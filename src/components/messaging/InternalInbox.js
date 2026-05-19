@@ -1,15 +1,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Inbox, MessageCircle } from 'lucide-react';
-import { isMessageUnreadForUser } from '../../services/internalMessages';
+import {
+  getEnrollmentId,
+  getRelationshipKey,
+  isMessageUnreadForUser,
+} from '../../services/internalMessages';
 import MessageComposer from './MessageComposer';
 
-const getRelationshipKey = (relationship) => (
-  relationship ? `${relationship.classId}:${relationship.studentId}:${relationship.teacherId}` : ''
+const getMessageEnrollmentId = (message) => (
+  message?.enrollmentId || getEnrollmentId(message?.classId, message?.studentId)
 );
 
-const getMessageRelationshipKey = (message) => (
-  message ? `${message.classId}:${message.studentId}:${message.teacherId}` : ''
-);
+/**
+ * When a message is opened we want to select the matching relationship row in the
+ * composer. The message itself doesn't carry teacherId in the new schema, so we infer
+ * it: for a teacher viewer it's currentUserId; for a student viewer it's whichever
+ * participant on the message isn't the student. Returns '' if it can't be resolved.
+ */
+const getMessageRelationshipKey = (message, currentUserId, currentUserRole) => {
+  const enrollmentId = getMessageEnrollmentId(message);
+  if (!enrollmentId) return '';
+  const isTeacherViewer = currentUserRole === 'teacher' || currentUserRole === 'admin';
+  if (isTeacherViewer) {
+    return `${enrollmentId}::${currentUserId}`;
+  }
+  const counterpartId = message.senderId === currentUserId ? message.recipientId : message.senderId;
+  return counterpartId ? `${enrollmentId}::${counterpartId}` : '';
+};
 
 const formatMessageDate = (createdAt) => {
   if (!createdAt) return 'Just now';
@@ -54,16 +71,15 @@ const InternalInbox = ({
   ), [currentUserId, filter, messages]);
 
   const unreadCount = messages.filter((message) => isMessageUnreadForUser(message, currentUserId)).length;
-  const relationshipKeys = useMemo(() => new Set(relationships.map(getRelationshipKey)), [relationships]);
+  const relationshipKeys = useMemo(
+    () => new Set(relationships.map(getRelationshipKey).filter(Boolean)),
+    [relationships],
+  );
 
   const handleMessageClick = (message) => {
-    const messageRelationshipKey = getMessageRelationshipKey(message);
-    const hasRelationship = defaultRelationship
-      ? messageRelationshipKey === getRelationshipKey(defaultRelationship)
-      : relationshipKeys.has(messageRelationshipKey);
-
-    if (hasRelationship) {
-      setSelectedRelationshipKey(messageRelationshipKey);
+    const key = getMessageRelationshipKey(message, currentUserId, currentUserRole);
+    if (key && relationshipKeys.has(key)) {
+      setSelectedRelationshipKey(key);
     }
 
     if (isMessageUnreadForUser(message, currentUserId)) {

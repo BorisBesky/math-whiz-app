@@ -12,10 +12,7 @@ jest.mock('../../contexts/AuthContext', () => ({
 
 const ImageGenerationModal = require('../ImageGenerationModal').default;
 
-const findCountInput = () => {
-  const inputs = document.querySelectorAll('input[type="number"]');
-  return inputs[0];
-};
+const findCountInput = () => screen.getByRole('spinbutton');
 
 describe('ImageGenerationModal - count input reset behavior', () => {
   beforeEach(() => {

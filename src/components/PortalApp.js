@@ -87,7 +87,6 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
             user={user}
             userRole={userRole}
             classes={classes}
-            students={students}
           />
         ),
       }] : []),
