@@ -11,50 +11,50 @@ describe('NumberPad Snapshots', () => {
   const mockOnChange = jest.fn();
 
   it('renders empty state correctly', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with numeric value', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="123" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with decimal value', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="3.14" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with negative value', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="-42" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders disabled state correctly', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="123" onChange={mockOnChange} disabled={true} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it('renders with large number', () => {
-    const { container } = render(
+    const { asFragment } = render(
       <NumberPad value="999999999" onChange={mockOnChange} />
     );
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 });

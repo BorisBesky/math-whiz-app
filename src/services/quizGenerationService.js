@@ -7,6 +7,21 @@ import { isSubtopicAllowed } from "../utils/subtopicUtils";
 import { fetchQuestionsFromFirestore } from "./questionService";
 import content from "../content";
 
+const refreshQuestionImages = async (question, topic, grade) => {
+  if (grade !== "G4" || topic !== "Geometry") {
+    return question;
+  }
+
+  const geometryQuestions = await import("../content/g4/geometry/questions");
+  const refreshAngleAdditionDiagram =
+    geometryQuestions.refreshAngleAdditionDiagram ||
+    geometryQuestions.default?.refreshAngleAdditionDiagram;
+
+  return typeof refreshAngleAdditionDiagram === "function"
+    ? refreshAngleAdditionDiagram(question)
+    : question;
+};
+
 // --- Dynamic Quiz Generation ---
 export const generateQuizQuestions = async (
   topic,
@@ -141,6 +156,8 @@ export const generateQuizQuestions = async (
       attempts++;
       continue;
     }
+
+    question = await refreshQuestionImages(question, topic, grade);
 
     // Use complexity-based mastery to bias selection toward struggled/unseen items
     // Only apply to generated questions, not Firestore questions

@@ -39,6 +39,34 @@
     Access-Control-Allow-Headers = "Content-Type"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
 
+# CRA dev emits stable, un-hashed paths like /static/js/bundle.js. When served
+# through netlify dev, caching those paths can leave the browser with a stale
+# Webpack runtime that requests chunks no longer emitted by the dev server.
+[[headers]]
+  for = "/static/js/bundle.js"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/static/js/*.chunk.js"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/static/js/*.hot-update.js"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/static/css/*.chunk.css"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/static/css/*.hot-update.css"
+  [headers.values]
+    Cache-Control = "no-store"
+
 # Cache headers for static assets (CRA uses content-hashed filenames)
 [[headers]]
   for = "/static/*"

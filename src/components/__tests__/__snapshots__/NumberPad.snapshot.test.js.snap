@@ -1,831 +1,843 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`NumberPad Snapshots renders disabled state correctly 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-800"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      123
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-base"
-      disabled=""
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-2xl"
-      disabled=""
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-      disabled=""
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-800"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed col-span-2 gap-1.5"
-      disabled=""
-      title="Backspace"
+        123
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-base"
+        disabled=""
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed text-2xl"
+        disabled=""
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        disabled=""
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed col-span-2 gap-1.5"
+        disabled=""
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`NumberPad Snapshots renders empty state correctly 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-300"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      0
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-300"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
-      title="Backspace"
+        0
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`NumberPad Snapshots renders with decimal value 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-800"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      3.14
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-800"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
-      title="Backspace"
+        3.14
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`NumberPad Snapshots renders with large number 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-800"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      999999999
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-800"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
-      title="Backspace"
+        999999999
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`NumberPad Snapshots renders with negative value 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-800"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      -42
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-800"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
-      title="Backspace"
+        -42
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`NumberPad Snapshots renders with numeric value 1`] = `
-<div
-  class="w-full max-w-[280px] mx-auto"
->
+<DocumentFragment>
   <div
-    class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
+    class="w-full max-w-[280px] mx-auto"
   >
-    <span
-      class="text-2xl font-display font-bold tracking-wide text-gray-800"
+    <div
+      class="mb-3 px-4 py-3 bg-white border-2 border-gray-200 rounded-card min-h-[48px] flex items-center justify-end shadow-inner-soft"
     >
-      123
-    </span>
-  </div>
-  <div
-    class="grid grid-cols-3 gap-2"
-  >
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      1
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      2
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      3
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      4
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      5
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      6
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      7
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      8
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      9
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
-      title="Toggle Positive/Negative"
-    >
-      +/−
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
-    >
-      0
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
-      title="Decimal Point"
-    >
-      .
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
-      title="Clear"
-    >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-x"
-        fill="none"
-        height="18"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
+      <span
+        class="text-2xl font-display font-bold tracking-wide text-gray-800"
       >
-        <path
-          d="M18 6 6 18"
-        />
-        <path
-          d="m6 6 12 12"
-        />
-      </svg>
-    </button>
-    <button
-      class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
-      title="Backspace"
+        123
+      </span>
+    </div>
+    <div
+      class="grid grid-cols-3 gap-2"
     >
-      <svg
-        aria-hidden="true"
-        class="lucide lucide-delete"
-        fill="none"
-        height="16"
-        stroke="currentColor"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
       >
-        <path
-          d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
-        />
-        <path
-          d="m12 9 6 6"
-        />
-        <path
-          d="m18 9-6 6"
-        />
-      </svg>
-       Delete
-    </button>
+        1
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        2
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        3
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        4
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        5
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        6
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        7
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        8
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        9
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-base"
+        title="Toggle Positive/Negative"
+      >
+        +/−
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm"
+      >
+        0
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-white text-gray-800 border border-gray-200 hover:border-brand-blue hover:bg-blue-50 active:scale-95 active:bg-blue-100 shadow-sm text-2xl"
+        title="Decimal Point"
+      >
+        .
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm"
+        title="Clear"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-x"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 6 6 18"
+          />
+          <path
+            d="m6 6 12 12"
+          />
+        </svg>
+      </button>
+      <button
+        class="p-3 rounded-xl text-lg font-display font-bold transition-all duration-150 flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:scale-95 shadow-sm col-span-2 gap-1.5"
+        title="Backspace"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-delete"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"
+          />
+          <path
+            d="m12 9 6 6"
+          />
+          <path
+            d="m18 9-6 6"
+          />
+        </svg>
+         Delete
+      </button>
+    </div>
   </div>
-</div>
+</DocumentFragment>
 `;

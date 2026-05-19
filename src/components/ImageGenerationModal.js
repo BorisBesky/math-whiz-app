@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Edit2, Check, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Edit2, Check, Loader2, AlertCircle, Sparkles, RotateCcw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const APP_ID = 'default-app-id';
@@ -196,7 +196,8 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleGenerateDescriptions = async () => {
-    if (!theme.trim() || !themeDescription.trim() || count < 1 || count > 10) {
+    const parsedCount = parseInt(count, 10);
+    if (!theme.trim() || !themeDescription.trim() || !Number.isFinite(parsedCount) || parsedCount < 1 || parsedCount > 10) {
       setError('Please enter a valid theme name, theme description, and count (1-10)');
       return;
     }
@@ -236,7 +237,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
           action: 'generate-descriptions',
           theme: theme.trim(),
           themeDescription: themeDescription.trim(),
-          count: parseInt(count),
+          count: parsedCount,
         }),
       });
 
@@ -585,7 +586,14 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
 
   const canGoNext = () => {
     if (step === 1) {
-      return theme.trim() && themeDescription.trim() && count >= 1 && count <= 10;
+      const parsedCount = parseInt(count, 10);
+      return Boolean(
+        theme.trim() &&
+        themeDescription.trim() &&
+        Number.isFinite(parsedCount) &&
+        parsedCount >= 1 &&
+        parsedCount <= 10
+      );
     } else if (step === 2) {
       return descriptions.length > 0;
     } else if (step === 3) {
@@ -598,19 +606,25 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="dialog" aria-modal="true">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Generate Store Images</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Step {step} of 4: {step === 1 && 'Input Theme'}
-              {step === 2 && 'Review Descriptions'}
-              {step === 3 && 'Select Images'}
-              {step === 4 && 'Review & Confirm'}
-            </p>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white/20 rounded-full p-2">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Generate store images</h2>
+              <p className="text-sm text-indigo-100">
+                Step {step} of 4 — {step === 1 && 'Input Theme'}
+                {step === 2 && 'Review Descriptions'}
+                {step === 3 && 'Select Images'}
+                {step === 4 && 'Review & Confirm'}
+              </p>
+            </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-white/80 hover:text-white transition-colors"
+            aria-label="Close"
           >
             <X className="w-6 h-6" />
           </button>

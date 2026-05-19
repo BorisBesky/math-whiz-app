@@ -160,7 +160,28 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   };
 
   return (
-    <ModalWrapper isOpen={isOpen} onClose={handleCancel} title="Generate Questions with AI" size="sm">
+    <ModalWrapper isOpen={isOpen} onClose={handleCancel} title="" size="sm" hideCloseButton>
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-5 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-white/20 rounded-full p-2">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Generate questions with AI</h2>
+            <p className="text-sm text-purple-100">
+              Create new practice questions for any topic in seconds.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="text-white/80 hover:text-white text-2xl leading-none"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
       <div className="p-6">
         {/* Error */}
         {error && (

@@ -1,6 +1,5 @@
 /* eslint-disable no-undef */
 const { admin, db } = require("./firebase-admin");
-const { Regex } = require("lucide-react");
 
 exports.handler = async (event) => {
   const headers = {
@@ -118,11 +117,19 @@ exports.handler = async (event) => {
     }
 
     console.log(`get users profiles found ${userDocsSnapshot.size} document reference(s). Fetching data for each...`);
-    
+
+    const studentProfilePathPrefix = `artifacts/${appId}/users/`;
     const allStudentsData = [];
+    const seenStudentIds = new Set();
+
     userDocsSnapshot.forEach((userDoc) => {
-      // extract userId from userDoc.id (the document ID is artifacts/{appId}/users/{userId}/math_whiz_data/profile)
+      const docPath = userDoc.ref.path;
+      // collectionGroup matches every `math_whiz_data` subtree in the project; constrain to this app.
+      if (!docPath.startsWith(studentProfilePathPrefix)) return;
+
       const userId = userDoc.ref.parent.parent.id;
+      if (!userId || seenStudentIds.has(userId)) return;
+      seenStudentIds.add(userId);
 
       const profileData = userDoc.data();
       allStudentsData.push({

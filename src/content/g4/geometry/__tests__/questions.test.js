@@ -1,4 +1,4 @@
-import { ANGLE_TYPES, generateAngleMeasurementQuestion } from '../questions.js';
+import { ANGLE_TYPES, generateAngleMeasurementQuestion, refreshAngleAdditionDiagram } from '../questions.js';
 
 describe('geometry angle real-life examples', () => {
   it('has at least 8 real-life examples for every angle type', () => {
@@ -45,29 +45,90 @@ describe('geometry angle real-life examples', () => {
   });
 
   it('includes optionImages for real-life questions only', () => {
-    let realLifeCount = 0;
-    let nonRealLifeCount = 0;
+    const realLifePrefix = 'Which real-life example shows an';
+    const questions = Array.from({ length: 300 }, () => generateAngleMeasurementQuestion());
+    const realLifeQuestions = questions.filter((q) => q.question.startsWith(realLifePrefix));
+    const nonRealLifeQuestions = questions.filter((q) => !q.question.startsWith(realLifePrefix));
 
-    for (let i = 0; i < 300; i++) {
-      const q = generateAngleMeasurementQuestion();
-      const isRealLife = q.question.startsWith('Which real-life example shows an');
+    expect(realLifeQuestions.length).toBeGreaterThan(0);
+    expect(nonRealLifeQuestions.length).toBeGreaterThan(0);
 
-      if (isRealLife) {
-        realLifeCount++;
-        expect(q.optionImages).toBeDefined();
-        expect(typeof q.optionImages).toBe('object');
-        // Every option should have an image path
-        q.options.forEach(opt => {
-          expect(q.optionImages[opt]).toBeDefined();
-          expect(q.optionImages[opt]).toMatch(/^\/images\/angles\/.+\.jpg$/);
-        });
-      } else {
-        nonRealLifeCount++;
-        expect(q.optionImages).toBeUndefined();
+    realLifeQuestions.forEach((q) => {
+      expect(q.optionImages).toBeDefined();
+      expect(typeof q.optionImages).toBe('object');
+      q.options.forEach((opt) => {
+        expect(q.optionImages[opt]).toBeDefined();
+        expect(q.optionImages[opt]).toMatch(/^\/images\/angles\/.+\.jpg$/);
+      });
+    });
+
+    nonRealLifeQuestions.forEach((q) => {
+      expect(q.optionImages).toBeUndefined();
+    });
+  });
+
+  it('generates angle addition questions with consistent missing-angle answers', () => {
+    const additionQuestionPrefix = 'Rays BC, BD, and BA all start at point B.';
+    let additionQuestionCount = 0;
+
+    for (let index = 0; index < 500; index += 1) {
+      const question = generateAngleMeasurementQuestion();
+
+      if (!question.question.startsWith(additionQuestionPrefix)) {
+        continue;
       }
+
+      additionQuestionCount += 1;
+
+      const matches = [...question.question.matchAll(/angle\s([A-Z]{3})\s=\s(\d+)°/g)];
+      const values = Object.fromEntries(
+        matches.map(([, angleName, value]) => [angleName, Number(value)])
+      );
+      const answerValue = Number.parseInt(question.correctAnswer, 10);
+
+      expect(question.options).toContain(question.correctAnswer);
+      expect(new Set(question.options).size).toBe(question.options.length);
+      expect(question.options.length).toBe(4);
+      expect(question.hint).toContain('angle CBA = angle CBD + angle DBA');
+      expect(question.images).toBeDefined();
+      expect(Array.isArray(question.images)).toBe(true);
+      expect(question.images).toHaveLength(1);
+      expect(question.images[0].type).toBe('question');
+      expect(question.images[0].description).toContain('highlighted in red');
+      expect(question.images[0].data).toContain('data:image/svg+xml;base64,');
+
+      const expectedAnswerByPrompt = [
+        { prompt: 'what is angle CBA?', expected: values.CBD + values.DBA },
+        { prompt: 'what is angle CBD?', expected: values.CBA - values.DBA },
+        { prompt: 'what is angle DBA?', expected: values.CBA - values.CBD },
+      ];
+      const matched = expectedAnswerByPrompt.find(({ prompt }) => question.question.includes(prompt));
+      expect(matched).toBeDefined();
+      expect(answerValue).toBe(matched.expected);
     }
 
-    expect(realLifeCount).toBeGreaterThan(0);
-    expect(nonRealLifeCount).toBeGreaterThan(0);
+    expect(additionQuestionCount).toBeGreaterThan(0);
+  });
+
+  it('refreshes stale angle addition diagrams from question text', () => {
+    const staleQuestion = {
+      question: 'Rays BC, BD, and BA all start at point B. Ray BD is inside angle CBA. If angle CBD = 85° and angle DBA = 69°, what is angle CBA?',
+      images: [
+        {
+          type: 'question',
+          data: 'data:image/svg+xml;base64,stale',
+          description: 'Known angles are labeled. The missing angle is shown in red.',
+        },
+      ],
+    };
+
+    const refreshedQuestion = refreshAngleAdditionDiagram(staleQuestion);
+
+    expect(refreshedQuestion.images).toHaveLength(1);
+    expect(refreshedQuestion.images[0].data).toContain('data:image/svg+xml;base64,');
+    expect(refreshedQuestion.images[0].data).not.toBe(staleQuestion.images[0].data);
+    expect(refreshedQuestion.images[0].description).toBe(
+      'Angle diagram with labeled points and the missing angle highlighted in red'
+    );
   });
 });

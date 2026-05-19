@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
-import { getFirestore, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ModalWrapper from '../../ui/ModalWrapper';
-import StudentFocusModal from '../StudentFocusModal';
+import SubtopicsFocusModal from '../SubtopicsFocusModal';
+import MessageComposer from '../../messaging/MessageComposer';
+import { getEnrollmentId, sendInternalMessage } from '../../../services/internalMessages';
 
 const ClassDetailPanel = ({
   classItem,
@@ -24,9 +26,15 @@ const ClassDetailPanel = ({
   const classId = classItem?.id;
   const appId = getAppId();
   const db = getFirestore();
-
-  const [showFocusModal, setShowFocusModal] = useState(false);
-  const [focusStudent, setFocusStudent] = useState(null);
+  
+  const [enrollments, setEnrollments] = useState({});
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+  const [enrollmentError, setEnrollmentError] = useState(null);
+  const [failedStudentIds, setFailedStudentIds] = useState(new Set());
+  const [enrollmentReloadTrigger, setEnrollmentReloadTrigger] = useState(0);
+  const [showSubtopicsModal, setShowSubtopicsModal] = useState(false);
+  const [selectedStudentForSubtopics, setSelectedStudentForSubtopics] = useState(null);
+  const [selectedStudentForMessage, setSelectedStudentForMessage] = useState(null);
 
   // Invite state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -48,6 +56,11 @@ const ClassDetailPanel = ({
     return students.filter((student) => student.classId !== classId);
   }, [students, classId]);
 
+  // Memoize roster IDs to prevent unnecessary re-fetches
+  const rosterIds = useMemo(() => {
+    return roster.map(s => s.id).sort().join(',');
+  }, [roster]);
+
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [status, setStatus] = useState(null);
   const [assigning, setAssigning] = useState(false);
@@ -59,19 +72,25 @@ const ClassDetailPanel = ({
   const [addingTeacher, setAddingTeacher] = useState(false);
   const [removingTeacherId, setRemovingTeacherId] = useState(null);
   const isAdmin = userRole === USER_ROLES.ADMIN;
-  const isTeacherOnClass = userId && getTeacherIds(classItem).includes(userId);
+  const isTeacherOnClass = userId && classItem && getTeacherIds(classItem).includes(userId);
   const canManageTeachers = isAdmin || isTeacherOnClass;
 
-  const currentTeacherIds = useMemo(() => getTeacherIds(classItem), [classItem]);
+  const currentTeacherIds = useMemo(() => (classItem ? getTeacherIds(classItem) : []), [classItem]);
 
   const currentTeachersResolved = useMemo(() => {
+    if (!classItem) return [];
     return currentTeacherIds.map((tid) => {
       const matched = teachers.find((t) => t.uid === tid || t.id === tid);
+      const isPrimaryTeacher = tid === classItem.teacherId;
       return matched
         ? { uid: tid, displayName: matched.displayName || matched.name, email: matched.email }
-        : { uid: tid, displayName: null, email: classItem.teacherEmail || null };
+        : {
+          uid: tid,
+          displayName: null,
+          email: isPrimaryTeacher ? classItem.teacherEmail || null : null,
+        };
     });
-  }, [currentTeacherIds, teachers, classItem.teacherEmail]);
+  }, [currentTeacherIds, teachers, classItem]);
 
   const availableTeachersToAdd = useMemo(() => {
     return teachers.filter((t) => {
@@ -120,6 +139,96 @@ const ClassDetailPanel = ({
     }
   };
 
+  const getMessageRelationship = (student) => ({
+    enrollmentId: getEnrollmentId(classId, student.id),
+    classId,
+    className: classItem.name || 'Class',
+    studentId: student.id,
+    studentName: getStudentDisplayName(student),
+    teacherId: userId || currentTeacherIds[0],
+    teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
+  });
+
+  // Load enrollment data with allowedSubtopicsByTopic
+  useEffect(() => {
+    if (!classId || roster.length === 0) {
+      setEnrollments({});
+      setEnrollmentError(null);
+      setFailedStudentIds(new Set());
+      return;
+    }
+
+    const loadEnrollments = async () => {
+      setLoadingEnrollments(true);
+      setEnrollmentError(null);
+      setFailedStudentIds(new Set());
+      
+      try {
+        const enrollmentData = {};
+        const failedIds = new Set();
+        
+        await Promise.all(
+          roster.map(async (student) => {
+            const enrollmentId = `${classId}__${student.id}`;
+            const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
+            try {
+              const enrollmentSnap = await getDoc(enrollmentRef);
+              if (enrollmentSnap.exists()) {
+                const data = enrollmentSnap.data();
+                enrollmentData[student.id] = {
+                  allowedSubtopicsByTopic: data.allowedSubtopicsByTopic || {},
+                };
+              } else {
+                enrollmentData[student.id] = {
+                  allowedSubtopicsByTopic: {},
+                };
+              }
+            } catch (err) {
+              console.error(`Error loading enrollment for student ${student.id}:`, err);
+              failedIds.add(student.id);
+              // Still set empty data so UI doesn't break
+              enrollmentData[student.id] = {
+                allowedSubtopicsByTopic: {},
+              };
+            }
+          })
+        );
+        
+        setEnrollments(enrollmentData);
+        setFailedStudentIds(failedIds);
+        
+        // Set error if any students failed to load
+        if (failedIds.size > 0) {
+          const failedCount = failedIds.size;
+          const totalCount = roster.length;
+          setEnrollmentError(
+            `Failed to load enrollment data for ${failedCount} of ${totalCount} student${failedCount > 1 ? 's' : ''}. ` +
+            `Focus settings may not work correctly for affected students.`
+          );
+        }
+      } catch (error) {
+        console.error('Error loading enrollments:', error);
+        setEnrollmentError(
+          `Failed to load enrollment data. Focus buttons may not work correctly. ` +
+          `Error: ${error.message || 'Unknown error'}`
+        );
+        // Set empty enrollments to prevent UI crashes
+        setEnrollments({});
+      } finally {
+        setLoadingEnrollments(false);
+      }
+    };
+
+    loadEnrollments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId, rosterIds, db, appId, enrollmentReloadTrigger]);
+  // Note: Using rosterIds instead of roster to prevent unnecessary refetches when students array is recreated
+
+  const handleRetryEnrollments = () => {
+    // Trigger reload by incrementing the reload trigger
+    setEnrollmentReloadTrigger(prev => prev + 1);
+  };
+
   const fetchInvite = useCallback(async (rotate = false) => {
     setInviteLoading(true);
     try {
@@ -164,28 +273,42 @@ const ClassDetailPanel = ({
     fetchInvite(false);
   };
 
-  const handleOpenFocusModal = (student) => {
-    setFocusStudent(student);
-    setShowFocusModal(true);
+  const handleOpenSubtopicsModal = (student) => {
+    setSelectedStudentForSubtopics(student);
+    setShowSubtopicsModal(true);
   };
 
-  const handleCloseFocusModal = () => {
-    setShowFocusModal(false);
-    setFocusStudent(null);
+  const handleSubtopicsSaved = (updatedAllowed) => {
+    if (!selectedStudentForSubtopics) return;
+    setEnrollments((prev) => ({
+      ...prev,
+      [selectedStudentForSubtopics.id]: {
+        allowedSubtopicsByTopic: updatedAllowed,
+      },
+    }));
+    setStatus({ type: 'success', message: 'Subtopics updated successfully.' });
   };
+
+  // Lock body scroll while panel is open (matches ModalWrapper behaviour)
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   // Escape key to close
   const handleEscapeKey = useCallback((e) => {
     if (e.key === 'Escape') {
-      if (showFocusModal) {
-        handleCloseFocusModal();
+      if (showSubtopicsModal) {
+        setShowSubtopicsModal(false);
       } else if (showInviteModal) {
         setShowInviteModal(false);
       } else {
         onClose();
       }
     }
-  }, [onClose, showFocusModal, showInviteModal]);
+  }, [onClose, showSubtopicsModal, showInviteModal]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
@@ -435,6 +558,33 @@ const ClassDetailPanel = ({
             </div>
           )}
 
+          {enrollmentError && (
+            <div className="mb-4 text-sm rounded-md px-4 py-3 bg-yellow-50 text-yellow-800 border border-yellow-200 flex items-start justify-between">
+              <div className="flex items-start flex-1">
+                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium mb-1">Enrollment Data Loading Issue</p>
+                  <p>{enrollmentError}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleRetryEnrollments}
+                disabled={loadingEnrollments}
+                className="ml-4 px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${loadingEnrollments ? 'animate-spin' : ''}`} />
+                Retry
+              </button>
+            </div>
+          )}
+
+          {loadingEnrollments && !enrollmentError && (
+            <div className="mb-4 text-sm rounded-md px-4 py-2 bg-blue-50 text-blue-800 border border-blue-200 flex items-center">
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Loading enrollment data...
+            </div>
+          )}
+
           {roster.length === 0 ? (
             <div className="border border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
               No students have been added to this class yet.
@@ -471,11 +621,33 @@ const ClassDetailPanel = ({
                       {canManageStudents && (
                         <td className="px-4 py-2 text-right">
                           <div className="flex items-center justify-end space-x-2">
+                            {isTeacherOnClass && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedStudentForMessage(student)}
+                                className="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                title="Message student"
+                              >
+                                <MessageCircle className="h-4 w-4 mr-1" />
+                                Message
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => handleOpenFocusModal(student)}
-                              className="inline-flex items-center text-xs font-medium text-purple-600 hover:text-purple-800"
-                              title="Set Focus Subtopics"
+                              onClick={() => handleOpenSubtopicsModal(student)}
+                              disabled={failedStudentIds.has(student.id) || loadingEnrollments}
+                              className={`inline-flex items-center text-xs font-medium ${
+                                failedStudentIds.has(student.id) || loadingEnrollments
+                                  ? 'text-gray-400 cursor-not-allowed opacity-50'
+                                  : 'text-purple-600 hover:text-purple-800'
+                              }`}
+                              title={
+                                failedStudentIds.has(student.id)
+                                  ? 'Enrollment data failed to load. Click Retry above to reload.'
+                                  : loadingEnrollments
+                                  ? 'Loading enrollment data...'
+                                  : 'Set Focus Subtopics'
+                              }
                             >
                               <Target className="h-4 w-4 mr-1" />
                               Focus
@@ -589,15 +761,39 @@ const ClassDetailPanel = ({
         </ModalWrapper>
       )}
 
-      {/* Focus Modal */}
-      {showFocusModal && focusStudent && renderModalInPortal(
-        <StudentFocusModal
-          isOpen={showFocusModal}
-          onClose={handleCloseFocusModal}
-          student={focusStudent}
+      {selectedStudentForMessage && renderModalInPortal(
+        <ModalWrapper
+          isOpen={!!selectedStudentForMessage}
+          onClose={() => setSelectedStudentForMessage(null)}
+          title={`Message ${getStudentDisplayName(selectedStudentForMessage)}`}
+          size="md"
+        >
+          <div className="px-6 py-5">
+            <MessageComposer
+              defaultRelationship={getMessageRelationship(selectedStudentForMessage)}
+              sender={{
+                id: userId,
+                role: 'teacher',
+                name: classItem.teacherName || classItem.teacherEmail || 'Teacher',
+              }}
+              recipientRole="student"
+              onSend={(messageInput) => sendInternalMessage({ db, appId, ...messageInput })}
+            />
+          </div>
+        </ModalWrapper>
+      )}
+
+      {/* Subtopics Modal (shared component) */}
+      {showSubtopicsModal && selectedStudentForSubtopics && renderModalInPortal(
+        <SubtopicsFocusModal
+          isOpen={showSubtopicsModal}
+          onClose={() => setShowSubtopicsModal(false)}
+          student={selectedStudentForSubtopics}
           classId={classId}
-          appId={appId}
-          onSaved={() => setStatus({ type: 'success', message: 'Focus areas updated.' })}
+          initialAllowedSubtopicsByTopic={
+            enrollments[selectedStudentForSubtopics.id]?.allowedSubtopicsByTopic || {}
+          }
+          onSaved={handleSubtopicsSaved}
         />
       )}
     </div>
