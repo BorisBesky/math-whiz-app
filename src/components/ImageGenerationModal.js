@@ -5,14 +5,15 @@ import { useAuth } from '../contexts/AuthContext';
 const APP_ID = 'default-app-id';
 const POLL_INTERVAL = 2000; // Poll every 2 seconds
 const JOB_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes (server timeout is 10m)
-const DEFAULT_COUNT = '3';
+const DEFAULT_COUNT = 3;
+const MAX_COUNT = 10;
 
 const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [theme, setTheme] = useState('');
   const [themeDescription, setThemeDescription] = useState('');
-  const [count, setCount] = useState('3');
+  const [countInput, setCountInput] = useState(String(DEFAULT_COUNT));
   const [descriptions, setDescriptions] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState([]);
@@ -52,7 +53,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
       setStep(1);
       setTheme('');
       setThemeDescription('');
-      setCount(DEFAULT_COUNT);
+      setCountInput(String(DEFAULT_COUNT));
       setDescriptions([]);
       setGeneratedImages([]);
       setSelectedIndices([]);
@@ -89,6 +90,32 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // Count input helpers (allow clearing/editing without snapping to a min)
+  const parsedCount = parseInt(countInput, 10);
+  const count = Number.isFinite(parsedCount)
+    ? Math.min(Math.max(parsedCount, 1), MAX_COUNT)
+    : DEFAULT_COUNT;
+  const handleCountChange = (e) => {
+    const raw = e.target.value;
+    if (raw === '') {
+      setCountInput('');
+      return;
+    }
+    if (!/^\d+$/.test(raw)) return;
+    const n = parseInt(raw, 10);
+    if (n > MAX_COUNT) {
+      setCountInput(String(MAX_COUNT));
+    } else {
+      setCountInput(raw);
+    }
+  };
+  const handleCountBlur = () => {
+    if (countInput === '' || parseInt(countInput, 10) < 1) {
+      setCountInput(String(DEFAULT_COUNT));
+    }
+  };
+  const handleCountReset = () => setCountInput(String(DEFAULT_COUNT));
 
   // Poll for job status
   const pollJobStatus = async (jobId, onComplete) => {
@@ -506,7 +533,7 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
     setStep(1);
     setTheme('');
     setThemeDescription('');
-    setCount('3');
+    setCountInput(String(DEFAULT_COUNT));
     setDescriptions([]);
     setGeneratedImages([]);
     setSelectedIndices([]);
@@ -696,39 +723,32 @@ const ImageGenerationModal = ({ isOpen, onClose, onSuccess }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Number of Images
                 </label>
-                <div className="flex items-stretch gap-2">
+                <div className="flex items-stretch space-x-2">
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="1"
-                    max="10"
-                    value={count}
-                    onChange={(e) => setCount(e.target.value)}
-                    onBlur={() => {
-                      const parsed = parseInt(count, 10);
-                      if (!Number.isFinite(parsed) || parsed < 1) {
-                        setCount('1');
-                      } else if (parsed > 10) {
-                        setCount('10');
-                      } else {
-                        setCount(String(parsed));
-                      }
-                    }}
+                    max={MAX_COUNT}
+                    value={countInput}
+                    onChange={handleCountChange}
+                    onBlur={handleCountBlur}
+                    aria-label="Number of images"
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   <button
                     type="button"
-                    onClick={() => setCount(DEFAULT_COUNT)}
-                    disabled={count === DEFAULT_COUNT}
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={`Reset to default (${DEFAULT_COUNT})`}
-                    aria-label="Reset to default"
+                    onClick={handleCountReset}
+                    disabled={countInput === String(DEFAULT_COUNT)}
+                    className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`Reset to ${DEFAULT_COUNT}`}
+                    aria-label={`Reset number of images to ${DEFAULT_COUNT}`}
                   >
-                    <RotateCcw className="h-4 w-4 mr-1" />
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
                     Reset
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  How many images to generate (1-10, default: {DEFAULT_COUNT})
+                  How many images to generate (1-{MAX_COUNT}, default {DEFAULT_COUNT})
                 </p>
               </div>
             </div>

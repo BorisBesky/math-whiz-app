@@ -43,7 +43,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
     expect(input.value).toBe('7');
   });
 
-  test('blurring an empty input snaps to 1, not back to the default 3', () => {
+  test('blurring an empty input snaps back to the default 3', () => {
     render(
       React.createElement(ImageGenerationModal, {
         isOpen: true,
@@ -55,7 +55,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
     const input = findCountInput();
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.blur(input);
-    expect(input.value).toBe('1');
+    expect(input.value).toBe('3');
   });
 
   test('blur clamps an above-max value down to 10', () => {
@@ -73,7 +73,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
     expect(input.value).toBe('10');
   });
 
-  test('Generate Descriptions button is disabled when count is empty (and re-enables after typing valid value)', () => {
+  test('Generate Descriptions button remains enabled when count is temporarily empty', () => {
     render(
       React.createElement(ImageGenerationModal, {
         isOpen: true,
@@ -93,7 +93,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
 
     const input = findCountInput();
     fireEvent.change(input, { target: { value: '' } });
-    expect(next).toBeDisabled();
+    expect(next).not.toBeDisabled();
 
     fireEvent.change(input, { target: { value: '4' } });
     expect(next).not.toBeDisabled();
@@ -114,7 +114,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
     fireEvent.change(input, { target: { value: '8' } });
     expect(input.value).toBe('8');
 
-    fireEvent.click(screen.getByRole('button', { name: /reset to default/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reset number of images to 3/i }));
     expect(input.value).toBe('3');
   });
 
@@ -127,7 +127,7 @@ describe('ImageGenerationModal - count input reset behavior', () => {
       })
     );
 
-    const resetBtn = screen.getByRole('button', { name: /reset to default/i });
+    const resetBtn = screen.getByRole('button', { name: /reset number of images to 3/i });
     expect(resetBtn).toBeDisabled();
 
     const input = findCountInput();

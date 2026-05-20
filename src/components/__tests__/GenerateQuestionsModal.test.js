@@ -107,4 +107,92 @@ describe('GenerateQuestionsModal', () => {
     expect(detailsInput.value.length).toBe(500);
     expect(screen.getByText('Add specific preferences like context, vocabulary, or difficulty emphasis (500/500).')).toBeInTheDocument();
   });
+
+  describe('Number of Questions input', () => {
+    const renderModal = () =>
+      render(
+        React.createElement(GenerateQuestionsModal, {
+          isOpen: true,
+          onClose: jest.fn(),
+          onGenerated: jest.fn(),
+        })
+      );
+
+    test('renders with default value of 10', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      expect(input.value).toBe('10');
+    });
+
+    test('allows the user to clear the field while typing', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      fireEvent.change(input, { target: { value: '' } });
+      expect(input.value).toBe('');
+    });
+
+    test('blurring an empty field restores the default of 10', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.blur(input);
+      expect(input.value).toBe('10');
+    });
+
+    test('blurring with 0 restores the default of 10', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      fireEvent.change(input, { target: { value: '0' } });
+      fireEvent.blur(input);
+      expect(input.value).toBe('10');
+    });
+
+    test('clamps values above the maximum (15)', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      fireEvent.change(input, { target: { value: '999' } });
+      expect(input.value).toBe('15');
+    });
+
+    test('reset button restores the default and is disabled when already at default', () => {
+      renderModal();
+      const input = screen.getByLabelText('Number of questions');
+      const resetButton = screen.getByRole('button', { name: /reset number of questions to 10/i });
+
+      expect(resetButton).toBeDisabled();
+
+      fireEvent.change(input, { target: { value: '7' } });
+      expect(input.value).toBe('7');
+      expect(resetButton).not.toBeDisabled();
+
+      fireEvent.click(resetButton);
+      expect(input.value).toBe('10');
+      expect(resetButton).toBeDisabled();
+    });
+
+    test('user can change the value to 5 and submit; payload reflects the entered value', async () => {
+      const onGenerated = jest.fn();
+      render(
+        React.createElement(GenerateQuestionsModal, {
+          isOpen: true,
+          onClose: jest.fn(),
+          onGenerated,
+        })
+      );
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[1], { target: { value: VALID_TOPICS_BY_GRADE[GRADES.G3][0] } });
+
+      const input = screen.getByLabelText('Number of questions');
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.change(input, { target: { value: '5' } });
+      expect(input.value).toBe('5');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
+      await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+      const [, options] = global.fetch.mock.calls[0];
+      const payload = JSON.parse(options.body);
+      expect(payload.count).toBe(5);
+    });
+  });
 });

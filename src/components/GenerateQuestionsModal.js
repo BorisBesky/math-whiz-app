@@ -6,7 +6,7 @@ import { GRADES, VALID_TOPICS_BY_GRADE, QUESTION_TYPES } from '../constants/topi
 
 const BATCH_SIZE = 25;
 const MAX_QUESTIONS = 15;
-const DEFAULT_COUNT = '10';
+const DEFAULT_QUESTION_COUNT = 10;
 const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 500;
 
 const GENERATABLE_TYPES = [
@@ -19,7 +19,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   const [grade, setGrade] = useState(GRADES.G3);
   const [topic, setTopic] = useState('');
   const [questionTypes, setQuestionTypes] = useState([QUESTION_TYPES.MULTIPLE_CHOICE]);
-  const [count, setCount] = useState(DEFAULT_COUNT);
+  const [countInput, setCountInput] = useState(String(DEFAULT_QUESTION_COUNT));
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
@@ -27,6 +27,38 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
   const cancelledRef = useRef(false);
 
   const availableTopics = VALID_TOPICS_BY_GRADE[grade] || [];
+
+  const parsedCount = parseInt(countInput, 10);
+  const effectiveCount = Number.isFinite(parsedCount)
+    ? Math.min(Math.max(parsedCount, 1), MAX_QUESTIONS)
+    : DEFAULT_QUESTION_COUNT;
+
+  const handleCountChange = (e) => {
+    const raw = e.target.value;
+    if (raw === '') {
+      setCountInput('');
+      return;
+    }
+    // Allow only digits while typing; clamp the numeric upper bound but allow
+    // the user to fully edit the field (including clearing it back to empty).
+    if (!/^\d+$/.test(raw)) return;
+    const n = parseInt(raw, 10);
+    if (n > MAX_QUESTIONS) {
+      setCountInput(String(MAX_QUESTIONS));
+    } else {
+      setCountInput(raw);
+    }
+  };
+
+  const handleCountBlur = () => {
+    if (countInput === '' || parseInt(countInput, 10) < 1) {
+      setCountInput(String(DEFAULT_QUESTION_COUNT));
+    }
+  };
+
+  const handleCountReset = () => {
+    setCountInput(String(DEFAULT_QUESTION_COUNT));
+  };
 
   const handleGradeChange = (newGrade) => {
     setGrade(newGrade);
@@ -58,8 +90,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
     cancelledRef.current = false;
 
     const allQuestions = [];
-    const parsedCount = parseInt(count, 10);
-    const totalCount = Math.min(Math.max(Number.isFinite(parsedCount) ? parsedCount : 1, 1), MAX_QUESTIONS);
+    const totalCount = effectiveCount;
     const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
 
     try {
@@ -118,7 +149,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
       }
       setGenerating(false);
     }
-  }, [grade, topic, questionTypes, count, additionalInstructions, onGenerated]);
+  }, [grade, topic, questionTypes, effectiveCount, additionalInstructions, onGenerated]);
 
   const handleCancel = () => {
     if (generating) {
@@ -224,39 +255,34 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Number of Questions
             </label>
-            <div className="flex items-stretch gap-2">
+            <div className="flex items-stretch space-x-2">
               <input
                 type="number"
-                value={count}
-                onChange={(e) => setCount(e.target.value)}
-                onBlur={() => {
-                  const parsed = parseInt(count, 10);
-                  if (!Number.isFinite(parsed) || parsed < 1) {
-                    setCount('1');
-                  } else if (parsed > MAX_QUESTIONS) {
-                    setCount(String(MAX_QUESTIONS));
-                  } else {
-                    setCount(String(parsed));
-                  }
-                }}
+                inputMode="numeric"
+                value={countInput}
+                onChange={handleCountChange}
+                onBlur={handleCountBlur}
                 disabled={generating}
                 min={1}
                 max={MAX_QUESTIONS}
+                aria-label="Number of questions"
                 className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
               <button
                 type="button"
-                onClick={() => setCount(DEFAULT_COUNT)}
-                disabled={generating || count === DEFAULT_COUNT}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={`Reset to default (${DEFAULT_COUNT})`}
-                aria-label="Reset to default"
+                onClick={handleCountReset}
+                disabled={generating || countInput === String(DEFAULT_QUESTION_COUNT)}
+                className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={`Reset to ${DEFAULT_QUESTION_COUNT}`}
+                aria-label={`Reset number of questions to ${DEFAULT_QUESTION_COUNT}`}
               >
-                <RotateCcw className="h-4 w-4 mr-1" />
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
                 Reset
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Maximum {MAX_QUESTIONS} questions per generation (default: {DEFAULT_COUNT}).</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Maximum {MAX_QUESTIONS} questions per generation (default {DEFAULT_QUESTION_COUNT})
+            </p>
           </div>
 
           {/* Additional Instructions */}
