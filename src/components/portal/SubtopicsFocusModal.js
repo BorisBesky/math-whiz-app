@@ -121,7 +121,7 @@ const SubtopicsFocusModal = ({
 
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="md" hideCloseButton>
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-5 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-brand-purple to-brand-pink text-white px-6 py-5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="bg-white/20 rounded-full p-2">
             <Target className="h-5 w-5" />
@@ -145,7 +145,7 @@ const SubtopicsFocusModal = ({
 
       <div className="px-6 py-5 space-y-5">
         {!classId && (
-          <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="flex items-start gap-3 rounded-button border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>
               {studentName} is not assigned to a class yet, so focus settings can't be saved.
@@ -155,7 +155,7 @@ const SubtopicsFocusModal = ({
         )}
 
         {error && (
-          <div className="flex items-start gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="flex items-start gap-3 rounded-button border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -178,7 +178,7 @@ const SubtopicsFocusModal = ({
             <select
               value={grade}
               onChange={(e) => handleGradeChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-gray-300 rounded-button px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple"
             >
               <option value="G3">Grade 3</option>
               <option value="G4">Grade 4</option>
@@ -189,7 +189,7 @@ const SubtopicsFocusModal = ({
             <select
               value={topic}
               onChange={(e) => handleTopicChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-gray-300 rounded-button px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple"
             >
               {getTopicsForGrade(grade).map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -245,7 +245,7 @@ const SubtopicsFocusModal = ({
                           type="checkbox"
                           checked={checked}
                           onChange={() => handleToggle(sub)}
-                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
                         />
                         <span className="text-sm text-gray-800">{sub}</span>
                       </label>
@@ -271,7 +271,7 @@ const SubtopicsFocusModal = ({
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="px-4 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className="px-4 py-2 rounded-button border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
           Cancel
         </button>
@@ -279,7 +279,7 @@ const SubtopicsFocusModal = ({
           type="button"
           onClick={handleSave}
           disabled={saving || !classId}
-          className="inline-flex items-center px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+          className="inline-flex items-center px-4 py-2 rounded-button bg-brand-purple text-white text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {saving ? 'Saving…' : 'Save focus'}

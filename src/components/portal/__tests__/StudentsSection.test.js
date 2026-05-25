@@ -47,16 +47,16 @@ jest.mock('../GoalsModal', () => {
   };
 });
 
-jest.mock('../SubtopicsFocusModal', () => {
+jest.mock('../StudentFocusModal', () => {
   const React = require('react');
   return {
     __esModule: true,
-    default: function MockSubtopicsFocusModal({ isOpen, student, classId }) {
+    default: function MockStudentFocusModal({ isOpen, student }) {
       if (!isOpen || !student) return null;
       return React.createElement(
         'div',
-        { 'data-testid': 'subtopics-focus-modal' },
-        `Focus for ${student.id} class=${classId || 'none'}`
+        { 'data-testid': 'student-focus-modal' },
+        `Focus for ${student.id} class=${student.classId || 'none'}`
       );
     },
   };
@@ -114,10 +114,10 @@ describe('StudentsSection — Focus integration', () => {
     expect(screen.getByRole('button', { name: /set focus subtopics/i })).toBeEnabled();
   });
 
-  test('clicking the Focus action opens the SubtopicsFocusModal with the right student', async () => {
+  test('clicking the Focus action opens the StudentFocusModal with the right student', async () => {
     renderSection();
     fireEvent.click(screen.getByRole('button', { name: /set focus subtopics/i }));
-    expect(await screen.findByTestId('subtopics-focus-modal')).toHaveTextContent('Focus for student-1 class=class-1');
+    expect(await screen.findByTestId('student-focus-modal')).toHaveTextContent('Focus for student-1 class=class-1');
   });
 
   test('Set Goals opens GoalsModal with selected-student count', () => {
@@ -139,7 +139,7 @@ describe('StudentsSection — Focus integration', () => {
   test('clicking focus for unassigned student still opens modal with classId none', () => {
     renderSection([{ ...baseStudent, classId: null, className: 'Unassigned' }]);
     fireEvent.click(screen.getByRole('button', { name: /set focus subtopics/i }));
-    expect(screen.getByTestId('subtopics-focus-modal')).toHaveTextContent('Focus for student-1 class=none');
+    expect(screen.getByTestId('student-focus-modal')).toHaveTextContent('Focus for student-1 class=none');
   });
 });
 
