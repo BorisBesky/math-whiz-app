@@ -14,7 +14,6 @@ const URLS = [
   { path: "/about/common-core-math-app", changefreq: "monthly", priority: "0.7" },
   { path: "/about/math-app-with-rewards", changefreq: "monthly", priority: "0.7" },
   { path: "/about/division-practice-3rd-grade", changefreq: "monthly", priority: "0.7" },
-  { path: "/login", changefreq: "monthly", priority: "0.7" },
 ];
 
 export default async (request) => {

@@ -22,6 +22,14 @@
   path = "/robots.txt"
   function = "robots"
 
+[[edge_functions]]
+  path = "/about"
+  function = "seo-head"
+
+[[edge_functions]]
+  path = "/about/*"
+  function = "seo-head"
+
 [[redirects]]
   from = "/admin"
   to = "/index.html"

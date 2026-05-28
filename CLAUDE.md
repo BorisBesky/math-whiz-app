@@ -1,4 +1,44 @@
-# Math Whiz App — Codebase Guide
+# CLAUDE.md - math-whiz-app
+
+## Site
+- URL: https://mathwhizapp.kids
+- Purpose: Free adaptive math practice app for 3rd and 4th grade students, teachers, and parents.
+
+## Tech stack
+- React 19 / Create React App SPA, React Router DOM 7, Tailwind CSS 3
+- Firebase Auth + Firestore
+- Netlify hosting, functions, and edge functions
+
+## SEO-relevant file map
+- Sitemap: `netlify/edge-functions/sitemap.js`
+- Robots.txt: `netlify/edge-functions/robots.js`
+- `<head>` / base meta template: `public/index.html`
+- Route-specific client meta: `src/components/about/SeoHead.js`, `src/components/about/AboutOverview.js`
+- Route-specific raw HTML meta: `netlify/edge-functions/seo-head.js`
+- Schema.org JSON-LD: emitted by `src/components/about/SeoHead.js`
+- Layout / page templates: `src/components/about/AboutLayout.js`, `src/components/about/AboutSeoPage.js`, `src/components/about/pages/*`
+
+## Codebase conventions
+- New SEO pages are registered in `src/components/about/seoPageConfig.js`.
+- Public SEO pages should also be added to `netlify/edge-functions/sitemap.js` and `netlify/edge-functions/seo-head.js`.
+- Authenticated app routes are intentionally excluded from robots and sitemap.
+- Internal SEO links use React Router `<Link>` with `/about/<slug>` paths.
+
+## Standing notes / do-not-touch
+- `/app/`, `/admin`, `/teacher`, and `/portal` are intentionally disallowed in robots.txt.
+- `/login` is not an SEO landing page and should not be submitted in the sitemap.
+
+## Prior SEO fixes (most recent first)
+- 2026-05-28 - Alternate canonical pages for `/about/*` in GSC - PR TBD - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
+
+## Open watch-items
+- GSC reported 10 alternate-canonical `/about/*` pages and 2 crawled-not-indexed URLs (`http://mathwhizapp.kids/`, `https://mathwhizapp.kids/about`) on 2026-05-28.
+- Sitemap is successful and was last read 2026-05-27, with 16 discovered pages before `/login` was removed.
+- Core Web Vitals has insufficient field data for both mobile and desktop as of 2026-05-25.
+
+---
+
+# Math Whiz App - Codebase Guide
 
 ## Stack
 
