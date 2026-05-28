@@ -3,13 +3,13 @@ import {
   BarChart3, RefreshCw, Download, Target, Trash2, Eye,
   ChevronUp, ChevronDown, CheckCircle, Crosshair
 } from 'lucide-react';
-import { getFirestore, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
 import GoalsModal from '../GoalsModal';
-import SubtopicsFocusModal from '../SubtopicsFocusModal';
+import StudentFocusModal from '../StudentFocusModal';
 
 const fieldMap = {
   'grade': 'grade',
@@ -29,8 +29,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [focusStudent, setFocusStudent] = useState(null);
-  const [focusInitialAllowed, setFocusInitialAllowed] = useState({});
-  const [focusLoadingStudentId, setFocusLoadingStudentId] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
@@ -199,39 +197,14 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     if (onRefresh) onRefresh();
   };
 
-  // Focus logic
-  const openFocusModalForStudent = async (student) => {
+  // Focus logic — StudentFocusModal loads its own data; just track which student is open.
+  const openFocusModalForStudent = (student) => {
     if (!student) return;
-
-    if (!student.classId) {
-      // No class — open the modal anyway so the user sees the inline hint
-      // explaining that the student must be assigned to a class first.
-      setFocusInitialAllowed({});
-      setFocusStudent(student);
-      return;
-    }
-
-    setFocusLoadingStudentId(student.id);
-    try {
-      const enrollmentId = `${student.classId}__${student.id}`;
-      const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
-      const snap = await getDoc(enrollmentRef);
-      const data = snap.exists() ? (snap.data().allowedSubtopicsByTopic || {}) : {};
-      setFocusInitialAllowed(data);
-      setFocusStudent(student);
-    } catch (err) {
-      console.error('Error loading focus data:', err);
-      // Still open modal with empty initial state, save will overwrite the chosen topic.
-      setFocusInitialAllowed({});
-      setFocusStudent(student);
-    } finally {
-      setFocusLoadingStudentId(null);
-    }
+    setFocusStudent(student);
   };
 
   const closeFocusModal = () => {
     setFocusStudent(null);
-    setFocusInitialAllowed({});
   };
 
   const sortedStudents = getSortedStudents();
@@ -757,8 +730,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                     </button>
                     <button
                       onClick={() => openFocusModalForStudent(student)}
-                      disabled={focusLoadingStudentId === student.id}
-                      className="text-emerald-600 hover:text-emerald-900 inline-flex items-center disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="text-emerald-600 hover:text-emerald-900 inline-flex items-center"
                       title={
                         student.classId
                           ? 'Set focus subtopics'
@@ -851,12 +823,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       />
 
       {focusStudent && (
-        <SubtopicsFocusModal
+        <StudentFocusModal
           isOpen={!!focusStudent}
           onClose={closeFocusModal}
           student={focusStudent}
-          classId={focusStudent.classId}
-          initialAllowedSubtopicsByTopic={focusInitialAllowed}
           onSaved={() => {
             if (onRefresh) onRefresh();
           }}

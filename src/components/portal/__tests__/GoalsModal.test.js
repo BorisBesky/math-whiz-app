@@ -94,8 +94,7 @@ describe('GoalsModal', () => {
 
   test('switching to G4 reveals G4 topics', () => {
     renderModal();
-    const gradeSelect = screen.getAllByRole('combobox')[0];
-    fireEvent.change(gradeSelect, { target: { value: 'G4' } });
+    fireEvent.click(screen.getByRole('tab', { name: /4th grade/i }));
 
     expect(screen.getByText('Operations & Algebraic Thinking')).toBeInTheDocument();
     expect(screen.getByText('Base Ten')).toBeInTheDocument();
