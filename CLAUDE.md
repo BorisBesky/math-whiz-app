@@ -29,7 +29,7 @@
 - `/login` is not an SEO landing page and should not be submitted in the sitemap.
 
 ## Prior SEO fixes (most recent first)
-- 2026-05-28 - Alternate canonical pages for `/about/*` in GSC - PR TBD - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
+- 2026-05-28 - Alternate canonical pages for `/about/*` in GSC - PR https://github.com/BorisBesky/math-whiz-app/pull/51 - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
 
 ## Open watch-items
 - GSC reported 10 alternate-canonical `/about/*` pages and 2 crawled-not-indexed URLs (`http://mathwhizapp.kids/`, `https://mathwhizapp.kids/about`) on 2026-05-28.

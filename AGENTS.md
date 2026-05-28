@@ -40,7 +40,7 @@
 - `/login` is a public app entry point but is not an SEO landing page and should stay out of the sitemap.
 
 ## Prior SEO fixes
-- 2026-05-28 - GSC alternate canonical pages for `/about/*` SEO routes - PR TBD - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
+- 2026-05-28 - GSC alternate canonical pages for `/about/*` SEO routes - PR https://github.com/BorisBesky/math-whiz-app/pull/51 - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
 
 ## Open watch-items
 - GSC reported 10 "Alternate page with proper canonical tag" URLs for `/about/*`; validation started 2026-05-27 before this fix and should be monitored after deploy.
