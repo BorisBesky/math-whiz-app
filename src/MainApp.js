@@ -74,7 +74,7 @@ import { getTopicAvailability } from "./services/topicAvailability";
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-fitfix-v5" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-fitfix-v13" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));

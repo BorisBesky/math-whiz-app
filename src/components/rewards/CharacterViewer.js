@@ -111,8 +111,6 @@ const addCat = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, 0.45]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [-0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
-  const tail = addMesh(group, new THREE.TorusGeometry(0.28, 0.055, 16, 32, Math.PI * 1.25), fur, [0.54, 0.65, -0.28], [0.7, 1, 0.7], [0.4, 0.15, 0.5]);
-  tail.castShadow = true;
 };
 
 const addBird = (group) => {
@@ -201,7 +199,7 @@ const getRig = (characterId) => {
       waistY: 0.45,
       handX: 0.52,
       handY: 0.6,
-      handZ: 0.14,
+      handZ: 0.42,
       legX: 0.24,
       faceZ: 0.4,
       garmentZ: 0.52,
@@ -228,7 +226,7 @@ const getRig = (characterId) => {
       waistY: 0.45,
       handX: 0.48,
       handY: 0.6,
-      handZ: 0.12,
+      handZ: 0.4,
       legX: 0.22,
       faceZ: 0.4,
       garmentZ: 0.48,
@@ -282,7 +280,7 @@ const getRig = (characterId) => {
       waistY: 0.45,
       handX: 0.5,
       handY: 0.55,
-      handZ: 0.16,
+      handZ: 0.4,
       legX: 0.24,
       faceZ: 0.42,
       garmentZ: 0.46,
@@ -308,7 +306,7 @@ const getRig = (characterId) => {
     waistY: 0.55,
     handX: 0.6,
     handY: 0.55,
-    handZ: 0.18,
+    handZ: 0.46,
     legX: 0.3,
     faceZ: 0.45,
     garmentZ: 0.62,
@@ -554,10 +552,23 @@ const addShorts = (group, item, rig) => {
 // Anchor (local x/y/z) of a character's hand/paw/flipper for held or worn
 // wrist items. Falls back to legacy fields when not specified per character.
 const handAnchor = (rig) => ({
-  x: rig.handX,
+  x: rig.fit === "round" ? rig.handX * 0.82 : rig.handX,
   y: rig.handY ?? rig.propY ?? 0.6,
   z: rig.handZ ?? 0.16,
 });
+
+const frontSurfaceZ = (metrics, rig, y, offset = 0.06) => {
+  if (rig.fit === "human") return rig.garmentZ + offset;
+  if (rig.fit === "box") return rig.garmentZ + offset;
+  const depthRatio = metrics.halfD / metrics.halfW;
+  return metrics.center.z + bodyRadiusAt(metrics, y) * depthRatio + offset;
+};
+
+const backSurfaceZ = (metrics, rig, y, offset = 0.08) => {
+  if (rig.fit === "human") return rig.backZ - offset;
+  const depthRatio = metrics.halfD / metrics.halfW;
+  return metrics.center.z - bodyRadiusAt(metrics, y) * depthRatio - offset;
+};
 
 const addJewelry = (group, item, rig) => {
   const mat = makeMat(item.color);
@@ -582,9 +593,7 @@ const addJewelry = (group, item, rig) => {
   const depthRatio = metrics.halfD / metrics.halfW;
   const y = rig.neckY - 0.05;
   const r = bodyRadiusAt(metrics, y) + 0.02;
-  const frontZ = rig.fit === "human"
-    ? rig.garmentZ + 0.025
-    : metrics.center.z + r * depthRatio + 0.06;
+  const frontZ = frontSurfaceZ(metrics, rig, y, rig.fit === "human" ? 0.045 : 0.14);
   addMesh(group, new THREE.TorusGeometry(r + 0.035, 0.018, 8, 44), accent, [metrics.center.x, y, metrics.center.z + 0.02], [1, 1, depthRatio], [Math.PI / 2, 0, 0]);
   const pendantY = rig.fit === "human" ? y - 0.2 : y - 0.14;
   const pendantScale = rig.fit === "human" ? 1.35 : 1;
@@ -600,19 +609,20 @@ const addNeckwear = (group, item, rig) => {
   const depthRatio = metrics.halfD / metrics.halfW;
   const collarY = rig.neckY;
   const collarR = bodyRadiusAt(metrics, collarY);
-  const frontZ = rig.fit === "human"
-    ? rig.garmentZ + 0.025
-    : metrics.center.z + collarR * depthRatio + 0.04;
+  const frontZ = frontSurfaceZ(metrics, rig, collarY, rig.fit === "human" ? 0.045 : 0.14);
   if (item.shape === "bowTie") {
-    addMesh(group, new THREE.ConeGeometry(0.16, 0.22, 4), mat, [metrics.center.x - 0.1, collarY - 0.03, frontZ], null, [0, 0, Math.PI / 2]);
-    addMesh(group, new THREE.ConeGeometry(0.16, 0.22, 4), mat, [metrics.center.x + 0.1, collarY - 0.03, frontZ], null, [0, 0, -Math.PI / 2]);
-    addMesh(group, new THREE.SphereGeometry(0.055, 12, 10), accent, [metrics.center.x, collarY - 0.03, frontZ + 0.025]);
+    const bowY = collarY - 0.03;
+    addMesh(group, new THREE.SphereGeometry(0.13, 24, 18), mat, [metrics.center.x - 0.12, bowY, frontZ], [1.25, 0.62, 0.28], [0, 0, -0.18]);
+    addMesh(group, new THREE.SphereGeometry(0.13, 24, 18), mat, [metrics.center.x + 0.12, bowY, frontZ], [1.25, 0.62, 0.28], [0, 0, 0.18]);
+    addMesh(group, new THREE.SphereGeometry(0.062, 16, 12), accent, [metrics.center.x, bowY, frontZ + 0.025], [0.9, 1.05, 0.5]);
     return;
   }
   if (item.shape === "medal") {
     addMesh(group, new THREE.TorusGeometry(collarR + 0.06, 0.018, 8, 44), accent, [metrics.center.x, collarY, metrics.center.z + 0.02], [1, 1, depthRatio], [Math.PI / 2, 0, 0]);
-    addMesh(group, new THREE.CylinderGeometry(0.13, 0.13, 0.035, 30), mat, [metrics.center.x, collarY - 0.28, frontZ], null, [Math.PI / 2, 0, 0]);
-    addMesh(group, new THREE.SphereGeometry(0.035, 12, 10), accent, [metrics.center.x, collarY - 0.28, frontZ + 0.025], [1, 1, 0.4]);
+    const medalY = rig.fit === "box" ? collarY - 0.18 : collarY - 0.28;
+    const medalScale = rig.fit === "box" ? 0.9 : 1;
+    addMesh(group, new THREE.CylinderGeometry(0.13 * medalScale, 0.13 * medalScale, 0.04, 30), mat, [metrics.center.x, medalY, frontZ + 0.02], null, [Math.PI / 2, 0, 0]);
+    addMesh(group, new THREE.SphereGeometry(0.035 * medalScale, 12, 10), accent, [metrics.center.x, medalY, frontZ + 0.055], [1, 1, 0.4]);
     return;
   }
   // Scarf: thick wrap around the neck + a tail hanging down the front.
@@ -625,10 +635,8 @@ const addBackGear = (group, item, rig) => {
   const mat = makeMat(item.color);
   const accent = makeMat(item.accentColor);
   const metrics = bodyMetrics(group);
-  const backZ = rig.backZ ?? -0.35;
-  const frontZ = rig.fit === "human"
-    ? rig.garmentZ + 0.015
-    : metrics.center.z + bodyRadiusAt(metrics, rig.backY) * (metrics.halfD / metrics.halfW) + 0.035;
+  const backZ = backSurfaceZ(metrics, rig, rig.backY, rig.fit === "human" ? 0.16 : 0.1);
+  const frontZ = frontSurfaceZ(metrics, rig, rig.backY, rig.fit === "human" ? 0.03 : 0.08);
   const strapTopY = Math.min(rig.neckY - 0.08, rig.backY + 0.32);
   const strapMidY = rig.fit === "human" ? rig.backY - 0.05 : rig.backY - 0.1;
   const strapX = rig.fit === "human" ? 0.18 : Math.max(0.22, rig.garmentWidth * 0.42);
@@ -642,15 +650,19 @@ const addBackGear = (group, item, rig) => {
     return;
   }
   if (item.shape === "backpack") {
-    addMesh(group, new THREE.BoxGeometry(0.5, 0.65, 0.22), mat, [0, rig.backY, backZ - 0.05]);
-    addMesh(group, new THREE.BoxGeometry(0.3, 0.18, 0.04), accent, [0, rig.backY + 0.08, backZ - 0.18]);
+    const packWidth = rig.fit === "human" ? 0.42 : Math.max(0.46, rig.garmentWidth * 0.9);
+    const packHeight = rig.fit === "human" ? 0.64 : 0.58;
+    const packDepth = rig.fit === "human" ? 0.18 : 0.16;
+    addMesh(group, new THREE.BoxGeometry(packWidth, packHeight, packDepth), mat, [0, rig.backY, backZ]);
+    addMesh(group, new THREE.BoxGeometry(packWidth * 0.58, 0.14, 0.035), accent, [0, rig.backY + 0.08, backZ - packDepth * 0.52]);
     addMesh(group, new THREE.BoxGeometry(0.08, 0.58, 0.06), mat, [-strapX, strapMidY, frontZ], null, [0, 0, -0.14]);
     addMesh(group, new THREE.BoxGeometry(0.08, 0.58, 0.06), mat, [strapX, strapMidY, frontZ], null, [0, 0, 0.14]);
     addMesh(group, new THREE.BoxGeometry(0.32, 0.065, 0.06), accent, [0, strapMidY - 0.08, frontZ + 0.02]);
     return;
   }
-  addMesh(group, new THREE.ConeGeometry(0.5, 1.0, 4), mat, [0, rig.backY - 0.18, backZ + 0.02], [1, 1, 0.18], [0, Math.PI / 4, Math.PI]);
-  addMesh(group, new THREE.BoxGeometry(0.44, 0.055, 0.06), accent, [0, rig.backY + 0.32, backZ + 0.16]);
+  const capeWidth = rig.fit === "human" ? 0.42 : Math.max(0.42, rig.garmentWidth * 0.88);
+  addMesh(group, new THREE.ConeGeometry(capeWidth, 0.92, 4), mat, [0, rig.backY - 0.18, backZ], [1, 1, 0.16], [0, Math.PI / 4, Math.PI]);
+  addMesh(group, new THREE.BoxGeometry(capeWidth * 0.9, 0.055, 0.06), accent, [0, rig.backY + 0.3, backZ + 0.04]);
   addMesh(group, new THREE.BoxGeometry(0.11, 0.42, 0.06), mat, [-rig.garmentWidth * 0.62, rig.backY - 0.12, frontZ - 0.02], null, [0, 0, 0.08]);
   addMesh(group, new THREE.BoxGeometry(0.11, 0.42, 0.06), mat, [rig.garmentWidth * 0.62, rig.backY - 0.12, frontZ - 0.02], null, [0, 0, -0.08]);
   addMesh(group, new THREE.SphereGeometry(0.07, 16, 12), accent, [-strapX, strapTopY, frontZ + 0.025], [1, 1, 0.5]);

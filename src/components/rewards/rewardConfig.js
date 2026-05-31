@@ -68,7 +68,7 @@ export const ACCESSORY_CATEGORIES = [
 const ALL_CHARACTER_IDS = REWARD_CHARACTERS.map((character) => character.id);
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;
-const DRESS_SKIRT_CHARACTER_IDS = SOFT_CHARACTER_IDS.filter((id) => id !== "leo-boy");
+const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl"];
 const KID_CHARACTER_IDS = ["leo-boy", "mia-girl"];
 
 export const REWARD_ACCESSORIES = [
