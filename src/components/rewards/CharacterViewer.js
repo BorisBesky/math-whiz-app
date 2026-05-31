@@ -80,7 +80,7 @@ const addBear = (group, colors = {}) => {
   const muzzle = makeMat(pick("muzzle", "#f5d0a9"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.72, 48, 36), fur, [0, 0.7, 0]);
   group.userData.clothable = [torso];
-  addMesh(group, new THREE.SphereGeometry(0.45, 40, 32), fur, [0, 1.55, 0.03]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.45, 40, 32), fur, [0, 1.55, 0.03]);
   addMesh(group, new THREE.SphereGeometry(0.17, 28, 20), fur, [-0.34, 1.92, 0]);
   addMesh(group, new THREE.SphereGeometry(0.17, 28, 20), fur, [0.34, 1.92, 0]);
   addMesh(group, new THREE.SphereGeometry(0.2, 28, 20), muzzle, [0, 1.44, 0.39], [1.05, 0.72, 0.42]);
@@ -101,7 +101,7 @@ const addRobot = (group, colors = {}) => {
   const trim = makeMat(pick("trim", "#38bdf8"), { emissive: 0x075985, emissiveIntensity: 0.15 });
   const torso = addMesh(group, new THREE.BoxGeometry(0.95, 1.1, 0.55), body, [0, 0.68, 0], null, [0, 0, 0]);
   group.userData.clothable = [torso];
-  addMesh(group, new THREE.SphereGeometry(0.46, 44, 32), body, [0, 1.55, 0.01], [1, 0.9, 0.75]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.46, 44, 32), body, [0, 1.55, 0.01], [1, 0.9, 0.75]);
   addMesh(group, new THREE.BoxGeometry(0.58, 0.22, 0.035), face, [0, 1.56, 0.36]);
   addMesh(group, new THREE.SphereGeometry(0.035, 16, 16), trim, [-0.16, 1.57, 0.39]);
   addMesh(group, new THREE.SphereGeometry(0.035, 16, 16), trim, [0.16, 1.57, 0.39]);
@@ -123,7 +123,7 @@ const addPenguin = (group, colors = {}) => {
   const beak = makeMat(pick("beak", "#fb923c"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.62, 48, 36), dark, [0, 0.76, 0], [0.9, 1.2, 0.82]);
   group.userData.clothable = [torso];
-  addMesh(group, new THREE.SphereGeometry(0.39, 42, 30), dark, [0, 1.58, 0]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.39, 42, 30), dark, [0, 1.58, 0]);
   addMesh(group, new THREE.SphereGeometry(0.44, 36, 28), belly, [0, 0.7, 0.38], [0.72, 1, 0.24]);
   addMesh(group, new THREE.SphereGeometry(0.18, 28, 20), belly, [0, 1.48, 0.36], [1.3, 0.9, 0.22]);
   addEye(group, -0.13, 1.67, 0.36);
@@ -143,7 +143,7 @@ const addCat = (group, colors = {}) => {
   const innerEar = makeMat(pick("ears", "#f9a8d4"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.58, 44, 34), fur, [0, 0.72, 0], [0.92, 1.15, 0.82]);
   group.userData.clothable = [torso];
-  addMesh(group, new THREE.SphereGeometry(0.42, 40, 30), fur, [0, 1.56, 0.02]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.42, 40, 30), fur, [0, 1.56, 0.02]);
   addMesh(group, new THREE.ConeGeometry(0.18, 0.34, 3), fur, [-0.28, 1.9, 0], null, [0, 0, 0.45]);
   addMesh(group, new THREE.ConeGeometry(0.18, 0.34, 3), fur, [0.28, 1.9, 0], null, [0, 0, -0.45]);
   addMesh(group, new THREE.ConeGeometry(0.09, 0.2, 3), innerEar, [-0.28, 1.9, 0.04], null, [0, 0, 0.45]);
@@ -166,7 +166,7 @@ const addBird = (group, colors = {}) => {
   const beak = makeMat(pick("beak", "#fb923c"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.58, 44, 34), feather, [0, 0.72, 0], [0.85, 1.12, 0.78]);
   group.userData.clothable = [torso];
-  addMesh(group, new THREE.SphereGeometry(0.38, 40, 28), feather, [0, 1.55, 0]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.38, 40, 28), feather, [0, 1.55, 0]);
   addMesh(group, new THREE.ConeGeometry(0.06, 0.25, 18), feather, [-0.09, 1.94, 0], null, [0.35, 0, -0.2]);
   addMesh(group, new THREE.ConeGeometry(0.06, 0.25, 18), feather, [0.05, 1.96, 0], null, [0.2, 0, 0.1]);
   addEye(group, -0.13, 1.64, 0.36);
@@ -186,7 +186,7 @@ const addHuman = (group, variant, colors = {}) => {
   const shirt = makeMat(pick("shirt", variant === "girl" ? "#ec4899" : "#2563eb"));
   const shorts = makeMat(pick("pants", variant === "girl" ? "#7c3aed" : "#0f766e"));
   const shoeMat = makeMat(pick("shoes", "#ffffff"));
-  addMesh(group, new THREE.SphereGeometry(0.38, 40, 30), skin, [0, 1.62, 0]);
+  group.userData.head = addMesh(group, new THREE.SphereGeometry(0.38, 40, 30), skin, [0, 1.62, 0]);
   addMesh(group, new THREE.SphereGeometry(0.39, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 1.73, 0.01], [1.08, 0.88, 1]);
   if (variant === "girl") {
     addMesh(group, new THREE.SphereGeometry(0.17, 24, 18), hair, [-0.36, 1.48, -0.02], [0.6, 1.4, 0.55]);
@@ -393,8 +393,34 @@ const addHat = (group, item, rig) => {
     addMesh(group, new THREE.SphereGeometry(0.095, 18, 14), accent, [0, rig.topY + 0.58, 0]);
     return;
   }
-  addMesh(group, new THREE.SphereGeometry(0.29, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), color, [0, rig.topY - 0.04, 0.02], [1, 0.72, 1]);
-  addMesh(group, new THREE.BoxGeometry(0.36, 0.055, 0.18), accent, [0, rig.topY - 0.11, 0.2]);
+  // Baseball cap: a dome conforming to the head from the crown down to just
+  // above the eyes, plus a brim projecting forward over the brow.
+  const head = group.userData.head;
+  const hr = head
+    ? head.geometry.parameters.radius * Math.max(head.scale.x, head.scale.z)
+    : 0.34;
+  const hc = head ? head.position : { x: 0, y: rig.topY - 0.35, z: 0.02 };
+  const domeR = hr * 1.14;
+  const brimY = Math.min(rig.eyeY + 0.08, hc.y + domeR - 0.04);
+  const thetaLength = Math.acos(
+    Math.min(Math.max((brimY - hc.y) / domeR, -1), 1)
+  );
+  addMesh(
+    group,
+    new THREE.SphereGeometry(domeR, 30, 20, 0, Math.PI * 2, 0, thetaLength),
+    color,
+    [hc.x, hc.y, hc.z]
+  );
+  const browFrontZ =
+    hc.z + Math.sqrt(Math.max(domeR * domeR - (brimY - hc.y) ** 2, 0));
+  addMesh(
+    group,
+    new THREE.BoxGeometry(domeR * 1.3, 0.05, domeR * 0.72),
+    accent,
+    [hc.x, brimY, browFrontZ + domeR * 0.28],
+    null,
+    [0.16, 0, 0]
+  );
 };
 
 const addEyewear = (group, item, rig) => {
@@ -477,8 +503,10 @@ const bandPlanes = (bottomY, topY) => {
 // just outside the "skin," recolors them, and clips them to a vertical band.
 // This blends the garment directly onto the body surface for a perfect fit.
 const addSurfaceLayer = (group, meshes, color, { bottomY, topY, inflate = 1.06 }) => {
+  // Front-facing only: at the clipped top/bottom openings this shows the body
+  // underneath rather than the shell's concave interior (which looked like a
+  // hollow bowl on round bodies).
   const material = makeMat(color);
-  material.side = THREE.DoubleSide;
   material.clippingPlanes = bandPlanes(bottomY, topY);
   material.clipShadows = true;
   meshes.forEach((mesh) => {
@@ -574,11 +602,13 @@ const addSkirt = (group, item, rig) => {
 
 const addShorts = (group, item, rig) => {
   const metrics = bodyMetrics(group);
-  const { lower, center, halfD } = metrics;
+  const { lower, center } = metrics;
   const depthRatio = metrics.halfD / metrics.halfW;
   const isHuman = rig.fit === "human";
   const waistY = rig.waistY;
-  const bottomY = isHuman ? rig.footY + 0.34 : waistY - 0.34;
+  // For round bodies, keep the band on the body's side wall — stopping before
+  // the sphere's curved underside, which otherwise reads as a hollow "bowl".
+  const bottomY = isHuman ? rig.footY + 0.34 : waistY - 0.2;
   // Conforms to the lower body / legs, blending directly onto the surface.
   addSurfaceLayer(group, lower, item.color, {
     bottomY,
@@ -591,12 +621,21 @@ const addShorts = (group, item, rig) => {
     center,
     depthRatio,
   });
-  // Center seam on the front.
+  // Center seam, tilted to follow the body's front surface from waist to hem
+  // (a straight vertical bar floats off a curved/tapering body).
+  const seamTop = waistY - 0.02;
+  const seamBot = bottomY + 0.03;
+  const zTop = frontSurfaceZ(metrics, rig, seamTop, 0.05);
+  const zBot = frontSurfaceZ(metrics, rig, seamBot, 0.05);
+  const seamLen = Math.hypot(seamTop - seamBot, zTop - zBot);
+  const seamAngle = Math.atan2(zTop - zBot, seamTop - seamBot);
   addMesh(
     group,
-    new THREE.BoxGeometry(0.02, (waistY - bottomY) * 0.8, 0.03),
+    new THREE.BoxGeometry(0.025, seamLen, 0.02),
     makeMat("#1e3a8a"),
-    [center.x, (waistY + bottomY) / 2, center.z + halfD * 1.04]
+    [center.x, (seamTop + seamBot) / 2, (zTop + zBot) / 2],
+    null,
+    [seamAngle, 0, 0]
   );
 };
 
