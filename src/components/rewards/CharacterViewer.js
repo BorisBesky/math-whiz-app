@@ -801,8 +801,6 @@ const CharacterViewer = ({
     renderer.localClippingEnabled = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
     renderer.domElement.style.display = "block";
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -822,12 +820,6 @@ const CharacterViewer = ({
     fillLight.position.set(-3, 2.5, 2);
     scene.add(fillLight);
 
-    // Image-based lighting so GLB PBR materials are lit realistically instead
-    // of rendering dark/flat. Procedural characters benefit from subtle fill too.
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = envTexture;
-
     const floor = addMesh(
       scene,
       new THREE.CylinderGeometry(1.2, 1.2, 0.08, 64),
@@ -844,9 +836,20 @@ const CharacterViewer = ({
     const character = getCharacterById(characterId);
     let cancelled = false;
     let modelObject = null;
+    let pmrem = null;
+    let envTexture = null;
 
     if (character.model) {
-      // GLB model characters: load the mesh, no dress-up accessories yet.
+      // GLB model characters only: image-based lighting + filmic tone mapping
+      // so their PBR materials are lit realistically instead of dark/flat.
+      // Procedural characters keep the original plain lighting.
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.1;
+      pmrem = new THREE.PMREMGenerator(renderer);
+      envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environment = envTexture;
+
+      // Load the mesh, no dress-up accessories yet.
       loadCharacterModel(character.model)
         .then((root) => {
           if (cancelled) return;
@@ -945,9 +948,11 @@ const CharacterViewer = ({
       // procedurally built meshes.
       if (modelObject) group.remove(modelObject);
       disposeObject(scene);
-      scene.environment = null;
-      envTexture.dispose();
-      pmrem.dispose();
+      if (envTexture) {
+        scene.environment = null;
+        envTexture.dispose();
+        pmrem.dispose();
+      }
       renderer.dispose();
       renderer.domElement.remove();
     };
