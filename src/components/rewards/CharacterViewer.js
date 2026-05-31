@@ -89,8 +89,9 @@ const addBear = (group, colors = {}) => {
   addMesh(group, new THREE.SphereGeometry(0.055, 18, 18), makeMat(pick("nose", "#111827")), [0, 1.47, 0.52]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 20), fur, [-0.63, 0.78, 0.02], [0.65, 1.25, 0.65], [0, 0, -0.35]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 20), fur, [0.63, 0.78, 0.02], [0.65, 1.25, 0.65], [0, 0, 0.35]);
-  addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [-0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
-  addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
+  const footL = addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [-0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
+  const footR = addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
+  group.userData.feet = [footL, footR];
 };
 
 const addRobot = (group, colors = {}) => {
@@ -108,8 +109,9 @@ const addRobot = (group, colors = {}) => {
   addMesh(group, new THREE.BoxGeometry(0.18, 0.55, 0.22), body, [0.65, 0.73, 0], null, [0, 0, 0.2]);
   addMesh(group, new THREE.SphereGeometry(0.13, 22, 18), trim, [-0.67, 0.38, 0.02]);
   addMesh(group, new THREE.SphereGeometry(0.13, 22, 18), trim, [0.67, 0.38, 0.02]);
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.18, 0.32), body, [-0.25, 0.04, 0.08]);
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.18, 0.32), body, [0.25, 0.04, 0.08]);
+  const footL = addMesh(group, new THREE.BoxGeometry(0.24, 0.18, 0.32), body, [-0.25, 0.04, 0.08]);
+  const footR = addMesh(group, new THREE.BoxGeometry(0.24, 0.18, 0.32), body, [0.25, 0.04, 0.08]);
+  group.userData.feet = [footL, footR];
   addMesh(group, new THREE.CylinderGeometry(0.05, 0.05, 0.28, 16), trim, [0, 2.02, 0], null, [0, 0, 0]);
   addMesh(group, new THREE.SphereGeometry(0.08, 18, 18), trim, [0, 2.2, 0]);
 };
@@ -129,8 +131,9 @@ const addPenguin = (group, colors = {}) => {
   addMesh(group, new THREE.ConeGeometry(0.08, 0.2, 4), beak, [0, 1.54, 0.48], [1, 0.7, 1.25], [Math.PI / 2, Math.PI / 4, 0]);
   addMesh(group, new THREE.SphereGeometry(0.16, 24, 16), dark, [-0.48, 0.82, 0], [0.5, 1.35, 0.34], [0, 0, 0.55]);
   addMesh(group, new THREE.SphereGeometry(0.16, 24, 16), dark, [0.48, 0.82, 0], [0.5, 1.35, 0.34], [0, 0, -0.55]);
-  addMesh(group, new THREE.SphereGeometry(0.2, 24, 16), beak, [-0.24, 0.03, 0.14], [1.25, 0.32, 0.72]);
-  addMesh(group, new THREE.SphereGeometry(0.2, 24, 16), beak, [0.24, 0.03, 0.14], [1.25, 0.32, 0.72]);
+  const footL = addMesh(group, new THREE.SphereGeometry(0.2, 24, 16), beak, [-0.24, 0.03, 0.14], [1.25, 0.32, 0.72]);
+  const footR = addMesh(group, new THREE.SphereGeometry(0.2, 24, 16), beak, [0.24, 0.03, 0.14], [1.25, 0.32, 0.72]);
+  group.userData.feet = [footL, footR];
 };
 
 const addCat = (group, colors = {}) => {
@@ -151,8 +154,9 @@ const addCat = (group, colors = {}) => {
   addMesh(group, new THREE.ConeGeometry(0.045, 0.08, 3), makeMat(pick("nose", "#f472b6")), [0, 1.47, 0.42], null, [Math.PI / 2, 0, Math.PI]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [-0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, -0.45]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, 0.45]);
-  addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [-0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
-  addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
+  const footL = addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [-0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
+  const footR = addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
+  group.userData.feet = [footL, footR];
 };
 
 const addBird = (group, colors = {}) => {
@@ -170,8 +174,9 @@ const addBird = (group, colors = {}) => {
   addMesh(group, new THREE.ConeGeometry(0.09, 0.22, 4), beak, [0, 1.53, 0.43], [1, 0.75, 1.2], [Math.PI / 2, Math.PI / 4, 0]);
   addMesh(group, new THREE.SphereGeometry(0.18, 24, 18), wing, [-0.5, 0.8, 0], [0.48, 1.3, 0.28], [0, 0, 0.65]);
   addMesh(group, new THREE.SphereGeometry(0.18, 24, 18), wing, [0.5, 0.8, 0], [0.48, 1.3, 0.28], [0, 0, -0.65]);
-  addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [-0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
-  addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
+  const footL = addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [-0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
+  const footR = addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
+  group.userData.feet = [footL, footR];
 };
 
 const addHuman = (group, variant, colors = {}) => {
@@ -199,8 +204,9 @@ const addHuman = (group, variant, colors = {}) => {
   const legR = addMesh(group, new THREE.CapsuleGeometry(0.075, 0.34, 8, 16), skin, [0.16, 0.15, 0.04]);
   group.userData.clothable = [torso];
   group.userData.lowerBody = [hipL, hipR, legL, legR];
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [-0.18, -0.08, 0.12]);
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [0.18, -0.08, 0.12]);
+  const footL = addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [-0.18, -0.08, 0.12]);
+  const footR = addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [0.18, -0.08, 0.12]);
+  group.userData.feet = [footL, footR];
 };
 
 const getRig = (characterId) => {
@@ -715,6 +721,11 @@ const addBackGear = (group, item, rig) => {
 };
 
 const addFeet = (group, item, rig) => {
+  // Hide the character's own feet so the shoes fully replace them instead of
+  // poking out around the shoe geometry.
+  (group.userData.feet || []).forEach((foot) => {
+    foot.visible = false;
+  });
   const mat = makeMat(item.color);
   const accent = makeMat(item.accentColor);
   const isHuman = rig.fit === "human";
