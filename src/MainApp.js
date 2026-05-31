@@ -65,6 +65,7 @@ import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
 import TopicSelection from './components/TopicSelection';
 import Dashboard from './components/Dashboard';
+import { DEFAULT_CHARACTER_ID } from './components/rewards/rewardConfig';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getTopicAvailability } from "./services/topicAvailability";
@@ -72,7 +73,9 @@ import { getTopicAvailability } from "./services/topicAvailability";
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
-const RewardsStore = React.lazy(() => import('./components/RewardsStore'));
+const RewardsStore = React.lazy(() =>
+  import(/* webpackChunkName: "rewards-store-fitfix-v2" */ './components/RewardsStore')
+);
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
 
@@ -674,6 +677,25 @@ const MainAppContent = () => {
                 needsUpdate = true;
               }
 
+              // Reward character profile defaults for the 3D store.
+              if (!data.selectedCharacterId) {
+                data.selectedCharacterId = DEFAULT_CHARACTER_ID;
+                updatePayload.selectedCharacterId = DEFAULT_CHARACTER_ID;
+                needsUpdate = true;
+              }
+
+              if (!Array.isArray(data.ownedAccessories)) {
+                data.ownedAccessories = [];
+                updatePayload.ownedAccessories = [];
+                needsUpdate = true;
+              }
+
+              if (!data.equippedAccessories) {
+                data.equippedAccessories = {};
+                updatePayload.equippedAccessories = {};
+                needsUpdate = true;
+              }
+
               // Set selectedGrade state from userData
               // When a local grade change is in progress, ignore snapshot-driven changes briefly to avoid UI flip-flop
               if (data.selectedGrade) {
@@ -750,6 +772,9 @@ const MainAppContent = () => {
                 pausedQuizzes: {},
                 ownedBackgrounds: ["default"],
                 activeBackground: "default",
+                selectedCharacterId: DEFAULT_CHARACTER_ID,
+                ownedAccessories: [],
+                equippedAccessories: {},
                 dailyStories: { [today]: {} },
                 answeredQuestions: [],
                 lastAskedComplexityByTopic: {},
@@ -1785,6 +1810,73 @@ const MainAppContent = () => {
     }
   };
 
+  const handleSelectCharacter = async (characterId) => {
+    if (!user) return;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+    await updateDoc(userDocRef, { selectedCharacterId: characterId });
+  };
+
+  const handlePurchaseAccessory = async (item) => {
+    if (!user || !item) return;
+
+    const alreadyOwned = userData?.ownedAccessories?.includes(item.id);
+    if (alreadyOwned) {
+      await handleEquipAccessory(item);
+      return;
+    }
+
+    if ((userData?.coins || 0) < item.price) {
+      setPurchaseFeedback({ type: "error", message: "Not enough coins!" });
+      setTimeout(() => setPurchaseFeedback(""), 3000);
+      return;
+    }
+
+    const selectedCharacterId =
+      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    await updateDoc(userDocRef, {
+      coins: increment(-item.price),
+      ownedAccessories: arrayUnion(item.id),
+      [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+    });
+
+    setPurchaseFeedback({
+      type: "success",
+      message: `${item.name} is ready to wear!`,
+    });
+    setTimeout(() => setPurchaseFeedback(""), 3000);
+  };
+
+  const handleEquipAccessory = async (item) => {
+    if (!user || !item) return;
+    if (!userData?.ownedAccessories?.includes(item.id)) return;
+
+    const selectedCharacterId =
+      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    await updateDoc(userDocRef, {
+      [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+    });
+  };
+
+  const handleUnequipAccessory = async (category) => {
+    if (!user || !category) return;
+
+    const selectedCharacterId =
+      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    await updateDoc(userDocRef, {
+      [`equippedAccessories.${selectedCharacterId}.${category}`]: null,
+    });
+  };
+
   // --- Gemini API Call via Netlify Function ---
   const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
     setIsGenerating(true);
@@ -2062,6 +2154,10 @@ Answer: [The answer]`;
                   handleClosePopupImage={handleClosePopupImage}
                   popupImage={popupImage}
                   returnToTopics={returnToTopics}
+                  handleSelectCharacter={handleSelectCharacter}
+                  handlePurchaseAccessory={handlePurchaseAccessory}
+                  handleEquipAccessory={handleEquipAccessory}
+                  handleUnequipAccessory={handleUnequipAccessory}
                 />
               } />
               <Route path="messages" element={
