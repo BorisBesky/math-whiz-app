@@ -1,11 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  CheckCircle,
-  Coins,
-  Heart,
-  Sparkles,
-  Undo2,
-} from "lucide-react";
+import { CheckCircle, Coins, Heart, Undo2 } from "lucide-react";
 import CharacterViewer from "./CharacterViewer";
 import { CharacterPortrait, ItemPreview } from "./RewardPreview";
 import {
@@ -95,9 +89,6 @@ const CharacterStore = ({
               {selectedCharacter.title}
             </p>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-            <Sparkles size={14} /> Favorite
-          </span>
         </div>
 
         <div className="overflow-hidden rounded-lg bg-gradient-to-br from-sky-50 via-white to-emerald-50">
@@ -176,7 +167,10 @@ const CharacterStore = ({
           {equippedForCharacter[activeCategory] && (
             <button
               type="button"
-              onClick={() => handleUnequipAccessory(activeCategory)}
+              onClick={() => {
+                setPreviewItem(null);
+                handleUnequipAccessory(activeCategory);
+              }}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 transition hover:bg-gray-50 active:scale-95"
             >
               <Undo2 size={16} /> Clear {activeCategoryLabel}
@@ -215,9 +209,9 @@ const CharacterStore = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
           {visibleItems.length === 0 ? (
-            <div className="col-span-full rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm font-bold text-gray-400">
+            <div className="w-full rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm font-bold text-gray-400">
               No {activeCategoryLabel.toLowerCase()} for {selectedCharacter.name} yet.
             </div>
           ) : visibleItems.map((item) => {
@@ -232,7 +226,7 @@ const CharacterStore = ({
                 onPointerDown={() => setPreviewItem(item)}
                 onFocus={() => setPreviewItem(item)}
                 onClick={() => setPreviewItem(item)}
-                className={`flex min-h-[244px] flex-col rounded-lg border bg-gray-50 p-3 transition ${
+                className={`flex min-h-[244px] w-56 shrink-0 snap-start flex-col rounded-lg border bg-gray-50 p-3 transition ${
                   isPreviewing
                     ? "border-brand-blue ring-2 ring-blue-100"
                     : "border-gray-100"
