@@ -115,6 +115,18 @@ export const ACCESSORY_CATEGORIES = [
   { id: "prop", label: "Props" },
 ];
 
+// Categories that cannot be worn at the same time. Equipping one clears the
+// others (e.g. a skirt and shorts can't be worn together; a dress already
+// includes a skirt so it excludes both lower garments).
+export const CATEGORY_CONFLICTS = {
+  dress: ["skirt", "shorts"],
+  skirt: ["shorts", "dress"],
+  shorts: ["skirt", "dress"],
+};
+
+export const getConflictingCategories = (category) =>
+  CATEGORY_CONFLICTS[category] || [];
+
 const ALL_CHARACTER_IDS = PROCEDURAL_CHARACTER_IDS;
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;

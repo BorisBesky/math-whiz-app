@@ -9,6 +9,7 @@ import {
   REWARD_ACCESSORIES,
   REWARD_CHARACTERS,
   getCharacterById,
+  getConflictingCategories,
 } from "./rewardConfig";
 
 const isCategoryAvailableForCharacter = (categoryId, characterId) =>
@@ -60,9 +61,16 @@ const CharacterStore = ({
   const activeCategoryLabel =
     ACCESSORY_CATEGORIES.find((category) => category.id === activeCategory)?.label ||
     "Accessories";
-  const previewEquippedItems = previewItem
-    ? { ...equippedForCharacter, [previewItem.category]: previewItem.id }
-    : equippedForCharacter;
+  let previewEquippedItems = equippedForCharacter;
+  if (previewItem) {
+    previewEquippedItems = {
+      ...equippedForCharacter,
+      [previewItem.category]: previewItem.id,
+    };
+    getConflictingCategories(previewItem.category).forEach((category) => {
+      delete previewEquippedItems[category];
+    });
+  }
 
   useEffect(() => {
     setPreviewItem(null);

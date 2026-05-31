@@ -65,7 +65,7 @@ import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
 import TopicSelection from './components/TopicSelection';
 import Dashboard from './components/Dashboard';
-import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID } from './components/rewards/rewardConfig';
+import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getTopicAvailability } from "./services/topicAvailability";
@@ -1890,11 +1890,15 @@ const MainAppContent = () => {
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
-    await updateDoc(userDocRef, {
+    const purchaseUpdates = {
       coins: increment(-item.price),
       ownedAccessories: arrayUnion(item.id),
       [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+    };
+    getConflictingCategories(item.category).forEach((category) => {
+      purchaseUpdates[`equippedAccessories.${selectedCharacterId}.${category}`] = null;
     });
+    await updateDoc(userDocRef, purchaseUpdates);
 
     setPurchaseFeedback({
       type: "success",
@@ -1912,9 +1916,13 @@ const MainAppContent = () => {
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
-    await updateDoc(userDocRef, {
+    const equipUpdates = {
       [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+    };
+    getConflictingCategories(item.category).forEach((category) => {
+      equipUpdates[`equippedAccessories.${selectedCharacterId}.${category}`] = null;
     });
+    await updateDoc(userDocRef, equipUpdates);
   };
 
   const handleUnequipAccessory = async (category) => {
