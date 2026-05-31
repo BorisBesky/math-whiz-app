@@ -583,7 +583,7 @@ const addJewelry = (group, item, rig) => {
   const y = rig.neckY - 0.05;
   const r = bodyRadiusAt(metrics, y) + 0.02;
   const frontZ = rig.fit === "human"
-    ? rig.faceZ + 0.09
+    ? rig.garmentZ + 0.025
     : metrics.center.z + r * depthRatio + 0.06;
   addMesh(group, new THREE.TorusGeometry(r + 0.035, 0.018, 8, 44), accent, [metrics.center.x, y, metrics.center.z + 0.02], [1, 1, depthRatio], [Math.PI / 2, 0, 0]);
   const pendantY = rig.fit === "human" ? y - 0.2 : y - 0.14;
@@ -601,7 +601,7 @@ const addNeckwear = (group, item, rig) => {
   const collarY = rig.neckY;
   const collarR = bodyRadiusAt(metrics, collarY);
   const frontZ = rig.fit === "human"
-    ? rig.faceZ + 0.08
+    ? rig.garmentZ + 0.025
     : metrics.center.z + collarR * depthRatio + 0.04;
   if (item.shape === "bowTie") {
     addMesh(group, new THREE.ConeGeometry(0.16, 0.22, 4), mat, [metrics.center.x - 0.1, collarY - 0.03, frontZ], null, [0, 0, Math.PI / 2]);
@@ -627,7 +627,7 @@ const addBackGear = (group, item, rig) => {
   const metrics = bodyMetrics(group);
   const backZ = rig.backZ ?? -0.35;
   const frontZ = rig.fit === "human"
-    ? rig.faceZ + 0.055
+    ? rig.garmentZ + 0.015
     : metrics.center.z + bodyRadiusAt(metrics, rig.backY) * (metrics.halfD / metrics.halfW) + 0.035;
   const strapTopY = Math.min(rig.neckY - 0.08, rig.backY + 0.32);
   const strapMidY = rig.fit === "human" ? rig.backY - 0.05 : rig.backY - 0.1;
