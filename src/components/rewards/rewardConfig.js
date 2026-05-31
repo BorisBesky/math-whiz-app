@@ -139,6 +139,9 @@ export const COLOR_SWATCHES = [
   "#ec4899", // pink
   "#9ca3af", // gray
   "#f2c7a0", // skin
+  "#92400e", // brown
+  "#111827", // black
+  "#ffffff", // white
 ];
 
 // Recolorable surface regions per character. Each region id maps to one or
