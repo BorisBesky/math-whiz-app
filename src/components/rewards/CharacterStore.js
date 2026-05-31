@@ -139,29 +139,6 @@ const CharacterStore = ({
       </section>
 
       <section className="min-w-0 rounded-lg border border-gray-100 bg-white p-4 shadow-card">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="font-display text-2xl font-bold text-gray-800">
-              Character Shop
-            </h3>
-            <p className="text-sm text-gray-500">
-              Buy and equip accessories for {selectedCharacter.name}.
-            </p>
-          </div>
-          {equippedForCharacter[activeCategory] && (
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewItem(null);
-                handleUnequipAccessory(activeCategory);
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 transition hover:bg-gray-50 active:scale-95"
-            >
-              <Undo2 size={16} /> Clear {activeCategoryLabel}
-            </button>
-          )}
-        </div>
-
         {purchaseFeedback && (
           <div
             className={`mb-4 rounded-lg border p-3 text-center text-sm font-bold animate-slide-up ${
@@ -270,6 +247,29 @@ const CharacterStore = ({
               </article>
             );
           })}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-display text-2xl font-bold text-gray-800">
+              Character Shop
+            </h3>
+            <p className="text-sm text-gray-500">
+              Buy and equip accessories for {selectedCharacter.name}.
+            </p>
+          </div>
+          {equippedForCharacter[activeCategory] && (
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewItem(null);
+                handleUnequipAccessory(activeCategory);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 transition hover:bg-gray-50 active:scale-95"
+            >
+              <Undo2 size={16} /> Clear {activeCategoryLabel}
+            </button>
+          )}
         </div>
       </section>
     </div>
