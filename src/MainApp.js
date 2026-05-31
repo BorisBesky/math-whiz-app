@@ -1938,6 +1938,23 @@ const MainAppContent = () => {
     });
   };
 
+  const handleSetCharacterColor = async (regionIds, color) => {
+    if (!user || !color || !Array.isArray(regionIds) || regionIds.length === 0) {
+      return;
+    }
+
+    const selectedCharacterId =
+      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    const updates = {};
+    regionIds.forEach((regionId) => {
+      updates[`characterColors.${selectedCharacterId}.${regionId}`] = color;
+    });
+    await updateDoc(userDocRef, updates);
+  };
+
   // --- Gemini API Call via Netlify Function ---
   const callGeminiAPI = async (prompt, { parseAsStory = false } = {}) => {
     setIsGenerating(true);
@@ -2220,6 +2237,7 @@ Answer: [The answer]`;
                   handlePurchaseAccessory={handlePurchaseAccessory}
                   handleEquipAccessory={handleEquipAccessory}
                   handleUnequipAccessory={handleUnequipAccessory}
+                  handleSetCharacterColor={handleSetCharacterColor}
                 />
               } />
               <Route path="messages" element={

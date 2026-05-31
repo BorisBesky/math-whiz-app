@@ -5,10 +5,12 @@ import { CharacterPortrait, ItemPreview } from "./RewardPreview";
 import {
   ACCESSORY_CATEGORIES,
   CHARACTER_PRICE,
+  COLOR_SWATCHES,
   DEFAULT_CHARACTER_ID,
   REWARD_ACCESSORIES,
   REWARD_CHARACTERS,
   getCharacterById,
+  getColorRegions,
   getConflictingCategories,
 } from "./rewardConfig";
 
@@ -23,6 +25,7 @@ const CharacterStore = ({
   handlePurchaseAccessory,
   handleEquipAccessory,
   handleUnequipAccessory,
+  handleSetCharacterColor,
 }) => {
   const selectedCharacterId = userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
   const selectedCharacter = getCharacterById(selectedCharacterId);
@@ -32,6 +35,39 @@ const CharacterStore = ({
     userData?.equippedAccessories?.[selectedCharacterId] || {};
   const [activeCategory, setActiveCategory] = useState(ACCESSORY_CATEGORIES[0].id);
   const [previewItem, setPreviewItem] = useState(null);
+  const [selectedRegions, setSelectedRegions] = useState([]);
+
+  const colorRegions = getColorRegions(selectedCharacterId);
+  const savedColors = userData?.characterColors?.[selectedCharacterId] || {};
+  // Region list with the currently applied color (saved override or default).
+  const regionsWithColor = colorRegions.map((region) => ({
+    ...region,
+    color: savedColors[region.id] || region.default,
+  }));
+  // Map of region id -> color, passed to the 3D viewer.
+  const characterColorMap = regionsWithColor.reduce((acc, region) => {
+    acc[region.id] = region.color;
+    return acc;
+  }, {});
+
+  // When the character changes, preselect its first region for the picker.
+  useEffect(() => {
+    const regions = getColorRegions(selectedCharacterId);
+    setSelectedRegions(regions.length ? [regions[0].id] : []);
+  }, [selectedCharacterId]);
+
+  const toggleRegion = (regionId) => {
+    setSelectedRegions((current) =>
+      current.includes(regionId)
+        ? current.filter((id) => id !== regionId)
+        : [...current, regionId]
+    );
+  };
+
+  const applyColor = (color) => {
+    if (!selectedRegions.length) return;
+    handleSetCharacterColor?.(selectedRegions, color);
+  };
 
   const availableCategories = useMemo(
     () =>
@@ -134,6 +170,7 @@ const CharacterStore = ({
           <CharacterViewer
             characterId={selectedCharacterId}
             equippedItems={previewEquippedItems}
+            colors={characterColorMap}
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent px-4 pb-3 pt-10">
             <h3 className="font-display text-2xl font-bold leading-tight text-white drop-shadow">
@@ -144,6 +181,52 @@ const CharacterStore = ({
             </p>
           </div>
         </div>
+
+        {/* Color customizer: pick region(s), then a color to recolor them */}
+        {regionsWithColor.length > 0 && (
+          <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+              Colors
+            </p>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {regionsWithColor.map((region) => {
+                const isSelected = selectedRegions.includes(region.id);
+                return (
+                  <button
+                    key={region.id}
+                    type="button"
+                    onClick={() => toggleRegion(region.id)}
+                    aria-pressed={isSelected}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition active:scale-95 ${
+                      isSelected
+                        ? "border-brand-blue bg-blue-50 text-blue-700 shadow-sm"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-white shadow-sm ring-1 ring-gray-200"
+                      style={{ backgroundColor: region.color }}
+                    />
+                    {region.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_SWATCHES.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => applyColor(color)}
+                  disabled={selectedRegions.length === 0}
+                  aria-label={`Apply color ${color}`}
+                  className="h-7 w-7 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 transition active:scale-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="min-w-0 rounded-lg border border-gray-100 bg-white p-4 shadow-card">

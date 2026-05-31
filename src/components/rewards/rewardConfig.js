@@ -127,6 +127,65 @@ export const CATEGORY_CONFLICTS = {
 export const getConflictingCategories = (category) =>
   CATEGORY_CONFLICTS[category] || [];
 
+// Nine-color palette offered by the character color picker.
+export const COLOR_SWATCHES = [
+  "#ef4444", // red
+  "#fb923c", // orange
+  "#f6c844", // yellow
+  "#48d1a5", // green
+  "#38bdf8", // sky
+  "#2563eb", // blue
+  "#7c3aed", // purple
+  "#ec4899", // pink
+  "#9ca3af", // gray
+  "#f2c7a0", // skin
+];
+
+// Recolorable surface regions per character. Each region id maps to one or
+// more materials in CharacterViewer's builders; `default` is the base color.
+export const CHARACTER_COLOR_REGIONS = {
+  "buddy-bear": [
+    { id: "body", label: "Fur", default: "#b98252" },
+    { id: "muzzle", label: "Muzzle", default: "#f5d0a9" },
+    { id: "nose", label: "Nose", default: "#111827" },
+  ],
+  "milo-robot": [
+    { id: "body", label: "Body", default: "#9ca3af" },
+    { id: "trim", label: "Trim", default: "#38bdf8" },
+  ],
+  "pip-penguin": [
+    { id: "body", label: "Body", default: "#334155" },
+    { id: "belly", label: "Belly", default: "#f8fafc" },
+    { id: "beak", label: "Beak & Feet", default: "#fb923c" },
+  ],
+  "cora-cat": [
+    { id: "body", label: "Fur", default: "#f59e0b" },
+    { id: "muzzle", label: "Muzzle", default: "#fed7aa" },
+    { id: "ears", label: "Inner Ears", default: "#f9a8d4" },
+    { id: "nose", label: "Nose", default: "#f472b6" },
+  ],
+  "sunny-bird": [
+    { id: "body", label: "Feathers", default: "#facc15" },
+    { id: "wings", label: "Wings", default: "#f59e0b" },
+    { id: "beak", label: "Beak & Feet", default: "#fb923c" },
+  ],
+  "leo-boy": [
+    { id: "skin", label: "Skin", default: "#f2c7a0" },
+    { id: "hair", label: "Hair", default: "#7c2d12" },
+    { id: "shirt", label: "Shirt", default: "#2563eb" },
+    { id: "pants", label: "Pants", default: "#0f766e" },
+  ],
+  "mia-girl": [
+    { id: "skin", label: "Skin", default: "#f2c7a0" },
+    { id: "hair", label: "Hair", default: "#4a044e" },
+    { id: "shirt", label: "Shirt", default: "#ec4899" },
+    { id: "pants", label: "Pants", default: "#7c3aed" },
+  ],
+};
+
+export const getColorRegions = (characterId) =>
+  CHARACTER_COLOR_REGIONS[characterId] || [];
+
 const ALL_CHARACTER_IDS = PROCEDURAL_CHARACTER_IDS;
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;

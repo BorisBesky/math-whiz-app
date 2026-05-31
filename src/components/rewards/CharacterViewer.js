@@ -71,9 +71,13 @@ const addEye = (group, x, y, z, scale = 1) => {
   );
 };
 
-const addBear = (group) => {
-  const fur = makeMat("#b98252");
-  const muzzle = makeMat("#f5d0a9");
+const regionPicker = (colors = {}) => (region, fallback) =>
+  colors[region] || fallback;
+
+const addBear = (group, colors = {}) => {
+  const pick = regionPicker(colors);
+  const fur = makeMat(pick("body", "#b98252"));
+  const muzzle = makeMat(pick("muzzle", "#f5d0a9"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.72, 48, 36), fur, [0, 0.7, 0]);
   group.userData.clothable = [torso];
   addMesh(group, new THREE.SphereGeometry(0.45, 40, 32), fur, [0, 1.55, 0.03]);
@@ -82,17 +86,18 @@ const addBear = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.2, 28, 20), muzzle, [0, 1.44, 0.39], [1.05, 0.72, 0.42]);
   addEye(group, -0.15, 1.63, 0.43);
   addEye(group, 0.15, 1.63, 0.43);
-  addMesh(group, new THREE.SphereGeometry(0.055, 18, 18), makeMat("#111827"), [0, 1.47, 0.52]);
+  addMesh(group, new THREE.SphereGeometry(0.055, 18, 18), makeMat(pick("nose", "#111827")), [0, 1.47, 0.52]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 20), fur, [-0.63, 0.78, 0.02], [0.65, 1.25, 0.65], [0, 0, -0.35]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 20), fur, [0.63, 0.78, 0.02], [0.65, 1.25, 0.65], [0, 0, 0.35]);
   addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [-0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
   addMesh(group, new THREE.SphereGeometry(0.23, 24, 20), fur, [0.3, 0.04, 0.16], [1.2, 0.55, 0.85]);
 };
 
-const addRobot = (group) => {
-  const body = makeMat("#9ca3af", { metalness: 0.2 });
+const addRobot = (group, colors = {}) => {
+  const pick = regionPicker(colors);
+  const body = makeMat(pick("body", "#9ca3af"), { metalness: 0.2 });
   const face = makeMat("#0f172a", { emissive: 0x082f49, emissiveIntensity: 0.25 });
-  const trim = makeMat("#38bdf8", { emissive: 0x075985, emissiveIntensity: 0.15 });
+  const trim = makeMat(pick("trim", "#38bdf8"), { emissive: 0x075985, emissiveIntensity: 0.15 });
   const torso = addMesh(group, new THREE.BoxGeometry(0.95, 1.1, 0.55), body, [0, 0.68, 0], null, [0, 0, 0]);
   group.userData.clothable = [torso];
   addMesh(group, new THREE.SphereGeometry(0.46, 44, 32), body, [0, 1.55, 0.01], [1, 0.9, 0.75]);
@@ -109,10 +114,11 @@ const addRobot = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.08, 18, 18), trim, [0, 2.2, 0]);
 };
 
-const addPenguin = (group) => {
-  const dark = makeMat("#334155");
-  const belly = makeMat("#f8fafc");
-  const beak = makeMat("#fb923c");
+const addPenguin = (group, colors = {}) => {
+  const pick = regionPicker(colors);
+  const dark = makeMat(pick("body", "#334155"));
+  const belly = makeMat(pick("belly", "#f8fafc"));
+  const beak = makeMat(pick("beak", "#fb923c"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.62, 48, 36), dark, [0, 0.76, 0], [0.9, 1.2, 0.82]);
   group.userData.clothable = [torso];
   addMesh(group, new THREE.SphereGeometry(0.39, 42, 30), dark, [0, 1.58, 0]);
@@ -127,10 +133,11 @@ const addPenguin = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 16), beak, [0.24, 0.03, 0.14], [1.25, 0.32, 0.72]);
 };
 
-const addCat = (group) => {
-  const fur = makeMat("#f59e0b");
-  const muzzle = makeMat("#fed7aa");
-  const innerEar = makeMat("#f9a8d4");
+const addCat = (group, colors = {}) => {
+  const pick = regionPicker(colors);
+  const fur = makeMat(pick("body", "#f59e0b"));
+  const muzzle = makeMat(pick("muzzle", "#fed7aa"));
+  const innerEar = makeMat(pick("ears", "#f9a8d4"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.58, 44, 34), fur, [0, 0.72, 0], [0.92, 1.15, 0.82]);
   group.userData.clothable = [torso];
   addMesh(group, new THREE.SphereGeometry(0.42, 40, 30), fur, [0, 1.56, 0.02]);
@@ -141,17 +148,18 @@ const addCat = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.17, 24, 18), muzzle, [0, 1.43, 0.38], [1.25, 0.72, 0.42]);
   addEye(group, -0.14, 1.62, 0.4);
   addEye(group, 0.14, 1.62, 0.4);
-  addMesh(group, new THREE.ConeGeometry(0.045, 0.08, 3), makeMat("#f472b6"), [0, 1.47, 0.42], null, [Math.PI / 2, 0, Math.PI]);
+  addMesh(group, new THREE.ConeGeometry(0.045, 0.08, 3), makeMat(pick("nose", "#f472b6")), [0, 1.47, 0.42], null, [Math.PI / 2, 0, Math.PI]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [-0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, -0.45]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, 0.45]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [-0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
 };
 
-const addBird = (group) => {
-  const feather = makeMat("#facc15");
-  const wing = makeMat("#f59e0b");
-  const beak = makeMat("#fb923c");
+const addBird = (group, colors = {}) => {
+  const pick = regionPicker(colors);
+  const feather = makeMat(pick("body", "#facc15"));
+  const wing = makeMat(pick("wings", "#f59e0b"));
+  const beak = makeMat(pick("beak", "#fb923c"));
   const torso = addMesh(group, new THREE.SphereGeometry(0.58, 44, 34), feather, [0, 0.72, 0], [0.85, 1.12, 0.78]);
   group.userData.clothable = [torso];
   addMesh(group, new THREE.SphereGeometry(0.38, 40, 28), feather, [0, 1.55, 0]);
@@ -166,11 +174,13 @@ const addBird = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
 };
 
-const addHuman = (group, variant) => {
-  const skin = makeMat("#f2c7a0");
-  const hair = makeMat(variant === "girl" ? "#4a044e" : "#7c2d12");
-  const shirt = makeMat(variant === "girl" ? "#ec4899" : "#2563eb");
-  const shorts = makeMat(variant === "girl" ? "#7c3aed" : "#0f766e");
+const addHuman = (group, variant, colors = {}) => {
+  const pick = regionPicker(colors);
+  const skin = makeMat(pick("skin", "#f2c7a0"));
+  const hair = makeMat(pick("hair", variant === "girl" ? "#4a044e" : "#7c2d12"));
+  const shirt = makeMat(pick("shirt", variant === "girl" ? "#ec4899" : "#2563eb"));
+  const shorts = makeMat(pick("pants", variant === "girl" ? "#7c3aed" : "#0f766e"));
+  const shoeMat = makeMat(pick("shoes", "#ffffff"));
   addMesh(group, new THREE.SphereGeometry(0.38, 40, 30), skin, [0, 1.62, 0]);
   addMesh(group, new THREE.SphereGeometry(0.39, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 1.73, 0.01], [1.08, 0.88, 1]);
   if (variant === "girl") {
@@ -189,8 +199,8 @@ const addHuman = (group, variant) => {
   const legR = addMesh(group, new THREE.CapsuleGeometry(0.075, 0.34, 8, 16), skin, [0.16, 0.15, 0.04]);
   group.userData.clothable = [torso];
   group.userData.lowerBody = [hipL, hipR, legL, legR];
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), makeMat("#ffffff"), [-0.18, -0.08, 0.12]);
-  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), makeMat("#ffffff"), [0.18, -0.08, 0.12]);
+  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [-0.18, -0.08, 0.12]);
+  addMesh(group, new THREE.BoxGeometry(0.24, 0.1, 0.34), shoeMat, [0.18, -0.08, 0.12]);
 };
 
 const getRig = (characterId) => {
@@ -787,6 +797,7 @@ const disposeObject = (object) => {
 const CharacterViewer = ({
   characterId = DEFAULT_CHARACTER_ID,
   equippedItems = {},
+  colors = {},
   className = "",
 }) => {
   const containerRef = useRef(null);
@@ -866,19 +877,19 @@ const CharacterViewer = ({
         });
     } else {
       if (character.id === "milo-robot") {
-        addRobot(group);
+        addRobot(group, colors);
       } else if (character.id === "pip-penguin") {
-        addPenguin(group);
+        addPenguin(group, colors);
       } else if (character.id === "cora-cat") {
-        addCat(group);
+        addCat(group, colors);
       } else if (character.id === "sunny-bird") {
-        addBird(group);
+        addBird(group, colors);
       } else if (character.id === "leo-boy") {
-        addHuman(group, "boy");
+        addHuman(group, "boy", colors);
       } else if (character.id === "mia-girl") {
-        addHuman(group, "girl");
+        addHuman(group, "girl", colors);
       } else {
-        addBear(group);
+        addBear(group, colors);
       }
 
       const rig = getRig(character.id);
@@ -961,7 +972,7 @@ const CharacterViewer = ({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [characterId, equippedItems]);
+  }, [characterId, equippedItems, colors]);
 
   return (
     <div
