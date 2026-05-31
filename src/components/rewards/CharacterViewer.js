@@ -187,7 +187,7 @@ const addHuman = (group, variant, colors = {}) => {
   const shorts = makeMat(pick("pants", variant === "girl" ? "#7c3aed" : "#0f766e"));
   const shoeMat = makeMat(pick("shoes", "#ffffff"));
   group.userData.head = addMesh(group, new THREE.SphereGeometry(0.38, 40, 30), skin, [0, 1.62, 0]);
-  addMesh(group, new THREE.SphereGeometry(0.39, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 1.73, 0.01], [1.08, 0.88, 1]);
+  group.userData.hairCrown = addMesh(group, new THREE.SphereGeometry(0.39, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 1.73, 0.01], [1.08, 0.88, 1]);
   if (variant === "girl") {
     addMesh(group, new THREE.SphereGeometry(0.17, 24, 18), hair, [-0.36, 1.48, -0.02], [0.6, 1.4, 0.55]);
     addMesh(group, new THREE.SphereGeometry(0.17, 24, 18), hair, [0.36, 1.48, -0.02], [0.6, 1.4, 0.55]);
@@ -391,6 +391,31 @@ const addHat = (group, item, rig) => {
   if (item.shape === "antenna") {
     addMesh(group, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 14), color, [0, rig.topY + 0.28, 0]);
     addMesh(group, new THREE.SphereGeometry(0.095, 18, 14), accent, [0, rig.topY + 0.58, 0]);
+    return;
+  }
+  // Characters with hair: conform the cap to the hair crown so it sits cleanly
+  // on top instead of being pierced by the taller/wider hair.
+  const hairCrown = group.userData.hairCrown;
+  if (hairCrown) {
+    const cap = new THREE.Mesh(hairCrown.geometry, color);
+    cap.position.copy(hairCrown.position);
+    cap.quaternion.copy(hairCrown.quaternion);
+    cap.scale.copy(hairCrown.scale).multiplyScalar(1.16);
+    cap.castShadow = true;
+    cap.receiveShadow = true;
+    group.add(cap);
+    const baseY = hairCrown.position.y;
+    const frontZ =
+      hairCrown.position.z +
+      hairCrown.geometry.parameters.radius * hairCrown.scale.z * 1.16;
+    addMesh(
+      group,
+      new THREE.BoxGeometry(0.42, 0.05, 0.26),
+      accent,
+      [0, baseY + 0.03, frontZ + 0.04],
+      null,
+      [0.18, 0, 0]
+    );
     return;
   }
   // Baseball cap: a dome conforming to the head from the crown down to just
