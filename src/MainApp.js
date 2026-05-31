@@ -65,7 +65,7 @@ import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
 import TopicSelection from './components/TopicSelection';
 import Dashboard from './components/Dashboard';
-import { DEFAULT_CHARACTER_ID } from './components/rewards/rewardConfig';
+import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID } from './components/rewards/rewardConfig';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getTopicAvailability } from "./services/topicAvailability";
@@ -74,7 +74,7 @@ import { getTopicAvailability } from "./services/topicAvailability";
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-fitfix-v13" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-fitfix-v17" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -684,6 +684,18 @@ const MainAppContent = () => {
                 needsUpdate = true;
               }
 
+              if (!Array.isArray(data.ownedCharacters)) {
+                const ownedCharacters = [
+                  ...new Set([
+                    DEFAULT_CHARACTER_ID,
+                    data.selectedCharacterId || DEFAULT_CHARACTER_ID,
+                  ]),
+                ];
+                data.ownedCharacters = ownedCharacters;
+                updatePayload.ownedCharacters = ownedCharacters;
+                needsUpdate = true;
+              }
+
               if (!Array.isArray(data.ownedAccessories)) {
                 data.ownedAccessories = [];
                 updatePayload.ownedAccessories = [];
@@ -773,6 +785,7 @@ const MainAppContent = () => {
                 ownedBackgrounds: ["default"],
                 activeBackground: "default",
                 selectedCharacterId: DEFAULT_CHARACTER_ID,
+                ownedCharacters: [DEFAULT_CHARACTER_ID],
                 ownedAccessories: [],
                 equippedAccessories: {},
                 dailyStories: { [today]: {} },
@@ -1812,9 +1825,49 @@ const MainAppContent = () => {
 
   const handleSelectCharacter = async (characterId) => {
     if (!user) return;
+    const ownedCharacters = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
+    if (!ownedCharacters.includes(characterId)) {
+      setPurchaseFeedback({
+        type: "error",
+        message: "Buy this character before selecting it.",
+      });
+      setTimeout(() => setPurchaseFeedback(""), 3000);
+      return;
+    }
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
     await updateDoc(userDocRef, { selectedCharacterId: characterId });
+  };
+
+  const handlePurchaseCharacter = async (character) => {
+    if (!user || !character) return;
+
+    const ownedCharacters = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
+    if (ownedCharacters.includes(character.id)) {
+      await handleSelectCharacter(character.id);
+      return;
+    }
+
+    if ((userData?.coins || 0) < CHARACTER_PRICE) {
+      setPurchaseFeedback({ type: "error", message: "Not enough coins!" });
+      setTimeout(() => setPurchaseFeedback(""), 3000);
+      return;
+    }
+
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    await updateDoc(userDocRef, {
+      coins: increment(-CHARACTER_PRICE),
+      ownedCharacters: arrayUnion(character.id),
+      selectedCharacterId: character.id,
+    });
+
+    setPurchaseFeedback({
+      type: "success",
+      message: `${character.name} joined your character collection!`,
+    });
+    setTimeout(() => setPurchaseFeedback(""), 3000);
   };
 
   const handlePurchaseAccessory = async (item) => {
@@ -2155,6 +2208,7 @@ Answer: [The answer]`;
                   popupImage={popupImage}
                   returnToTopics={returnToTopics}
                   handleSelectCharacter={handleSelectCharacter}
+                  handlePurchaseCharacter={handlePurchaseCharacter}
                   handlePurchaseAccessory={handlePurchaseAccessory}
                   handleEquipAccessory={handleEquipAccessory}
                   handleUnequipAccessory={handleUnequipAccessory}

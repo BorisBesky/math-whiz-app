@@ -106,7 +106,7 @@ const addCat = (group) => {
   addMesh(group, new THREE.SphereGeometry(0.17, 24, 18), muzzle, [0, 1.43, 0.38], [1.25, 0.72, 0.42]);
   addEye(group, -0.14, 1.62, 0.4);
   addEye(group, 0.14, 1.62, 0.4);
-  addMesh(group, new THREE.ConeGeometry(0.045, 0.08, 3), makeMat("#f472b6"), [0, 1.47, 0.52], null, [Math.PI / 2, 0, Math.PI]);
+  addMesh(group, new THREE.ConeGeometry(0.045, 0.08, 3), makeMat("#f472b6"), [0, 1.47, 0.42], null, [Math.PI / 2, 0, Math.PI]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [-0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, -0.45]);
   addMesh(group, new THREE.SphereGeometry(0.16, 22, 18), fur, [0.55, 0.76, 0.03], [0.55, 1.25, 0.5], [0, 0, 0.45]);
   addMesh(group, new THREE.SphereGeometry(0.2, 24, 18), fur, [-0.24, 0.03, 0.14], [1.05, 0.45, 0.8]);
@@ -124,7 +124,7 @@ const addBird = (group) => {
   addMesh(group, new THREE.ConeGeometry(0.06, 0.25, 18), feather, [0.05, 1.96, 0], null, [0.2, 0, 0.1]);
   addEye(group, -0.13, 1.64, 0.36);
   addEye(group, 0.13, 1.64, 0.36);
-  addMesh(group, new THREE.ConeGeometry(0.09, 0.22, 4), beak, [0, 1.53, 0.5], [1, 0.75, 1.2], [Math.PI / 2, Math.PI / 4, 0]);
+  addMesh(group, new THREE.ConeGeometry(0.09, 0.22, 4), beak, [0, 1.53, 0.43], [1, 0.75, 1.2], [Math.PI / 2, Math.PI / 4, 0]);
   addMesh(group, new THREE.SphereGeometry(0.18, 24, 18), wing, [-0.5, 0.8, 0], [0.48, 1.3, 0.28], [0, 0, 0.65]);
   addMesh(group, new THREE.SphereGeometry(0.18, 24, 18), wing, [0.5, 0.8, 0], [0.48, 1.3, 0.28], [0, 0, -0.65]);
   addMesh(group, new THREE.SphereGeometry(0.17, 24, 16), beak, [-0.22, 0.02, 0.15], [1.15, 0.28, 0.62]);
@@ -144,7 +144,7 @@ const addHuman = (group, variant) => {
   }
   addEye(group, -0.12, 1.63, 0.34, 0.85);
   addEye(group, 0.12, 1.63, 0.34, 0.85);
-  addMesh(group, new THREE.SphereGeometry(0.025, 12, 10), makeMat("#ef4444"), [0, 1.48, 0.38], [2.5, 0.7, 0.35]);
+  addMesh(group, new THREE.SphereGeometry(0.025, 12, 10), makeMat("#ef4444"), [0, 1.48, 0.34], [2.5, 0.7, 0.35]);
   const torso = addMesh(group, new THREE.BoxGeometry(0.6, 0.64, 0.34), shirt, [0, 0.92, 0]);
   addMesh(group, new THREE.SphereGeometry(0.13, 20, 16), skin, [-0.44, 0.98, 0], [0.58, 1.8, 0.58], [0, 0, -0.12]);
   addMesh(group, new THREE.SphereGeometry(0.13, 20, 16), skin, [0.44, 0.98, 0], [0.58, 1.8, 0.58], [0, 0, 0.12]);

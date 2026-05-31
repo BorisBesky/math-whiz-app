@@ -1,4 +1,5 @@
 export const DEFAULT_CHARACTER_ID = "buddy-bear";
+export const CHARACTER_PRICE = 60;
 
 export const REWARD_CHARACTERS = [
   {

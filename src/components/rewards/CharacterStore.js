@@ -10,6 +10,7 @@ import CharacterViewer from "./CharacterViewer";
 import { CharacterPortrait, ItemPreview } from "./RewardPreview";
 import {
   ACCESSORY_CATEGORIES,
+  CHARACTER_PRICE,
   DEFAULT_CHARACTER_ID,
   REWARD_ACCESSORIES,
   REWARD_CHARACTERS,
@@ -23,12 +24,14 @@ const CharacterStore = ({
   userData,
   purchaseFeedback,
   handleSelectCharacter,
+  handlePurchaseCharacter,
   handlePurchaseAccessory,
   handleEquipAccessory,
   handleUnequipAccessory,
 }) => {
   const selectedCharacterId = userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
   const selectedCharacter = getCharacterById(selectedCharacterId);
+  const ownedCharacterIds = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
   const ownedAccessoryIds = userData?.ownedAccessories || [];
   const equippedForCharacter =
     userData?.equippedAccessories?.[selectedCharacterId] || {};
@@ -106,24 +109,55 @@ const CharacterStore = ({
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
           {REWARD_CHARACTERS.map((character) => {
+            const isOwned = ownedCharacterIds.includes(character.id);
             const isSelected = character.id === selectedCharacterId;
             return (
-              <button
+              <div
                 key={character.id}
-                type="button"
-                onClick={() => handleSelectCharacter(character.id)}
-                className={`rounded-lg border px-2 py-3 text-center transition active:scale-95 ${
+                className={`rounded-lg border px-2 py-3 text-center transition ${
                   isSelected
                     ? "border-brand-blue bg-blue-50 text-blue-700 shadow-sm"
                     : "border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200 hover:bg-white"
                 }`}
-                aria-pressed={isSelected}
               >
-                <CharacterPortrait characterId={character.id} />
-                <span className="block text-sm font-bold leading-tight">
+                <button
+                  type="button"
+                  onClick={() =>
+                    isOwned
+                      ? handleSelectCharacter(character.id)
+                      : handlePurchaseCharacter(character)
+                  }
+                  className="w-full active:scale-95"
+                  aria-pressed={isSelected}
+                >
+                  <CharacterPortrait characterId={character.id} />
+                </button>
+                <span className="mt-1 block text-sm font-bold leading-tight">
                   {character.name}
                 </span>
-              </button>
+                {isOwned ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectCharacter(character.id)}
+                    disabled={isSelected}
+                    className={`mt-2 inline-flex min-h-8 w-full items-center justify-center rounded-lg px-2 py-1 text-xs font-bold transition active:scale-95 ${
+                      isSelected
+                        ? "cursor-default bg-green-100 text-green-700"
+                        : "bg-white text-brand-blue hover:bg-blue-50"
+                    }`}
+                  >
+                    {isSelected ? "Active" : "Select"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handlePurchaseCharacter(character)}
+                    className="mt-2 inline-flex min-h-8 w-full items-center justify-center gap-1 rounded-lg bg-brand-purple px-2 py-1 text-xs font-bold text-white transition hover:opacity-90 active:scale-95"
+                  >
+                    <Coins size={13} /> {CHARACTER_PRICE}
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

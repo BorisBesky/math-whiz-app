@@ -149,6 +149,7 @@ const RewardsStore = ({
   popupImage,
   returnToTopics,
   handleSelectCharacter,
+  handlePurchaseCharacter,
   handlePurchaseAccessory,
   handleEquipAccessory,
   handleUnequipAccessory,
@@ -208,6 +209,7 @@ const RewardsStore = ({
           userData={userData}
           purchaseFeedback={purchaseFeedback}
           handleSelectCharacter={handleSelectCharacter}
+          handlePurchaseCharacter={handlePurchaseCharacter}
           handlePurchaseAccessory={handlePurchaseAccessory}
           handleEquipAccessory={handleEquipAccessory}
           handleUnequipAccessory={handleUnequipAccessory}
