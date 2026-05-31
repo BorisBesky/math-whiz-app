@@ -107,14 +107,14 @@ const CharacterStore = ({
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-4 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
           {REWARD_CHARACTERS.map((character) => {
             const isOwned = ownedCharacterIds.includes(character.id);
             const isSelected = character.id === selectedCharacterId;
             return (
               <div
                 key={character.id}
-                className={`rounded-lg border px-2 py-3 text-center transition ${
+                className={`w-28 shrink-0 snap-start rounded-lg border px-2 py-3 text-center transition ${
                   isSelected
                     ? "border-brand-blue bg-blue-50 text-blue-700 shadow-sm"
                     : "border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200 hover:bg-white"

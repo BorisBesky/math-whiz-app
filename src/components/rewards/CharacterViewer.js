@@ -804,6 +804,10 @@ const CharacterViewer = ({
     renderer.domElement.style.display = "block";
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
+    // Prevent the browser from claiming touch drags for page scrolling, which
+    // otherwise fires pointercancel mid-drag (the "small step" rotation bug on
+    // mobile). With this, a single hold-and-drag spins continuously.
+    renderer.domElement.style.touchAction = "none";
     container.appendChild(renderer.domElement);
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
@@ -895,6 +899,7 @@ const CharacterViewer = ({
     };
     const onPointerMove = (event) => {
       if (!isDragging) return;
+      event.preventDefault();
       const delta = event.clientX - lastX;
       lastX = event.clientX;
       manualRotation += delta * 0.012;
@@ -907,7 +912,7 @@ const CharacterViewer = ({
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
     renderer.domElement.addEventListener("pointermove", onPointerMove);
     renderer.domElement.addEventListener("pointerup", onPointerUp);
-    renderer.domElement.addEventListener("pointerleave", onPointerUp);
+    renderer.domElement.addEventListener("pointercancel", onPointerUp);
 
     const resize = () => {
       const width = Math.max(container.clientWidth, 260);
@@ -943,7 +948,7 @@ const CharacterViewer = ({
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
-      renderer.domElement.removeEventListener("pointerleave", onPointerUp);
+      renderer.domElement.removeEventListener("pointercancel", onPointerUp);
       // Detach the cached model so it survives for reuse; only dispose the
       // procedurally built meshes.
       if (modelObject) group.remove(modelObject);
