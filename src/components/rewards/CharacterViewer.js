@@ -1,10 +1,45 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   DEFAULT_CHARACTER_ID,
   getAccessoryById,
   getCharacterById,
 } from "./rewardConfig";
+
+// Loads a GLB once per URL and normalizes it: scaled to a consistent height,
+// horizontally centered, and resting on the floor (y = 0). The cached, ready
+// object is reused across mounts (only one viewer renders at a time), so it is
+// never disposed — see the model branch in the effect cleanup.
+const TARGET_HEIGHT = 2.0;
+const modelCache = new Map();
+
+const loadCharacterModel = (url) => {
+  if (!modelCache.has(url)) {
+    const loader = new GLTFLoader();
+    const promise = loader.loadAsync(url).then((gltf) => {
+      const root = gltf.scene;
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      root.scale.setScalar(TARGET_HEIGHT / (size.y || 1));
+      const scaledBox = new THREE.Box3().setFromObject(root);
+      const center = scaledBox.getCenter(new THREE.Vector3());
+      root.position.x -= center.x;
+      root.position.z -= center.z;
+      root.position.y -= scaledBox.min.y;
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      return root;
+    });
+    modelCache.set(url, promise);
+  }
+  return modelCache.get(url);
+};
 
 const makeMat = (color, options = {}) =>
   new THREE.MeshStandardMaterial({
@@ -766,6 +801,8 @@ const CharacterViewer = ({
     renderer.localClippingEnabled = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
     renderer.domElement.style.display = "block";
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -785,6 +822,12 @@ const CharacterViewer = ({
     fillLight.position.set(-3, 2.5, 2);
     scene.add(fillLight);
 
+    // Image-based lighting so GLB PBR materials are lit realistically instead
+    // of rendering dark/flat. Procedural characters benefit from subtle fill too.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
+
     const floor = addMesh(
       scene,
       new THREE.CylinderGeometry(1.2, 1.2, 0.08, 64),
@@ -799,27 +842,44 @@ const CharacterViewer = ({
     scene.add(group);
 
     const character = getCharacterById(characterId);
-    if (character.id === "milo-robot") {
-      addRobot(group);
-    } else if (character.id === "pip-penguin") {
-      addPenguin(group);
-    } else if (character.id === "cora-cat") {
-      addCat(group);
-    } else if (character.id === "sunny-bird") {
-      addBird(group);
-    } else if (character.id === "leo-boy") {
-      addHuman(group, "boy");
-    } else if (character.id === "mia-girl") {
-      addHuman(group, "girl");
-    } else {
-      addBear(group);
-    }
+    let cancelled = false;
+    let modelObject = null;
 
-    const rig = getRig(character.id);
-    Object.values(equippedItems || {})
-      .map(getAccessoryById)
-      .filter(Boolean)
-      .forEach((item) => addAccessory(group, item, rig));
+    if (character.model) {
+      // GLB model characters: load the mesh, no dress-up accessories yet.
+      loadCharacterModel(character.model)
+        .then((root) => {
+          if (cancelled) return;
+          modelObject = root;
+          group.add(root);
+        })
+        .catch((error) => {
+          // eslint-disable-next-line no-console
+          console.error(`Failed to load character model: ${character.model}`, error);
+        });
+    } else {
+      if (character.id === "milo-robot") {
+        addRobot(group);
+      } else if (character.id === "pip-penguin") {
+        addPenguin(group);
+      } else if (character.id === "cora-cat") {
+        addCat(group);
+      } else if (character.id === "sunny-bird") {
+        addBird(group);
+      } else if (character.id === "leo-boy") {
+        addHuman(group, "boy");
+      } else if (character.id === "mia-girl") {
+        addHuman(group, "girl");
+      } else {
+        addBear(group);
+      }
+
+      const rig = getRig(character.id);
+      Object.values(equippedItems || {})
+        .map(getAccessoryById)
+        .filter(Boolean)
+        .forEach((item) => addAccessory(group, item, rig));
+    }
 
     let isDragging = false;
     let lastX = 0;
@@ -873,6 +933,7 @@ const CharacterViewer = ({
     animate();
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(frameId);
       cancelAnimationFrame(resizeFrame);
       window.removeEventListener("resize", scheduleResize);
@@ -880,7 +941,13 @@ const CharacterViewer = ({
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.domElement.removeEventListener("pointerleave", onPointerUp);
+      // Detach the cached model so it survives for reuse; only dispose the
+      // procedurally built meshes.
+      if (modelObject) group.remove(modelObject);
       disposeObject(scene);
+      scene.environment = null;
+      envTexture.dispose();
+      pmrem.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

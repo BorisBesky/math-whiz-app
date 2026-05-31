@@ -51,7 +51,56 @@ export const REWARD_CHARACTERS = [
     accent: "#ec4899",
     summary: "A cheerful kid avatar for dresses, skirts, jewelry, and props.",
   },
+  {
+    id: "max-boy",
+    name: "Max",
+    title: "Explorer Boy",
+    accent: "#3b82f6",
+    summary: "A detailed 3D explorer ready for adventure.",
+    model: "/models/boy.glb",
+  },
+  {
+    id: "ava-girl",
+    name: "Ava",
+    title: "Explorer Girl",
+    accent: "#db2777",
+    summary: "A detailed 3D explorer with a bright smile.",
+    model: "/models/girl.glb",
+  },
+  {
+    id: "rover-dog",
+    name: "Rover",
+    title: "Happy Dog",
+    accent: "#d97706",
+    summary: "A playful 3D pup who loves to tag along.",
+    model: "/models/dog.glb",
+  },
+  {
+    id: "ollie-owl",
+    name: "Ollie",
+    title: "Wise Owl",
+    accent: "#8b5cf6",
+    summary: "A wise little 3D owl with big curious eyes.",
+    model: "/models/owl.glb",
+  },
+  {
+    id: "frost-penguin",
+    name: "Frost",
+    title: "Snow Penguin",
+    accent: "#0ea5e9",
+    summary: "A cool 3D penguin straight from the snow.",
+    model: "/models/pinguin.glb",
+  },
 ];
+
+// Characters whose look is hand-built from primitives (and therefore support
+// the dress-up accessories). GLB model characters are buy-only for now.
+export const PROCEDURAL_CHARACTER_IDS = REWARD_CHARACTERS.filter(
+  (character) => !character.model
+).map((character) => character.id);
+
+export const isModelCharacter = (characterId) =>
+  Boolean(getCharacterById(characterId)?.model);
 
 export const ACCESSORY_CATEGORIES = [
   { id: "hat", label: "Hats" },
@@ -66,7 +115,7 @@ export const ACCESSORY_CATEGORIES = [
   { id: "prop", label: "Props" },
 ];
 
-const ALL_CHARACTER_IDS = REWARD_CHARACTERS.map((character) => character.id);
+const ALL_CHARACTER_IDS = PROCEDURAL_CHARACTER_IDS;
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;
 const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl"];
