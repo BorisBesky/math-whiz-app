@@ -80,77 +80,61 @@ const CharacterStore = ({
   return (
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
       <section className="min-w-0 rounded-lg border border-sky-100 bg-white p-4 shadow-card">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-2xl font-bold text-gray-800">
-              {selectedCharacter.name}
-            </h3>
-            <p className="text-sm font-bold text-gray-500">
-              {selectedCharacter.title}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-lg bg-gradient-to-br from-sky-50 via-white to-emerald-50">
-          <CharacterViewer
-            characterId={selectedCharacterId}
-            equippedItems={previewEquippedItems}
-          />
-        </div>
-
-        <div className="mt-4 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+        {/* Compact character picker row at the top */}
+        <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
           {REWARD_CHARACTERS.map((character) => {
             const isOwned = ownedCharacterIds.includes(character.id);
             const isSelected = character.id === selectedCharacterId;
             return (
-              <div
+              <button
                 key={character.id}
-                className={`w-28 shrink-0 snap-start rounded-lg border px-2 py-3 text-center transition ${
+                type="button"
+                onClick={() =>
+                  isOwned
+                    ? handleSelectCharacter(character.id)
+                    : handlePurchaseCharacter(character)
+                }
+                aria-pressed={isSelected}
+                className={`relative w-[4.5rem] shrink-0 snap-start rounded-lg border px-1 py-1.5 text-center transition active:scale-95 ${
                   isSelected
                     ? "border-brand-blue bg-blue-50 text-blue-700 shadow-sm"
                     : "border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200 hover:bg-white"
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    isOwned
-                      ? handleSelectCharacter(character.id)
-                      : handlePurchaseCharacter(character)
-                  }
-                  className="w-full active:scale-95"
-                  aria-pressed={isSelected}
-                >
-                  <CharacterPortrait characterId={character.id} />
-                </button>
-                <span className="mt-1 block text-sm font-bold leading-tight">
+                <CharacterPortrait characterId={character.id} />
+                <span className="block truncate text-xs font-bold leading-tight">
                   {character.name}
                 </span>
-                {isOwned ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSelectCharacter(character.id)}
-                    disabled={isSelected}
-                    className={`mt-2 inline-flex min-h-8 w-full items-center justify-center rounded-lg px-2 py-1 text-xs font-bold transition active:scale-95 ${
-                      isSelected
-                        ? "cursor-default bg-green-100 text-green-700"
-                        : "bg-white text-brand-blue hover:bg-blue-50"
-                    }`}
-                  >
-                    {isSelected ? "Active" : "Select"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handlePurchaseCharacter(character)}
-                    className="mt-2 inline-flex min-h-8 w-full items-center justify-center gap-1 rounded-lg bg-brand-purple px-2 py-1 text-xs font-bold text-white transition hover:opacity-90 active:scale-95"
-                  >
-                    <Coins size={13} /> {CHARACTER_PRICE}
-                  </button>
+                {isSelected && (
+                  <span className="absolute right-0.5 top-0.5 text-brand-blue">
+                    <CheckCircle size={14} />
+                  </span>
                 )}
-              </div>
+                {!isOwned && (
+                  <span className="absolute left-0.5 top-0.5 inline-flex items-center gap-0.5 rounded-full bg-brand-purple px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                    <Coins size={9} />
+                    {CHARACTER_PRICE}
+                  </span>
+                )}
+              </button>
             );
           })}
+        </div>
+
+        {/* Character stage with name + title overlaid on the background */}
+        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+          <CharacterViewer
+            characterId={selectedCharacterId}
+            equippedItems={previewEquippedItems}
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent px-4 pb-3 pt-10">
+            <h3 className="font-display text-2xl font-bold leading-tight text-white drop-shadow">
+              {selectedCharacter.name}
+            </h3>
+            <p className="text-sm font-bold text-white/85 drop-shadow">
+              {selectedCharacter.title}
+            </p>
+          </div>
         </div>
       </section>
 
