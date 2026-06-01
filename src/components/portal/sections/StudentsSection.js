@@ -33,8 +33,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
-  const [aiFocusMode, setAiFocusMode] = useState('suggest');
   const [aiFocusLoading, setAiFocusLoading] = useState(false);
+  const [aiFocusApplying, setAiFocusApplying] = useState(false);
   const [aiFocusError, setAiFocusError] = useState(null);
   const [aiFocusResult, setAiFocusResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,7 +216,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setViewingStudent(student);
     setAiFocusResult(null);
     setAiFocusError(null);
-    setAiFocusMode('suggest');
   };
 
   const handleDateRangeChange = (setter) => (event) => {
@@ -227,10 +226,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   const analyzeAiFocus = async () => {
     if (!viewingStudent || !appId) return;
-    if (aiFocusMode === 'apply' && !viewingStudent.classId) {
-      setAiFocusError('Assign this student to a class before applying AI focus areas.');
-      return;
-    }
 
     setAiFocusLoading(true);
     setAiFocusError(null);
@@ -256,7 +251,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           classId: viewingStudent.classId || '',
           startDate,
           endDate,
-          mode: aiFocusMode,
+          mode: 'suggest',
         }),
       });
 
@@ -274,6 +269,66 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       setAiFocusError(err?.message || 'AI focus analysis failed. Please try again.');
     } finally {
       setAiFocusLoading(false);
+    }
+  };
+
+  const applyAiFocusRecommendations = async () => {
+    if (!viewingStudent || !appId || !aiFocusResult?.focusMap) return;
+    if (!viewingStudent.classId) {
+      setAiFocusError('Assign this student to a class before applying AI focus areas.');
+      return;
+    }
+
+    setAiFocusApplying(true);
+    setAiFocusError(null);
+
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Sign in again to apply AI focus recommendations.');
+      }
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/.netlify/functions/teacher-ai-focus-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          appId,
+          studentId: viewingStudent.id,
+          classId: viewingStudent.classId,
+          startDate,
+          endDate,
+          mode: 'apply',
+          focusMap: aiFocusResult.focusMap,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Applying AI focus recommendations failed with status ${response.status}`);
+      }
+
+      setAiFocusResult((prev) => ({
+        ...prev,
+        ...data,
+        summary: prev?.summary || data.summary,
+        recommendations: prev?.recommendations || data.recommendations,
+        notEnoughData: prev?.notEnoughData || data.notEnoughData,
+        metrics: prev?.metrics || data.metrics,
+        applied: true,
+      }));
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('[StudentsSection] Applying AI focus recommendations failed', err);
+      setAiFocusError(err?.message || 'Applying AI focus recommendations failed. Please try again.');
+    } finally {
+      setAiFocusApplying(false);
     }
   };
 
@@ -366,26 +421,6 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   onChange={handleDateRangeChange(setEndDate)}
                   className="text-sm border-none focus:ring-0"
                 />
-             </div>
-             <div className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-1">
-               {[
-                 { value: 'suggest', label: 'Suggest only' },
-                 { value: 'apply', label: 'Analyze + apply' },
-               ].map((option) => (
-                 <button
-                   key={option.value}
-                   type="button"
-                   onClick={() => setAiFocusMode(option.value)}
-                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                     aiFocusMode === option.value
-                       ? 'bg-white text-blue-700 shadow-sm'
-                       : 'text-gray-600 hover:text-gray-900'
-                   }`}
-                   aria-pressed={aiFocusMode === option.value}
-                 >
-                   {option.label}
-                 </button>
-               ))}
              </div>
              <button
                type="button"
@@ -521,9 +556,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   AI Focus Recommendations
                 </h4>
                 <p className="text-sm text-gray-500 mt-1">
-                  {aiFocusMode === 'apply'
-                    ? "Recommendations can update this student's Focus Areas for the class."
-                    : 'Recommendations are suggestions only.'}
+                  Review the suggestions, then apply them to this student's Focus Areas if they look right.
                 </p>
               </div>
               {aiFocusResult?.applied && (
@@ -599,6 +632,27 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {aiFocusResult.recommendations?.length > 0 && !aiFocusResult.applied && (
+                  <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm text-gray-600">
+                      Applying these will update the student's Focus Areas for the class.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyAiFocusRecommendations}
+                      disabled={aiFocusApplying || !viewingStudent.classId}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {aiFocusApplying ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                      )}
+                      {aiFocusApplying ? 'Applying...' : 'Apply recommendations'}
+                    </button>
                   </div>
                 )}
               </div>

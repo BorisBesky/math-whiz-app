@@ -396,6 +396,32 @@ const validateAnalysis = (parsed, aggregate) => {
   };
 };
 
+const validateFocusMap = (focusMap) => {
+  if (!focusMap || typeof focusMap !== "object" || Array.isArray(focusMap)) {
+    return null;
+  }
+
+  const validated = {};
+  Object.entries(focusMap).forEach(([topic, subtopics]) => {
+    if (!Array.isArray(subtopics)) return;
+    const grade = inferGradeForTopic(topic, null);
+    if (!grade || !VALID_TOPICS_BY_GRADE[grade]?.includes(topic)) return;
+
+    const validSubtopics = SUBTOPICS_BY_GRADE_TOPIC[grade]?.[topic] || [];
+    const filtered = subtopics.reduce((items, subtopic) => {
+      const match = validSubtopics.find((entry) => normalizeText(entry) === normalizeText(subtopic));
+      if (match && !items.includes(match)) items.push(match);
+      return items;
+    }, []);
+
+    if (filtered.length > 0) {
+      validated[topic] = filtered;
+    }
+  });
+
+  return Object.keys(validated).length > 0 ? validated : null;
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
@@ -415,6 +441,7 @@ exports.handler = async (event) => {
       startDate,
       endDate,
       mode = "suggest",
+      focusMap,
     } = body;
 
     if (!studentId || !startDate || !endDate || !MODES.has(mode)) {
@@ -436,6 +463,42 @@ exports.handler = async (event) => {
     const studentProfile = await getProfile(appId, studentId);
     if (!studentProfile.snap.exists) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: "Student profile not found" }) };
+    }
+
+    const reviewedFocusMap = mode === "apply" ? validateFocusMap(focusMap) : null;
+    if (mode === "apply" && focusMap && !reviewedFocusMap) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "No valid focus recommendations were provided to apply" }),
+      };
+    }
+
+    if (reviewedFocusMap) {
+      await access.enrollmentRef.set(
+        {
+          classId,
+          studentId,
+          allowedSubtopicsByTopic: reviewedFocusMap,
+          aiFocusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: "ok",
+          mode,
+          applied: true,
+          summary: "AI focus recommendations were applied to this student's Focus Areas.",
+          recommendations: [],
+          focusMap: reviewedFocusMap,
+          notEnoughData: [],
+          metrics: { questionsAnalyzed: 0, startDate, endDate },
+        }),
+      };
     }
 
     const studentData = studentProfile.data || {};
@@ -539,5 +602,6 @@ exports.handler = async (event) => {
 exports._test = {
   aggregateQuestions,
   validateAnalysis,
+  validateFocusMap,
   buildPrompt,
 };

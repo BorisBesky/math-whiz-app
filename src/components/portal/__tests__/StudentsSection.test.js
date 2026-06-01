@@ -143,6 +143,7 @@ describe('StudentsSection — Focus integration', () => {
             metrics: { attempts: 2, accuracy: 50, averageTime: 8 },
           },
         ],
+        focusMap: { Multiplication: ['basic multiplication'] },
         notEnoughData: [],
         metrics: { questionsAnalyzed: 2, startDate: '2026-01-01', endDate: '2026-01-01' },
       }),
@@ -229,9 +230,32 @@ describe('StudentsSection — Focus integration', () => {
     expect(screen.queryByText('Applied')).not.toBeInTheDocument();
   });
 
-  test('apply mode shows applied success and refreshes', async () => {
+  test('teacher can apply reviewed AI recommendations and refreshes', async () => {
     const onRefresh = jest.fn();
-    global.fetch.mockResolvedValueOnce({
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 'ok',
+          mode: 'suggest',
+          applied: false,
+          summary: 'Focus on basic multiplication.',
+          recommendations: [
+            {
+              grade: 'G3',
+              topic: 'Multiplication',
+              subtopic: 'basic multiplication',
+              reason: 'Accuracy is below mastery.',
+              confidence: 'high',
+              metrics: { attempts: 2, accuracy: 50, averageTime: 8 },
+            },
+          ],
+          focusMap: { Multiplication: ['basic multiplication'] },
+          notEnoughData: [],
+          metrics: { questionsAnalyzed: 2, startDate: '2026-01-01', endDate: '2026-01-01' },
+        }),
+      })
+      .mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         status: 'ok',
@@ -239,20 +263,25 @@ describe('StudentsSection — Focus integration', () => {
         applied: true,
         summary: 'Focus areas were applied.',
         recommendations: [],
+        focusMap: { Multiplication: ['basic multiplication'] },
         notEnoughData: [],
-        metrics: { questionsAnalyzed: 1, startDate: '2026-01-01', endDate: '2026-01-01' },
+        metrics: { questionsAnalyzed: 0, startDate: '2026-01-01', endDate: '2026-01-01' },
       }),
     });
 
     renderSection([baseStudent], { onRefresh });
     fireEvent.click(screen.getByTitle('View details'));
-    fireEvent.click(screen.getByRole('button', { name: /analyze \+ apply/i }));
     fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
+    expect(await screen.findByRole('button', { name: /apply recommendations/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /apply recommendations/i }));
 
     expect(await screen.findByText('Applied')).toBeInTheDocument();
     expect(onRefresh).toHaveBeenCalled();
-    const [, request] = global.fetch.mock.calls[0];
-    expect(JSON.parse(request.body).mode).toBe('apply');
+    const [, applyRequest] = global.fetch.mock.calls[1];
+    expect(JSON.parse(applyRequest.body)).toMatchObject({
+      mode: 'apply',
+      focusMap: { Multiplication: ['basic multiplication'] },
+    });
   });
 
   test('shows loading and error states for AI focus analysis', async () => {

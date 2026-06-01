@@ -202,14 +202,21 @@ describe('teacher-ai-focus-analysis handler', () => {
     expect(body.focusMap).toEqual({ Multiplication: ['basic multiplication'] });
   });
 
-  test('applies allowedSubtopicsByTopic only in apply mode', async () => {
+  test('applies reviewed focusMap without another Gemini call', async () => {
     const suggestResponse = await handler(eventFor({ mode: 'suggest' }));
     expect(suggestResponse.statusCode).toBe(200);
     expect(mockSets).toHaveLength(0);
+    expect(mockGenerateContentWithRetry).toHaveBeenCalledTimes(1);
 
-    const applyResponse = await handler(eventFor({ mode: 'apply' }));
+    const applyResponse = await handler(eventFor({
+      mode: 'apply',
+      focusMap: {
+        Multiplication: ['basic multiplication', 'invented subtopic'],
+      },
+    }));
     expect(applyResponse.statusCode).toBe(200);
     expect(mockSets).toHaveLength(1);
+    expect(mockGenerateContentWithRetry).toHaveBeenCalledTimes(1);
     expect(mockSets[0]).toMatchObject({
       path: 'artifacts/app-test/classStudents/class-1__student-1',
       options: { merge: true },
