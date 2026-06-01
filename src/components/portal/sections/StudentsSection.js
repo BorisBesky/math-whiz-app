@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
   BarChart3, RefreshCw, Download, Target, Trash2, Eye,
-  ChevronUp, ChevronDown, CheckCircle, Crosshair
+  ChevronUp, ChevronDown, CheckCircle, Crosshair, Sparkles, Loader2, AlertCircle
 } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
@@ -32,6 +33,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
+  const [aiFocusMode, setAiFocusMode] = useState('suggest');
+  const [aiFocusLoading, setAiFocusLoading] = useState(false);
+  const [aiFocusError, setAiFocusError] = useState(null);
+  const [aiFocusResult, setAiFocusResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -207,6 +212,71 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setFocusStudent(null);
   };
 
+  const openStudentDetails = (student) => {
+    setViewingStudent(student);
+    setAiFocusResult(null);
+    setAiFocusError(null);
+    setAiFocusMode('suggest');
+  };
+
+  const handleDateRangeChange = (setter) => (event) => {
+    setter(event.target.value);
+    setAiFocusResult(null);
+    setAiFocusError(null);
+  };
+
+  const analyzeAiFocus = async () => {
+    if (!viewingStudent || !appId) return;
+    if (aiFocusMode === 'apply' && !viewingStudent.classId) {
+      setAiFocusError('Assign this student to a class before applying AI focus areas.');
+      return;
+    }
+
+    setAiFocusLoading(true);
+    setAiFocusError(null);
+    setAiFocusResult(null);
+
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Sign in again to use AI focus analysis.');
+      }
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/.netlify/functions/teacher-ai-focus-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          appId,
+          studentId: viewingStudent.id,
+          classId: viewingStudent.classId || '',
+          startDate,
+          endDate,
+          mode: aiFocusMode,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `AI focus analysis failed with status ${response.status}`);
+      }
+
+      setAiFocusResult(data);
+      if (data.applied && onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('[StudentsSection] AI focus analysis failed', err);
+      setAiFocusError(err?.message || 'AI focus analysis failed. Please try again.');
+    } finally {
+      setAiFocusLoading(false);
+    }
+  };
+
   const sortedStudents = getSortedStudents();
 
   // Pagination logic
@@ -273,30 +343,63 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   if (viewingStudent) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
               {getStudentDisplayName(viewingStudent)}
             </h3>
             <p className="text-gray-600">ID: {viewingStudent.id}</p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
              <div className="flex items-center space-x-2 bg-white border rounded-md px-3 py-1">
                 <span className="text-sm text-gray-600">Range:</span>
                 <input 
                   type="date" 
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={handleDateRangeChange(setStartDate)}
                   className="text-sm border-none focus:ring-0"
                 />
                 <span className="text-gray-400">-</span>
                 <input 
                   type="date" 
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={handleDateRangeChange(setEndDate)}
                   className="text-sm border-none focus:ring-0"
                 />
              </div>
+             <div className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-1">
+               {[
+                 { value: 'suggest', label: 'Suggest only' },
+                 { value: 'apply', label: 'Analyze + apply' },
+               ].map((option) => (
+                 <button
+                   key={option.value}
+                   type="button"
+                   onClick={() => setAiFocusMode(option.value)}
+                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                     aiFocusMode === option.value
+                       ? 'bg-white text-blue-700 shadow-sm'
+                       : 'text-gray-600 hover:text-gray-900'
+                   }`}
+                   aria-pressed={aiFocusMode === option.value}
+                 >
+                   {option.label}
+                 </button>
+               ))}
+             </div>
+             <button
+               type="button"
+               onClick={analyzeAiFocus}
+               disabled={aiFocusLoading || !appId}
+               className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {aiFocusLoading ? (
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+               ) : (
+                 <Sparkles className="w-4 h-4 mr-2" />
+               )}
+               AI Focus
+             </button>
           </div>
         </div>
 
@@ -408,6 +511,100 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           </div>
         </div>
+
+        {(aiFocusError || aiFocusResult || aiFocusLoading) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                  AI Focus Recommendations
+                </h4>
+                <p className="text-sm text-gray-500 mt-1">
+                  {aiFocusMode === 'apply'
+                    ? "Recommendations can update this student's Focus Areas for the class."
+                    : 'Recommendations are suggestions only.'}
+                </p>
+              </div>
+              {aiFocusResult?.applied && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  Applied
+                </span>
+              )}
+            </div>
+
+            {aiFocusLoading && (
+              <div className="flex items-center text-sm text-gray-600">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Analyzing performance by topic and subtopic...
+              </div>
+            )}
+
+            {aiFocusError && (
+              <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                <span>{aiFocusError}</span>
+              </div>
+            )}
+
+            {aiFocusResult && !aiFocusLoading && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-700">{aiFocusResult.summary}</p>
+                <div className="text-xs text-gray-500">
+                  {aiFocusResult.metrics?.questionsAnalyzed || 0} question{aiFocusResult.metrics?.questionsAnalyzed === 1 ? '' : 's'} analyzed
+                  {aiFocusResult.metrics?.startDate && aiFocusResult.metrics?.endDate && (
+                    <span> from {formatDate(aiFocusResult.metrics.startDate)} to {formatDate(aiFocusResult.metrics.endDate)}</span>
+                  )}
+                </div>
+
+                {aiFocusResult.recommendations?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {aiFocusResult.recommendations.map((item, index) => (
+                      <div key={`${item.topic}-${item.subtopic}-${index}`} className="border border-blue-100 bg-blue-50 rounded-md p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h5 className="font-semibold text-blue-950">{item.subtopic}</h5>
+                            <p className="text-xs text-blue-700 mt-0.5">{item.grade} - {item.topic}</p>
+                          </div>
+                          <span className="text-xs font-semibold text-blue-700 bg-white rounded-full px-2 py-1">
+                            {item.confidence || 'medium'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 mt-3">{item.reason}</p>
+                        {item.metrics && (
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                            <span className="bg-white rounded px-2 py-1">{item.metrics.attempts} attempt{item.metrics.attempts === 1 ? '' : 's'}</span>
+                            <span className="bg-white rounded px-2 py-1">{item.metrics.accuracy}% accuracy</span>
+                            {item.metrics.averageTime && (
+                              <span className="bg-white rounded px-2 py-1">{item.metrics.averageTime}s avg</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    No specific focus subtopics were recommended for this range.
+                  </div>
+                )}
+
+                {aiFocusResult.notEnoughData?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <h5 className="text-sm font-semibold text-gray-800 mb-2">Needs more evidence</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {aiFocusResult.notEnoughData.map((item, index) => (
+                        <span key={`${item.topic}-${item.subtopic}-${index}`} className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+                          {item.topic}{item.subtopic ? `: ${item.subtopic}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Questions by Date Range */}
         {(() => {
@@ -665,7 +862,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                 <tr 
                   key={student.id} 
                   className="hover:bg-gray-50 cursor-pointer"
-                  onDoubleClick={() => setViewingStudent(student)}
+                  onDoubleClick={() => openStudentDetails(student)}
                   title="Double-click to view details"
                 >
                   <td className="px-4 py-3">
@@ -715,7 +912,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   </td>
                   <td className="px-4 py-3 text-sm font-medium space-x-2">
                     <button
-                      onClick={() => setViewingStudent(student)}
+                      onClick={() => openStudentDetails(student)}
                       className="text-blue-600 hover:text-blue-900 inline-flex items-center"
                       title="View details"
                     >
