@@ -58,7 +58,7 @@ const FreeMathPracticeApp = () => (
         <FeatureCard
           icon={<Users size={24} className="text-green-600" />}
           title="Teacher Dashboard"
-          description="Class creation, invite codes, real-time analytics, per-student assignments, custom content upload, and AI question generation. All free."
+          description="Class creation, invite codes, real-time analytics, per-student assignments, custom content upload, AI question generation, and AI focus recommendations. All free."
           color="green"
         />
         <FeatureCard
@@ -98,7 +98,11 @@ const FreeMathPracticeApp = () => (
         <Link to="/about/teacher-dashboard" className="text-blue-600 hover:underline">
           teacher dashboard
         </Link>{' '}
-        — analytics, custom content, AI generation, per-student assignments — is included.
+        — analytics, custom content, AI generation, per-student assignments, and{' '}
+        <Link to="/about/ai-student-performance-insights" className="text-blue-600 hover:underline">
+          AI performance insights
+        </Link>{' '}
+        — is included.
       </p>
     </section>
 
@@ -147,6 +151,7 @@ const FreeMathPracticeApp = () => (
               ['Teacher dashboard', 'Included', '$5–15/student/year'],
               ['Custom content upload', 'Included', 'Premium only'],
               ['AI question generation', 'Included', 'Not available'],
+              ['AI focus recommendations', 'Included', 'Rare or premium only'],
               ['Unlimited practice', 'Included', 'Daily limits on free tier'],
               ['Ads', 'None', 'Free tier shows ads'],
             ].map(([feature, whiz, other]) => (

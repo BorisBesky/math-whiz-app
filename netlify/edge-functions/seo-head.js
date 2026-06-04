@@ -25,7 +25,12 @@ const SEO_PAGES = {
   "teacher-dashboard": {
     title: "Math App with Teacher Dashboard - Class Management & Analytics | Math Whiz",
     description:
-      "Manage your math classroom with real-time analytics, per-student assignments, custom content, and AI question generation. Free teacher dashboard included.",
+      "Manage your math classroom with real-time analytics, AI focus recommendations, per-student assignments, custom content, and question generation.",
+  },
+  "ai-student-performance-insights": {
+    title: "AI Student Performance Insights for Math Teachers | Math Whiz",
+    description:
+      "See AI-generated focus recommendations based on student math performance. Review weak subtopics, apply focus areas, and plan interventions faster.",
   },
   "standards-aligned-math-app": {
     title: "Standards-Aligned Math App for Elementary - Common Core | Math Whiz",
