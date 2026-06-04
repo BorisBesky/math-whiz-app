@@ -154,7 +154,7 @@ const fetchBodyForMode = (mode) => {
   return call ? JSON.parse(call[1].body) : null;
 };
 
-describe('StudentsSection — Focus integration', () => {
+describe('StudentsSection - Focus integration', () => {
   beforeEach(() => {
     mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
     mockGetIdToken.mockResolvedValue('token-abc');

@@ -85,16 +85,12 @@ describe('Grade 4 Difficulty Scaling', () => {
     });
 
     test('Base Ten: Hard difficulty selects from advanced question types', () => {
-      const questions = Array(20).fill(0).map(() => generateBaseTen(0.9));
-      const subtopics = questions.map(q => q.subtopic);
-      
-      // At high difficulty, multi-step problems should be available
-      const hasAdvanced = subtopics.some(s => 
-        s === 'multi-step word problems' || 
-        s === 'rounding' ||
-        s === 'subtraction word problems'
-      );
-      expect(hasAdvanced).toBe(true);
+      const roundingQuestion = generateBaseTen(0.9, ['rounding']);
+      const multiStepQuestion = generateBaseTen(0.9, ['multi-step word problems']);
+
+      // At high difficulty, advanced subtopics should be available without relying on random sampling.
+      expect(roundingQuestion.subtopic).toBe('rounding');
+      expect(multiStepQuestion.subtopic).toBe('multi-step word problems');
     });
 
     test('Fractions: Easy difficulty avoids decimal notation', () => {
@@ -447,4 +443,3 @@ describe('Grade 4 Difficulty Scaling', () => {
     });
   });
 });
-
