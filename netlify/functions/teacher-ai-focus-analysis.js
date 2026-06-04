@@ -258,7 +258,7 @@ const aggregateQuestions = (questions, { startDate, endDate, fallbackGrade }) =>
 
 const extractJsonCandidate = (text) => {
   if (!text) return text;
-  const fenced = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/);
+  const fenced = text.match(/```json\s*([\s\S]*?)\s*```/i) || text.match(/```\s*([\s\S]*?)\s*```/);
   if (fenced) return fenced[1];
   const firstObject = text.indexOf("{");
   const lastObject = text.lastIndexOf("}");
@@ -271,9 +271,34 @@ const extractJsonCandidate = (text) => {
 const sanitizeLLMJsonString = (input) => {
   if (!input) return input;
   return input
+    .replace(/^\uFEFF/, "")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\u2019/g, "'")
+    .replace(/\u00A0/g, " ")
     .replace(/,\s*(\}|\])/g, "$1");
+};
+
+const parseLLMJson = (text) => {
+  const candidates = [
+    text,
+    extractJsonCandidate(text),
+  ].filter((candidate) => typeof candidate === "string" && candidate.trim());
+
+  let lastError;
+  for (const candidate of candidates) {
+    const sanitized = sanitizeLLMJsonString(candidate.trim());
+    try {
+      const parsed = JSON.parse(sanitized);
+      if (typeof parsed === "string") {
+        return JSON.parse(sanitizeLLMJsonString(extractJsonCandidate(parsed).trim()));
+      }
+      return parsed;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("No JSON content found in AI response");
 };
 
 const buildPrompt = ({ student, startDate, endDate, metrics, rankedNeeds, notEnoughData, recentMisses }) => {
@@ -393,6 +418,69 @@ const validateAnalysis = (parsed, aggregate) => {
     recommendations,
     focusMap,
     notEnoughData: validatedNotEnoughData,
+  };
+};
+
+const buildDeterministicAnalysis = (aggregate) => {
+  const recommendations = [];
+  const focusMap = {};
+  const seen = new Set();
+
+  aggregate.rankedNeeds.forEach((item) => {
+    if (recommendations.length >= 6) return;
+    if (item.subtopic === UNSPECIFIED_SUBTOPIC) return;
+    if (item.attempts < 2) return;
+
+    const shouldRecommend =
+      item.accuracy < 85 ||
+      item.incorrect >= 2 ||
+      (item.averageTime && item.averageTime > 20);
+    if (!shouldRecommend) return;
+
+    const validSubtopics = SUBTOPICS_BY_GRADE_TOPIC[item.grade]?.[item.topic] || [];
+    if (!validSubtopics.includes(item.subtopic)) return;
+
+    const key = `${item.grade}::${item.topic}::${item.subtopic}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const reasonParts = [
+      `${item.correct}/${item.attempts} correct (${item.accuracy}% accuracy)`,
+    ];
+    if (item.averageTime && item.averageTime > 20) {
+      reasonParts.push(`${item.averageTime}s average response time`);
+    }
+    if (item.incorrect > 0) {
+      reasonParts.push(`${item.incorrect} recent miss${item.incorrect === 1 ? "" : "es"}`);
+    }
+
+    recommendations.push({
+      grade: item.grade,
+      topic: item.topic,
+      subtopic: item.subtopic,
+      reason: `App metrics flagged this area: ${reasonParts.join(", ")}.`,
+      confidence: item.attempts >= 5 && item.accuracy < 70 ? "high" : "medium",
+      metrics: {
+        grade: item.grade,
+        topic: item.topic,
+        subtopic: item.subtopic,
+        attempts: item.attempts,
+        correct: item.correct,
+        incorrect: item.incorrect,
+        accuracy: item.accuracy,
+        averageTime: item.averageTime,
+      },
+    });
+    focusMap[item.topic] = [...new Set([...(focusMap[item.topic] || []), item.subtopic])];
+  });
+
+  return {
+    summary: recommendations.length > 0
+      ? "AI explanation was unavailable, so Math Whiz used the selected-range performance metrics to recommend focus areas."
+      : "AI explanation was unavailable, and the selected range did not show enough low-mastery evidence for a specific focus recommendation.",
+    recommendations,
+    focusMap,
+    notEnoughData: aggregate.notEnoughData,
   };
 };
 
@@ -674,6 +762,7 @@ exports.handler = async (event) => {
       model: process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash",
       generationConfig: {
         maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS, 10) || 4096,
+        responseMimeType: "application/json",
       },
     });
 
@@ -690,18 +779,17 @@ exports.handler = async (event) => {
     const result = await generateContentWithRetry(model, prompt, { label: "teacher-ai-focus-analysis" });
     const text = result.response.text();
     let parsed;
+    let usedDeterministicFallback = false;
     try {
-      parsed = JSON.parse(sanitizeLLMJsonString(extractJsonCandidate(text)));
+      parsed = parseLLMJson(text);
     } catch (parseError) {
       console.error("Teacher AI focus JSON parse failed:", parseError);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: "AI response could not be parsed. Please try again." }),
-      };
+      usedDeterministicFallback = true;
     }
 
-    const analysis = validateAnalysis(parsed, aggregate);
+    const analysis = usedDeterministicFallback
+      ? buildDeterministicAnalysis(aggregate)
+      : validateAnalysis(parsed, aggregate);
     const metrics = {
       questionsAnalyzed: aggregate.questionsInRange.length,
       startDate,
@@ -734,6 +822,7 @@ exports.handler = async (event) => {
         status: "ok",
         mode,
         applied: false,
+        usedDeterministicFallback,
         ...analysis,
         metrics,
         savedRecommendation,
@@ -754,5 +843,7 @@ exports._test = {
   validateAnalysis,
   validateFocusMap,
   buildRecommendationsFromFocusMap,
+  buildDeterministicAnalysis,
   buildPrompt,
+  parseLLMJson,
 };
