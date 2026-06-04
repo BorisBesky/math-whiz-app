@@ -30,7 +30,7 @@ jest.mock('@google/generative-ai', () => ({
   })),
 }));
 
-const { handler } = require('../../netlify/functions/teacher-ai-focus-analysis');
+const { handler, _test } = require('../../netlify/functions/teacher-ai-focus-analysis');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const docSnap = (data) => ({
@@ -200,6 +200,31 @@ describe('teacher-ai-focus-analysis handler', () => {
     expect(response.statusCode).toBe(200);
     expect(body.recommendations).toHaveLength(1);
     expect(body.focusMap).toEqual({ Multiplication: ['basic multiplication'] });
+  });
+
+  test('parses fenced JSON with byte-order marks and uppercase language tags', () => {
+    const parsed = _test.parseLLMJson('\uFEFF```JSON\n{"summary":"ok","recommendations":[]}\n```');
+    expect(parsed).toEqual({ summary: 'ok', recommendations: [] });
+  });
+
+  test('falls back to deterministic recommendations when Gemini returns malformed JSON', async () => {
+    mockGenerateContentWithRetry.mockResolvedValueOnce({
+      response: {
+        text: () => 'Here are the recommendations: summary: focus on multiplication',
+      },
+    });
+
+    const response = await handler(eventFor({}));
+    const body = JSON.parse(response.body);
+
+    expect(response.statusCode).toBe(200);
+    expect(body.usedDeterministicFallback).toBe(true);
+    expect(body.summary).toMatch(/Math Whiz used the selected-range performance metrics/i);
+    expect(body.recommendations).toHaveLength(1);
+    expect(body.focusMap).toEqual({ Multiplication: ['basic multiplication'] });
+    expect(mockSets[0].data.aiFocusRecommendation.focusMap).toEqual({
+      Multiplication: ['basic multiplication'],
+    });
   });
 
   test('applies reviewed focusMap without another Gemini call', async () => {
