@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   BarChart3, RefreshCw, Download, Target, Trash2, Eye,
-  ChevronUp, ChevronDown, CheckCircle, Crosshair
+  ChevronUp, ChevronDown, CheckCircle, Crosshair, Sparkles, Loader2, AlertCircle
 } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
+import { SUBTOPICS_BY_GRADE_TOPIC, VALID_TOPICS_BY_GRADE } from '../../../constants/topics';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
@@ -32,6 +34,15 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [endDate, setEndDate] = useState(getTodayDateString());
+  const [aiFocusLoading, setAiFocusLoading] = useState(false);
+  const [aiFocusApplying, setAiFocusApplying] = useState(false);
+  const [aiFocusSaving, setAiFocusSaving] = useState(false);
+  const [aiFocusDeleting, setAiFocusDeleting] = useState(false);
+  const [aiFocusError, setAiFocusError] = useState(null);
+  const [aiFocusResult, setAiFocusResult] = useState(null);
+  const [reviewFocusMap, setReviewFocusMap] = useState({});
+  const [aiFocusDirty, setAiFocusDirty] = useState(false);
+  const [topicToAdd, setTopicToAdd] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -207,6 +218,222 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setFocusStudent(null);
   };
 
+  const getGradeForTopic = (topic) => {
+    if (VALID_TOPICS_BY_GRADE.G3?.includes(topic)) return 'G3';
+    if (VALID_TOPICS_BY_GRADE.G4?.includes(topic)) return 'G4';
+    return viewingStudent?.grade || 'G3';
+  };
+
+  const hasReviewFocusAreas = (focusMap = reviewFocusMap) => (
+    Object.values(focusMap || {}).some((subtopics) => Array.isArray(subtopics) && subtopics.length > 0)
+  );
+
+  const normalizeSavedRecommendation = (savedRecommendation) => {
+    if (!savedRecommendation) return null;
+    return {
+      ...savedRecommendation,
+      applied: savedRecommendation.status === 'applied',
+      saved: true,
+    };
+  };
+
+  const setRecommendationState = useCallback((recommendation) => {
+    const normalized = normalizeSavedRecommendation(recommendation);
+    setAiFocusResult(normalized);
+    setReviewFocusMap(normalized?.focusMap || {});
+    setAiFocusDirty(false);
+    setTopicToAdd('');
+  }, []);
+
+  const openStudentDetails = (student) => {
+    setViewingStudent(student);
+    setAiFocusResult(null);
+    setAiFocusError(null);
+    setReviewFocusMap({});
+    setAiFocusDirty(false);
+    setTopicToAdd('');
+  };
+
+  const handleDateRangeChange = (setter) => (event) => {
+    setter(event.target.value);
+    setAiFocusResult(null);
+    setAiFocusError(null);
+    setReviewFocusMap({});
+    setAiFocusDirty(false);
+    setTopicToAdd('');
+  };
+
+  const requestAiFocus = useCallback(async (payload) => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Sign in again to use AI focus recommendations.');
+    }
+
+    const token = await currentUser.getIdToken();
+    const response = await fetch('/.netlify/functions/teacher-ai-focus-analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        appId,
+        studentId: viewingStudent.id,
+        classId: viewingStudent.classId || '',
+        ...payload,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || `AI focus request failed with status ${response.status}`);
+    }
+    return data;
+  }, [appId, viewingStudent]);
+
+  const analyzeAiFocus = async () => {
+    if (!viewingStudent || !appId) return;
+    if (!viewingStudent.classId) {
+      setAiFocusError('Assign this student to a class before saving AI focus recommendations.');
+      return;
+    }
+
+    setAiFocusLoading(true);
+    setAiFocusError(null);
+    setAiFocusResult(null);
+    setReviewFocusMap({});
+    setAiFocusDirty(false);
+
+    try {
+      const data = await requestAiFocus({
+        startDate,
+        endDate,
+        mode: 'suggest',
+      });
+      setRecommendationState(data.savedRecommendation || data);
+    } catch (err) {
+      console.error('[StudentsSection] AI focus analysis failed', err);
+      setAiFocusError(err?.message || 'AI focus analysis failed. Please try again.');
+    } finally {
+      setAiFocusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!viewingStudent || !appId || !viewingStudent.classId) return undefined;
+
+    let cancelled = false;
+    const loadSavedRecommendation = async () => {
+      try {
+        const data = await requestAiFocus({ mode: 'get' });
+        if (!cancelled && data.savedRecommendation) {
+          setRecommendationState(data.savedRecommendation);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('[StudentsSection] Failed to load saved AI focus recommendation', err);
+        }
+      }
+    };
+
+    loadSavedRecommendation();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewingStudent, appId, requestAiFocus, setRecommendationState]);
+
+  const toggleReviewSubtopic = (topic, subtopic) => {
+    setReviewFocusMap((prev) => {
+      const current = prev[topic] || [];
+      const nextSubtopics = current.includes(subtopic)
+        ? current.filter((item) => item !== subtopic)
+        : [...current, subtopic];
+      const next = { ...prev };
+      if (nextSubtopics.length > 0) {
+        next[topic] = nextSubtopics;
+      } else {
+        delete next[topic];
+      }
+      return next;
+    });
+    setAiFocusDirty(true);
+  };
+
+  const addReviewTopic = () => {
+    if (!topicToAdd) return;
+    setReviewFocusMap((prev) => ({ ...prev, [topicToAdd]: prev[topicToAdd] || [] }));
+    setTopicToAdd('');
+    setAiFocusDirty(true);
+  };
+
+  const saveAiFocusDraft = async () => {
+    if (!viewingStudent || !appId || !hasReviewFocusAreas()) return;
+    setAiFocusSaving(true);
+    setAiFocusError(null);
+    try {
+      const data = await requestAiFocus({
+        mode: 'update',
+        focusMap: reviewFocusMap,
+      });
+      setRecommendationState(data.savedRecommendation);
+    } catch (err) {
+      console.error('[StudentsSection] Saving AI focus recommendation failed', err);
+      setAiFocusError(err?.message || 'Saving AI focus recommendation failed. Please try again.');
+    } finally {
+      setAiFocusSaving(false);
+    }
+  };
+
+  const deleteAiFocusDraft = async () => {
+    if (!viewingStudent || !appId || !viewingStudent.classId) return;
+    setAiFocusDeleting(true);
+    setAiFocusError(null);
+    try {
+      await requestAiFocus({ mode: 'delete' });
+      setRecommendationState(null);
+    } catch (err) {
+      console.error('[StudentsSection] Deleting AI focus recommendation failed', err);
+      setAiFocusError(err?.message || 'Deleting AI focus recommendation failed. Please try again.');
+    } finally {
+      setAiFocusDeleting(false);
+    }
+  };
+
+  const applyAiFocusRecommendations = async () => {
+    if (!viewingStudent || !appId || !hasReviewFocusAreas()) return;
+    if (!viewingStudent.classId) {
+      setAiFocusError('Assign this student to a class before applying AI focus areas.');
+      return;
+    }
+
+    setAiFocusApplying(true);
+    setAiFocusError(null);
+
+    try {
+      const data = await requestAiFocus({
+        startDate,
+        endDate,
+        mode: 'apply',
+        focusMap: reviewFocusMap,
+      });
+      setRecommendationState(data.savedRecommendation || {
+        ...(aiFocusResult || {}),
+        ...data,
+        focusMap: reviewFocusMap,
+        applied: true,
+      });
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('[StudentsSection] Applying AI focus recommendations failed', err);
+      setAiFocusError(err?.message || 'Applying AI focus recommendations failed. Please try again.');
+    } finally {
+      setAiFocusApplying(false);
+    }
+  };
+
   const sortedStudents = getSortedStudents();
 
   // Pagination logic
@@ -271,32 +498,52 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   // Render Student Detail View
   if (viewingStudent) {
+    const allFocusTopics = [...new Set([
+      ...(VALID_TOPICS_BY_GRADE.G3 || []),
+      ...(VALID_TOPICS_BY_GRADE.G4 || []),
+    ])];
+    const reviewTopics = Object.keys(reviewFocusMap || {});
+    const addableTopics = allFocusTopics.filter((topic) => !reviewTopics.includes(topic));
+
     return (
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
               {getStudentDisplayName(viewingStudent)}
             </h3>
             <p className="text-gray-600">ID: {viewingStudent.id}</p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
              <div className="flex items-center space-x-2 bg-white border rounded-md px-3 py-1">
                 <span className="text-sm text-gray-600">Range:</span>
                 <input 
                   type="date" 
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={handleDateRangeChange(setStartDate)}
                   className="text-sm border-none focus:ring-0"
                 />
                 <span className="text-gray-400">-</span>
                 <input 
                   type="date" 
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={handleDateRangeChange(setEndDate)}
                   className="text-sm border-none focus:ring-0"
                 />
              </div>
+             <button
+               type="button"
+               onClick={analyzeAiFocus}
+               disabled={aiFocusLoading || !appId}
+               className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {aiFocusLoading ? (
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+               ) : (
+                 <Sparkles className="w-4 h-4 mr-2" />
+               )}
+               AI Focus
+             </button>
           </div>
         </div>
 
@@ -408,6 +655,244 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           </div>
         </div>
+
+        {(aiFocusError || aiFocusResult || aiFocusLoading) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                  AI Focus Recommendations
+                </h4>
+                <p className="text-sm text-gray-500 mt-1">
+                  Review the suggestions, then apply them to this student's Focus Areas if they look right.
+                </p>
+              </div>
+              {aiFocusResult?.applied && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  Applied
+                </span>
+              )}
+              {aiFocusResult?.saved && !aiFocusResult?.applied && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                  Saved
+                </span>
+              )}
+            </div>
+
+            {aiFocusLoading && (
+              <div className="flex items-center text-sm text-gray-600">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Analyzing performance by topic and subtopic...
+              </div>
+            )}
+
+            {aiFocusError && (
+              <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                <span>{aiFocusError}</span>
+              </div>
+            )}
+
+            {aiFocusResult && !aiFocusLoading && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-700">{aiFocusResult.summary}</p>
+                <div className="text-xs text-gray-500">
+                  {aiFocusResult.metrics?.questionsAnalyzed || 0} question{aiFocusResult.metrics?.questionsAnalyzed === 1 ? '' : 's'} analyzed
+                  {aiFocusResult.metrics?.startDate && aiFocusResult.metrics?.endDate && (
+                    <span> from {formatDate(aiFocusResult.metrics.startDate)} to {formatDate(aiFocusResult.metrics.endDate)}</span>
+                  )}
+                </div>
+
+                {aiFocusResult.recommendations?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {aiFocusResult.recommendations.map((item, index) => (
+                      <div key={`${item.topic}-${item.subtopic}-${index}`} className="border border-blue-100 bg-blue-50 rounded-md p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h5 className="font-semibold text-blue-950">{item.subtopic}</h5>
+                            <p className="text-xs text-blue-700 mt-0.5">{item.grade} - {item.topic}</p>
+                          </div>
+                          <span className="text-xs font-semibold text-blue-700 bg-white rounded-full px-2 py-1">
+                            {item.confidence || 'medium'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 mt-3">{item.reason}</p>
+                        {item.metrics && (
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                            <span className="bg-white rounded px-2 py-1">{item.metrics.attempts} attempt{item.metrics.attempts === 1 ? '' : 's'}</span>
+                            <span className="bg-white rounded px-2 py-1">{item.metrics.accuracy}% accuracy</span>
+                            {item.metrics.averageTime && (
+                              <span className="bg-white rounded px-2 py-1">{item.metrics.averageTime}s avg</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    No specific focus subtopics were recommended for this range.
+                  </div>
+                )}
+
+                {aiFocusResult.notEnoughData?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <h5 className="text-sm font-semibold text-gray-800 mb-2">Needs more evidence</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {aiFocusResult.notEnoughData.map((item, index) => (
+                        <span key={`${item.topic}-${item.subtopic}-${index}`} className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+                          {item.topic}{item.subtopic ? `: ${item.subtopic}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(reviewTopics.length > 0 || aiFocusResult.recommendations?.length > 0) && (
+                  <div className="border-t border-gray-100 pt-4 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                      <div>
+                        <h5 className="text-sm font-semibold text-gray-800">Reviewed focus areas</h5>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Adjust these before applying. Checked subtopics become this student's Focus Areas.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          value={topicToAdd}
+                          onChange={(event) => setTopicToAdd(event.target.value)}
+                          className="border border-gray-300 rounded-md px-2 py-2 text-sm"
+                          aria-label="Add focus topic"
+                        >
+                          <option value="">Add topic...</option>
+                          {addableTopics.map((topic) => (
+                            <option key={topic} value={topic}>{topic}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={addReviewTopic}
+                          disabled={!topicToAdd}
+                          className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {reviewTopics.length > 0 ? (
+                      <div className="space-y-3">
+                        {reviewTopics.map((topic) => {
+                          const grade = getGradeForTopic(topic);
+                          const subtopics = SUBTOPICS_BY_GRADE_TOPIC[grade]?.[topic] || [];
+                          return (
+                            <div key={topic} className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">{topic}</p>
+                                  <p className="text-xs text-gray-500">{grade}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReviewFocusMap((prev) => {
+                                      const next = { ...prev };
+                                      delete next[topic];
+                                      return next;
+                                    });
+                                    setAiFocusDirty(true);
+                                  }}
+                                  className="p-1.5 rounded-md text-red-600 hover:bg-red-50"
+                                  aria-label={`Remove ${topic}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {subtopics.map((subtopic) => {
+                                  const checked = (reviewFocusMap[topic] || []).includes(subtopic);
+                                  return (
+                                    <label
+                                      key={subtopic}
+                                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer ${
+                                        checked
+                                          ? 'bg-white border-blue-300 text-blue-900'
+                                          : 'bg-white border-gray-200 text-gray-700'
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleReviewSubtopic(topic, subtopic)}
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                      />
+                                      <span>{subtopic}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                        No reviewed focus areas selected.
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={saveAiFocusDraft}
+                        disabled={aiFocusSaving || !aiFocusDirty || !hasReviewFocusAreas()}
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-blue-200 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {aiFocusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        {aiFocusSaving ? 'Saving...' : 'Save changes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={deleteAiFocusDraft}
+                        disabled={aiFocusDeleting}
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {aiFocusDeleting ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        {aiFocusDeleting ? 'Deleting...' : 'Delete recommendation'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {hasReviewFocusAreas() && !aiFocusResult.applied && (
+                  <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm text-gray-600">
+                      Applying these will update the student's Focus Areas for the class.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyAiFocusRecommendations}
+                      disabled={aiFocusApplying || !viewingStudent.classId}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {aiFocusApplying ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                      )}
+                      {aiFocusApplying ? 'Applying...' : 'Apply recommendations'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Questions by Date Range */}
         {(() => {
@@ -665,7 +1150,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                 <tr 
                   key={student.id} 
                   className="hover:bg-gray-50 cursor-pointer"
-                  onDoubleClick={() => setViewingStudent(student)}
+                  onDoubleClick={() => openStudentDetails(student)}
                   title="Double-click to view details"
                 >
                   <td className="px-4 py-3">
@@ -715,7 +1200,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   </td>
                   <td className="px-4 py-3 text-sm font-medium space-x-2">
                     <button
-                      onClick={() => setViewingStudent(student)}
+                      onClick={() => openStudentDetails(student)}
                       className="text-blue-600 hover:text-blue-900 inline-flex items-center"
                       title="View details"
                     >
