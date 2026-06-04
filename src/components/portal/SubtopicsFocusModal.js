@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Target, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Target, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import ModalWrapper from '../ui/ModalWrapper';
 import { getTopicsForGrade, getAppId } from '../../utils/common_utils';
@@ -120,29 +120,33 @@ const SubtopicsFocusModal = ({
   ).length;
 
   return (
-    <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="md" hideCloseButton>
-      <div className="bg-gradient-to-r from-brand-purple to-brand-pink text-white px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-white/20 rounded-full p-2">
-            <Target className="h-5 w-5" />
+    <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="lg" hideCloseButton>
+      {/* Header */}
+      <div className="px-6 py-5 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-t-lg">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-3">
+            <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
+              <Target className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold font-display">Focus subtopics</h2>
+              <p className="text-sm text-white/80 mt-0.5">
+                Tailor what {studentName} practices.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">Focus subtopics</h2>
-            <p className="text-sm text-purple-100">
-              Tailor what {studentName} practices.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-1 transition"
+            aria-label="Close"
+          >
+            <span className="text-2xl leading-none">&times;</span>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-white/80 hover:text-white text-2xl leading-none"
-          aria-label="Close"
-        >
-          ×
-        </button>
       </div>
 
+      {/* Body */}
       <div className="px-6 py-5 space-y-5">
         {!classId && (
           <div className="flex items-start gap-3 rounded-button border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -161,59 +165,78 @@ const SubtopicsFocusModal = ({
           </div>
         )}
 
-        <div className="rounded-lg bg-purple-50 border border-purple-100 px-4 py-3 text-xs text-purple-900 flex items-start gap-2">
-          <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>
-            Pick the subtopics this student should practice. Leave a topic empty to include every subtopic.
-            {focusedTopicCount > 0 && (
-              <> Currently focused on <strong>{focusedTopicCount}</strong> topic
-                {focusedTopicCount === 1 ? '' : 's'}.</>
-            )}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Grade</label>
-            <select
-              value={grade}
-              onChange={(e) => handleGradeChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-button px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple"
-            >
-              <option value="G3">Grade 3</option>
-              <option value="G4">Grade 4</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Topic</label>
-            <select
-              value={topic}
-              onChange={(e) => handleTopicChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-button px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple"
-            >
-              {getTopicsForGrade(grade).map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
+        {/* Grade selector pills */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Subtopics
-              {selectedSubtopics.length > 0 && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                  {selectedSubtopics.length} selected
-                </span>
-              )}
-            </label>
-            {subtopics.length > 0 && (
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Grade</label>
+          <div className="inline-flex rounded-button border border-gray-200 bg-gray-50 p-1" role="tablist">
+            {['G3', 'G4'].map((g) => (
+              <button
+                key={g}
+                type="button"
+                role="tab"
+                aria-selected={grade === g}
+                onClick={() => handleGradeChange(g)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-button transition ${
+                  grade === g
+                    ? 'bg-white shadow-card text-brand-purple'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {g === 'G3' ? '3rd Grade' : '4th Grade'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Topic + Subtopic selector */}
+        <div className="grid grid-cols-1 md:grid-cols-[200px,1fr] gap-4">
+          {/* Topic sidebar list */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Topic</label>
+            <div className="space-y-1 border border-gray-200 rounded-button p-1 bg-white">
+              {getTopicsForGrade(grade).map((t) => {
+                const restrictedCount = t === topic
+                  ? selectedSubtopics.length
+                  : (allowedByTopic[t] || []).length;
+                const isActive = t === topic;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => handleTopicChange(t)}
+                    className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-button text-sm transition ${
+                      isActive
+                        ? 'bg-brand-purple/10 text-brand-purple font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="truncate" title={t}>{t}</span>
+                    <span className="flex items-center space-x-1 flex-shrink-0">
+                      {restrictedCount > 0 && (
+                        <span className="text-xs bg-brand-purple text-white rounded-full px-2 py-0.5">
+                          {restrictedCount}
+                        </span>
+                      )}
+                      {isActive && <ChevronRight className="h-4 w-4" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Subtopic checklist */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Subtopics
+              </label>
               <div className="flex items-center space-x-2 text-xs">
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="text-purple-700 hover:text-purple-900 font-medium"
+                  disabled={subtopics.length === 0}
+                  className="text-brand-blue hover:underline disabled:opacity-40 disabled:no-underline"
                 >
                   Select all
                 </button>
@@ -221,48 +244,54 @@ const SubtopicsFocusModal = ({
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-gray-600 hover:text-gray-800 font-medium"
+                  disabled={selectedSubtopics.length === 0}
+                  className="text-gray-500 hover:underline disabled:opacity-40 disabled:no-underline"
                 >
                   Clear
                 </button>
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="rounded-lg border border-gray-200 bg-gray-50 max-h-64 overflow-y-auto">
-            {subtopics.length === 0 ? (
-              <p className="text-sm text-gray-500 italic px-4 py-6 text-center">
-                This topic does not define subtopics.
-              </p>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {subtopics.map((sub) => {
-                  const checked = selectedSubtopics.includes(sub);
-                  return (
-                    <li key={sub}>
-                      <label className="flex items-center space-x-3 px-4 py-2 hover:bg-white cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => handleToggle(sub)}
-                          className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
-                        />
-                        <span className="text-sm text-gray-800">{sub}</span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+            <div className="border border-gray-200 rounded-button bg-gray-50/60 max-h-64 overflow-y-auto p-2">
+              {subtopics.length === 0 ? (
+                <p className="text-sm text-gray-500 italic p-3">
+                  This topic doesn't have subtopics yet.
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-200">
+                  {subtopics.map((sub) => {
+                    const checked = selectedSubtopics.includes(sub);
+                    return (
+                      <li key={sub}>
+                        <label className="flex items-center space-x-3 px-3 py-2 hover:bg-white cursor-pointer rounded-button">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleToggle(sub)}
+                            className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-800">{sub}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
 
-          <p className="mt-2 text-xs text-gray-500">
-            {selectedSubtopics.length === 0
-              ? 'Empty selection means all subtopics are allowed for this topic.'
-              : `Only the ${selectedSubtopics.length} selected subtopic${
-                  selectedSubtopics.length === 1 ? '' : 's'
-                } will be served to this student for ${topic}.`}
-          </p>
+            <p className="mt-2 text-xs text-gray-500">
+              {selectedSubtopics.length === 0
+                ? 'Empty selection means all subtopics are allowed for this topic.'
+                : `Only the ${selectedSubtopics.length} selected subtopic${
+                    selectedSubtopics.length === 1 ? '' : 's'
+                  } will be served to this student for ${topic}.`}
+              {focusedTopicCount > 0 && (
+                <span className="ml-1 text-gray-400">
+                  ({focusedTopicCount} topic{focusedTopicCount === 1 ? '' : 's'} restricted overall)
+                </span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 
