@@ -90,29 +90,64 @@ const getProfile = async (appId, userId) => {
   return { ref, snap, data: snap.exists ? snap.data() : null };
 };
 
-const verifyTeacherAccess = async ({ appId, decodedToken, studentId, classId }) => {
+const verifyTeacherAccess = async ({ appId, decodedToken, studentId, classId, mode }) => {
   const teacherId = decodedToken.uid;
-  const enrollmentRef = db.doc(`artifacts/${appId}/classStudents/${classId}__${studentId}`);
-  const enrollmentSnap = await enrollmentRef.get();
-  if (!enrollmentSnap.exists || enrollmentSnap.data()?.studentId !== studentId) {
-    const err = new Error("Student enrollment not found");
-    err.statusCode = 404;
-    throw err;
-  }
-
   if (decodedToken.admin === true || decodedToken.role === "admin") {
-    return { role: "admin", enrollmentRef, enrollmentData: enrollmentSnap.data() };
+    if (classId) {
+      const enrollmentRef = db.doc(`artifacts/${appId}/classStudents/${classId}__${studentId}`);
+      const enrollmentSnap = await enrollmentRef.get();
+      if (!enrollmentSnap.exists || enrollmentSnap.data()?.studentId !== studentId) {
+        const err = new Error("Student enrollment not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      return { role: "admin", enrollmentRef, enrollmentData: enrollmentSnap.data() };
+    }
+    return { role: "admin", enrollmentRef: null, enrollmentData: null };
   }
 
   const teacherProfile = await getProfile(appId, teacherId);
   if (teacherProfile.data?.role === "admin") {
-    return { role: "admin", enrollmentRef, enrollmentData: enrollmentSnap.data() };
+    if (classId) {
+      const enrollmentRef = db.doc(`artifacts/${appId}/classStudents/${classId}__${studentId}`);
+      const enrollmentSnap = await enrollmentRef.get();
+      if (!enrollmentSnap.exists || enrollmentSnap.data()?.studentId !== studentId) {
+        const err = new Error("Student enrollment not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      return { role: "admin", enrollmentRef, enrollmentData: enrollmentSnap.data() };
+    }
+    return { role: "admin", enrollmentRef: null, enrollmentData: null };
   }
 
   const isTeacher = decodedToken.role === "teacher" || teacherProfile.data?.role === "teacher";
   if (!isTeacher) {
     const err = new Error("Forbidden: teacher access required");
     err.statusCode = 403;
+    throw err;
+  }
+
+  if (!classId) {
+    if (mode === "apply") {
+      const err = new Error("Class ID is required to apply focus recommendations");
+      err.statusCode = 400;
+      throw err;
+    }
+    const studentProfile = await getProfile(appId, studentId);
+    if (Array.isArray(studentProfile.data?.teacherIds) && studentProfile.data.teacherIds.includes(teacherId)) {
+      return { role: "teacher", enrollmentRef: null, enrollmentData: null };
+    }
+    const err = new Error("Forbidden: teacher is not assigned to this student");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const enrollmentRef = db.doc(`artifacts/${appId}/classStudents/${classId}__${studentId}`);
+  const enrollmentSnap = await enrollmentRef.get();
+  if (!enrollmentSnap.exists || enrollmentSnap.data()?.studentId !== studentId) {
+    const err = new Error("Student enrollment not found");
+    err.statusCode = 404;
     throw err;
   }
 
@@ -157,6 +192,7 @@ const aggregateQuestions = (questions, { startDate, endDate, fallbackGrade }) =>
         incorrect: 0,
         totalTime: 0,
         timedAttempts: 0,
+        recentMisses: 0,
       });
     }
 
@@ -173,7 +209,6 @@ const aggregateQuestions = (questions, { startDate, endDate, fallbackGrade }) =>
         });
       }
     }
-
     const timeTaken = Number(question.timeTaken);
     if (Number.isFinite(timeTaken) && timeTaken > 0) {
       group.totalTime += timeTaken;
@@ -461,15 +496,13 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: "studentId and valid mode are required" }),
       };
     }
-
-    if (!classId) {
+    if ((mode === "get" || mode === "suggest" || mode === "update" || mode === "delete" || mode === "apply") && !classId) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: "Class ID is required for AI focus recommendations" }),
       };
     }
-
     if (mode === "suggest" && (!startDate || !endDate)) {
       return {
         statusCode: 400,
@@ -478,7 +511,7 @@ exports.handler = async (event) => {
       };
     }
 
-    const access = await verifyTeacherAccess({ appId, decodedToken, studentId, classId });
+    const access = await verifyTeacherAccess({ appId, decodedToken, studentId, classId, mode });
     const studentProfile = await getProfile(appId, studentId);
     if (!studentProfile.snap.exists) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: "Student profile not found" }) };
@@ -524,7 +557,6 @@ exports.handler = async (event) => {
     }
 
     if (mode === "update") {
-      const now = new Date().toISOString();
       const nextRecommendation = {
         ...(existingRecommendation || {}),
         id: existingRecommendation?.id || `ai-focus-${Date.now()}`,
@@ -539,8 +571,8 @@ exports.handler = async (event) => {
         metrics: existingRecommendation?.metrics || { questionsAnalyzed: 0, startDate, endDate },
         dateRange: existingRecommendation?.dateRange || { startDate, endDate },
         generatedBy: existingRecommendation?.generatedBy || decodedToken.uid,
-        generatedAt: existingRecommendation?.generatedAt || now,
-        updatedAt: now,
+        generatedAt: existingRecommendation?.generatedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         appliedAt: null,
       };
 
@@ -557,7 +589,6 @@ exports.handler = async (event) => {
     }
 
     if (mode === "apply") {
-      const now = new Date().toISOString();
       const nextRecommendation = existingRecommendation
         ? {
             ...existingRecommendation,
@@ -567,8 +598,8 @@ exports.handler = async (event) => {
               reviewedFocusMap,
               existingRecommendation.recommendations || []
             ),
-            updatedAt: now,
-            appliedAt: now,
+            updatedAt: new Date().toISOString(),
+            appliedAt: new Date().toISOString(),
           }
         : {
             id: `ai-focus-${Date.now()}`,
@@ -580,9 +611,9 @@ exports.handler = async (event) => {
             metrics: { questionsAnalyzed: 0, startDate, endDate },
             dateRange: { startDate, endDate },
             generatedBy: decodedToken.uid,
-            generatedAt: now,
-            updatedAt: now,
-            appliedAt: now,
+            generatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            appliedAt: new Date().toISOString(),
           };
 
       await access.enrollmentRef.set(

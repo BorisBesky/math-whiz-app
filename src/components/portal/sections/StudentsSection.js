@@ -842,29 +842,31 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={saveAiFocusDraft}
-                        disabled={aiFocusSaving || !aiFocusDirty || !hasReviewFocusAreas()}
-                        className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-blue-200 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {aiFocusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        {aiFocusSaving ? 'Saving...' : 'Save changes'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={deleteAiFocusDraft}
-                        disabled={aiFocusDeleting}
-                        className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {aiFocusDeleting ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4 mr-2" />
-                        )}
-                        {aiFocusDeleting ? 'Deleting...' : 'Delete recommendation'}
-                      </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={saveAiFocusDraft}
+                          disabled={aiFocusSaving || !aiFocusDirty || !hasReviewFocusAreas()}
+                          className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-blue-200 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {aiFocusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {aiFocusSaving ? 'Saving...' : 'Save changes'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deleteAiFocusDraft}
+                          disabled={aiFocusDeleting}
+                          className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {aiFocusDeleting ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
+                          {aiFocusDeleting ? 'Deleting...' : 'Delete recommendation'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

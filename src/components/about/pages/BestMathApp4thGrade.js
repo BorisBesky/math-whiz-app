@@ -126,9 +126,13 @@ const BestMathApp4thGrade = () => (
           classroom dashboard
         </Link>{' '}
         with real-time student analytics, the ability to assign specific topics to individual
-        students, upload custom questions from upcoming tests, and generate new practice problems
-        with AI. It's everything you need to differentiate instruction for a classroom of 4th
-        graders — without the prep time.
+        students, upload custom questions from upcoming tests, generate new practice problems
+        with AI, and review{' '}
+        <Link to="/about/ai-student-performance-insights" className="text-blue-600 hover:underline">
+          AI performance insights
+        </Link>{' '}
+        before assigning intervention work. It's everything you need to differentiate instruction
+        for a classroom of 4th graders — without the prep time.
       </p>
     </Callout>
 

@@ -22,7 +22,7 @@ const AboutOverview = () => {
     document.title = 'About Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
-      meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, track progress, and add custom content.');
+      meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, track progress, add custom content, and use AI insights.');
     }
 
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -41,7 +41,7 @@ const AboutOverview = () => {
       name: 'Math Whiz',
       applicationCategory: 'EducationalApplication',
       operatingSystem: 'Web',
-      description: 'Free adaptive math practice platform for 3rd and 4th graders with teacher dashboards, custom content, and AI question generation.',
+      description: 'Free adaptive math practice platform for 3rd and 4th graders with teacher dashboards, custom content, AI question generation, and AI student insights.',
       educationalLevel: ['3rd Grade', '4th Grade'],
       audience: {
         '@type': 'EducationalAudience',
@@ -59,6 +59,7 @@ const AboutOverview = () => {
         'Teacher class management',
         'Custom question sets',
         'AI question generation',
+        'AI focus recommendations',
         'Real-time student analytics',
         'Common Core aligned',
       ],
@@ -186,6 +187,12 @@ const AboutOverview = () => {
               color="blue"
             />
             <FeatureCard
+              icon={<Target size={24} className="text-blue-600" />}
+              title="AI Focus Recommendations"
+              description="Review AI recommendations based on recent student performance, then apply approved focus areas to target the exact subtopics each learner needs."
+              color="blue"
+            />
+            <FeatureCard
               icon={<UserPlus size={24} className="text-blue-600" />}
               title="Simple Student Onboarding"
               description="Students join with a class code — no email required. They can start as guests and create accounts later to save progress."
@@ -204,6 +211,14 @@ const AboutOverview = () => {
               different students based on what each one needs to work on. Whether you're a classroom
               teacher prepping 30 students for a state test or a parent helping one child master
               long division, the platform adapts to your goals.
+            </p>
+            <p className="text-gray-700 leading-relaxed mt-4">
+              When teachers want help deciding what comes next, the new{' '}
+              <Link to="/about/ai-student-performance-insights" className="text-blue-600 hover:underline">
+                AI student performance insights
+              </Link>{' '}
+              feature can review recent work and recommend focus areas before you assign more
+              practice.
             </p>
           </div>
         </section>

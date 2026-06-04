@@ -42,6 +42,16 @@
 ## Prior SEO fixes
 - 2026-05-28 - GSC alternate canonical pages for `/about/*` SEO routes - PR https://github.com/BorisBesky/math-whiz-app/pull/51 - files: `netlify/edge-functions/seo-head.js`, `netlify.toml`, `netlify/edge-functions/sitemap.js`, `AGENTS.md`, `CLAUDE.md` - notes: Added edge-injected route-specific canonical/title/meta for `/about` pages and removed `/login` from sitemap.
 
+## Reward store / 3D character notes
+- Character store code lives in `src/components/rewards/` with the lazy-loaded store chunk named in `src/MainApp.js`.
+- When changing reward store or character viewer code, always update the `webpackChunkName` for `RewardsStore`, rebuild, and validate against the new query/chunk URL on `localhost:8888`. The in-app browser may keep old chunks cached unless the chunk id changes.
+- Visual QA for store items must wait for the category and item card to be visible, click the item, then wait for the canvas render to settle before taking screenshots. Fast snapshots can capture the previous/default preview.
+- Users must buy characters before selecting them. Character price is 60 coins; Buddy is the default starter character. Existing users may keep their previously selected character during migration.
+- Current character availability rule: Buddy, Milo, Pip, and Leo should not have Dresses or Skirts. Cora, Sunny, and Mia may have Dresses and Skirts.
+- Cora intentionally has no tail; previous tail shapes looked detached or odd from side/rear angles.
+- Bow ties should use rounded flattened lobes plus a center knot, not diamond/rhombus cone shapes.
+- For character-fit work, validate front and rear/side views where relevant, especially Back Gear, Neckwear, Jewelry, and Props.
+
 ## Open watch-items
 - GSC reported 10 "Alternate page with proper canonical tag" URLs for `/about/*`; validation started 2026-05-27 before this fix and should be monitored after deploy.
 - GSC reported "Crawled - currently not indexed" for `http://mathwhizapp.kids/` and `https://mathwhizapp.kids/about`; monitor after route-specific raw canonical tags deploy.
