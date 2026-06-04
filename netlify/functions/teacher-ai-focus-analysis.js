@@ -8,7 +8,7 @@ const {
   SUBTOPICS_BY_GRADE_TOPIC,
 } = require("../../src/constants/shared-constants.js");
 
-const MODES = new Set(["suggest", "apply"]);
+const MODES = new Set(["get", "suggest", "update", "delete", "apply"]);
 const UNSPECIFIED_SUBTOPIC = "Unspecified";
 
 const headers = {
@@ -422,6 +422,51 @@ const validateFocusMap = (focusMap) => {
   return Object.keys(validated).length > 0 ? validated : null;
 };
 
+const buildRecommendationsFromFocusMap = (focusMap, existingRecommendations = []) => {
+  return Object.entries(focusMap || {}).flatMap(([topic, subtopics]) => {
+    const grade = inferGradeForTopic(topic);
+    return (subtopics || []).map((subtopic) => {
+      const existing = existingRecommendations.find(
+        (item) => item.topic === topic && item.subtopic === subtopic
+      );
+      return existing || {
+        grade,
+        topic,
+        subtopic,
+        reason: "Teacher added this focus area after reviewing the AI recommendation.",
+        confidence: "reviewed",
+        metrics: null,
+      };
+    });
+  });
+};
+
+const buildSavedRecommendation = ({
+  analysis,
+  metrics,
+  startDate,
+  endDate,
+  teacherId,
+  previous = null,
+  status = "draft",
+}) => {
+  const now = new Date().toISOString();
+  return {
+    id: previous?.id || `ai-focus-${Date.now()}`,
+    status,
+    summary: analysis.summary,
+    recommendations: analysis.recommendations,
+    focusMap: analysis.focusMap,
+    notEnoughData: analysis.notEnoughData,
+    metrics,
+    dateRange: { startDate, endDate },
+    generatedBy: previous?.generatedBy || teacherId,
+    generatedAt: previous?.generatedAt || now,
+    updatedAt: now,
+    appliedAt: status === "applied" ? now : previous?.appliedAt || null,
+  };
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
@@ -444,18 +489,25 @@ exports.handler = async (event) => {
       focusMap,
     } = body;
 
-    if (!studentId || !startDate || !endDate || !MODES.has(mode)) {
+    if (!studentId || !MODES.has(mode)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "studentId, startDate, endDate, and valid mode are required" }),
+        body: JSON.stringify({ error: "studentId and valid mode are required" }),
       };
     }
-    if (mode === "apply" && !classId) {
+    if ((mode === "get" || mode === "suggest" || mode === "update" || mode === "delete" || mode === "apply") && !classId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Class ID is required to apply focus recommendations" }),
+        body: JSON.stringify({ error: "Class ID is required for AI focus recommendations" }),
+      };
+    }
+    if (mode === "suggest" && (!startDate || !endDate)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "startDate and endDate are required to analyze focus recommendations" }),
       };
     }
 
@@ -465,21 +517,111 @@ exports.handler = async (event) => {
       return { statusCode: 404, headers, body: JSON.stringify({ error: "Student profile not found" }) };
     }
 
-    const reviewedFocusMap = mode === "apply" ? validateFocusMap(focusMap) : null;
-    if (mode === "apply" && focusMap && !reviewedFocusMap) {
+    const existingRecommendation = access.enrollmentData?.aiFocusRecommendation || null;
+
+    if (mode === "get") {
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: "No valid focus recommendations were provided to apply" }),
+        body: JSON.stringify({
+          status: "ok",
+          mode,
+          savedRecommendation: existingRecommendation,
+        }),
       };
     }
 
-    if (reviewedFocusMap) {
+    if (mode === "delete") {
+      await access.enrollmentRef.set({ aiFocusRecommendation: null }, { merge: true });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: "ok",
+          mode,
+          deleted: true,
+          savedRecommendation: null,
+        }),
+      };
+    }
+
+    const reviewedFocusMap = (mode === "update" || mode === "apply")
+      ? validateFocusMap(focusMap || existingRecommendation?.focusMap)
+      : null;
+    if ((mode === "update" || mode === "apply") && !reviewedFocusMap) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "No valid focus recommendations were provided" }),
+      };
+    }
+
+    if (mode === "update") {
+      const nextRecommendation = {
+        ...(existingRecommendation || {}),
+        id: existingRecommendation?.id || `ai-focus-${Date.now()}`,
+        status: "draft",
+        summary: existingRecommendation?.summary || "Review the saved focus areas below.",
+        recommendations: buildRecommendationsFromFocusMap(
+          reviewedFocusMap,
+          existingRecommendation?.recommendations || []
+        ),
+        focusMap: reviewedFocusMap,
+        notEnoughData: existingRecommendation?.notEnoughData || [],
+        metrics: existingRecommendation?.metrics || { questionsAnalyzed: 0, startDate, endDate },
+        dateRange: existingRecommendation?.dateRange || { startDate, endDate },
+        generatedBy: existingRecommendation?.generatedBy || decodedToken.uid,
+        generatedAt: existingRecommendation?.generatedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        appliedAt: null,
+      };
+
+      await access.enrollmentRef.set({ aiFocusRecommendation: nextRecommendation }, { merge: true });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: "ok",
+          mode,
+          savedRecommendation: nextRecommendation,
+        }),
+      };
+    }
+
+    if (mode === "apply") {
+      const nextRecommendation = existingRecommendation
+        ? {
+            ...existingRecommendation,
+            status: "applied",
+            focusMap: reviewedFocusMap,
+            recommendations: buildRecommendationsFromFocusMap(
+              reviewedFocusMap,
+              existingRecommendation.recommendations || []
+            ),
+            updatedAt: new Date().toISOString(),
+            appliedAt: new Date().toISOString(),
+          }
+        : {
+            id: `ai-focus-${Date.now()}`,
+            status: "applied",
+            summary: "AI focus recommendations were applied to this student's Focus Areas.",
+            recommendations: buildRecommendationsFromFocusMap(reviewedFocusMap),
+            focusMap: reviewedFocusMap,
+            notEnoughData: [],
+            metrics: { questionsAnalyzed: 0, startDate, endDate },
+            dateRange: { startDate, endDate },
+            generatedBy: decodedToken.uid,
+            generatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            appliedAt: new Date().toISOString(),
+          };
+
       await access.enrollmentRef.set(
         {
           classId,
           studentId,
           allowedSubtopicsByTopic: reviewedFocusMap,
+          aiFocusRecommendation: nextRecommendation,
           aiFocusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -497,6 +639,7 @@ exports.handler = async (event) => {
           focusMap: reviewedFocusMap,
           notEnoughData: [],
           metrics: { questionsAnalyzed: 0, startDate, endDate },
+          savedRecommendation: nextRecommendation,
         }),
       };
     }
@@ -521,6 +664,7 @@ exports.handler = async (event) => {
           focusMap: {},
           notEnoughData: [],
           metrics: { questionsAnalyzed: 0, startDate, endDate },
+          savedRecommendation: null,
         }),
       };
     }
@@ -558,20 +702,30 @@ exports.handler = async (event) => {
     }
 
     const analysis = validateAnalysis(parsed, aggregate);
-    let applied = false;
-    if (mode === "apply") {
-      const enrollmentRef = access.enrollmentRef || db.doc(`artifacts/${appId}/classStudents/${classId}__${studentId}`);
-      await enrollmentRef.set(
-        {
-          classId,
-          studentId,
-          allowedSubtopicsByTopic: analysis.focusMap,
-          aiFocusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-      applied = true;
-    }
+    const metrics = {
+      questionsAnalyzed: aggregate.questionsInRange.length,
+      startDate,
+      endDate,
+      bySubtopic: aggregate.metrics,
+    };
+    const savedRecommendation = buildSavedRecommendation({
+      analysis,
+      metrics,
+      startDate,
+      endDate,
+      teacherId: decodedToken.uid,
+      previous: existingRecommendation,
+      status: "draft",
+    });
+
+    await access.enrollmentRef.set(
+      {
+        classId,
+        studentId,
+        aiFocusRecommendation: savedRecommendation,
+      },
+      { merge: true }
+    );
 
     return {
       statusCode: 200,
@@ -579,14 +733,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         status: "ok",
         mode,
-        applied,
+        applied: false,
         ...analysis,
-        metrics: {
-          questionsAnalyzed: aggregate.questionsInRange.length,
-          startDate,
-          endDate,
-          bySubtopic: aggregate.metrics,
-        },
+        metrics,
+        savedRecommendation,
       }),
     };
   } catch (error) {
@@ -603,5 +753,6 @@ exports._test = {
   aggregateQuestions,
   validateAnalysis,
   validateFocusMap,
+  buildRecommendationsFromFocusMap,
   buildPrompt,
 };

@@ -119,6 +119,41 @@ const renderSection = (students = [baseStudent], overrides = {}) =>
     })
   );
 
+const makeAiRecommendation = (overrides = {}) => ({
+  id: 'ai-focus-1',
+  status: 'draft',
+  saved: true,
+  applied: false,
+  summary: 'Focus on basic multiplication.',
+  recommendations: [
+    {
+      grade: 'G3',
+      topic: 'Multiplication',
+      subtopic: 'basic multiplication',
+      reason: 'Accuracy is below mastery.',
+      confidence: 'high',
+      metrics: { attempts: 2, accuracy: 50, averageTime: 8 },
+    },
+  ],
+  focusMap: { Multiplication: ['basic multiplication'] },
+  notEnoughData: [],
+  metrics: { questionsAnalyzed: 2, startDate: '2026-01-01', endDate: '2026-01-01' },
+  ...overrides,
+});
+
+const okResponse = (body) => Promise.resolve({
+  ok: true,
+  json: async () => body,
+});
+
+const fetchBodyForMode = (mode) => {
+  const call = global.fetch.mock.calls.find(([, request]) => {
+    const body = JSON.parse(request.body);
+    return body.mode === mode;
+  });
+  return call ? JSON.parse(call[1].body) : null;
+};
+
 describe('StudentsSection — Focus integration', () => {
   beforeEach(() => {
     mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
@@ -126,27 +161,42 @@ describe('StudentsSection — Focus integration', () => {
     getAuth.mockReturnValue({
       currentUser: { getIdToken: (...args) => mockGetIdToken(...args) },
     });
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        status: 'ok',
-        mode: 'suggest',
-        applied: false,
-        summary: 'Focus on basic multiplication.',
-        recommendations: [
-          {
-            grade: 'G3',
-            topic: 'Multiplication',
-            subtopic: 'basic multiplication',
-            reason: 'Accuracy is below mastery.',
-            confidence: 'high',
-            metrics: { attempts: 2, accuracy: 50, averageTime: 8 },
-          },
-        ],
-        focusMap: { Multiplication: ['basic multiplication'] },
-        notEnoughData: [],
-        metrics: { questionsAnalyzed: 2, startDate: '2026-01-01', endDate: '2026-01-01' },
-      }),
+    global.fetch = jest.fn((url, request) => {
+      const body = JSON.parse(request.body);
+      if (body.mode === 'get') {
+        return okResponse({ status: 'ok', mode: 'get', savedRecommendation: null });
+      }
+      if (body.mode === 'suggest') {
+        const recommendation = makeAiRecommendation();
+        return okResponse({
+          status: 'ok',
+          mode: 'suggest',
+          applied: false,
+          ...recommendation,
+          savedRecommendation: recommendation,
+        });
+      }
+      if (body.mode === 'update') {
+        const recommendation = makeAiRecommendation({ focusMap: body.focusMap });
+        return okResponse({ status: 'ok', mode: 'update', savedRecommendation: recommendation });
+      }
+      if (body.mode === 'apply') {
+        const recommendation = makeAiRecommendation({
+          status: 'applied',
+          applied: true,
+          focusMap: body.focusMap,
+        });
+        return okResponse({
+          status: 'ok',
+          mode: 'apply',
+          applied: true,
+          savedRecommendation: recommendation,
+        });
+      }
+      if (body.mode === 'delete') {
+        return okResponse({ status: 'ok', mode: 'delete', deleted: true, savedRecommendation: null });
+      }
+      return okResponse({});
     });
   });
 
@@ -207,9 +257,8 @@ describe('StudentsSection — Focus integration', () => {
     fireEvent.change(endInput, { target: { value: '2026-01-12' } });
     fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    const [, request] = global.fetch.mock.calls[0];
-    expect(JSON.parse(request.body)).toMatchObject({
+    await waitFor(() => expect(fetchBodyForMode('suggest')).toBeTruthy());
+    expect(fetchBodyForMode('suggest')).toMatchObject({
       studentId: 'student-1',
       classId: 'class-1',
       startDate: '2026-01-10',
@@ -224,50 +273,13 @@ describe('StudentsSection — Focus integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
 
     expect(await screen.findByText('Focus on basic multiplication.')).toBeInTheDocument();
-    expect(screen.getByText('basic multiplication')).toBeInTheDocument();
-    const [, request] = global.fetch.mock.calls[0];
-    expect(JSON.parse(request.body).mode).toBe('suggest');
+    expect(screen.getAllByText('basic multiplication').length).toBeGreaterThan(0);
+    expect(fetchBodyForMode('suggest').mode).toBe('suggest');
     expect(screen.queryByText('Applied')).not.toBeInTheDocument();
   });
 
   test('teacher can apply reviewed AI recommendations and refreshes', async () => {
     const onRefresh = jest.fn();
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          status: 'ok',
-          mode: 'suggest',
-          applied: false,
-          summary: 'Focus on basic multiplication.',
-          recommendations: [
-            {
-              grade: 'G3',
-              topic: 'Multiplication',
-              subtopic: 'basic multiplication',
-              reason: 'Accuracy is below mastery.',
-              confidence: 'high',
-              metrics: { attempts: 2, accuracy: 50, averageTime: 8 },
-            },
-          ],
-          focusMap: { Multiplication: ['basic multiplication'] },
-          notEnoughData: [],
-          metrics: { questionsAnalyzed: 2, startDate: '2026-01-01', endDate: '2026-01-01' },
-        }),
-      })
-      .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        status: 'ok',
-        mode: 'apply',
-        applied: true,
-        summary: 'Focus areas were applied.',
-        recommendations: [],
-        focusMap: { Multiplication: ['basic multiplication'] },
-        notEnoughData: [],
-        metrics: { questionsAnalyzed: 0, startDate: '2026-01-01', endDate: '2026-01-01' },
-      }),
-    });
 
     renderSection([baseStudent], { onRefresh });
     fireEvent.click(screen.getByTitle('View details'));
@@ -277,24 +289,81 @@ describe('StudentsSection — Focus integration', () => {
 
     expect(await screen.findByText('Applied')).toBeInTheDocument();
     expect(onRefresh).toHaveBeenCalled();
-    const [, applyRequest] = global.fetch.mock.calls[1];
-    expect(JSON.parse(applyRequest.body)).toMatchObject({
+    expect(fetchBodyForMode('apply')).toMatchObject({
       mode: 'apply',
       focusMap: { Multiplication: ['basic multiplication'] },
     });
   });
 
+  test('loads a saved recommendation draft for teacher review', async () => {
+    global.fetch.mockImplementation((url, request) => {
+      const body = JSON.parse(request.body);
+      if (body.mode === 'get') {
+        return okResponse({
+          status: 'ok',
+          mode: 'get',
+          savedRecommendation: makeAiRecommendation(),
+        });
+      }
+      return okResponse({});
+    });
+
+    renderSection();
+    fireEvent.click(screen.getByTitle('View details'));
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    expect(screen.getByText('Reviewed focus areas')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /basic multiplication/i })).toBeChecked();
+  });
+
+  test('teacher can adjust and save recommendation focus areas', async () => {
+    renderSection();
+    fireEvent.click(screen.getByTitle('View details'));
+    fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
+
+    const checkbox = await screen.findByRole('checkbox', { name: /skip counting/i });
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(fetchBodyForMode('update')).toBeTruthy());
+    expect(fetchBodyForMode('update').focusMap).toEqual({
+      Multiplication: ['basic multiplication', 'skip counting'],
+    });
+  });
+
+  test('teacher can delete a saved recommendation draft', async () => {
+    renderSection();
+    fireEvent.click(screen.getByTitle('View details'));
+    fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
+
+    expect(await screen.findByRole('button', { name: /delete recommendation/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /delete recommendation/i }));
+
+    await waitFor(() => expect(fetchBodyForMode('delete')).toBeTruthy());
+    expect(screen.queryByText('AI Focus Recommendations')).not.toBeInTheDocument();
+  });
+
   test('shows loading and error states for AI focus analysis', async () => {
     let resolveFetch;
-    global.fetch.mockReturnValueOnce(new Promise((resolve) => {
-      resolveFetch = resolve;
-    }));
+    global.fetch.mockImplementation((url, request) => {
+      const body = JSON.parse(request.body);
+      if (body.mode === 'get') {
+        return okResponse({ status: 'ok', mode: 'get', savedRecommendation: null });
+      }
+      if (body.mode === 'suggest') {
+        return new Promise((resolve) => {
+          resolveFetch = resolve;
+        });
+      }
+      return okResponse({});
+    });
 
     renderSection();
     fireEvent.click(screen.getByTitle('View details'));
     fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
 
     expect(screen.getByText(/analyzing performance/i)).toBeInTheDocument();
+    await waitFor(() => expect(resolveFetch).toEqual(expect.any(Function)));
 
     resolveFetch({
       ok: false,

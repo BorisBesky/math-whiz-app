@@ -205,8 +205,12 @@ describe('teacher-ai-focus-analysis handler', () => {
   test('applies reviewed focusMap without another Gemini call', async () => {
     const suggestResponse = await handler(eventFor({ mode: 'suggest' }));
     expect(suggestResponse.statusCode).toBe(200);
-    expect(mockSets).toHaveLength(0);
+    expect(mockSets).toHaveLength(1);
+    expect(mockSets[0].data.aiFocusRecommendation.focusMap).toEqual({
+      Multiplication: ['basic multiplication'],
+    });
     expect(mockGenerateContentWithRetry).toHaveBeenCalledTimes(1);
+    mockSets = [];
 
     const applyResponse = await handler(eventFor({
       mode: 'apply',
@@ -224,5 +228,39 @@ describe('teacher-ai-focus-analysis handler', () => {
     expect(mockSets[0].data.allowedSubtopicsByTopic).toEqual({
       Multiplication: ['basic multiplication'],
     });
+  });
+
+  test('loads, updates, and deletes a saved recommendation draft', async () => {
+    const savedRecommendation = {
+      id: 'rec-1',
+      status: 'draft',
+      summary: 'Saved draft',
+      recommendations: [],
+      focusMap: { Multiplication: ['basic multiplication'] },
+      notEnoughData: [],
+      metrics: { questionsAnalyzed: 2 },
+      dateRange: { startDate: '2026-01-10', endDate: '2026-01-12' },
+    };
+    mockDocs.set('artifacts/app-test/classStudents/class-1__student-1', docSnap({
+      classId: 'class-1',
+      studentId: 'student-1',
+      aiFocusRecommendation: savedRecommendation,
+    }));
+
+    const getResponse = await handler(eventFor({ mode: 'get' }));
+    expect(JSON.parse(getResponse.body).savedRecommendation).toEqual(savedRecommendation);
+
+    const updateResponse = await handler(eventFor({
+      mode: 'update',
+      focusMap: { Multiplication: ['arrays and groups'] },
+    }));
+    expect(updateResponse.statusCode).toBe(200);
+    expect(mockSets[0].data.aiFocusRecommendation.focusMap).toEqual({
+      Multiplication: ['arrays and groups'],
+    });
+
+    const deleteResponse = await handler(eventFor({ mode: 'delete' }));
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(mockSets[1].data.aiFocusRecommendation).toBeNull();
   });
 });
