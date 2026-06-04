@@ -71,6 +71,15 @@ const TeacherDashboard = () => (
         No more waiting until a test to find out a student is struggling — Math Whiz shows you in
         real time.
       </p>
+      <p className="text-gray-600 mb-6 leading-relaxed">
+        Teachers can also use{' '}
+        <Link to="/about/ai-student-performance-insights" className="text-blue-600 hover:underline">
+          AI student performance insights
+        </Link>{' '}
+        to turn that data into recommended focus areas. The system reviews recent answers, highlights
+        weak subtopics, and lets you apply reviewed recommendations directly to a student's Focus
+        Areas.
+      </p>
       <div className="grid sm:grid-cols-2 gap-6">
         <FeatureCard
           icon={<Eye size={24} className="text-blue-600" />}
@@ -94,6 +103,12 @@ const TeacherDashboard = () => (
           icon={<Settings size={24} className="text-blue-600" />}
           title="Class-Wide Insights"
           description="See aggregate data across your entire class. Which topics have the lowest accuracy? Which students are falling behind the class average? Prioritize your instruction with data."
+          color="blue"
+        />
+        <FeatureCard
+          icon={<Sparkles size={24} className="text-blue-600" />}
+          title="AI Focus Recommendations"
+          description="Analyze recent student work, review recommended weak subtopics, and apply approved focus areas without rebuilding the plan manually."
           color="blue"
         />
       </div>
@@ -150,6 +165,12 @@ const TeacherDashboard = () => (
           color="blue"
         />
         <FeatureCard
+          icon={<BarChart2 size={24} className="text-blue-600" />}
+          title="AI Insight to Action"
+          description="Run student performance analysis, review the reasoning, and apply the approved recommendations to Focus Areas from the same workflow."
+          color="blue"
+        />
+        <FeatureCard
           icon={<UserPlus size={24} className="text-blue-600" />}
           title="Flexible Student Access"
           description="Students can join from any device with a class link. Works in computer labs, on tablets, or on students' home devices."
@@ -175,7 +196,7 @@ const TeacherDashboard = () => (
     </section>
 
     <CallToAction />
-    <RelatedPages slugs={['standards-aligned-math-app', 'best-math-app-3rd-grade', 'best-math-app-4th-grade', 'common-core-math-app']} />
+    <RelatedPages slugs={['ai-student-performance-insights', 'standards-aligned-math-app', 'best-math-app-4th-grade', 'common-core-math-app']} />
   </PageWrapper>
 );
 
