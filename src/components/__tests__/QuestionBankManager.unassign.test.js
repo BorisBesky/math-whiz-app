@@ -3,16 +3,18 @@ const { render, screen, fireEvent, waitFor } = require('@testing-library/react')
 
 const mockDeleteDoc = jest.fn(() => Promise.resolve());
 const mockUpdateDoc = jest.fn(() => Promise.resolve());
+const mockSetDoc = jest.fn(() => Promise.resolve());
+const mockOnSnapshot = jest.fn();
 const mockDoc = jest.fn((...parts) => ({ path: parts.join('/') }));
 
 jest.mock('firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
   collection: jest.fn(),
-  onSnapshot: jest.fn(),
+  onSnapshot: (...args) => mockOnSnapshot(...args),
   updateDoc: (...args) => mockUpdateDoc(...args),
   doc: (...args) => mockDoc(...args),
   deleteDoc: (...args) => mockDeleteDoc(...args),
-  setDoc: jest.fn(() => Promise.resolve()),
+  setDoc: (...args) => mockSetDoc(...args),
   deleteField: jest.fn(() => '__delete_field__'),
 }));
 
@@ -50,11 +52,15 @@ jest.mock('../../utils/questionCache', () => ({
   clearCachedClassQuestions: jest.fn(),
 }));
 
-const QuestionBankManager = require('../QuestionBankManager').default;
+const {
+  default: QuestionBankManager,
+  mapQuestionBankDoc,
+} = require('../QuestionBankManager');
 
 describe('QuestionBankManager bulk unassign', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockOnSnapshot.mockReturnValue(jest.fn());
   });
 
   test('shows unassign button and unassigns selected questions from selected class', async () => {
@@ -106,6 +112,21 @@ describe('QuestionBankManager bulk unassign', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Successfully un-assigned 1 question from Class A.')).toBeInTheDocument();
+    });
+  });
+
+  test('keeps Firestore document id authoritative over imported question id fields', () => {
+    const mapped = mapQuestionBankDoc({
+      id: 'firestore-doc-id',
+      data: () => ({
+        id: 'imported-json-id',
+        question: 'A dozen eggs costs $4.20 at the market. What is the cost of 1 egg in dollars?',
+      }),
+    });
+
+    expect(mapped).toMatchObject({
+      id: 'firestore-doc-id',
+      question: 'A dozen eggs costs $4.20 at the market. What is the cost of 1 egg in dollars?',
     });
   });
 });

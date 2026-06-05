@@ -37,6 +37,7 @@
         "npm:react@^19.1.0",
         "npm:sharp@~0.33.5",
         "npm:tailwindcss@^3.4.17",
+        "npm:three@0.184",
         "npm:wait-on@^9.0.4",
         "npm:web-vitals@^2.1.4"
       ]

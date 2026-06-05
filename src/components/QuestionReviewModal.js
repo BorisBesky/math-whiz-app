@@ -274,7 +274,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
 
       for (const question of questionsToSave) {
         // Clean inputTypes for fill-in-the-blanks questions
-        const cleanQuestion = { ...question };
+        const { id: _importedId, ...cleanQuestion } = question;
         if (cleanQuestion.questionType === QUESTION_TYPES.FILL_IN_THE_BLANKS) {
           // If inputTypes present, remove empty entries
           if (cleanQuestion.inputTypes) {
@@ -778,4 +778,3 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
 };
 
 export default QuestionReviewModal;
-

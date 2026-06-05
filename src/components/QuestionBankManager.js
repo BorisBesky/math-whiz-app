@@ -8,8 +8,14 @@ import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
 import { TOPICS, QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
+import { isAIEvaluatedQuestion } from '../utils/answer-helpers';
 import 'katex/dist/katex.min.css';
 import renderMathInElement from 'katex/contrib/auto-render';
+
+export const mapQuestionBankDoc = (doc) => ({
+  ...doc.data(),
+  id: doc.id
+});
 
 const QuestionBankManager = ({
   classes,
@@ -132,10 +138,9 @@ const QuestionBankManager = ({
       console.log('[QuestionBankManager] Loading questions from questionBank for user:', userId);
       unsubscribe = onSnapshot(questionBankRef, (snapshot) => {
         console.log(`[QuestionBankManager] Loaded ${snapshot.size} questions from questionBank`);
-        const questionsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        // Keep Firestore doc.id authoritative even when imported/exported
+        // payloads contain their own "id" field.
+        const questionsData = snapshot.docs.map(mapQuestionBankDoc);
         // Sort client-side if createdAt exists
         questionsData.sort((a, b) => {
           if (a.createdAt && b.createdAt) {
@@ -618,20 +623,31 @@ const QuestionBankManager = ({
       // Default handler for teacher mode - create reference documents in class
       const updates = [];
       for (const questionId of questionsToAssign) {
-        const question = questionsToShow.find(q => q.id === questionId);
-        if (!question) continue;
+        let question = questionsToShow.find(q => q.id === questionId);
+        if (!question) {
+          question = sharedQuestions.find(q => q.id === questionId);
+        }
+        if (!question) {
+          continue;
+        }
 
-        const isDrawingQuestion = question.questionType === QUESTION_TYPES.DRAWING;
+        const includeAnswerFields = !isAIEvaluatedQuestion(question);
 
         // Create a reference document in the class questions subcollection
         // Use the same questionId to maintain consistency
         const classQuestionRef = doc(db, 'artifacts', currentAppId, 'classes', selectedClassForAssignment, 'questions', questionId);
 
+        const isShared = question.collection === 'sharedQuestionBank';
+        const questionBankRefPath = isShared
+          ? `artifacts/${currentAppId}/sharedQuestionBank/${questionId}`
+          : `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`;
+
         const classQuestionData = {
           // Reference information
-          questionBankRef: `artifacts/${currentAppId}/users/${userId}/questionBank/${questionId}`,
+          questionBankRef: questionBankRefPath,
           teacherId: userId,
           assignedAt: new Date(),
+          isSharedQuestion: isShared,
 
           // Essential question data (for querying and display)
           topic: question.topic,
@@ -647,26 +663,55 @@ const QuestionBankManager = ({
           createdAt: question.createdAt || new Date()
         };
 
-        // Only include correctAnswer and options for non-drawing questions
-        if (!isDrawingQuestion) {
-          classQuestionData.correctAnswer = question.correctAnswer;
-          classQuestionData.options = question.options;
+        // Only include correctAnswer and options for auto-graded question types
+        if (includeAnswerFields) {
+          if (question.correctAnswer !== undefined) {
+            classQuestionData.correctAnswer = question.correctAnswer;
+          }
+          if (question.options !== undefined) {
+            classQuestionData.options = question.options;
+          }
+          if (question.inputTypes !== undefined) {
+            classQuestionData.inputTypes = question.inputTypes;
+          }
         }
 
         // Store reference information and essential question data
+        // Clean undefined fields to avoid Firestore "Unsupported field value: undefined" errors
+        const cleanedClassQuestionData = {};
+        Object.entries(classQuestionData).forEach(([k, v]) => {
+          if (v !== undefined) {
+            cleanedClassQuestionData[k] = v;
+          }
+        });
+
         updates.push(
-          setDoc(classQuestionRef, classQuestionData, { merge: true })
+          setDoc(classQuestionRef, cleanedClassQuestionData, { merge: true })
         );
 
         // Also update the assignedClasses array in the original question for tracking
-        const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
-        const currentAssignedClasses = [...new Set(question?.assignedClasses || [])];
-        if (!currentAssignedClasses.includes(selectedClassForAssignment)) {
-          updates.push(
-            updateDoc(questionRef, {
-              assignedClasses: [...currentAssignedClasses, selectedClassForAssignment]
-            })
-          );
+        if (isShared) {
+          if (isAdmin) {
+            const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
+            const currentAssignedClasses = [...new Set(question?.assignedClasses || [])];
+            if (!currentAssignedClasses.includes(selectedClassForAssignment)) {
+              updates.push(
+                setDoc(questionRef, {
+                  assignedClasses: [...currentAssignedClasses, selectedClassForAssignment]
+                }, { merge: true })
+              );
+            }
+          }
+        } else {
+          const questionRef = doc(db, 'artifacts', currentAppId, 'users', userId, 'questionBank', questionId);
+          const currentAssignedClasses = [...new Set(question?.assignedClasses || [])];
+          if (!currentAssignedClasses.includes(selectedClassForAssignment)) {
+            updates.push(
+              setDoc(questionRef, {
+                assignedClasses: [...currentAssignedClasses, selectedClassForAssignment]
+              }, { merge: true })
+            );
+          }
         }
       }
 
@@ -721,10 +766,12 @@ const QuestionBankManager = ({
     await deleteDoc(classQuestionRef);
 
     if (question?.collection === 'sharedQuestionBank') {
-      const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
-      await updateDoc(questionRef, {
-        assignedClasses: currentAssignedClasses
-      });
+      if (isAdmin) {
+        const questionRef = doc(db, 'artifacts', currentAppId, 'sharedQuestionBank', questionId);
+        await updateDoc(questionRef, {
+          assignedClasses: currentAssignedClasses
+        });
+      }
     } else {
       const questionUserId = question?.userId || userId;
       const questionRef = doc(db, 'artifacts', currentAppId, 'users', questionUserId, 'questionBank', questionId);
@@ -1826,4 +1873,3 @@ const QuestionBankManager = ({
 // Import Questions Modal Component
 
 export default QuestionBankManager;
-

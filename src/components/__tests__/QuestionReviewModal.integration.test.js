@@ -62,6 +62,7 @@ describe('QuestionReviewModal integration save flow', () => {
     const onCancel = jest.fn();
 
     const question = {
+      id: 'imported-json-id',
       question: 'Divide. a. __ b. __',
       questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
       correctAnswer: '63 ;; 2,141',
@@ -91,6 +92,7 @@ describe('QuestionReviewModal integration save flow', () => {
     // Inspect what was added to the question bank
     const addDocData = addDoc.mock.calls[0][1];
     expect(addDocData).toBeDefined();
+    expect(addDocData.id).toBeUndefined();
     // inputTypes should be auto-detected (numeric for both answers)
     expect(Array.isArray(addDocData.inputTypes)).toBe(true);
     expect(addDocData.inputTypes).toEqual(['numeric', 'numeric']);
