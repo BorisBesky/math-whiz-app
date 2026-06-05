@@ -3,6 +3,7 @@ let mockDoc;
 let mockDocs;
 let mockSets;
 let mockGenerateContentWithRetry;
+let mockFetch;
 
 jest.mock('../../netlify/functions/firebase-admin', () => ({
   admin: {
@@ -13,16 +14,24 @@ jest.mock('../../netlify/functions/firebase-admin', () => ({
       FieldValue: {
         serverTimestamp: jest.fn(() => 'SERVER_TIME'),
       },
+      Timestamp: {
+        now: jest.fn(() => 'NOW_TIME'),
+      },
     },
   },
   db: {
     doc: (...args) => mockDoc(...args),
+    collection: (name) => ({
+      doc: (id) => mockDoc(`${name}/${id}`),
+    }),
   },
 }));
 
 jest.mock('../../netlify/functions/retry-utils', () => ({
   generateContentWithRetry: (...args) => mockGenerateContentWithRetry(...args),
 }));
+
+jest.mock('node-fetch', () => (...args) => mockFetch(...args));
 
 jest.mock('@google/generative-ai', () => ({
   GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
@@ -52,6 +61,16 @@ const eventFor = (body, headers = { authorization: 'Bearer token' }) => ({
   }),
 });
 
+const processSuggestion = (overrides = {}) => _test.processTeacherAiFocusSuggestion({
+  appId: 'app-test',
+  studentId: 'student-1',
+  classId: 'class-1',
+  startDate: '2026-01-10',
+  endDate: '2026-01-12',
+  decodedToken: { uid: 'teacher-1', role: 'teacher' },
+  ...overrides,
+});
+
 const seedTeacherAccess = () => {
   mockDocs.set('artifacts/app-test/users/teacher-1/math_whiz_data/profile', docSnap({ role: 'teacher' }));
   mockDocs.set('artifacts/app-test/classStudents/class-1__student-1', docSnap({ classId: 'class-1', studentId: 'student-1' }));
@@ -63,13 +82,18 @@ describe('teacher-ai-focus-analysis handler', () => {
     mockDocs = new Map();
     mockSets = [];
     mockVerifyIdToken = jest.fn().mockResolvedValue({ uid: 'teacher-1', role: 'teacher' });
-    mockDoc = jest.fn((path) => ({
+    const makeDocRef = (path) => ({
       path,
       get: jest.fn().mockResolvedValue(mockDocs.get(path) || docSnap(null)),
       set: jest.fn().mockImplementation(async (data, options) => {
         mockSets.push({ path, data, options });
       }),
-    }));
+      collection: (name) => ({
+        doc: (id) => makeDocRef(`${path}/${name}/${id}`),
+      }),
+    });
+    mockDoc = jest.fn((path) => makeDocRef(path));
+    mockFetch = jest.fn().mockResolvedValue({ status: 202 });
     mockGenerateContentWithRetry = jest.fn().mockResolvedValue({
       response: {
         text: () => JSON.stringify({
@@ -149,21 +173,17 @@ describe('teacher-ai-focus-analysis handler', () => {
       answeredQuestions: [],
     }));
 
-    const response = await handler(eventFor({}));
-    const body = JSON.parse(response.body);
+    const body = await processSuggestion();
 
-    expect(response.statusCode).toBe(200);
     expect(body.status).toBe('empty');
     expect(body.metrics.questionsAnalyzed).toBe(0);
     expect(mockGenerateContentWithRetry).not.toHaveBeenCalled();
   });
 
   test('builds aggregate prompt data from the selected date range only', async () => {
-    const response = await handler(eventFor({}));
-    const body = JSON.parse(response.body);
+    const body = await processSuggestion();
     const [, prompt] = mockGenerateContentWithRetry.mock.calls[0];
 
-    expect(response.statusCode).toBe(200);
     expect(body.metrics.questionsAnalyzed).toBe(2);
     expect(prompt).toContain('inside miss');
     expect(prompt).not.toContain('outside miss');
@@ -194,10 +214,8 @@ describe('teacher-ai-focus-analysis handler', () => {
       },
     });
 
-    const response = await handler(eventFor({}));
-    const body = JSON.parse(response.body);
+    const body = await processSuggestion();
 
-    expect(response.statusCode).toBe(200);
     expect(body.recommendations).toHaveLength(1);
     expect(body.focusMap).toEqual({ Multiplication: ['basic multiplication'] });
   });
@@ -214,10 +232,8 @@ describe('teacher-ai-focus-analysis handler', () => {
       },
     });
 
-    const response = await handler(eventFor({}));
-    const body = JSON.parse(response.body);
+    const body = await processSuggestion();
 
-    expect(response.statusCode).toBe(200);
     expect(body.usedDeterministicFallback).toBe(true);
     expect(body.summary).toMatch(/Math Whiz used the selected-range performance metrics/i);
     expect(body.recommendations).toHaveLength(1);
@@ -228,8 +244,7 @@ describe('teacher-ai-focus-analysis handler', () => {
   });
 
   test('applies reviewed focusMap without another Gemini call', async () => {
-    const suggestResponse = await handler(eventFor({ mode: 'suggest' }));
-    expect(suggestResponse.statusCode).toBe(200);
+    await processSuggestion();
     expect(mockSets).toHaveLength(1);
     expect(mockSets[0].data.aiFocusRecommendation.focusMap).toEqual({
       Multiplication: ['basic multiplication'],
@@ -252,6 +267,24 @@ describe('teacher-ai-focus-analysis handler', () => {
     });
     expect(mockSets[0].data.allowedSubtopicsByTopic).toEqual({
       Multiplication: ['basic multiplication'],
+    });
+  });
+
+  test('starts suggestion analysis as a background job', async () => {
+    const response = await handler(eventFor({ mode: 'suggest' }));
+    const body = JSON.parse(response.body);
+
+    expect(response.statusCode).toBe(202);
+    expect(body.status).toBe('pending');
+    expect(body.jobId).toMatch(/^teacher-1_/);
+    expect(mockGenerateContentWithRetry).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:8888/.netlify/functions/teacher-ai-focus-analysis-background',
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(mockSets[0]).toMatchObject({
+      path: expect.stringContaining('/teacherAiFocusJobs/'),
+      data: expect.objectContaining({ status: 'pending' }),
     });
   });
 

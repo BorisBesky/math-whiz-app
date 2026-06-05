@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { admin, db } = require("./firebase-admin");
+const fetch = require("node-fetch");
 const { generateContentWithRetry } = require("./retry-utils");
 const { isTeacherOnClass } = require("./class-helpers");
 const {
@@ -10,12 +11,21 @@ const {
 
 const MODES = new Set(["get", "suggest", "update", "delete", "apply"]);
 const UNSPECIFIED_SUBTOPIC = "Unspecified";
+const JOB_COLLECTION = "teacherAiFocusJobs";
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const getTimestamp = () => admin.firestore.Timestamp.now();
+
+const createJobId = (userId) =>
+  `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+const getJobRef = (appId, jobId) =>
+  db.collection("artifacts").doc(appId).collection(JOB_COLLECTION).doc(jobId);
 
 const normalizeDate = (value) => {
   if (!value) return "";
@@ -555,6 +565,113 @@ const buildSavedRecommendation = ({
   };
 };
 
+const processTeacherAiFocusSuggestion = async ({
+  appId,
+  studentId,
+  classId,
+  startDate,
+  endDate,
+  decodedToken,
+}) => {
+  const access = await verifyTeacherAccess({ appId, decodedToken, studentId, classId, mode: "suggest" });
+  const studentProfile = await getProfile(appId, studentId);
+  if (!studentProfile.snap.exists) {
+    const err = new Error("Student profile not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const existingRecommendation = access.enrollmentData?.aiFocusRecommendation || null;
+  const studentData = studentProfile.data || {};
+  const aggregate = aggregateQuestions(Array.isArray(studentData.answeredQuestions) ? studentData.answeredQuestions : [], {
+    startDate,
+    endDate,
+    fallbackGrade: studentData.selectedGrade || studentData.grade || GRADES.G3,
+  });
+
+  if (aggregate.questionsInRange.length === 0) {
+    return {
+      status: "empty",
+      mode: "suggest",
+      applied: false,
+      summary: "No answered questions were found in the selected date range.",
+      recommendations: [],
+      focusMap: {},
+      notEnoughData: [],
+      metrics: { questionsAnalyzed: 0, startDate, endDate },
+      savedRecommendation: null,
+    };
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash",
+    generationConfig: {
+      maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS, 10) || 4096,
+      responseMimeType: "application/json",
+    },
+  });
+
+  const prompt = buildPrompt({
+    student: studentData,
+    startDate,
+    endDate,
+    metrics: aggregate.metrics,
+    rankedNeeds: aggregate.rankedNeeds,
+    notEnoughData: aggregate.notEnoughData,
+    recentMisses: aggregate.recentMisses,
+  });
+
+  const result = await generateContentWithRetry(model, prompt, { label: "teacher-ai-focus-analysis" });
+  const text = result.response.text();
+  let parsed;
+  let usedDeterministicFallback = false;
+  try {
+    parsed = parseLLMJson(text);
+  } catch (parseError) {
+    console.error("Teacher AI focus JSON parse failed:", parseError);
+    usedDeterministicFallback = true;
+  }
+
+  const analysis = usedDeterministicFallback
+    ? buildDeterministicAnalysis(aggregate)
+    : validateAnalysis(parsed, aggregate);
+  const metrics = {
+    questionsAnalyzed: aggregate.questionsInRange.length,
+    startDate,
+    endDate,
+    bySubtopic: aggregate.metrics,
+  };
+  const savedRecommendation = buildSavedRecommendation({
+    analysis,
+    metrics,
+    startDate,
+    endDate,
+    teacherId: decodedToken.uid,
+    previous: existingRecommendation,
+    status: "draft",
+  });
+
+  await access.enrollmentRef.set(
+    {
+      classId,
+      studentId,
+      aiFocusRecommendation: savedRecommendation,
+    },
+    { merge: true }
+  );
+
+  return {
+    status: "ok",
+    mode: "suggest",
+    applied: false,
+    usedDeterministicFallback,
+    ...analysis,
+    metrics,
+    savedRecommendation,
+  };
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
@@ -732,100 +849,67 @@ exports.handler = async (event) => {
       };
     }
 
-    const studentData = studentProfile.data || {};
-    const aggregate = aggregateQuestions(Array.isArray(studentData.answeredQuestions) ? studentData.answeredQuestions : [], {
+    const jobId = createJobId(decodedToken.uid);
+    const jobRef = getJobRef(appId, jobId);
+    await jobRef.set({
+      userId: decodedToken.uid,
+      appId,
+      studentId,
+      classId,
       startDate,
       endDate,
-      fallbackGrade: studentData.selectedGrade || studentData.grade || GRADES.G3,
+      status: "pending",
+      progress: 0,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp(),
     });
 
-    if (aggregate.questionsInRange.length === 0) {
-      return {
-        statusCode: 200,
-        headers,
+    const backgroundFunctionUrl = `${
+      process.env.URL || "http://localhost:8888"
+    }/.netlify/functions/teacher-ai-focus-analysis-background`;
+
+    try {
+      await fetch(backgroundFunctionUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "empty",
-          mode,
-          applied: false,
-          summary: "No answered questions were found in the selected date range.",
-          recommendations: [],
-          focusMap: {},
-          notEnoughData: [],
-          metrics: { questionsAnalyzed: 0, startDate, endDate },
-          savedRecommendation: null,
+          jobId,
+          appId,
+          studentId,
+          classId,
+          startDate,
+          endDate,
+          decodedToken: {
+            uid: decodedToken.uid,
+            role: decodedToken.role || null,
+            admin: decodedToken.admin === true,
+          },
         }),
+      });
+    } catch (invokeError) {
+      console.error("Failed to invoke teacher AI focus background function:", invokeError);
+      await jobRef.set({
+        status: "failed",
+        progress: 100,
+        error: "Failed to start AI focus analysis",
+        updatedAt: getTimestamp(),
+        completedAt: getTimestamp(),
+      }, { merge: true });
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Failed to start AI focus analysis" }),
       };
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash",
-      generationConfig: {
-        maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS, 10) || 4096,
-        responseMimeType: "application/json",
-      },
-    });
-
-    const prompt = buildPrompt({
-      student: studentData,
-      startDate,
-      endDate,
-      metrics: aggregate.metrics,
-      rankedNeeds: aggregate.rankedNeeds,
-      notEnoughData: aggregate.notEnoughData,
-      recentMisses: aggregate.recentMisses,
-    });
-
-    const result = await generateContentWithRetry(model, prompt, { label: "teacher-ai-focus-analysis" });
-    const text = result.response.text();
-    let parsed;
-    let usedDeterministicFallback = false;
-    try {
-      parsed = parseLLMJson(text);
-    } catch (parseError) {
-      console.error("Teacher AI focus JSON parse failed:", parseError);
-      usedDeterministicFallback = true;
-    }
-
-    const analysis = usedDeterministicFallback
-      ? buildDeterministicAnalysis(aggregate)
-      : validateAnalysis(parsed, aggregate);
-    const metrics = {
-      questionsAnalyzed: aggregate.questionsInRange.length,
-      startDate,
-      endDate,
-      bySubtopic: aggregate.metrics,
-    };
-    const savedRecommendation = buildSavedRecommendation({
-      analysis,
-      metrics,
-      startDate,
-      endDate,
-      teacherId: decodedToken.uid,
-      previous: existingRecommendation,
-      status: "draft",
-    });
-
-    await access.enrollmentRef.set(
-      {
-        classId,
-        studentId,
-        aiFocusRecommendation: savedRecommendation,
-      },
-      { merge: true }
-    );
-
     return {
-      statusCode: 200,
+      statusCode: 202,
       headers,
       body: JSON.stringify({
-        status: "ok",
+        status: "pending",
         mode,
-        applied: false,
-        usedDeterministicFallback,
-        ...analysis,
-        metrics,
-        savedRecommendation,
+        jobId,
+        message: "AI focus analysis started",
       }),
     };
   } catch (error) {
@@ -846,4 +930,7 @@ exports._test = {
   buildDeterministicAnalysis,
   buildPrompt,
   parseLLMJson,
+  processTeacherAiFocusSuggestion,
+  createJobId,
+  getJobRef,
 };

@@ -22,6 +22,8 @@ const fieldMap = {
   'coins': 'coins'
 };
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [sortField, setSortField] = useState('questionsToday');
@@ -292,6 +294,42 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     return data;
   }, [appId, viewingStudent]);
 
+  const pollAiFocusJob = useCallback(async (jobId) => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Sign in again to use AI focus recommendations.');
+    }
+
+    const token = await currentUser.getIdToken();
+    const startedAt = Date.now();
+    const timeoutMs = 14 * 60 * 1000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+      await wait(2000);
+      const response = await fetch(
+        `/.netlify/functions/teacher-ai-focus-analysis-status?jobId=${encodeURIComponent(jobId)}&appId=${encodeURIComponent(appId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `AI focus status failed with status ${response.status}`);
+      }
+      if (data.status === 'completed') {
+        return data.result || data;
+      }
+      if (data.status === 'failed') {
+        throw new Error(data.error || 'AI focus analysis failed. Please try again.');
+      }
+    }
+
+    throw new Error('AI focus analysis is still running. Please try again in a minute.');
+  }, [appId]);
+
   const analyzeAiFocus = async () => {
     if (!viewingStudent || !appId) return;
     if (!viewingStudent.classId) {
@@ -311,7 +349,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
         endDate,
         mode: 'suggest',
       });
-      setRecommendationState(data.savedRecommendation || data);
+      const completedData = data.jobId ? await pollAiFocusJob(data.jobId) : data;
+      setRecommendationState(completedData.savedRecommendation || completedData);
     } catch (err) {
       console.error('[StudentsSection] AI focus analysis failed', err);
       setAiFocusError(err?.message || 'AI focus analysis failed. Please try again.');
