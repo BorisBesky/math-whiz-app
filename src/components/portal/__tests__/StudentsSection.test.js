@@ -248,6 +248,24 @@ describe('StudentsSection - Focus integration', () => {
     expect(screen.getByRole('button', { name: /ai focus/i })).toBeInTheDocument();
   });
 
+  test('student details section can collapse overview and question history', () => {
+    renderSection();
+    fireEvent.click(screen.getByTitle('View details'));
+
+    expect(screen.getByText('Student Overview')).toBeInTheDocument();
+    expect(screen.getByText(/Questions for 2026-01-01/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /hide student details/i }));
+
+    expect(screen.queryByText('Student Overview')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Questions for 2026-01-01/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /show student details/i }));
+
+    expect(screen.getByText('Student Overview')).toBeInTheDocument();
+    expect(screen.getByText(/Questions for 2026-01-01/i)).toBeInTheDocument();
+  });
+
   test('sends the selected date range to the AI focus function', async () => {
     const { container } = renderSection();
     fireEvent.click(screen.getByTitle('View details'));
@@ -276,6 +294,22 @@ describe('StudentsSection - Focus integration', () => {
     expect(screen.getAllByText('basic multiplication').length).toBeGreaterThan(0);
     expect(fetchBodyForMode('suggest').mode).toBe('suggest');
     expect(screen.queryByText('Applied')).not.toBeInTheDocument();
+  });
+
+  test('AI focus recommendations section can collapse and expand', async () => {
+    renderSection();
+    fireEvent.click(screen.getByTitle('View details'));
+    fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
+
+    expect(await screen.findByText('Focus on basic multiplication.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /hide ai focus recommendations/i }));
+
+    expect(screen.queryByText('Focus on basic multiplication.')).not.toBeInTheDocument();
+    expect(screen.getByText('AI Focus Recommendations')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /show ai focus recommendations/i }));
+
+    expect(screen.getByText('Focus on basic multiplication.')).toBeInTheDocument();
   });
 
   test('teacher can apply reviewed AI recommendations and refreshes', async () => {

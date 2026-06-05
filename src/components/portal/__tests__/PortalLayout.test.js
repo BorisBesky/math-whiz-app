@@ -75,6 +75,20 @@ describe('PortalLayout', () => {
     expect(onSectionChange).toHaveBeenCalledWith('students');
   });
 
+  it('collapses and expands the desktop sidebar', () => {
+    renderLayout();
+
+    expect(screen.getByText('Workspace')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /collapse portal sidebar/i }));
+
+    expect(screen.queryByText('Workspace')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Overview', current: 'page' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /expand portal sidebar/i }));
+
+    expect(screen.getByText('Workspace')).toBeInTheDocument();
+  });
+
   it('marks the active section with aria-current="page"', () => {
     renderLayout({ activeSectionId: 'overview' });
     const currentButton = screen.getByRole('button', { name: 'Overview', current: 'page' });

@@ -1,18 +1,38 @@
-import React from 'react';
-import { LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 
 const PortalLayout = ({ sections, activeSectionId, onSectionChange, user, roleLabel, onLogout, children }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const activeSection = sections.find((section) => section.id === activeSectionId);
 
   return (
     <div className="min-h-screen flex bg-gray-50 text-gray-900">
-      <aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
-        <div className="px-5 py-6 border-b border-gray-100">
-          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Math Whiz Portal</p>
-          <h1 className="mt-1 text-xl font-bold">Workspace</h1>
-          {roleLabel && (
-            <p className="text-sm text-gray-500">{roleLabel}</p>
-          )}
+      <aside className={`hidden md:flex md:flex-col bg-white border-r border-gray-200 transition-all duration-200 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`px-5 py-6 border-b border-gray-100 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className={`flex items-start ${sidebarCollapsed ? 'justify-center' : 'justify-between gap-3'}`}>
+            {!sidebarCollapsed && (
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Math Whiz Portal</p>
+                <h1 className="mt-1 text-xl font-bold">Workspace</h1>
+                {roleLabel && (
+                  <p className="text-sm text-gray-500">{roleLabel}</p>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              aria-label={sidebarCollapsed ? 'Expand portal sidebar' : 'Collapse portal sidebar'}
+              aria-expanded={!sidebarCollapsed}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {sections.map((section) => {
@@ -23,13 +43,15 @@ const PortalLayout = ({ sections, activeSectionId, onSectionChange, user, roleLa
                 key={section.id}
                 onClick={() => onSectionChange(section.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-left text-sm font-medium transition-colors ${isActive
+                title={sidebarCollapsed ? section.label : undefined}
+                className={`w-full flex items-center rounded-md text-sm font-medium transition-colors ${sidebarCollapsed ? 'justify-center px-2 py-3' : 'space-x-3 px-3 py-2 text-left'} ${isActive
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
               >
                 {Icon && <Icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />}
-                <span>{section.label}</span>
+                {!sidebarCollapsed && <span>{section.label}</span>}
+                {sidebarCollapsed && <span className="sr-only">{section.label}</span>}
               </button>
             );
           })}

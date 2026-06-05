@@ -45,6 +45,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [reviewFocusMap, setReviewFocusMap] = useState({});
   const [aiFocusDirty, setAiFocusDirty] = useState(false);
   const [topicToAdd, setTopicToAdd] = useState('');
+  const [studentDetailsCollapsed, setStudentDetailsCollapsed] = useState(false);
+  const [aiFocusCollapsed, setAiFocusCollapsed] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -261,6 +263,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setReviewFocusMap({});
     setAiFocusDirty(false);
     setTopicToAdd('');
+    setStudentDetailsCollapsed(false);
+    setAiFocusCollapsed(false);
   };
 
   const handleDateRangeChange = (setter) => (event) => {
@@ -270,6 +274,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setReviewFocusMap({});
     setAiFocusDirty(false);
     setTopicToAdd('');
+    setAiFocusCollapsed(false);
   };
 
   const requestAiFocus = useCallback(async (payload) => {
@@ -349,6 +354,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setAiFocusResult(null);
     setReviewFocusMap({});
     setAiFocusDirty(false);
+    setAiFocusCollapsed(false);
 
     try {
       const data = await requestAiFocus({
@@ -601,7 +607,30 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <div>
+            <h4 className="font-semibold text-gray-900">Student Details</h4>
+            <p className="text-sm text-gray-500">Overview, grade progress, and question history</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStudentDetailsCollapsed((collapsed) => !collapsed)}
+            className="inline-flex items-center justify-center px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+            aria-label={studentDetailsCollapsed ? 'Show student details' : 'Hide student details'}
+            aria-expanded={!studentDetailsCollapsed}
+            aria-controls="student-detail-sections"
+          >
+            {studentDetailsCollapsed ? (
+              <ChevronDown className="w-4 h-4 mr-2" />
+            ) : (
+              <ChevronUp className="w-4 h-4 mr-2" />
+            )}
+            {studentDetailsCollapsed ? 'Show' : 'Hide'}
+          </button>
+        </div>
+
+        {!studentDetailsCollapsed && (
+        <div id="student-detail-sections" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Overview Card */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h4 className="font-semibold text-gray-900 mb-4">Student Overview</h4>
@@ -709,6 +738,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           </div>
         </div>
+        )}
 
         {(aiFocusError || aiFocusResult || aiFocusLoading) && (
           <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -722,34 +752,51 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   Review the suggestions, then apply them to this student's Focus Areas if they look right.
                 </p>
               </div>
-              {aiFocusResult?.applied && (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                  Applied
-                </span>
-              )}
-              {aiFocusResult?.saved && !aiFocusResult?.applied && (
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                  Saved
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {aiFocusResult?.applied && (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    Applied
+                  </span>
+                )}
+                {aiFocusResult?.saved && !aiFocusResult?.applied && (
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                    Saved
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setAiFocusCollapsed((collapsed) => !collapsed)}
+                  className="inline-flex items-center justify-center px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  aria-label={aiFocusCollapsed ? 'Show AI focus recommendations' : 'Hide AI focus recommendations'}
+                  aria-expanded={!aiFocusCollapsed}
+                  aria-controls="ai-focus-recommendation-content"
+                >
+                  {aiFocusCollapsed ? (
+                    <ChevronDown className="w-4 h-4 mr-2" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 mr-2" />
+                  )}
+                  {aiFocusCollapsed ? 'Show' : 'Hide'}
+                </button>
+              </div>
             </div>
 
-            {aiFocusLoading && (
+            {!aiFocusCollapsed && aiFocusLoading && (
               <div className="flex items-center text-sm text-gray-600">
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Analyzing performance by topic and subtopic...
               </div>
             )}
 
-            {aiFocusError && (
+            {!aiFocusCollapsed && aiFocusError && (
               <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                 <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                 <span>{aiFocusError}</span>
               </div>
             )}
 
-            {aiFocusResult && !aiFocusLoading && (
-              <div className="space-y-4">
+            {!aiFocusCollapsed && aiFocusResult && !aiFocusLoading && (
+              <div id="ai-focus-recommendation-content" className="space-y-4">
                 <p className="text-sm text-gray-700">{aiFocusResult.summary}</p>
                 <div className="text-xs text-gray-500">
                   {aiFocusResult.metrics?.questionsAnalyzed || 0} question{aiFocusResult.metrics?.questionsAnalyzed === 1 ? '' : 's'} analyzed
@@ -950,8 +997,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           </div>
         )}
 
-        {/* Questions by Date Range */}
-        {(() => {
+        {!studentDetailsCollapsed && (
+        <>
+          {/* Questions by Date Range */}
+          {(() => {
           const normalizedStartDate = normalizeDate(startDate);
           const normalizedEndDate = normalizeDate(endDate);
 
@@ -1052,6 +1101,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           );
             })()}
+        </>
+        )}
         
       </div>
     );
