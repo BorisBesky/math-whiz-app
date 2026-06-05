@@ -189,6 +189,39 @@ describe('teacher-ai-focus-analysis handler', () => {
     expect(prompt).not.toContain('outside miss');
   });
 
+  test('uses provided question history when the student profile has no stored answers', async () => {
+    mockDocs.set('artifacts/app-test/users/student-1/math_whiz_data/profile', docSnap({
+      role: 'student',
+      selectedGrade: 'G3',
+      answeredQuestions: [],
+    }));
+
+    const body = await processSuggestion({
+      answeredQuestions: [
+        {
+          date: '2026-01-10',
+          topic: 'Multiplication',
+          subtopic: 'basic multiplication',
+          question: 'fallback miss',
+          isCorrect: false,
+          timeTaken: 24,
+        },
+        {
+          date: '2026-01-11',
+          topic: 'Multiplication',
+          subtopic: 'basic multiplication',
+          question: 'fallback correct',
+          isCorrect: true,
+          timeTaken: 18,
+        },
+      ],
+    });
+    const [, prompt] = mockGenerateContentWithRetry.mock.calls[0];
+
+    expect(body.metrics.questionsAnalyzed).toBe(2);
+    expect(prompt).toContain('fallback miss');
+  });
+
   test('sanitizes AI recommendations and drops invalid subtopics', async () => {
     mockGenerateContentWithRetry.mockResolvedValueOnce({
       response: {

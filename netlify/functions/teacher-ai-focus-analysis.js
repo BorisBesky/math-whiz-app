@@ -572,6 +572,7 @@ const processTeacherAiFocusSuggestion = async ({
   startDate,
   endDate,
   decodedToken,
+  answeredQuestions = null,
 }) => {
   const access = await verifyTeacherAccess({ appId, decodedToken, studentId, classId, mode: "suggest" });
   const studentProfile = await getProfile(appId, studentId);
@@ -583,7 +584,10 @@ const processTeacherAiFocusSuggestion = async ({
 
   const existingRecommendation = access.enrollmentData?.aiFocusRecommendation || null;
   const studentData = studentProfile.data || {};
-  const aggregate = aggregateQuestions(Array.isArray(studentData.answeredQuestions) ? studentData.answeredQuestions : [], {
+  const questionHistory = Array.isArray(studentData.answeredQuestions) && studentData.answeredQuestions.length > 0
+    ? studentData.answeredQuestions
+    : Array.isArray(answeredQuestions) ? answeredQuestions : [];
+  const aggregate = aggregateQuestions(questionHistory, {
     startDate,
     endDate,
     fallbackGrade: studentData.selectedGrade || studentData.grade || GRADES.G3,
@@ -692,6 +696,7 @@ exports.handler = async (event) => {
       endDate,
       mode = "suggest",
       focusMap,
+      answeredQuestions,
     } = body;
 
     if (!studentId || !MODES.has(mode)) {
@@ -879,6 +884,7 @@ exports.handler = async (event) => {
           classId,
           startDate,
           endDate,
+          answeredQuestions: Array.isArray(answeredQuestions) ? answeredQuestions : [],
           decodedToken: {
             uid: decodedToken.uid,
             role: decodedToken.role || null,

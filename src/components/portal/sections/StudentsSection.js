@@ -247,6 +247,13 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setTopicToAdd('');
   }, []);
 
+  const setAnalysisResultState = useCallback((result) => {
+    setAiFocusResult(result || null);
+    setReviewFocusMap(result?.focusMap || {});
+    setAiFocusDirty(false);
+    setTopicToAdd('');
+  }, []);
+
   const openStudentDetails = (student) => {
     setViewingStudent(student);
     setAiFocusResult(null);
@@ -348,9 +355,17 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
         startDate,
         endDate,
         mode: 'suggest',
+        answeredQuestions: (viewingStudent.answeredQuestions || []).filter((question) => {
+          const questionDate = normalizeDate(question.date || question.timestamp);
+          return questionDate >= startDate && questionDate <= endDate;
+        }),
       });
       const completedData = data.jobId ? await pollAiFocusJob(data.jobId) : data;
-      setRecommendationState(completedData.savedRecommendation || completedData);
+      if (completedData.savedRecommendation) {
+        setRecommendationState(completedData.savedRecommendation);
+      } else {
+        setAnalysisResultState(completedData);
+      }
     } catch (err) {
       console.error('[StudentsSection] AI focus analysis failed', err);
       setAiFocusError(err?.message || 'AI focus analysis failed. Please try again.');

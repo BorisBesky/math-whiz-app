@@ -16,6 +16,7 @@ exports.handler = async (event) => {
     classId,
     startDate,
     endDate,
+    answeredQuestions,
     decodedToken,
   } = JSON.parse(event.body || "{}");
 
@@ -34,6 +35,7 @@ exports.handler = async (event) => {
       classId,
       startDate,
       endDate,
+      answeredQuestions,
       decodedToken,
     });
 
