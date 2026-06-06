@@ -53,14 +53,14 @@ const AppHeader = ({
       {/* User info */}
       {authUser && (
         <div
-          className={`flex items-center gap-1.5 text-gray-700 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-100 ${authUser.isAnonymous ? 'cursor-pointer hover:bg-gray-100 transition' : ''}`}
+          className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-100 bg-gray-50 px-2.5 py-1.5 text-gray-700 transition hover:bg-gray-100"
           onClick={handleUserClick}
-          title={authUser.isAnonymous ? "Click to create an account and save your progress!" : (authUser.displayName || authUser.email)}
+          title="Student profile and class settings"
           data-tutorial-id="settings-menu"
         >
           <User size={14} />
           <span className="text-xs font-bold">
-            {authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
+            {userData?.displayName || authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
           </span>
           {userRole && (
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${

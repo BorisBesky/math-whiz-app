@@ -191,6 +191,7 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     classCounts,
     createClass,
     deleteClass,
+    updateClass,
     refreshStudents,
     removeStudentFromClass,
     teachers,

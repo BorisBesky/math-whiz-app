@@ -128,7 +128,7 @@ const TopicSelection = ({
         <AnimatedTitle />
       </div>
 
-      {/* Grade Selector — pill toggle */}
+      {/* Grade and class source selector */}
       <div className="mb-8 flex justify-center">
         <div className="inline-flex bg-white rounded-full p-1.5 shadow-card border border-gray-100">
           <button

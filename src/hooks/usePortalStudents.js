@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAuth } from 'firebase/auth';
+import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getTodayDateString } from '../utils/common_utils';
 import { getStudentDisplayName } from '../utils/studentName';
 
@@ -50,6 +51,24 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       }
 
       const rawStudentData = await response.json();
+      const db = getFirestore();
+      const classEnrollmentsMap = new Map();
+
+      for (const classItem of classes) {
+        const enrollmentsQuery = query(
+          collection(db, 'artifacts', appId, 'classStudents'),
+          where('classId', '==', classItem.id)
+        );
+        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+        enrollmentsSnapshot.forEach((docSnapshot) => {
+          const enrollment = docSnapshot.data();
+          const existingClassIds = classEnrollmentsMap.get(enrollment.studentId) || [];
+          if (!existingClassIds.includes(classItem.id)) {
+            classEnrollmentsMap.set(enrollment.studentId, [...existingClassIds, classItem.id]);
+          }
+        });
+      }
+
       const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
@@ -69,15 +88,21 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
 
-        const classInfo = data.classId ? classMap.get(data.classId) : null;
+        const classIds = classEnrollmentsMap.get(data.id) || (data.classId ? [data.classId] : []);
+        const primaryClassId = classIds[0] || null;
+        const classNames = classIds
+          .map((classId) => classMap.get(classId)?.name)
+          .filter(Boolean);
+        const primaryClass = primaryClassId ? classMap.get(primaryClassId) : null;
 
         return {
           id: data.id,
           email: data.email || null,
           displayName: getStudentDisplayName(data),
-          classId: data.classId || null,
-          className: classInfo?.name || data.className || 'Unassigned',
-          grade: data.selectedGrade || classInfo?.gradeLevel || 'N/A',
+          classId: primaryClassId,
+          classIds,
+          className: classNames.length > 0 ? classNames.join(', ') : (data.className || 'Unassigned'),
+          grade: data.selectedGrade || primaryClass?.gradeLevel || 'N/A',
           coins: data.coins || 0,
           totalQuestions: totalStudentQuestions,
           accuracy: Math.round(accuracy),
@@ -105,7 +130,7 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
     } finally {
       setLoading(false);
     }
-  }, [appId, classMap]);
+  }, [appId, classMap, classes]);
 
   useEffect(() => {
     fetchStudents();
@@ -113,10 +138,12 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
 
   const classCounts = useMemo(() => {
     return students.reduce((acc, student) => {
-      if (!student.classId) {
+      if (!student.classIds || student.classIds.length === 0) {
         return acc;
       }
-      acc[student.classId] = (acc[student.classId] || 0) + 1;
+      student.classIds.forEach((classId) => {
+        acc[classId] = (acc[classId] || 0) + 1;
+      });
       return acc;
     }, {});
   }, [students]);

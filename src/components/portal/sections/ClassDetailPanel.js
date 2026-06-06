@@ -50,14 +50,28 @@ const ClassDetailPanel = ({
     if (!classId) {
       return [];
     }
-    return students.filter((student) => student.classId === classId);
+    return students.filter((student) => {
+      const studentClassIds = Array.isArray(student.classIds)
+        ? student.classIds
+        : student.classId
+          ? [student.classId]
+          : [];
+      return studentClassIds.includes(classId);
+    });
   }, [students, classId]);
 
   const availableStudents = useMemo(() => {
     if (!classId) {
       return [];
     }
-    return students.filter((student) => student.classId !== classId);
+    return students.filter((student) => {
+      const studentClassIds = Array.isArray(student.classIds)
+        ? student.classIds
+        : student.classId
+          ? [student.classId]
+          : [];
+      return !studentClassIds.includes(classId);
+    });
   }, [students, classId]);
 
   // Memoize roster IDs to prevent unnecessary re-fetches

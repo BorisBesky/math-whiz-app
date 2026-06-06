@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { getAuth } from 'firebase/auth';
-import { doc, getFirestore, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
 
 const DEFAULT_APP_ID = 'default-app-id';
 
@@ -66,8 +66,17 @@ const useClassAssignments = ({ appId = DEFAULT_APP_ID } = {}) => {
     }
 
     const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+    const remainingEnrollmentsQuery = query(
+      collection(db, 'artifacts', appId, 'classStudents'),
+      where('studentId', '==', studentId)
+    );
+    const remainingEnrollmentsSnapshot = await getDocs(remainingEnrollmentsQuery);
+    const nextPrimaryClassId = remainingEnrollmentsSnapshot.empty
+      ? null
+      : remainingEnrollmentsSnapshot.docs[0].data().classId || null;
+
     await updateDoc(profileRef, {
-      classId: null,
+      classId: nextPrimaryClassId,
       updatedAt: new Date().toISOString(),
     });
   }, [appId, db, findEnrollmentId, getToken]);
@@ -84,14 +93,6 @@ const useClassAssignments = ({ appId = DEFAULT_APP_ID } = {}) => {
     }
 
     const token = await getToken();
-
-    if (currentClassId && currentClassId !== classId) {
-      try {
-        await removeStudentFromClass({ studentId, classId: currentClassId });
-      } catch (err) {
-        console.warn('[useClassAssignments] Failed to remove prior enrollment but continuing', err);
-      }
-    }
 
     const response = await fetch('/.netlify/functions/class-students', {
       method: 'POST',
@@ -118,7 +119,7 @@ const useClassAssignments = ({ appId = DEFAULT_APP_ID } = {}) => {
       classId,
       updatedAt: new Date().toISOString(),
     });
-  }, [appId, db, getToken, removeStudentFromClass]);
+  }, [appId, db, getToken]);
 
   return {
     assignStudentToClass,

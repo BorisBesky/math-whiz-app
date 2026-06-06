@@ -23,7 +23,6 @@ import {
   collection,
   query,
   where,
-  getDocs,
 } from "firebase/firestore";
 import { auth, db } from './firebase';
 import { useAuth } from './contexts/AuthContext';
@@ -64,6 +63,7 @@ import { loadStoreImages, getCachedStoreImages } from "./utils/storeImages";
 import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
 import TopicSelection from './components/TopicSelection';
+import StudentProfile from './components/StudentProfile';
 import Dashboard from './components/Dashboard';
 import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
@@ -83,6 +83,14 @@ const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbo
 export { db } from './firebase';
 
 // Store items are now loaded dynamically from Firebase Storage
+
+const normalizeClassGrade = (gradeValue) => {
+  if (!gradeValue) return null;
+  const normalized = String(gradeValue).trim().toUpperCase();
+  if (normalized === 'G3' || normalized.includes('3')) return 'G3';
+  if (normalized === 'G4' || normalized.includes('4')) return 'G4';
+  return null;
+};
 
 const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) => {
   const { topic: topicParam } = useParams();
@@ -197,6 +205,8 @@ const MainAppContent = () => {
   const storeContainerRef = useRef(null);
   // Enrollment state derived solely from artifacts/{appId}/classStudents
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrolledClasses, setEnrolledClasses] = useState([]);
+  const [selectedQuizClassIds, setSelectedQuizClassIds] = useState([]);
   // Prevent repeated quiz initialization loops when resuming/starting
   const quizInitInProgressRef = useRef(false);
   // Track whether the current quiz has been completed (to prevent re-pausing on navigation)
@@ -206,9 +216,7 @@ const MainAppContent = () => {
 
   // Navigate to login page for anonymous users to upgrade their account
   const handleUserClick = () => {
-    if (authUser && authUser.isAnonymous) {
-      navigate('/student-login?mode=signup');
-    }
+    navigateApp('/profile');
   };
 
   // Custom logout handler that navigates to login page
@@ -258,6 +266,122 @@ const MainAppContent = () => {
   
   // Fill-in-the-blanks answer state
   const [fillInAnswers, setFillInAnswers] = useState([]);
+
+  const chooseQuizClass = useCallback((classId, gradeLevel) => {
+    const selectedClass = enrolledClasses.find((classItem) => classItem.id === classId);
+    const classGrade = normalizeClassGrade(
+      gradeLevel || selectedClass?.gradeLevel || selectedClass?.grade
+    );
+
+    setSelectedQuizClassIds([classId]);
+    setUserData((prev) => (
+      prev
+        ? {
+          ...prev,
+          selectedQuizClassId: classId,
+          ...(classGrade ? { selectedGrade: classGrade } : {}),
+        }
+        : prev
+    ));
+
+    if (user) {
+      const userDocRef = getUserDocRef(user.uid);
+      if (userDocRef) {
+        updateDoc(userDocRef, {
+          selectedQuizClassId: classId,
+          ...(classGrade ? { selectedGrade: classGrade } : {}),
+        }).catch((error) => {
+          console.warn('Could not persist selected class:', error);
+        });
+      }
+    }
+
+    if (classGrade && classGrade !== selectedGrade) {
+      gradeChangeInProgressRef.current = true;
+      setSelectedGrade(classGrade);
+      setTimeout(() => {
+        gradeChangeInProgressRef.current = false;
+      }, 1000);
+    }
+  }, [enrolledClasses, selectedGrade, user]);
+
+  useEffect(() => {
+    if (enrolledClasses.length === 0) return;
+    const savedClassId = userData?.selectedQuizClassId;
+    const savedClass = savedClassId
+      ? enrolledClasses.find((classItem) => classItem.id === savedClassId)
+      : null;
+
+    if (savedClass && !selectedQuizClassIds.includes(savedClassId)) {
+      setSelectedQuizClassIds([savedClassId]);
+      return;
+    }
+
+    const selectedClasses = enrolledClasses.filter((classItem) =>
+      selectedQuizClassIds.includes(classItem.id)
+    );
+    const classesToInferFrom = selectedClasses.length > 0 ? selectedClasses : enrolledClasses;
+    const selectedGrades = Array.from(new Set(
+      classesToInferFrom
+        .map((classItem) => normalizeClassGrade(classItem.gradeLevel || classItem.grade))
+        .filter(Boolean)
+    ));
+
+    if (selectedGrades.length === 1 && selectedGrades[0] !== selectedGrade) {
+      gradeChangeInProgressRef.current = true;
+      setSelectedGrade(selectedGrades[0]);
+      setUserData((prev) => (prev ? { ...prev, selectedGrade: selectedGrades[0] } : prev));
+      if (user) {
+        const userDocRef = getUserDocRef(user.uid);
+        if (userDocRef) {
+          updateDoc(userDocRef, { selectedGrade: selectedGrades[0] })
+            .catch((error) => {
+              console.warn('Could not persist class-derived grade selection:', error);
+            })
+            .finally(() => {
+              setTimeout(() => {
+                gradeChangeInProgressRef.current = false;
+              }, 1000);
+            });
+          return;
+        }
+      }
+      setTimeout(() => {
+        gradeChangeInProgressRef.current = false;
+      }, 1000);
+    }
+  }, [enrolledClasses, selectedGrade, selectedQuizClassIds, user, userData?.selectedQuizClassId]);
+
+  const mergeSelectedClassRestrictions = useCallback((selectedClasses) => {
+    if (!selectedClasses.length) {
+      return null;
+    }
+
+    const restrictedTopics = new Set();
+    selectedClasses.forEach((classItem) => {
+      Object.keys(classItem.allowedSubtopicsByTopic || {}).forEach((topic) => {
+        restrictedTopics.add(topic);
+      });
+    });
+
+    const merged = {};
+    restrictedTopics.forEach((topic) => {
+      const hasUnrestrictedClass = selectedClasses.some((classItem) => {
+        const subtopics = classItem.allowedSubtopicsByTopic?.[topic];
+        return !Array.isArray(subtopics) || subtopics.length === 0;
+      });
+
+      if (hasUnrestrictedClass) {
+        return;
+      }
+
+      merged[topic] = Array.from(new Set(
+        selectedClasses.flatMap((classItem) => classItem.allowedSubtopicsByTopic?.[topic] || [])
+      ));
+    });
+
+    return Object.keys(merged).length > 0 ? merged : null;
+  }, []);
   const [fillInResults, setFillInResults] = useState([]); // Array of booleans for each blank
 
   const [difficulty, setDifficulty] = useState(0.5);
@@ -824,17 +948,79 @@ const MainAppContent = () => {
           const q = query(enrollmentsRef, where('studentId', '==', currentUser.uid));
           unsubscribeEnrollment = onSnapshot(
             q,
-            (snap) => {
-              setIsEnrolled(!snap.empty);
+            async (snap) => {
+              if (snap.empty) {
+                setIsEnrolled(false);
+                setEnrolledClasses([]);
+                setSelectedQuizClassIds([]);
+                return;
+              }
+
+              const enrollmentDetails = await Promise.all(
+                snap.docs.map(async (enrollmentDoc) => {
+                  const enrollmentData = enrollmentDoc.data();
+                  const classDocRef = doc(db, 'artifacts', appId, 'classes', enrollmentData.classId);
+                  const classDoc = await getDoc(classDocRef);
+                  if (!classDoc.exists()) {
+                    return null;
+                  }
+
+                  return {
+                    id: enrollmentData.classId,
+                    enrollmentId: enrollmentDoc.id,
+                    allowedSubtopicsByTopic: enrollmentData.allowedSubtopicsByTopic || {},
+                    ...classDoc.data(),
+                  };
+                })
+              );
+
+              const nextEnrolledClasses = enrollmentDetails
+                .filter(Boolean)
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+              setIsEnrolled(nextEnrolledClasses.length > 0);
+              setEnrolledClasses(nextEnrolledClasses);
+              const classesById = new Map(
+                nextEnrolledClasses.map((classItem) => [classItem.id, classItem])
+              );
+              const preferredGrade = normalizeClassGrade(
+                nextEnrolledClasses[0]?.gradeLevel || nextEnrolledClasses[0]?.grade
+              );
+              setSelectedQuizClassIds((prev) => {
+                const validIds = new Set(nextEnrolledClasses.map((classItem) => classItem.id));
+                const filtered = prev.filter((id) => validIds.has(id));
+                if (filtered.length > 0) {
+                  const firstSelectedGrade = normalizeClassGrade(
+                    classesById.get(filtered[0])?.gradeLevel || classesById.get(filtered[0])?.grade
+                  );
+                  return firstSelectedGrade
+                    ? filtered.filter((id) => (
+                      normalizeClassGrade(classesById.get(id)?.gradeLevel || classesById.get(id)?.grade) === firstSelectedGrade
+                    ))
+                    : filtered;
+                }
+
+                if (preferredGrade) {
+                  return nextEnrolledClasses
+                    .filter((classItem) => normalizeClassGrade(classItem.gradeLevel || classItem.grade) === preferredGrade)
+                    .map((classItem) => classItem.id);
+                }
+
+                return nextEnrolledClasses.map((classItem) => classItem.id);
+              });
             },
             (err) => {
               console.warn('Enrollment subscription error:', err);
               setIsEnrolled(false);
+              setEnrolledClasses([]);
+              setSelectedQuizClassIds([]);
             }
           );
         } catch (e) {
           console.warn('Failed to subscribe to enrollment:', e);
           setIsEnrolled(false);
+          setEnrolledClasses([]);
+          setSelectedQuizClassIds([]);
         }
       } else {
         setUser(null);
@@ -918,52 +1104,48 @@ const MainAppContent = () => {
     const answered = await getQuestionHistory(user.uid);
     const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
     
-    // Get student's classId, class configuration, and enrollment subtopic restrictions
-    let studentClassId = null;
+    // Get selected classIds, merged class configuration, and enrollment subtopic restrictions
+    const selectedClasses = enrolledClasses.filter((classItem) =>
+      selectedQuizClassIds.includes(classItem.id)
+    );
+    const classesMatchingSelectedGrade = enrolledClasses.filter((classItem) =>
+      normalizeClassGrade(classItem.gradeLevel || classItem.grade) === selectedGrade
+    );
+    const classesForQuiz = selectedClasses.length > 0
+      ? selectedClasses
+      : (classesMatchingSelectedGrade.length > 0 ? classesMatchingSelectedGrade : enrolledClasses);
+    const selectedClassIds = classesForQuiz.map((classItem) => classItem.id);
     let questionBankProbability = 0.7; // Default 70%
     let allowedSubtopicsByTopic = null;
     let tagMasteryThreshold = 3; // Default: retire tagged questions after 3 correct
     const appIdForQuiz = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
-    try {
-      const enrollmentsRef = collection(db, 'artifacts', appIdForQuiz, 'classStudents');
-      const enrollmentQuery = query(enrollmentsRef, where('studentId', '==', user.uid));
-      const enrollmentSnapshot = await getDocs(enrollmentQuery);
-      if (!enrollmentSnapshot.empty) {
-        const enrollmentData = enrollmentSnapshot.docs[0].data();
-        studentClassId = enrollmentData.classId;
-        
-        // Get subtopic restrictions from enrollment
-        if (enrollmentData.allowedSubtopicsByTopic) {
-          allowedSubtopicsByTopic = enrollmentData.allowedSubtopicsByTopic;
-        }
-        
-        // Fetch class configuration for question bank probability
-        try {
-          const classDocRef = doc(db, 'artifacts', appIdForQuiz, 'classes', studentClassId);
-          const classDoc = await getDoc(classDocRef);
-          if (classDoc.exists()) {
-            const classData = classDoc.data();
-            // Use class-specific probability if set, otherwise use default
-            if (typeof classData.questionBankProbability === 'number') {
-              questionBankProbability = Math.max(0, Math.min(1, classData.questionBankProbability));
-              console.log(`Using class-configured question bank probability: ${questionBankProbability * 100}%`);
-            }
-            if (typeof classData.questionMasteryThreshold === 'number') {
-              tagMasteryThreshold = Math.max(1, classData.questionMasteryThreshold);
-            }
-          }
-        } catch (classErr) {
-          console.warn('Could not fetch class configuration:', classErr);
-        }
-      } else {
-        // Try using deterministic enrollment ID as fallback
-        // This handles cases where query might fail but enrollment exists
-        // Fallback logic removed: userData.classId is not present in user schema.
-        // (No fallback available; student is not enrolled in any class.)
-        // Optionally, handle this case as needed (e.g., show a message or prompt).
+
+    if (classesForQuiz.length > 0) {
+      const configuredProbabilities = classesForQuiz
+        .map((classItem) => classItem.questionBankProbability)
+        .filter((value) => typeof value === 'number');
+      if (configuredProbabilities.length > 0) {
+        const totalProbability = configuredProbabilities.reduce((sum, value) => sum + value, 0);
+        questionBankProbability = Math.max(0, Math.min(1, totalProbability / configuredProbabilities.length));
       }
-    } catch (e) {
-      console.warn('Could not fetch student class:', e);
+
+      const configuredThresholds = classesForQuiz
+        .map((classItem) => classItem.questionMasteryThreshold)
+        .filter((value) => typeof value === 'number');
+      if (configuredThresholds.length > 0) {
+        tagMasteryThreshold = Math.max(...configuredThresholds.map((value) => Math.max(1, value)));
+      }
+
+      allowedSubtopicsByTopic = mergeSelectedClassRestrictions(classesForQuiz);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[startNewQuiz] Using selected classes for quiz:', {
+          classIds: selectedClassIds,
+          questionBankProbability,
+          tagMasteryThreshold,
+          allowedSubtopicsByTopic,
+        });
+      }
     }
 
     // Adapt and compute per-topic target complexity
@@ -1019,7 +1201,7 @@ const MainAppContent = () => {
       target,
       selectedGrade,
       user.uid,
-      studentClassId,
+      selectedClassIds,
       answeredQuestionIds,
       appIdForQuiz,
       questionBankProbability,
@@ -2215,6 +2397,18 @@ Answer: [The answer]`;
                   user={user}
                   userRole={userRole}
                   isEnrolled={isEnrolled}
+                  returnToTopics={returnToTopics}
+                />
+              } />
+              <Route path="profile" element={
+                <StudentProfile
+                  user={user}
+                  userData={userData}
+                  setUserData={setUserData}
+                  selectedGrade={selectedGrade}
+                  enrolledClasses={enrolledClasses}
+                  selectedQuizClassIds={selectedQuizClassIds}
+                  chooseQuizClass={chooseQuizClass}
                   returnToTopics={returnToTopics}
                 />
               } />

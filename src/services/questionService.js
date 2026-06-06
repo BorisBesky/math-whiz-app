@@ -80,129 +80,148 @@ export const getAnsweredQuestionBankQuestions = async (userId) => {
 //   2. Full question data for efficient querying by topic/grade
 export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId, allowedSubtopicsByTopic = null) => {
   const questions = [];
+  const classQuestions = [];
   const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
+  const classIds = Array.isArray(classId)
+    ? classId.filter(Boolean)
+    : classId
+      ? [classId]
+      : [];
   const answeredSet = new Set(answeredQuestionIds || []);
   const seenQuestionIds = new Set(); // Track IDs to avoid duplicates
   const errors = {}; // Track errors by source
 
+  const shuffleQuestions = (items) => {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   try {
     // 1. Fetch class questions if classId provided (highest priority with retry)
-    if (classId) {
-      try {
+    if (classIds.length > 0) {
+      for (const selectedClassId of classIds) {
+        try {
         // Check cache first
-        const cachedQuestions = getCachedClassQuestions(classId, topic, grade, currentAppId);
+          const cachedQuestions = getCachedClassQuestions(selectedClassId, topic, grade, currentAppId);
 
-        if (cachedQuestions && cachedQuestions.length > 0) {
-          console.log(`[fetchQuestionsFromFirestore] Using cached class questions for classId: ${classId}, topic: ${topic}, grade: ${grade}`);
+          if (cachedQuestions && cachedQuestions.length > 0) {
+            console.log(`[fetchQuestionsFromFirestore] Using cached class questions for classId: ${selectedClassId}, topic: ${topic}, grade: ${grade}`);
 
-          let classQuestionsCount = 0;
-          cachedQuestions.forEach(cachedQuestion => {
-            const questionId = cachedQuestion.questionId;
-            if (!questionId) {
-              console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
-              return;
-            }
-            // Check subtopic restrictions
-            if (!isSubtopicAllowed(cachedQuestion, topic, allowedSubtopicsByTopic)) {
-              return; // Skip this question
-            }
-            if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
-              seenQuestionIds.add(questionId);
-              questions.push({
-                ...cachedQuestion,
-                questionId: questionId,
-                source: 'questionBank',
-                collection: 'classQuestions'
-              });
-              classQuestionsCount++;
-            }
-          });
-
-          console.log(`[fetchQuestionsFromFirestore] Used ${classQuestionsCount} cached class questions (${cachedQuestions.length} total cached, ${cachedQuestions.length - classQuestionsCount} filtered out)`);
-        } else {
-          // Cache miss - fetch from Firestore
-          console.log(`[fetchQuestionsFromFirestore] Cache miss - fetching class questions for classId: ${classId}, topic: ${topic}, grade: ${grade}`);
-
-          const fetchClassQuestions = async () => {
-            const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', classId, 'questions');
-            const classQuery = query(
-              classQuestionsRef,
-              where('topic', '==', topic),
-              where('grade', '==', grade)
-            );
-            return await getDocs(classQuery);
-          };
-
-          // Use retry logic for class questions (highest priority)
-          const classSnapshot = await retryWithBackoff(fetchClassQuestions, {
-            maxRetries: 3,
-            initialDelay: 1000
-          });
-
-          // Store all fetched questions in cache (before filtering)
-          const allFetchedQuestions = [];
-          classSnapshot.forEach(doc => {
-            allFetchedQuestions.push({
-              ...doc.data(),
-              questionId: doc.id,
-              source: 'questionBank',
-              collection: 'classQuestions'
+            let classQuestionsCount = 0;
+            cachedQuestions.forEach(cachedQuestion => {
+              const questionId = cachedQuestion.questionId;
+              if (!questionId) {
+                console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
+                return;
+              }
+              if (!isSubtopicAllowed(cachedQuestion, topic, allowedSubtopicsByTopic)) {
+                return;
+              }
+              if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
+                seenQuestionIds.add(questionId);
+                classQuestions.push({
+                  ...cachedQuestion,
+                  classId: selectedClassId,
+                  questionId,
+                  source: 'questionBank',
+                  collection: 'classQuestions'
+                });
+                classQuestionsCount++;
+              }
             });
-          });
 
-          // Cache the fetched questions
-          if (allFetchedQuestions.length > 0) {
-            setCachedClassQuestions(classId, topic, grade, currentAppId, allFetchedQuestions);
-          }
+            console.log(`[fetchQuestionsFromFirestore] Used ${classQuestionsCount} cached class questions for classId ${selectedClassId} (${cachedQuestions.length} total cached, ${cachedQuestions.length - classQuestionsCount} filtered out)`);
+          } else {
+            // Cache miss - fetch from Firestore
+            console.log(`[fetchQuestionsFromFirestore] Cache miss - fetching class questions for classId: ${selectedClassId}, topic: ${topic}, grade: ${grade}`);
 
-          // Filter and add to questions array
-          let classQuestionsCount = 0;
-          classSnapshot.forEach(doc => {
-            const questionData = doc.data();
-            // Check subtopic restrictions
-            if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
-              return; // Skip this question
-            }
-            if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
-              seenQuestionIds.add(doc.id);
-              questions.push({
-                ...questionData,
+            const fetchClassQuestions = async () => {
+              const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', selectedClassId, 'questions');
+              const classQuery = query(
+                classQuestionsRef,
+                where('topic', '==', topic),
+                where('grade', '==', grade)
+              );
+              return await getDocs(classQuery);
+            };
+
+            // Use retry logic for class questions (highest priority)
+            const classSnapshot = await retryWithBackoff(fetchClassQuestions, {
+              maxRetries: 3,
+              initialDelay: 1000
+            });
+
+            // Store all fetched questions in cache (before filtering)
+            const allFetchedQuestions = [];
+            classSnapshot.forEach(doc => {
+              allFetchedQuestions.push({
+                ...doc.data(),
                 questionId: doc.id,
                 source: 'questionBank',
                 collection: 'classQuestions'
               });
-              classQuestionsCount++;
+            });
+
+            // Cache the fetched questions
+            if (allFetchedQuestions.length > 0) {
+              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, allFetchedQuestions);
             }
+
+            // Filter and add to questions array
+            let classQuestionsCount = 0;
+            classSnapshot.forEach(doc => {
+              const questionData = doc.data();
+              if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
+                return;
+              }
+              if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
+                seenQuestionIds.add(doc.id);
+                classQuestions.push({
+                  ...questionData,
+                  classId: selectedClassId,
+                  questionId: doc.id,
+                  source: 'questionBank',
+                  collection: 'classQuestions'
+                });
+                classQuestionsCount++;
+              }
+            });
+
+            console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions for classId ${selectedClassId} (${classSnapshot.size} total, ${classSnapshot.size - classQuestionsCount} filtered out)`);
+          }
+        } catch (err) {
+          const errorMessage = err?.message || err?.toString() || 'Unknown error';
+          console.error('[fetchQuestionsFromFirestore] Error fetching class questions:', {
+            error: err,
+            code: err?.code,
+            message: errorMessage,
+            classId: selectedClassId,
+            topic,
+            grade
           });
 
-          console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions (${classSnapshot.size} total, ${classSnapshot.size - classQuestionsCount} filtered out)`);
-        }
-      } catch (err) {
-        const errorMessage = err?.message || err?.toString() || 'Unknown error';
-        console.error('[fetchQuestionsFromFirestore] Error fetching class questions:', {
-          error: err,
-          code: err?.code,
-          message: errorMessage,
-          classId,
-          topic,
-          grade
-        });
-
-        // Check if this is a missing index error
-        if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
-          errors.classQuestions = {
-            type: 'index',
-            message: 'Missing Firestore index. Please check the console for the index creation link.',
-            details: errorMessage
-          };
-        } else {
-          errors.classQuestions = {
-            type: 'query',
-            message: `Failed to load class questions: ${errorMessage}`,
-            details: errorMessage
-          };
+          // Check if this is a missing index error
+          if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+            errors[`classQuestions:${selectedClassId}`] = {
+              type: 'index',
+              message: 'Missing Firestore index. Please check the console for the index creation link.',
+              details: errorMessage
+            };
+          } else {
+            errors[`classQuestions:${selectedClassId}`] = {
+              type: 'query',
+              message: `Failed to load class questions: ${errorMessage}`,
+              details: errorMessage
+            };
+          }
         }
       }
+
+      questions.push(...(classIds.length > 1 ? shuffleQuestions(classQuestions) : classQuestions));
     }
 
     // 2. Fetch user's own questionBank
@@ -338,7 +357,7 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
   // Log summary
   console.log(`[fetchQuestionsFromFirestore] Fetch summary:`, {
     totalQuestions: questions.length,
-    classId,
+    classIds,
     userId,
     topic,
     grade,
@@ -350,14 +369,15 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
     const errorDetails = Object.entries(errors)
       .map(([source, error]) => `${source}: ${error.message}`)
       .join('; ');
+    const classQuestionErrorEntry = Object.entries(errors).find(([source]) => source.startsWith('classQuestions'));
 
     // Create a user-friendly error message
     const hasIndexError = Object.values(errors).some(e => e.type === 'index');
     if (hasIndexError) {
       throw new Error(`Database index required. Please contact support or check the browser console for the index creation link.`);
-    } else if (errors.classQuestions) {
+    } else if (classQuestionErrorEntry) {
       // Class questions are highest priority, so fail if they fail
-      throw new Error(`Failed to load class questions. ${errors.classQuestions.message}`);
+      throw new Error(`Failed to load class questions. ${classQuestionErrorEntry[1].message}`);
     } else {
       throw new Error(`Failed to load questions: ${errorDetails}`);
     }
