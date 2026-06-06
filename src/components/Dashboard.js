@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { updateDoc } from "firebase/firestore";
 import { getTodayDateString, getUserDocRef } from "../utils/firebaseHelpers";
 import {
@@ -7,6 +7,7 @@ import {
   rankQuestionsByComplexity,
 } from "../utils/complexityEngine";
 import { USER_ROLES } from "../utils/userRoles";
+import { fetchStudentHistory } from "../services/studentHistoryService";
 import {
   DEFAULT_DAILY_GOAL,
   GOAL_RANGE_MIN,
@@ -24,9 +25,44 @@ const Dashboard = ({
   isEnrolled,
   returnToTopics,
 }) => {
+  const [attemptHistory, setAttemptHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const today = getTodayDateString();
   const currentTopics =
     quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+
+  useEffect(() => {
+    if (!user?.uid) return undefined;
+
+    let cancelled = false;
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      try {
+        const history = await fetchStudentHistory({ studentId: user.uid });
+        if (!cancelled) {
+          setAttemptHistory(history);
+        }
+      } catch (error) {
+        console.warn("[Dashboard] Failed to load attempt history:", error);
+        if (!cancelled) {
+          setAttemptHistory(userData?.answeredQuestions || []);
+        }
+      } finally {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, userData?.answeredQuestions]);
+
+  const answeredQuestions = attemptHistory.length > 0
+    ? attemptHistory
+    : (userData?.answeredQuestions || []);
 
   // Determine permissions for editing goals
   const isTeacherOrAdmin =
@@ -36,13 +72,13 @@ const Dashboard = ({
 
   // Get today's answered questions for the selected grade
   const todaysQuestions =
-    userData?.answeredQuestions?.filter(
+    answeredQuestions.filter(
       (q) =>
         q.date === today &&
         (q.grade === selectedGrade || (!q.grade && selectedGrade === "G3"))
     ) || [];
   const totalQuestionsAnswered =
-    userData?.answeredQuestions?.filter(
+    answeredQuestions.filter(
       (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
     ).length || 0;
 
@@ -79,7 +115,7 @@ const Dashboard = ({
 
   // Complexity insights for the selected grade only
   const gradeFilteredHistory =
-    userData?.answeredQuestions?.filter(
+    answeredQuestions.filter(
       (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
     ) || [];
   const adaptedGradeHistory = adaptAnsweredHistory(
@@ -132,6 +168,9 @@ const Dashboard = ({
       <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 mb-5 text-center" data-tutorial-id="dashboard-title">
         {selectedGrade === "G3" ? "3rd" : "4th"} Grade Progress
       </h2>
+      {historyLoading && (
+        <p className="text-center text-sm text-gray-500 mb-4">Loading progress history...</p>
+      )}
 
       {/* Grade Selector */}
       <div className="mb-6 flex justify-center">

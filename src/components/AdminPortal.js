@@ -31,6 +31,7 @@ import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
 import { getTeacherIds } from '../utils/classHelpers';
+import { fetchStudentHistory } from '../services/studentHistoryService';
 
 const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
@@ -41,6 +42,8 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentHistoryLoading, setStudentHistoryLoading] = useState(false);
+  const [studentHistoryError, setStudentHistoryError] = useState('');
   const [error, setError] = useState('');
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -111,26 +114,23 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
 
       const rawStudentData = await response.json();
 
-      const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
       let activeToday = 0;
 
       const processedStudentData = rawStudentData.map(data => {
-        const answeredQuestions = data.answeredQuestions || [];
-        const questionsToday = answeredQuestions.filter(q => q.date === today);
-        const totalStudentQuestions = answeredQuestions.length;
-        const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
+        const totalStudentQuestions = Number(data.totalQuestions || 0);
+        const correctAnswers = Number(data.correctQuestions || 0);
+        const questionsTodayCount = Number(data.questionsToday || 0);
         const accuracy = totalStudentQuestions > 0 ? (correctAnswers / totalStudentQuestions * 100) : 0;
 
-        if (questionsToday.length > 0) {
+        if (questionsTodayCount > 0) {
           activeToday++;
         }
 
-        const latestActivity = answeredQuestions.length > 0
-          ? new Date(answeredQuestions[answeredQuestions.length - 1].timestamp)
-          : null;
+        const latestActivity = data.latestActivity ? new Date(data.latestActivity) : null;
 
+        const today = getTodayDateString();
         const progressG3 = data.progressByGrade?.[today]?.G3 || data.progress?.[today] || {};
         const progressG4 = data.progressByGrade?.[today]?.G4 || {};
 
@@ -149,14 +149,15 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           class: classNames,
           classId: data.classId,
           totalQuestions: totalStudentQuestions,
-          questionsToday: questionsToday.length,
+          questionsToday: questionsTodayCount,
           accuracy: accuracy,
           latestActivity: latestActivity,
           progressG3: progressG3,
           progressG4: progressG4,
-          answeredQuestions: answeredQuestions,
+          answeredQuestions: [],
+          historyLoaded: false,
           dailyGoalsByGrade: data.dailyGoalsByGrade || {},
-          isActiveToday: questionsToday.length > 0
+          isActiveToday: questionsTodayCount > 0
         };
       });
 
@@ -177,6 +178,43 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
       setLoading(false);
     }
   }, [appId, classes]);
+
+  useEffect(() => {
+    if (view !== 'student-detail' || !selectedStudent?.id) return undefined;
+
+    let cancelled = false;
+    const loadStudentHistory = async () => {
+      setStudentHistoryLoading(true);
+      setStudentHistoryError('');
+      try {
+        const answeredQuestions = await fetchStudentHistory({
+          appId,
+          studentId: selectedStudent.id,
+          classId: selectedStudent.classId,
+        });
+        if (!cancelled) {
+          setSelectedStudent((current) => (
+            current?.id === selectedStudent.id
+              ? { ...current, answeredQuestions, historyLoaded: true }
+              : current
+          ));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setStudentHistoryError(err?.message || 'Failed to load question history');
+        }
+      } finally {
+        if (!cancelled) {
+          setStudentHistoryLoading(false);
+        }
+      }
+    };
+
+    loadStudentHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [appId, view, selectedStudent?.id, selectedStudent?.classId]);
 
   const fetchTeachers = useCallback(async () => {
     try {
@@ -1457,8 +1495,16 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           {view === 'students' && (
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+	                {studentHistoryLoading ? (
+	                  <div className="flex items-center text-sm text-gray-500 py-6">
+	                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+	                    Loading question history...
+	                  </div>
+	                ) : studentHistoryError ? (
+	                  <div className="text-sm text-red-600 py-6">{studentHistoryError}</div>
+	                ) : (
+	                <div className="overflow-x-auto">
+	                  <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1627,7 +1673,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                             <button
                               onClick={() => {
-                                setSelectedStudent(student);
+                                setSelectedStudent({ ...student, answeredQuestions: [], historyLoaded: false });
                                 setView('student-detail');
                               }}
                               className="text-blue-600 hover:text-blue-900 inline-flex items-center"
@@ -2151,8 +2197,9 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                         ))}
                     </tbody>
                   </table>
-                </div>
-                {selectedStudent.answeredQuestions.length === 0 && (
+	                </div>
+	                )}
+	                {!studentHistoryLoading && !studentHistoryError && selectedStudent.answeredQuestions.length === 0 && (
                   <div className="text-center py-12">
                     <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">No questions answered yet</p>

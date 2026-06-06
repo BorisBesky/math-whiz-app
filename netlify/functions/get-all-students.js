@@ -1,6 +1,45 @@
 /* eslint-disable no-undef */
 const { admin, db } = require("./firebase-admin");
 
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
+
+const compactProfileFields = [
+  'role',
+  'teacherIds',
+  'email',
+  'displayName',
+  'name',
+  'firstName',
+  'lastName',
+  'selectedGrade',
+  'grade',
+  'coins',
+  'classId',
+  'className',
+  'dailyGoals',
+  'dailyGoalsByGrade',
+  'progress',
+  'progressByGrade',
+  'questionSummary',
+  'questionStatsByDate',
+];
+
+const getQuestionSummary = (profileData) => {
+  const summary = profileData.questionSummary || {};
+  const today = getTodayDateString();
+  const todayStats = profileData.questionStatsByDate?.[today] || {};
+  const totalQuestions = Number(summary.total || 0);
+  const correctQuestions = Number(summary.correct || 0);
+  return {
+    totalQuestions,
+    correctQuestions,
+    questionsToday: Number(todayStats.total || 0),
+    correctToday: Number(todayStats.correct || 0),
+    latestActivity: summary.latestActivity || null,
+    accuracy: totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0,
+  };
+};
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*", // Or your specific domain
@@ -33,7 +72,7 @@ exports.handler = async (event) => {
   }
 
   // Get token from header, appId from body
-  const { appId } = JSON.parse(event.body);
+  const { appId, includeHistory = false } = JSON.parse(event.body);
   console.log("appId=", appId);
   const authHeader = event.headers.authorization;
 
@@ -105,7 +144,8 @@ exports.handler = async (event) => {
     }
 
     console.log("Executing query to fetch user profiles...");
-    const userDocsSnapshot = await query.get();
+    const queryToRun = includeHistory ? query : query.select(...compactProfileFields);
+    const userDocsSnapshot = await queryToRun.get();
 
     if (userDocsSnapshot.empty) {
       console.log(`get users profiles returned 0 document references. The collection appears empty.`);
@@ -132,9 +172,11 @@ exports.handler = async (event) => {
       seenStudentIds.add(userId);
 
       const profileData = userDoc.data();
+      const questionSummary = getQuestionSummary(profileData);
       allStudentsData.push({
         id: userId,
         ...profileData,
+        ...questionSummary,
       });
     });
 

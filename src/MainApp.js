@@ -23,6 +23,7 @@ import {
   collection,
   query,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { auth, db } from './firebase';
 import { useAuth } from './contexts/AuthContext';
@@ -318,6 +319,30 @@ const MainAppContent = () => {
       }, 1000);
     }
   }, [enrolledClasses, selectedGrade, user]);
+
+  const persistQuestionAttempt = async (userDocRef, updates, questionRecord) => {
+    const attemptId = questionRecord.id || `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const attemptRecord = {
+      ...questionRecord,
+      id: attemptId,
+    };
+    const date = attemptRecord.date || getTodayDateString();
+
+    updates['questionSummary.total'] = increment(1);
+    updates['questionSummary.latestActivity'] = attemptRecord.timestamp || new Date().toISOString();
+    updates[`questionStatsByDate.${date}.total`] = increment(1);
+    updates[`questionStatsByDate.${date}.latestActivity`] = attemptRecord.timestamp || new Date().toISOString();
+
+    if (attemptRecord.isCorrect) {
+      updates['questionSummary.correct'] = increment(1);
+      updates[`questionStatsByDate.${date}.correct`] = increment(1);
+    }
+
+    const batch = writeBatch(db);
+    batch.set(doc(collection(userDocRef, 'attempts'), attemptId), attemptRecord, { merge: true });
+    batch.update(userDocRef, updates);
+    await batch.commit();
+  };
 
   useEffect(() => {
     if (enrolledClasses.length === 0) return;
@@ -929,10 +954,11 @@ const MainAppContent = () => {
                 selectedCharacterId: DEFAULT_CHARACTER_ID,
                 ownedCharacters: [DEFAULT_CHARACTER_ID],
                 ownedAccessories: [],
-                equippedAccessories: {},
-                dailyStories: { [today]: {} },
-                answeredQuestions: [],
-                lastAskedComplexityByTopic: {},
+	                equippedAccessories: {},
+	                dailyStories: { [today]: {} },
+	                questionSummary: { total: 0, correct: 0, latestActivity: null },
+	                questionStatsByDate: {},
+	                lastAskedComplexityByTopic: {},
                 createdAt: new Date().toISOString(),
                 role: "student",
                 displayName: "Young Mathematician",
@@ -1403,8 +1429,6 @@ const MainAppContent = () => {
         // Sanitize questionRecord to remove undefined values
         const sanitizedQuestionRecord = sanitizeObject(questionRecord);
         
-        updates[`answeredQuestions`] = arrayUnion(sanitizedQuestionRecord);
-        
         // Track answered question bank questions to avoid repeating them
         if (isCorrect && currentQuestion.questionId) {
           // Question is from Firestore question bank
@@ -1443,7 +1467,7 @@ const MainAppContent = () => {
           });
         }
         
-        await updateDoc(userDocRef, updates);
+        await persistQuestionAttempt(userDocRef, updates, sanitizedQuestionRecord);
         setIsValidatingDrawing(false);
         setIsAnswered(true);
         
@@ -1547,8 +1571,6 @@ const MainAppContent = () => {
       // Sanitize questionRecord to remove undefined values
       const sanitizedQuestionRecord = sanitizeObject(questionRecord);
       
-      updates.answeredQuestions = arrayUnion(sanitizedQuestionRecord);
-
       const pointsAwarded = currentQuestion.awardPoints || 1;
 
       // Update progress counters (matching the structure used by regular questions)
@@ -1623,7 +1645,7 @@ const MainAppContent = () => {
       
       setFeedback({ message: feedbackMessage, type: feedbackType });
       
-      await updateDoc(userDocRef, updates);
+      await persistQuestionAttempt(userDocRef, updates, sanitizedQuestionRecord);
       return;
     }
 
@@ -1682,9 +1704,6 @@ const MainAppContent = () => {
 
     // Sanitize questionRecord to remove undefined values
     const sanitizedQuestionRecord = sanitizeObject(questionRecord);
-
-    // Add question to answered questions array
-    updates[`answeredQuestions`] = arrayUnion(sanitizedQuestionRecord);
 
     // Track answered question bank questions
     if (isCorrect && currentQuestion.questionId) {
@@ -1901,7 +1920,7 @@ const MainAppContent = () => {
 
     setFeedback({ message: feedbackMessage, type: feedbackType });
 
-    await updateDoc(userDocRef, updates);
+    await persistQuestionAttempt(userDocRef, updates, sanitizedQuestionRecord);
   };
 
   const nextQuestion = () => {

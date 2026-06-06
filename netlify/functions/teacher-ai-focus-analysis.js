@@ -100,6 +100,24 @@ const getProfile = async (appId, userId) => {
   return { ref, snap, data: snap.exists ? snap.data() : null };
 };
 
+const getStudentAttemptHistory = async ({ appId, studentId, startDate, endDate }) => {
+  const attemptsRef = db
+    .collection("artifacts")
+    .doc(appId)
+    .collection("users")
+    .doc(studentId)
+    .collection("attempts");
+  let attemptsQuery = attemptsRef;
+  if (startDate) attemptsQuery = attemptsQuery.where("date", ">=", normalizeDate(startDate));
+  if (endDate) attemptsQuery = attemptsQuery.where("date", "<=", normalizeDate(endDate));
+  attemptsQuery = attemptsQuery.orderBy("date", "desc");
+
+  const attemptsSnap = await attemptsQuery.get();
+  return attemptsSnap.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+};
+
 const verifyTeacherAccess = async ({ appId, decodedToken, studentId, classId, mode }) => {
   const teacherId = decodedToken.uid;
   if (decodedToken.admin === true || decodedToken.role === "admin") {
@@ -584,9 +602,13 @@ const processTeacherAiFocusSuggestion = async ({
 
   const existingRecommendation = access.enrollmentData?.aiFocusRecommendation || null;
   const studentData = studentProfile.data || {};
-  const questionHistory = Array.isArray(studentData.answeredQuestions) && studentData.answeredQuestions.length > 0
-    ? studentData.answeredQuestions
-    : Array.isArray(answeredQuestions) ? answeredQuestions : [];
+  let questionHistory = Array.isArray(answeredQuestions) ? answeredQuestions : [];
+  if (questionHistory.length === 0) {
+    questionHistory = await getStudentAttemptHistory({ appId, studentId, startDate, endDate });
+  }
+  if (questionHistory.length === 0 && Array.isArray(studentData.answeredQuestions)) {
+    questionHistory = studentData.answeredQuestions;
+  }
   const aggregate = aggregateQuestions(questionHistory, {
     startDate,
     endDate,

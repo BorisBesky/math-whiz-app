@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { getTodayDateString } from '../utils/common_utils';
 import { getStudentDisplayName } from '../utils/studentName';
 
 const defaultStats = {
@@ -69,19 +68,17 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
         });
       }
 
-      const today = getTodayDateString();
       let totalQuestions = 0;
       let totalCorrect = 0;
       let activeToday = 0;
 
       const processed = rawStudentData.map((data) => {
-        const answeredQuestions = data.answeredQuestions || [];
-        const questionsToday = answeredQuestions.filter((q) => q.date === today);
-        const correctAnswers = answeredQuestions.filter((q) => q.isCorrect).length;
-        const totalStudentQuestions = answeredQuestions.length;
+        const correctAnswers = Number(data.correctQuestions || 0);
+        const totalStudentQuestions = Number(data.totalQuestions || 0);
+        const questionsTodayCount = Number(data.questionsToday || 0);
         const accuracy = totalStudentQuestions > 0 ? (correctAnswers / totalStudentQuestions) * 100 : 0;
 
-        if (questionsToday.length > 0) {
+        if (questionsTodayCount > 0) {
           activeToday += 1;
         }
 
@@ -106,12 +103,11 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
           coins: data.coins || 0,
           totalQuestions: totalStudentQuestions,
           accuracy: Math.round(accuracy),
-          questionsToday: questionsToday.length,
-          answeredQuestions,
+          questionsToday: questionsTodayCount,
+          answeredQuestions: [],
+          historyLoaded: false,
           dailyGoalsByGrade: data.dailyGoalsByGrade || {},
-          latestActivity: answeredQuestions.length > 0
-            ? answeredQuestions[answeredQuestions.length - 1].timestamp
-            : null,
+          latestActivity: data.latestActivity || null,
         };
       });
 

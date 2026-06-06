@@ -12,6 +12,7 @@ import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
 import GoalsModal from '../GoalsModal';
 import StudentFocusModal from '../StudentFocusModal';
+import { fetchStudentHistory } from '../../../services/studentHistoryService';
 
 const fieldMap = {
   'grade': 'grade',
@@ -47,6 +48,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [topicToAdd, setTopicToAdd] = useState('');
   const [studentDetailsCollapsed, setStudentDetailsCollapsed] = useState(false);
   const [aiFocusCollapsed, setAiFocusCollapsed] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -257,15 +260,63 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   }, []);
 
   const openStudentDetails = (student) => {
-    setViewingStudent(student);
+    const hasExistingHistory = Array.isArray(student.answeredQuestions) && student.answeredQuestions.length > 0;
+    setViewingStudent({
+      ...student,
+      answeredQuestions: student.answeredQuestions || [],
+      historyLoaded: hasExistingHistory,
+      historyRequestKey: hasExistingHistory ? `${student.id}_${student.classId || ''}_${startDate}_${endDate}` : null,
+    });
     setAiFocusResult(null);
     setAiFocusError(null);
+    setHistoryError(null);
     setReviewFocusMap({});
     setAiFocusDirty(false);
     setTopicToAdd('');
     setStudentDetailsCollapsed(false);
     setAiFocusCollapsed(false);
   };
+
+  useEffect(() => {
+    if (!viewingStudent?.id || !appId) return undefined;
+    const requestKey = `${viewingStudent.id}_${viewingStudent.classId || ''}_${startDate}_${endDate}`;
+    if (viewingStudent.historyRequestKey === requestKey) return undefined;
+
+    let cancelled = false;
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const answeredQuestions = await fetchStudentHistory({
+          appId,
+          studentId: viewingStudent.id,
+          classId: viewingStudent.classId,
+          startDate,
+          endDate,
+        });
+	        if (!cancelled) {
+	          setViewingStudent((current) => (
+	            current?.id === viewingStudent.id
+	              ? { ...current, answeredQuestions, historyLoaded: true, historyRequestKey: requestKey }
+	              : current
+	          ));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setHistoryError(err?.message || 'Failed to load question history');
+        }
+      } finally {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [appId, viewingStudent?.id, viewingStudent?.classId, viewingStudent?.historyRequestKey, startDate, endDate]);
 
   const handleDateRangeChange = (setter) => (event) => {
     setter(event.target.value);
@@ -591,19 +642,19 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   className="text-sm border-none focus:ring-0"
                 />
              </div>
-             <button
-               type="button"
-               onClick={analyzeAiFocus}
-               disabled={aiFocusLoading || !appId}
+	             <button
+	               type="button"
+	               onClick={analyzeAiFocus}
+	               disabled={aiFocusLoading || !appId}
                className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
              >
-               {aiFocusLoading ? (
-                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-               ) : (
+	               {aiFocusLoading ? (
+	                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+	               ) : (
                  <Sparkles className="w-4 h-4 mr-2" />
                )}
-               AI Focus
-             </button>
+	               AI Focus
+	             </button>
           </div>
         </div>
 
@@ -1011,14 +1062,21 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             }
           ) || [];
           
-          return (
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+	          return (
+	            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h4 className="text-xl font-bold text-gray-700">
                   Questions {startDate === endDate ? `for ${formatDate(startDate)}` : `from ${formatDate(startDate)} to ${formatDate(endDate)}`}:
                 </h4>
               </div>
-              {questionsInRange.length > 0 ? (
+	              {historyLoading ? (
+	                <div className="flex items-center text-sm text-gray-500 py-6">
+	                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+	                  Loading question history...
+	                </div>
+	              ) : historyError ? (
+	                <div className="text-sm text-red-600 py-6">{historyError}</div>
+	              ) : questionsInRange.length > 0 ? (
                 <div className="max-h-96 overflow-y-auto">
                   {(() => {
                     // Group questions by date

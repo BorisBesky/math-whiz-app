@@ -57,6 +57,13 @@ export const retryWithBackoff = async (fn, options = {}) => {
 export const getQuestionHistory = async (userId) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
+  const attemptsSnapshot = await getDocs(collection(userDocRef, 'attempts'));
+  if (!attemptsSnapshot.empty) {
+    return attemptsSnapshot.docs
+      .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
+      .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+  }
+
   const userDoc = await getDoc(userDocRef);
   if (userDoc.exists() && userDoc.data().answeredQuestions) {
     return userDoc.data().answeredQuestions;
@@ -106,9 +113,14 @@ const getQuestionRefFromPath = (path) => {
   return null;
 };
 
+const canHydrateQuestionRefInClient = (path) => (
+  typeof path === 'string' && path.includes('/sharedQuestionBank/')
+);
+
 const hydrateMissingClassQuestionMetadata = async (candidateQuestions) => {
   const hydrateable = candidateQuestions.filter((question) => (
-    (!question.subtopic || !question.operation || !question.tags) && question.questionBankRef
+    (!question.subtopic || !question.operation || !question.tags) &&
+    canHydrateQuestionRefInClient(question.questionBankRef)
   ));
 
   if (hydrateable.length === 0) {
