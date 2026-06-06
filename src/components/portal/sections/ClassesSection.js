@@ -15,6 +15,7 @@ const ClassesSection = ({
   userId,
   teachers = [],
   onCreateClass,
+  onUpdateClass,
   onDeleteClass,
   students = [],
   onAssignStudent,
@@ -32,6 +33,7 @@ const ClassesSection = ({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [selectedClassId, setSelectedClassId] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
   const { confirmationProps, confirm } = useConfirmation();
   const canCreateClass = userRole === USER_ROLES.TEACHER && typeof onCreateClass === 'function';
   const selectedClass = selectedClassId ? classes.find((cls) => cls.id === selectedClassId) : null;
@@ -48,6 +50,21 @@ const ClassesSection = ({
       await onDeleteClass(classId);
     } catch (err) {
       setActionError(err?.message || 'Failed to delete class');
+    }
+  };
+
+  const handleUpdateClass = async (updatedData) => {
+    if (!selectedClass || typeof onUpdateClass !== 'function') {
+      return;
+    }
+
+    try {
+      setActionError(null);
+      await onUpdateClass(selectedClass.id, updatedData);
+      setShowEditForm(false);
+    } catch (err) {
+      setActionError(err?.message || 'Failed to update class');
+      throw err;
     }
   };
 
@@ -176,6 +193,9 @@ const ClassesSection = ({
           userRole={userRole}
           userId={userId}
           teachers={teachers}
+          onEditClass={typeof onUpdateClass === 'function' ? handleUpdateClass : undefined}
+          showEditForm={showEditForm}
+          setShowEditForm={setShowEditForm}
         />
       )}
 

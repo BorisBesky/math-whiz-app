@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle } from 'lucide-react';
+import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle, Edit3 } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -11,6 +11,7 @@ import ModalWrapper from '../../ui/ModalWrapper';
 import SubtopicsFocusModal from '../SubtopicsFocusModal';
 import MessageComposer from '../../messaging/MessageComposer';
 import { getEnrollmentId, sendInternalMessage } from '../../../services/internalMessages';
+import EditClassForm from '../../EditClassForm';
 
 const ClassDetailPanel = ({
   classItem,
@@ -22,6 +23,9 @@ const ClassDetailPanel = ({
   userRole,
   userId,
   teachers = [],
+  onEditClass,
+  showEditForm,
+  setShowEditForm,
 }) => {
   const classId = classItem?.id;
   const appId = getAppId();
@@ -74,6 +78,7 @@ const ClassDetailPanel = ({
   const isAdmin = userRole === USER_ROLES.ADMIN;
   const isTeacherOnClass = userId && classItem && getTeacherIds(classItem).includes(userId);
   const canManageTeachers = isAdmin || isTeacherOnClass;
+  const canEditClass = (isAdmin || isTeacherOnClass) && typeof onEditClass === 'function' && typeof setShowEditForm === 'function';
 
   const currentTeacherIds = useMemo(() => (classItem ? getTeacherIds(classItem) : []), [classItem]);
 
@@ -381,13 +386,25 @@ const ClassDetailPanel = ({
             <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
             <h3 className="text-xl font-semibold text-gray-900">{classItem.name}</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 rounded-full p-2"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {canEditClass && (
+              <button
+                type="button"
+                onClick={() => setShowEditForm(true)}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Edit Class
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 rounded-full p-2"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -794,6 +811,14 @@ const ClassDetailPanel = ({
             enrollments[selectedStudentForSubtopics.id]?.allowedSubtopicsByTopic || {}
           }
           onSaved={handleSubtopicsSaved}
+        />
+      )}
+
+      {showEditForm && canEditClass && (
+        <EditClassForm
+          classData={classItem}
+          onSubmit={onEditClass}
+          onCancel={() => setShowEditForm(false)}
         />
       )}
     </div>

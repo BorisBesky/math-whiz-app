@@ -106,7 +106,43 @@ const usePortalClasses = ({ appId = 'default-app-id', userRole, userId, userEmai
     }
   }, [userRole]);
 
-  return { classes, loading, error, summary, createClass, deleteClass };
+  const updateClass = useCallback(async (classId, classData) => {
+    if (!classId) {
+      throw new Error('Class ID is required');
+    }
+
+    if (!userRole || (userRole !== USER_ROLES.TEACHER && userRole !== USER_ROLES.ADMIN)) {
+      throw new Error('You do not have permission to update classes');
+    }
+
+    try {
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`/.netlify/functions/classes?id=${classId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(classData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update class');
+      }
+    } catch (err) {
+      console.error('Error updating class:', err);
+      throw new Error(err.message || 'Failed to update class');
+    }
+  }, [userRole]);
+
+  return { classes, loading, error, summary, createClass, updateClass, deleteClass };
 };
 
 export default usePortalClasses;
