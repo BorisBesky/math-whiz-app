@@ -94,6 +94,7 @@ export const generateQuizQuestions = async (
     allowedSubtopicsByTopic
   );
   let firestoreQuestionIndex = 0;
+  const forceQuestionBankOnly = questionBankProbability >= 1;
 
   while (questions.length < numQuestions && attempts < maxAttempts) {
     attempts++;
@@ -124,6 +125,15 @@ export const generateQuizQuestions = async (
         };
         useFirestoreQuestion = true;
       }
+    }
+
+    if (!useFirestoreQuestion && forceQuestionBankOnly) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          `[generateQuizQuestions] Question bank probability is 100%, but no more question-bank questions are available for ${topic}/${grade}. Skipping generated fallback.`
+        );
+      }
+      break;
     }
 
     // If not using Firestore question, generate one
@@ -189,8 +199,10 @@ export const generateQuizQuestions = async (
       }
     }
 
-    // Check subtopic restrictions
-    const subtopicAllowed = isSubtopicAllowed(question, topic, allowedSubtopicsByTopic);
+    // Firestore questions are already filtered in fetchQuestionsFromFirestore.
+    // Do not apply the same filter twice, because the fetch layer may intentionally
+    // fall back to class question-bank questions when focus metadata is stale/missing.
+    const subtopicAllowed = useFirestoreQuestion || isSubtopicAllowed(question, topic, allowedSubtopicsByTopic);
     if (!subtopicAllowed) {
       // Skip this question if subtopic is not allowed
       filteredBySubtopicCount++;

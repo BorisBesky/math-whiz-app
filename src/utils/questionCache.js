@@ -4,7 +4,7 @@
  * Uses localStorage with TTL (Time To Live) to cache questions
  */
 
-const CACHE_PREFIX = 'class_questions_cache_';
+const CACHE_PREFIX = 'class_questions_cache_v2_';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -197,4 +197,3 @@ export const clearAllClassQuestionCache = () => {
     console.error('[questionCache] Error clearing all cache:', error);
   }
 };
-

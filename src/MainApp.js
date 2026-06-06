@@ -69,6 +69,10 @@ import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from 
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getTopicAvailability } from "./services/topicAvailability";
+import {
+  normalizeAllowedSubtopics,
+  normalizeAllowedSubtopicsByTopic,
+} from "./utils/subtopicUtils";
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
@@ -90,6 +94,16 @@ const normalizeClassGrade = (gradeValue) => {
   if (normalized === 'G3' || normalized.includes('3')) return 'G3';
   if (normalized === 'G4' || normalized.includes('4')) return 'G4';
   return null;
+};
+
+const normalizeQuestionBankProbability = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = typeof value === 'number'
+    ? value
+    : Number.parseFloat(String(value).replace('%', '').trim());
+  if (!Number.isFinite(parsed)) return null;
+  const asRatio = parsed > 1 ? parsed / 100 : parsed;
+  return Math.max(0, Math.min(1, asRatio));
 };
 
 const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) => {
@@ -359,7 +373,7 @@ const MainAppContent = () => {
 
     const restrictedTopics = new Set();
     selectedClasses.forEach((classItem) => {
-      Object.keys(classItem.allowedSubtopicsByTopic || {}).forEach((topic) => {
+      Object.keys(normalizeAllowedSubtopicsByTopic(classItem.allowedSubtopicsByTopic)).forEach((topic) => {
         restrictedTopics.add(topic);
       });
     });
@@ -367,8 +381,9 @@ const MainAppContent = () => {
     const merged = {};
     restrictedTopics.forEach((topic) => {
       const hasUnrestrictedClass = selectedClasses.some((classItem) => {
-        const subtopics = classItem.allowedSubtopicsByTopic?.[topic];
-        return !Array.isArray(subtopics) || subtopics.length === 0;
+        const restrictionsByTopic = normalizeAllowedSubtopicsByTopic(classItem.allowedSubtopicsByTopic);
+        const subtopics = normalizeAllowedSubtopics(restrictionsByTopic[topic]);
+        return subtopics.length === 0;
       });
 
       if (hasUnrestrictedClass) {
@@ -376,7 +391,10 @@ const MainAppContent = () => {
       }
 
       merged[topic] = Array.from(new Set(
-        selectedClasses.flatMap((classItem) => classItem.allowedSubtopicsByTopic?.[topic] || [])
+        selectedClasses.flatMap((classItem) => {
+          const restrictionsByTopic = normalizeAllowedSubtopicsByTopic(classItem.allowedSubtopicsByTopic);
+          return normalizeAllowedSubtopics(restrictionsByTopic[topic]);
+        })
       ));
     });
 
@@ -1123,6 +1141,7 @@ const MainAppContent = () => {
     if (classesForQuiz.length > 0) {
       const configuredProbabilities = classesForQuiz
         .map((classItem) => classItem.questionBankProbability)
+        .map(normalizeQuestionBankProbability)
         .filter((value) => typeof value === 'number');
       if (configuredProbabilities.length > 0) {
         const totalProbability = configuredProbabilities.reduce((sum, value) => sum + value, 0);

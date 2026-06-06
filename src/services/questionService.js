@@ -5,6 +5,7 @@ import {
   where,
   getDocs,
   getDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from '../firebase';
 import { getUserDocRef } from "../utils/firebaseHelpers";
@@ -74,6 +75,82 @@ export const getAnsweredQuestionBankQuestions = async (userId) => {
   return [];
 };
 
+const normalizeGradeValue = (gradeValue) => {
+  if (!gradeValue) return '';
+  const normalized = String(gradeValue).trim().toUpperCase();
+  if (normalized === 'G3' || normalized.includes('3')) return 'G3';
+  if (normalized === 'G4' || normalized.includes('4')) return 'G4';
+  return normalized;
+};
+
+const normalizeTopicValue = (topicValue) => (
+  String(topicValue || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/\b(3rd|4th|grade\s*[34]|g[34])\b/g, '')
+    .replace(/[^a-z0-9]+/g, '')
+);
+
+const matchesTopicAndGrade = (questionData, topic, grade) => (
+  normalizeTopicValue(questionData.topic || questionData.concept) === normalizeTopicValue(topic) &&
+  normalizeGradeValue(questionData.grade) === normalizeGradeValue(grade)
+);
+
+const getQuestionRefFromPath = (path) => {
+  if (!path || typeof path !== 'string') return null;
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length % 2 === 0) {
+    return doc(db, ...segments);
+  }
+  return null;
+};
+
+const hydrateMissingClassQuestionMetadata = async (candidateQuestions) => {
+  const hydrateable = candidateQuestions.filter((question) => (
+    (!question.subtopic || !question.operation || !question.tags) && question.questionBankRef
+  ));
+
+  if (hydrateable.length === 0) {
+    return candidateQuestions;
+  }
+
+  const hydratedByRef = new Map();
+  await Promise.all(hydrateable.map(async (question) => {
+    if (hydratedByRef.has(question.questionBankRef)) return;
+    const questionRef = getQuestionRefFromPath(question.questionBankRef);
+    if (!questionRef) return;
+
+    try {
+      const snap = await getDoc(questionRef);
+      if (snap.exists()) {
+        hydratedByRef.set(question.questionBankRef, snap.data());
+      }
+    } catch (error) {
+      console.warn('[fetchQuestionsFromFirestore] Could not hydrate class question metadata:', {
+        questionBankRef: question.questionBankRef,
+        error,
+      });
+    }
+  }));
+
+  if (hydratedByRef.size === 0) {
+    return candidateQuestions;
+  }
+
+  return candidateQuestions.map((question) => {
+    const sourceQuestion = hydratedByRef.get(question.questionBankRef);
+    if (!sourceQuestion) return question;
+    return {
+      ...sourceQuestion,
+      ...question,
+      subtopic: question.subtopic || sourceQuestion.subtopic,
+      operation: question.operation || sourceQuestion.operation,
+      tags: Array.isArray(question.tags) && question.tags.length > 0 ? question.tags : sourceQuestion.tags,
+    };
+  });
+};
+
 // Fetch questions from Firestore (class questions, user questionBank, teacher questionBank, shared questionBank)
 // Note: Class questions are stored as reference documents that contain both:
 //   1. Reference info (questionBankRef, teacherId) pointing to the original question
@@ -100,6 +177,70 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
     return shuffled;
   };
 
+  const addClassQuestions = async (candidateQuestions, selectedClassId, sourceLabel) => {
+    const hydratedCandidates = await hydrateMissingClassQuestionMetadata(candidateQuestions);
+    const eligibleQuestions = [];
+    const fallbackQuestions = [];
+    let missingQuestionIdCount = 0;
+    let subtopicFilteredCount = 0;
+    let answeredOrDuplicateCount = 0;
+
+    hydratedCandidates.forEach(candidateQuestion => {
+      const questionId = candidateQuestion.questionId;
+      if (!questionId) {
+        missingQuestionIdCount++;
+        console.warn('[fetchQuestionsFromFirestore] Class question missing questionId, skipping:', candidateQuestion);
+        return;
+      }
+
+      if (answeredSet.has(questionId) || seenQuestionIds.has(questionId)) {
+        answeredOrDuplicateCount++;
+        return;
+      }
+
+      const normalizedQuestion = {
+        ...candidateQuestion,
+        classId: selectedClassId,
+        questionId,
+        source: 'questionBank',
+        collection: 'classQuestions'
+      };
+
+      fallbackQuestions.push(normalizedQuestion);
+
+      if (isSubtopicAllowed(candidateQuestion, topic, allowedSubtopicsByTopic)) {
+        eligibleQuestions.push(normalizedQuestion);
+      } else {
+        subtopicFilteredCount++;
+      }
+    });
+
+    const questionsToAdd = eligibleQuestions.length > 0 ? eligibleQuestions : fallbackQuestions;
+
+    if (eligibleQuestions.length === 0 && fallbackQuestions.length > 0 && subtopicFilteredCount > 0) {
+      console.warn(
+        `[fetchQuestionsFromFirestore] Focus subtopic filters removed all ${subtopicFilteredCount} available class question-bank questions for classId ${selectedClassId}, topic "${topic}". Falling back to class question-bank questions without subtopic filtering.`
+      );
+    }
+
+    questionsToAdd.forEach(question => {
+      seenQuestionIds.add(question.questionId);
+      classQuestions.push(question);
+    });
+
+    console.log(`[fetchQuestionsFromFirestore] ${sourceLabel} class questions for classId ${selectedClassId}:`, {
+      added: questionsToAdd.length,
+      matchedSubtopicFilter: eligibleQuestions.length,
+      availableBeforeSubtopicFilter: fallbackQuestions.length,
+      subtopicFiltered: subtopicFilteredCount,
+      answeredOrDuplicate: answeredOrDuplicateCount,
+      missingQuestionId: missingQuestionIdCount,
+      totalCandidates: candidateQuestions.length,
+    });
+
+    return questionsToAdd.length;
+  };
+
   try {
     // 1. Fetch class questions if classId provided (highest priority with retry)
     if (classIds.length > 0) {
@@ -111,30 +252,11 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
           if (cachedQuestions && cachedQuestions.length > 0) {
             console.log(`[fetchQuestionsFromFirestore] Using cached class questions for classId: ${selectedClassId}, topic: ${topic}, grade: ${grade}`);
 
-            let classQuestionsCount = 0;
-            cachedQuestions.forEach(cachedQuestion => {
-              const questionId = cachedQuestion.questionId;
-              if (!questionId) {
-                console.warn('[fetchQuestionsFromFirestore] Cached question missing questionId, skipping:', cachedQuestion);
-                return;
-              }
-              if (!isSubtopicAllowed(cachedQuestion, topic, allowedSubtopicsByTopic)) {
-                return;
-              }
-              if (!answeredSet.has(questionId) && !seenQuestionIds.has(questionId)) {
-                seenQuestionIds.add(questionId);
-                classQuestions.push({
-                  ...cachedQuestion,
-                  classId: selectedClassId,
-                  questionId,
-                  source: 'questionBank',
-                  collection: 'classQuestions'
-                });
-                classQuestionsCount++;
-              }
-            });
-
-            console.log(`[fetchQuestionsFromFirestore] Used ${classQuestionsCount} cached class questions for classId ${selectedClassId} (${cachedQuestions.length} total cached, ${cachedQuestions.length - classQuestionsCount} filtered out)`);
+            const classQuestionsCount = await addClassQuestions(cachedQuestions, selectedClassId, 'Used cached');
+            if (classQuestionsCount > 0) {
+              const hydratedCachedQuestions = await hydrateMissingClassQuestionMetadata(cachedQuestions);
+              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedCachedQuestions);
+            }
           } else {
             // Cache miss - fetch from Firestore
             console.log(`[fetchQuestionsFromFirestore] Cache miss - fetching class questions for classId: ${selectedClassId}, topic: ${topic}, grade: ${grade}`);
@@ -166,32 +288,49 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
               });
             });
 
-            // Cache the fetched questions
-            if (allFetchedQuestions.length > 0) {
-              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, allFetchedQuestions);
+            if (allFetchedQuestions.length === 0) {
+              console.warn(
+                `[fetchQuestionsFromFirestore] Exact class question query returned 0 for classId ${selectedClassId}, topic "${topic}", grade "${grade}". Trying normalized fallback.`
+              );
+
+              const fallbackSnapshot = await retryWithBackoff(async () => {
+                const classQuestionsRef = collection(db, 'artifacts', currentAppId, 'classes', selectedClassId, 'questions');
+                return await getDocs(classQuestionsRef);
+              }, {
+                maxRetries: 2,
+                initialDelay: 500
+              });
+
+              fallbackSnapshot.forEach(doc => {
+                const questionData = doc.data();
+                if (matchesTopicAndGrade(questionData, topic, grade)) {
+                  allFetchedQuestions.push({
+                    ...questionData,
+                    questionId: doc.id,
+                    source: 'questionBank',
+                    collection: 'classQuestions'
+                  });
+                }
+              });
+
+              console.log(
+                `[fetchQuestionsFromFirestore] Normalized fallback found ${allFetchedQuestions.length} class questions for classId ${selectedClassId} (${fallbackSnapshot.size} total class questions scanned)`
+              );
             }
 
-            // Filter and add to questions array
-            let classQuestionsCount = 0;
-            classSnapshot.forEach(doc => {
-              const questionData = doc.data();
-              if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
-                return;
-              }
-              if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
-                seenQuestionIds.add(doc.id);
-                classQuestions.push({
-                  ...questionData,
-                  classId: selectedClassId,
-                  questionId: doc.id,
-                  source: 'questionBank',
-                  collection: 'classQuestions'
-                });
-                classQuestionsCount++;
-              }
-            });
+            const classQuestionsCount = await addClassQuestions(
+              allFetchedQuestions,
+              selectedClassId,
+              'Fetched'
+            );
 
-            console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions for classId ${selectedClassId} (${classSnapshot.size} total, ${classSnapshot.size - classQuestionsCount} filtered out)`);
+            // Cache after metadata hydration/filtering has had a chance to run.
+            if (allFetchedQuestions.length > 0) {
+              const hydratedFetchedQuestions = await hydrateMissingClassQuestionMetadata(allFetchedQuestions);
+              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedFetchedQuestions);
+            }
+
+            console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions for classId ${selectedClassId} (${allFetchedQuestions.length} topic/grade matched, ${allFetchedQuestions.length - classQuestionsCount} filtered out)`);
           }
         } catch (err) {
           const errorMessage = err?.message || err?.toString() || 'Unknown error';
