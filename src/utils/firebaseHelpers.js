@@ -1,5 +1,5 @@
 /* global __app_id */
-import { doc } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 import { db } from '../firebase';
 
 export const getTodayDateString = () => {
@@ -18,6 +18,19 @@ export const getUserDocRef = (userId) => {
     userId,
     "math_whiz_data",
     "profile"
+  );
+};
+
+export const getUserAttemptsCollectionRef = (userId) => {
+  const appId = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
+  if (!userId) return null;
+  return collection(
+    db,
+    "artifacts",
+    appId,
+    "users",
+    userId,
+    "attempts"
   );
 };
 

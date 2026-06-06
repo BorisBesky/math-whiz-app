@@ -8,7 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from '../firebase';
-import { getUserDocRef } from "../utils/firebaseHelpers";
+import { getUserAttemptsCollectionRef, getUserDocRef } from "../utils/firebaseHelpers";
 import { getCachedClassQuestions, setCachedClassQuestions } from "../utils/questionCache";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
 
@@ -57,8 +57,9 @@ export const retryWithBackoff = async (fn, options = {}) => {
 export const getQuestionHistory = async (userId) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
-  const attemptsSnapshot = await getDocs(collection(userDocRef, 'attempts'));
-  if (!attemptsSnapshot.empty) {
+  const attemptsRef = getUserAttemptsCollectionRef(userId);
+  const attemptsSnapshot = attemptsRef ? await getDocs(attemptsRef) : null;
+  if (attemptsSnapshot && !attemptsSnapshot.empty) {
     return attemptsSnapshot.docs
       .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
       .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));

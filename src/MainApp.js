@@ -53,8 +53,9 @@ import {
 } from "./constants/appConstants";
 import {
   getTodayDateString,
-  getUserDocRef,
-  sanitizeTopicName,
+	  getUserDocRef,
+	  getUserAttemptsCollectionRef,
+	  sanitizeTopicName,
   sanitizeObject,
   encodeTopicForPath,
   decodeTopicFromPath,
@@ -339,7 +340,11 @@ const MainAppContent = () => {
     }
 
     const batch = writeBatch(db);
-    batch.set(doc(collection(userDocRef, 'attempts'), attemptId), attemptRecord, { merge: true });
+    const attemptsRef = getUserAttemptsCollectionRef(user.uid);
+    if (!attemptsRef) {
+      throw new Error('Could not resolve attempt history collection.');
+    }
+    batch.set(doc(attemptsRef, attemptId), attemptRecord, { merge: true });
     batch.update(userDocRef, updates);
     await batch.commit();
   };
