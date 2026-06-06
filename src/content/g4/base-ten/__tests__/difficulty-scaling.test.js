@@ -126,6 +126,30 @@ describe('Grade 4 Difficulty Scaling', () => {
   });
 
   describe('Decimal place value difficulty scaling', () => {
+    test('Base Ten: multiplication focus subtopic generates valid questions', () => {
+      const questions = Array(30).fill(0).map(() => generateBaseTen(0.5, ['multiplication']));
+
+      questions.forEach(q => {
+        expect(q).toBeDefined();
+        expect(q.subtopic).toBe('multiplication');
+        expect(q.concept).toBe('Base Ten');
+        expect(q.grade).toBe('G4');
+        expect(q.correctAnswer).toBeDefined();
+      });
+    });
+
+    test('Base Ten: division focus subtopic generates valid questions', () => {
+      const questions = Array(30).fill(0).map(() => generateBaseTen(0.5, ['division']));
+
+      questions.forEach(q => {
+        expect(q).toBeDefined();
+        expect(q.subtopic).toBe('division');
+        expect(q.concept).toBe('Base Ten');
+        expect(q.grade).toBe('G4');
+        expect(q.correctAnswer).toBeDefined();
+      });
+    });
+
     test('Base Ten: decimal place value is available at low difficulty', () => {
       const questions = Array(30).fill(0).map(() => generateBaseTen(0.1, ['decimal place value']));
       questions.forEach(q => {

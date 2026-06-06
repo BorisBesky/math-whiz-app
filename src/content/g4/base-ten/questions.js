@@ -79,6 +79,14 @@ function generateSubtractionArithmeticQuestion(difficulty = 0.5) {
   return generateMultiDigitArithmeticQuestion(difficulty, 'subtraction');
 }
 
+function generateMultiplicationArithmeticQuestion(difficulty = 0.5) {
+  return generateMultiDigitMultiplicationQuestion(difficulty);
+}
+
+function generateDivisionArithmeticQuestion(difficulty = 0.5) {
+  return generateMultiDigitDivisionQuestion(difficulty);
+}
+
 /**
  * Generates a random Base Ten question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
@@ -97,6 +105,14 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'subtraction': [
       { generator: generateSubtractionArithmeticQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
       { generator: generateSubtractionWordProblemQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
+    ],
+    'multiplication': [
+      { generator: generateMultiplicationArithmeticQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+      { generator: generateMultiplicationWordProblemQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
+    ],
+    'division': [
+      { generator: generateDivisionArithmeticQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
+      { generator: generateDivisionWordProblemQuestion, minDifficulty: 0.2, maxDifficulty: 1.0 },
     ],
     'comparison': { generator: generateComparisonQuestion, minDifficulty: 0.0, maxDifficulty: 1.0 },
     'multi-step word problems': { generator: generateMultiStepWordProblemQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
@@ -281,6 +297,186 @@ export function generateMultiDigitArithmeticQuestion(difficulty = 0.5, forceOper
     grade: "G4",
     subtopic: isAddition ? "addition" : "subtraction",
     difficultyRange: { min: 0.4, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates multi-digit multiplication questions (4.NBT.B.5)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiDigitMultiplicationQuestion(difficulty = 0.5) {
+  const twoDigitFactor = getRandomInt(12 + Math.floor(difficulty * 8), 39 + Math.floor(difficulty * 50));
+  const multiplicand = difficulty < 0.35
+    ? getRandomInt(100, 999)
+    : getRandomInt(1000 + Math.floor(difficulty * 1500), 9999);
+  const answer = multiplicand * twoDigitFactor;
+  const correctAnswer = answer.toString();
+  const potentialDistractors = [
+    (answer + twoDigitFactor).toString(),
+    (answer - twoDigitFactor).toString(),
+    (answer + multiplicand).toString(),
+    (answer - multiplicand).toString(),
+    (multiplicand + twoDigitFactor).toString(),
+  ].filter(value => Number(value) > 0);
+
+  return {
+    question: `What is ${addCommas(multiplicand)} x ${twoDigitFactor}?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: "Multiply each place value carefully, then add the partial products.",
+    standard: "4.NBT.B.5",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "multiplication",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates division questions with whole-number quotients (4.NBT.B.6)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiDigitDivisionQuestion(difficulty = 0.5) {
+  const divisor = difficulty < 0.4
+    ? getRandomInt(2, 9)
+    : getRandomInt(10, 25 + Math.floor(difficulty * 24));
+  const quotient = difficulty < 0.4
+    ? getRandomInt(20, 150)
+    : getRandomInt(50 + Math.floor(difficulty * 100), 400 + Math.floor(difficulty * 300));
+  const dividend = divisor * quotient;
+  const correctAnswer = quotient.toString();
+  const potentialDistractors = [
+    (quotient + divisor).toString(),
+    Math.max(1, quotient - divisor).toString(),
+    (quotient + 10).toString(),
+    Math.max(1, quotient - 10).toString(),
+    divisor.toString(),
+  ];
+
+  return {
+    question: `What is ${addCommas(dividend)} / ${divisor}?`,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: "Use place value or partial quotients to divide the dividend by the divisor.",
+    standard: "4.NBT.B.6",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "division",
+    difficultyRange: { min: 0.0, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates multiplication word problems (4.NBT.B.5)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateMultiplicationWordProblemQuestion(difficulty = 0.5) {
+  const scenarios = [
+    {
+      item: "stickers",
+      container: "boxes",
+      question: (groups, each, item, container) =>
+        `A school store packed ${addCommas(each)} ${item} into each of ${groups} ${container}. How many ${item} were packed in all?`
+    },
+    {
+      item: "seats",
+      container: "rows",
+      question: (groups, each, item, container) =>
+        `The auditorium has ${groups} ${container} with ${addCommas(each)} ${item} in each row. How many ${item} are in the auditorium?`
+    },
+    {
+      item: "granola bars",
+      container: "cartons",
+      question: (groups, each, item, container) =>
+        `For field day, volunteers filled ${groups} ${container} with ${addCommas(each)} ${item} in each carton. How many ${item} did they pack?`
+    }
+  ];
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const groups = getRandomInt(12 + Math.floor(difficulty * 8), 35 + Math.floor(difficulty * 45));
+  const each = difficulty < 0.35
+    ? getRandomInt(100, 999)
+    : getRandomInt(1000, 9999);
+  const answer = groups * each;
+  const correctAnswer = answer.toString();
+  const potentialDistractors = [
+    (answer + groups).toString(),
+    (answer - groups).toString(),
+    (answer + each).toString(),
+    (answer - each).toString(),
+  ].filter(value => Number(value) > 0);
+
+  return {
+    question: scenario.question(groups, each, scenario.item, scenario.container),
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `Multiply the number of groups by the amount in each group: ${groups} x ${addCommas(each)}.`,
+    standard: "4.NBT.B.5",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "multiplication",
+    difficultyRange: { min: 0.2, max: 1.0 },
+    suggestedDifficulty: difficulty,
+  };
+}
+
+/**
+ * Generates division word problems with whole-number quotients (4.NBT.B.6)
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateDivisionWordProblemQuestion(difficulty = 0.5) {
+  const scenarios = [
+    {
+      item: "pencils",
+      groups: "classrooms",
+      question: (total, groups, item, groupName) =>
+        `A school has ${addCommas(total)} ${item} to share equally among ${groups} ${groupName}. How many ${item} will each ${groupName.slice(0, -1)} get?`
+    },
+    {
+      item: "tickets",
+      groups: "tables",
+      question: (total, groups, item, groupName) =>
+        `Volunteers placed ${addCommas(total)} ${item} equally on ${groups} ${groupName}. How many ${item} were placed on each table?`
+    },
+    {
+      item: "books",
+      groups: "shelves",
+      question: (total, groups, item, groupName) =>
+        `The library arranged ${addCommas(total)} ${item} equally across ${groups} ${groupName}. How many ${item} were on each shelf?`
+    }
+  ];
+  const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  const groups = difficulty < 0.4
+    ? getRandomInt(2, 9)
+    : getRandomInt(10, 25 + Math.floor(difficulty * 24));
+  const each = difficulty < 0.4
+    ? getRandomInt(20, 150)
+    : getRandomInt(50 + Math.floor(difficulty * 100), 400 + Math.floor(difficulty * 300));
+  const total = groups * each;
+  const correctAnswer = each.toString();
+  const potentialDistractors = [
+    (each + groups).toString(),
+    Math.max(1, each - groups).toString(),
+    (each + 10).toString(),
+    Math.max(1, each - 10).toString(),
+  ];
+
+  return {
+    question: scenario.question(total, groups, scenario.item, scenario.groups),
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: `Divide the total by the number of equal groups: ${addCommas(total)} / ${groups}.`,
+    standard: "4.NBT.B.6",
+    concept: "Base Ten",
+    grade: "G4",
+    subtopic: "division",
+    difficultyRange: { min: 0.2, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
 }
