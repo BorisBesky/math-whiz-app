@@ -74,6 +74,22 @@ jest.mock('../../../messaging/MessageComposer', () => {
   };
 });
 
+jest.mock('../../../EditClassForm', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: function MockEditClassForm({ classData, onSubmit, onCancel }) {
+      return React.createElement(
+        'div',
+        { 'data-testid': 'edit-class-form' },
+        React.createElement('span', null, `Editing: ${classData?.name}`),
+        React.createElement('button', { onClick: () => onSubmit({ name: 'Updated', gradeLevel: 'G4' }) }, 'Save Edit'),
+        React.createElement('button', { onClick: onCancel }, 'Cancel Edit'),
+      );
+    },
+  };
+});
+
 const ClassDetailPanel = require('../ClassDetailPanel').default;
 
 const makeClass = (overrides = {}) => ({
@@ -260,5 +276,90 @@ describe('ClassDetailPanel', () => {
     // Each teacher gets a Remove button (admin, multiple teachers)
     const teacherRemoveButtons = screen.getAllByRole('button', { name: /^remove$/i });
     expect(teacherRemoveButtons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  describe('Edit Class feature', () => {
+    const editProps = {
+      ...defaultProps,
+      onEditClass: jest.fn().mockResolvedValue(undefined),
+      showEditForm: false,
+      setShowEditForm: jest.fn(),
+    };
+
+    it('shows Edit Class button when onEditClass and setShowEditForm are provided and user is on the class', () => {
+      render(<ClassDetailPanel {...editProps} />);
+      expect(screen.getByRole('button', { name: /edit class/i })).toBeInTheDocument();
+    });
+
+    it('does not show Edit Class button when onEditClass is not provided', () => {
+      render(<ClassDetailPanel {...defaultProps} />);
+      expect(screen.queryByRole('button', { name: /edit class/i })).not.toBeInTheDocument();
+    });
+
+    it('does not show Edit Class button when user is not on the class', () => {
+      render(<ClassDetailPanel {...editProps} userId="other-teacher" />);
+      expect(screen.queryByRole('button', { name: /edit class/i })).not.toBeInTheDocument();
+    });
+
+    it('calls setShowEditForm(true) when Edit Class is clicked', () => {
+      const setShowEditForm = jest.fn();
+      render(<ClassDetailPanel {...editProps} setShowEditForm={setShowEditForm} />);
+      fireEvent.click(screen.getByRole('button', { name: /edit class/i }));
+      expect(setShowEditForm).toHaveBeenCalledWith(true);
+    });
+
+    it('renders EditClassForm when showEditForm is true', () => {
+      render(<ClassDetailPanel {...editProps} showEditForm={true} />);
+      expect(screen.getByTestId('edit-class-form')).toBeInTheDocument();
+      expect(screen.getByText(`Editing: ${defaultProps.classItem.name}`)).toBeInTheDocument();
+    });
+
+    it('does not render EditClassForm when showEditForm is false', () => {
+      render(<ClassDetailPanel {...editProps} showEditForm={false} />);
+      expect(screen.queryByTestId('edit-class-form')).not.toBeInTheDocument();
+    });
+
+    it('calls onEditClass with submitted data when save is clicked', async () => {
+      const onEditClass = jest.fn().mockResolvedValue(undefined);
+      render(<ClassDetailPanel {...editProps} onEditClass={onEditClass} showEditForm={true} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Save Edit' }));
+      await waitFor(() => expect(onEditClass).toHaveBeenCalledWith({ name: 'Updated', gradeLevel: 'G4' }));
+    });
+
+    it('calls setShowEditForm(false) when Cancel Edit is clicked', () => {
+      const setShowEditForm = jest.fn();
+      render(<ClassDetailPanel {...editProps} setShowEditForm={setShowEditForm} showEditForm={true} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel Edit' }));
+      expect(setShowEditForm).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('multi-class enrollment roster', () => {
+    it('includes students whose classIds array contains the classId', () => {
+      const multiClassStudent = makeStudent({
+        id: 'student-multi',
+        name: 'Multi',
+        classId: 'class-other',
+        classIds: ['class-1', 'class-other'],
+      });
+      render(
+        <ClassDetailPanel
+          {...defaultProps}
+          students={[makeStudent(), multiClassStudent]}
+        />
+      );
+      expect(screen.getByText('Multi')).toBeInTheDocument();
+    });
+
+    it('excludes students who are not enrolled in this class', () => {
+      const otherStudent = makeStudent({ id: 'student-other', name: 'Other', classId: 'class-9', classIds: ['class-9'] });
+      render(
+        <ClassDetailPanel
+          {...defaultProps}
+          students={[makeStudent(), otherStudent]}
+        />
+      );
+      expect(screen.queryByText('Other')).not.toBeInTheDocument();
+    });
   });
 });
