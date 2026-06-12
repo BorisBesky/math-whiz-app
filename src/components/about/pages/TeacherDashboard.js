@@ -12,7 +12,7 @@ const TeacherDashboard = () => (
       <p className="mt-4 text-lg text-gray-600 max-w-3xl">
         Teaching math to a room full of students at different levels is one of the hardest jobs in
         education. Math Whiz gives teachers a real-time dashboard to see exactly where every student
-        stands — and the tools to do something about it.
+        stands, even across multiple class enrollments, and the tools to do something about it.
       </p>
     </header>
 
@@ -67,9 +67,16 @@ const TeacherDashboard = () => (
       </div>
       <p className="text-gray-600 mb-6 leading-relaxed">
         The teacher dashboard shows you every student's performance as they practice. You can see
-        accuracy rates, time spent per topic, streak data, and detailed question-level results.
+        accuracy rates, time spent per topic, streak data, and detailed question-level results with
+        date-aware history loading.
         No more waiting until a test to find out a student is struggling — Math Whiz shows you in
         real time.
+      </p>
+      <p className="text-gray-600 mb-6 leading-relaxed">
+        If a student works with more than one teacher or support group, Math Whiz can now handle
+        multi-class enrollments more cleanly. That makes it easier to monitor the same learner
+        across homeroom, intervention blocks, tutoring, or enrichment without forcing a separate
+        account for each context.
       </p>
       <p className="text-gray-600 mb-6 leading-relaxed">
         Teachers can also use{' '}
@@ -96,7 +103,7 @@ const TeacherDashboard = () => (
         <FeatureCard
           icon={<Target size={24} className="text-blue-600" />}
           title="Per-Student Detail"
-          description="Drill into any student's profile to see their complete history: every topic they've practiced, every question they've answered, and their difficulty progression over time."
+          description="Drill into any student's profile to see recent history, question attempts, topic coverage, and difficulty progression over time."
           color="blue"
         />
         <FeatureCard
@@ -173,10 +180,16 @@ const TeacherDashboard = () => (
         <FeatureCard
           icon={<UserPlus size={24} className="text-blue-600" />}
           title="Flexible Student Access"
-          description="Students can join from any device with a class link. Works in computer labs, on tablets, or on students' home devices."
+          description="Students can join from any device with a class link and stay connected to more than one class when needed. Works in labs, on tablets, or on home devices."
           color="blue"
         />
       </div>
+      <p className="text-gray-600 mt-6 leading-relaxed">
+        For a closer look at the newer history and intervention workflow, see{' '}
+        <Link to="/about/student-math-progress-monitoring" className="text-blue-600 hover:underline">
+          student math progress monitoring
+        </Link>.
+      </p>
     </section>
 
     {/* Free */}
@@ -196,7 +209,7 @@ const TeacherDashboard = () => (
     </section>
 
     <CallToAction />
-    <RelatedPages slugs={['ai-student-performance-insights', 'standards-aligned-math-app', 'best-math-app-4th-grade', 'common-core-math-app']} />
+    <RelatedPages slugs={['student-math-progress-monitoring', 'ai-student-performance-insights', 'standards-aligned-math-app', 'best-math-app-4th-grade']} />
   </PageWrapper>
 );
 

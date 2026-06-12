@@ -5,6 +5,7 @@ const URLS = [
   { path: "/about/best-math-app-4th-grade", changefreq: "monthly", priority: "0.8" },
   { path: "/about/math-practice-app-3rd-grade", changefreq: "monthly", priority: "0.8" },
   { path: "/about/teacher-dashboard", changefreq: "monthly", priority: "0.8" },
+  { path: "/about/student-math-progress-monitoring", changefreq: "monthly", priority: "0.8" },
   { path: "/about/ai-student-performance-insights", changefreq: "monthly", priority: "0.8" },
   { path: "/about/standards-aligned-math-app", changefreq: "monthly", priority: "0.8" },
   { path: "/about/multiplication-practice-3rd-grade", changefreq: "monthly", priority: "0.8" },

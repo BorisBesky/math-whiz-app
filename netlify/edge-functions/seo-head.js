@@ -3,7 +3,7 @@ const SITE_URL = "https://mathwhizapp.kids";
 const ABOUT_OVERVIEW = {
   title: "Math Whiz - Adaptive Math Practice for 3rd & 4th Graders",
   description:
-    "Free adaptive math practice for 3rd and 4th graders. Teachers create classes, track progress, and add custom content while students earn rewards.",
+    "Free adaptive math practice for 3rd and 4th graders. Teachers create classes, monitor progress, review question history, and add custom content while students earn rewards.",
 };
 
 const SEO_PAGES = {
@@ -25,12 +25,17 @@ const SEO_PAGES = {
   "teacher-dashboard": {
     title: "Math App with Teacher Dashboard - Class Management & Analytics | Math Whiz",
     description:
-      "Manage your math classroom with real-time analytics, AI focus recommendations, per-student assignments, custom content, and question generation.",
+      "Manage math classes with live analytics, multi-class rosters, question history, AI focus recommendations, custom content, and question generation.",
+  },
+  "student-math-progress-monitoring": {
+    title: "Student Math Progress Monitoring for Teachers | Math Whiz",
+    description:
+      "Track student math progress with question history, date filters, multi-class rosters, and AI-supported intervention planning for 3rd and 4th grade.",
   },
   "ai-student-performance-insights": {
     title: "AI Student Performance Insights for Math Teachers | Math Whiz",
     description:
-      "See AI-generated focus recommendations based on student math performance. Review weak subtopics, apply focus areas, and plan interventions faster.",
+      "See AI-generated focus recommendations based on student math performance. Review weak subtopics, save drafts, apply focus areas, and plan interventions faster.",
   },
   "standards-aligned-math-app": {
     title: "Standards-Aligned Math App for Elementary - Common Core | Math Whiz",
