@@ -22,7 +22,7 @@ const AboutOverview = () => {
     document.title = 'About Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
-      meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, track progress, add custom content, and use AI insights.');
+      meta.setAttribute('content', 'Learn how Math Whiz helps students practice math with adaptive questions, rewards, and drawing tools — and how teachers can create classes, monitor progress, review question history, add custom content, and use AI insights.');
     }
 
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -57,6 +57,7 @@ const AboutOverview = () => {
         'Drawing canvas for showing work',
         'Coin rewards system',
         'Teacher class management',
+        'Question history and date-range progress monitoring',
         'Custom question sets',
         'AI question generation',
         'AI focus recommendations',
@@ -164,7 +165,7 @@ const AboutOverview = () => {
             <FeatureCard
               icon={<BarChart2 size={24} className="text-blue-600" />}
               title="Live Student Analytics"
-              description="See every student's accuracy, time spent, and topic-by-topic performance in real time. Identify who needs help before they fall behind."
+              description="See every student's accuracy, time spent, topic-by-topic performance, and recent history in real time. Identify who needs help before they fall behind."
               color="blue"
             />
             <FeatureCard
@@ -195,7 +196,7 @@ const AboutOverview = () => {
             <FeatureCard
               icon={<UserPlus size={24} className="text-blue-600" />}
               title="Simple Student Onboarding"
-              description="Students join with a class code — no email required. They can start as guests and create accounts later to save progress."
+              description="Students join with a class code — no email required. They can start as guests, create accounts later, and participate in more than one class when needed."
               color="blue"
             />
           </div>
@@ -219,6 +220,13 @@ const AboutOverview = () => {
               </Link>{' '}
               feature can review recent work and recommend focus areas before you assign more
               practice.
+            </p>
+            <p className="text-gray-700 leading-relaxed mt-4">
+              Teachers who need closer intervention data can also use{' '}
+              <Link to="/about/student-math-progress-monitoring" className="text-blue-600 hover:underline">
+                student math progress monitoring
+              </Link>{' '}
+              to review question history and track progress over a specific time window.
             </p>
           </div>
         </section>

@@ -33,7 +33,7 @@ const AiStudentPerformanceInsights = () => (
       <p className="mt-4 text-lg text-gray-600 max-w-3xl">
         Math Whiz now helps teachers move from raw student data to concrete next steps. The AI
         reviews recent performance, flags weak subtopics, explains why they matter, and lets you
-        apply reviewed focus recommendations to a student's practice plan.
+        save reviewed drafts or apply approved focus recommendations to a student's practice plan.
       </p>
     </header>
 
@@ -76,6 +76,12 @@ const AiStudentPerformanceInsights = () => (
           color="blue"
         />
         <FeatureCard
+          icon={<Sparkles size={24} className="text-blue-600" />}
+          title="Supports Draft Review"
+          description="Teachers can save a recommendation draft, come back later, and review it before deciding whether to apply the suggested focus areas."
+          color="blue"
+        />
+        <FeatureCard
           icon={<ArrowRight size={24} className="text-blue-600" />}
           title="Applies Reviewed Focus Areas"
           description="Once the suggestions look right, teachers can apply them directly to the student's Focus Areas instead of re-entering assignments by hand."
@@ -91,7 +97,7 @@ const AiStudentPerformanceInsights = () => (
       <div className="grid lg:grid-cols-2 gap-6">
         <ScreenshotPlaceholder
           title="AI Focus Recommendations Panel"
-          description="Recommended screenshot: the student detail view after analysis runs, showing the summary, recommended subtopics, confidence labels, and supporting metrics."
+          description="Recommended screenshot: the student detail view after analysis runs, showing the summary, recommended subtopics, confidence labels, supporting metrics, and the selected date range."
           bullets={[
             'Show the AI summary above the recommendation cards.',
             'Include at least one subtopic recommendation with accuracy and attempts.',
@@ -99,10 +105,10 @@ const AiStudentPerformanceInsights = () => (
           ]}
         />
         <ScreenshotPlaceholder
-          title="Apply Recommendations Flow"
-          description="Recommended screenshot: the review state before clicking Apply recommendations, or the success state after the focus areas have been applied."
+          title="Draft Review or Apply Flow"
+          description="Recommended screenshot: the saved draft state before applying recommendations, or the success state after the focus areas have been applied."
           bullets={[
-            'Show the Apply recommendations button in context.',
+            'Show the Save draft or Apply recommendations control in context.',
             'Capture the confirmation state or applied badge if available.',
             'If possible, include the updated Focus Areas nearby to make the result obvious.',
           ]}
@@ -136,10 +142,17 @@ const AiStudentPerformanceInsights = () => (
         For schools already using Math Whiz for intervention blocks, RTI support, homework, or test
         prep, this makes the platform more useful because the next instructional step is clearer.
       </p>
+      <p className="text-gray-600 mt-4 leading-relaxed">
+        If you want the full monitoring workflow around those recommendations, visit{' '}
+        <Link to="/about/student-math-progress-monitoring" className="text-blue-600 hover:underline">
+          student math progress monitoring
+        </Link>{' '}
+        for the broader teacher use case.
+      </p>
     </section>
 
     <CallToAction />
-    <RelatedPages slugs={['teacher-dashboard', 'free-math-practice-app', 'standards-aligned-math-app', 'best-math-app-4th-grade']} />
+    <RelatedPages slugs={['student-math-progress-monitoring', 'teacher-dashboard', 'free-math-practice-app', 'standards-aligned-math-app']} />
   </PageWrapper>
 );
 

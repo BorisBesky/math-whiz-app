@@ -33,16 +33,25 @@ export const SEO_PAGES = [
     tabLabel: 'Teacher Dashboard',
     title: 'Math App with Teacher Dashboard — Class Management & Analytics | Math Whiz',
     metaDescription:
-      'Manage your math classroom with real-time analytics, AI focus recommendations, per-student assignments, custom content, and question generation.',
+      'Manage math classes with live analytics, multi-class rosters, question history, AI focus recommendations, custom content, and question generation.',
     keyword: 'math app with teacher dashboard',
     component: React.lazy(() => import('./pages/TeacherDashboard')),
+  },
+  {
+    slug: 'student-math-progress-monitoring',
+    tabLabel: 'Progress Monitoring',
+    title: 'Student Math Progress Monitoring for Teachers | Math Whiz',
+    metaDescription:
+      'Track student math progress with question history, date filters, multi-class rosters, and AI-supported intervention planning for 3rd and 4th grade.',
+    keyword: 'student math progress monitoring',
+    component: React.lazy(() => import('./pages/StudentMathProgressMonitoring')),
   },
   {
     slug: 'ai-student-performance-insights',
     tabLabel: 'AI Insights',
     title: 'AI Student Performance Insights for Math Teachers | Math Whiz',
     metaDescription:
-      'See AI-generated focus recommendations based on student math performance. Review weak subtopics, apply focus areas, and plan interventions faster.',
+      'See AI-generated focus recommendations based on student math performance. Review weak subtopics, save drafts, apply focus areas, and plan interventions faster.',
     keyword: 'ai student performance insights for math teachers',
     component: React.lazy(() => import('./pages/AiStudentPerformanceInsights')),
   },

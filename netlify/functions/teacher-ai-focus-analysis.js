@@ -107,15 +107,37 @@ const getStudentAttemptHistory = async ({ appId, studentId, startDate, endDate }
     .collection("users")
     .doc(studentId)
     .collection("attempts");
+  const start = startDate ? normalizeDate(startDate) : "";
+  const end = endDate ? normalizeDate(endDate) : "";
+
+  if (
+    !attemptsRef ||
+    typeof attemptsRef.where !== "function" ||
+    typeof attemptsRef.orderBy !== "function"
+  ) {
+    if (typeof attemptsRef?.get !== "function") return [];
+
+    const attemptsSnap = await attemptsRef.get();
+    return (attemptsSnap.docs || [])
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((attempt) => {
+        const attemptDate = normalizeDate(attempt.date || attempt.timestamp);
+        if (start && (!attemptDate || attemptDate < start)) return false;
+        if (end && (!attemptDate || attemptDate > end)) return false;
+        return true;
+      })
+      .sort((a, b) => String(b.timestamp || b.date || "").localeCompare(String(a.timestamp || a.date || "")));
+  }
+
   let attemptsQuery = attemptsRef;
-  if (startDate) attemptsQuery = attemptsQuery.where("date", ">=", normalizeDate(startDate));
-  if (endDate) attemptsQuery = attemptsQuery.where("date", "<=", normalizeDate(endDate));
+  if (start) attemptsQuery = attemptsQuery.where("date", ">=", start);
+  if (end) attemptsQuery = attemptsQuery.where("date", "<=", end);
   attemptsQuery = attemptsQuery.orderBy("date", "desc");
 
   const attemptsSnap = await attemptsQuery.get();
   return attemptsSnap.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+    .sort((a, b) => String(b.timestamp || b.date || "").localeCompare(String(a.timestamp || a.date || "")));
 };
 
 const verifyTeacherAccess = async ({ appId, decodedToken, studentId, classId, mode }) => {
