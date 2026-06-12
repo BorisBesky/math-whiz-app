@@ -4,6 +4,7 @@ import {
 } from "../utils/complexityEngine";
 import { DEFAULT_DAILY_GOAL, TOPIC_CONTENT_MAP } from "../constants/appConstants";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
+import { getQuestionSignature, getQuestionMasteryKey } from "../utils/questionKey";
 import { fetchQuestionsFromFirestore } from "./questionService";
 import content from "../content";
 
@@ -46,11 +47,9 @@ export const generateQuizQuestions = async (
   const adapted = adaptAnsweredHistory(questionHistory);
   const ranked = rankQuestionsByComplexity(adapted);
 
-  // Helper function to generate a unique signature for a question
-  // Uses question text + correct answer to handle cases where questions have same text but different answers (e.g., clock reading)
-  const getQuestionSignature = (q) => {
-    return `${q.question}|||${q.correctAnswer ?? ''}`;
-  };
+  // getQuestionSignature (question text + correct answer) and getQuestionMasteryKey
+  // (tag, or a path-safe hash of the signature) come from utils/questionKey so the same
+  // identity logic is shared with the answer-recording path in MainApp.
 
   // Build mastery index: questions with high complexity scores (struggled with) get higher need
   const questionMastery = new Map();
@@ -210,8 +209,14 @@ export const generateQuizQuestions = async (
       continue;
     }
 
-    // Skip tagged questions that the student has already mastered
-    if (question.questionTag && (tagMastery[question.questionTag] || 0) >= tagMasteryThreshold) {
+    // Retire questions the student has already mastered. The mastery key is the
+    // question's tag when it has one, otherwise a stable hash of its signature — so
+    // dynamically generated, untagged questions (e.g. geometry definitions) obey the
+    // class "Question Mastery Threshold" exactly like tagged ones. Bank questions whose
+    // ids are already in answeredQuestionIds were filtered upstream; this adds cross-quiz
+    // retirement for the generated pool, which previously had no repeat guard at all.
+    const masteryKey = getQuestionMasteryKey(question);
+    if (masteryKey && (tagMastery[masteryKey] || 0) >= tagMasteryThreshold) {
       continue;
     }
 

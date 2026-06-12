@@ -1,4 +1,9 @@
-import { ANGLE_TYPES, generateAngleMeasurementQuestion, refreshAngleAdditionDiagram } from '../questions.js';
+import {
+  ANGLE_TYPES,
+  generateAngleMeasurementQuestion,
+  generatePointsLinesRaysQuestion,
+  refreshAngleAdditionDiagram,
+} from '../questions.js';
 
 describe('geometry angle real-life examples', () => {
   it('has at least 8 real-life examples for every angle type', () => {
@@ -130,5 +135,33 @@ describe('geometry angle real-life examples', () => {
     expect(refreshedQuestion.images[0].description).toBe(
       'Angle diagram with labeled points and the missing angle highlighted in red'
     );
+  });
+});
+
+describe('points / lines / rays questions', () => {
+  const runMany = (n) => Array.from({ length: n }, () => generatePointsLinesRaysQuestion(0.5));
+
+  it('always produces a valid question whose correct answer is among unique options', () => {
+    runMany(300).forEach((q) => {
+      expect(typeof q.question).toBe('string');
+      expect(q.question.length).toBeGreaterThan(0);
+      expect(q.subtopic).toBe('points lines rays');
+      expect(q.options).toContain(q.correctAnswer);
+      // No duplicate options.
+      expect(new Set(q.options).size).toBe(q.options.length);
+      // Multiple-choice forms have 4 options; true/false forms have 2.
+      expect([2, 4]).toContain(q.options.length);
+    });
+  });
+
+  it('produces substantially more variety than the original 12 combinations', () => {
+    const distinct = new Set(runMany(500).map((q) => `${q.question}|||${q.correctAnswer}`));
+    expect(distinct.size).toBeGreaterThan(20);
+  });
+
+  it('never asks how many endpoints a point has', () => {
+    const endpointQuestions = runMany(400).filter((q) => /How many endpoints/.test(q.question));
+    expect(endpointQuestions.length).toBeGreaterThan(0); // the form does occur
+    endpointQuestions.forEach((q) => expect(q.question).not.toMatch(/does a point have/));
   });
 });

@@ -930,73 +930,120 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
+  // Scope kept to the "points lines rays" subtopic (point / line / ray / line segment).
+  // `endpoints` is the count used by the endpoint-count question form; `hasEndpoints`
+  // marks concepts for which "how many endpoints" is a sensible question (a point is not
+  // described by endpoints, so it is excluded from that form).
   const concepts = [
     {
-      name: "point",
+      name: "point", phrase: "a point", Phrase: "A point",
       definition: "is an exact location with no size",
-      example: "the tip of a pencil",
-      notation: "represented by a dot",
+      example: "the tip of a sharpened pencil",
+      notation: "is shown as a single dot",
+      endpoints: 0, hasEndpoints: false,
     },
     {
-      name: "line", 
+      name: "line", phrase: "a line", Phrase: "A line",
       definition: "goes on forever in both directions",
       example: "a straight road that never ends",
       notation: "has no endpoints",
+      endpoints: 0, hasEndpoints: true,
     },
     {
-      name: "ray",
-      definition: "starts at a point and goes on forever in one direction", 
-      example: "a flashlight beam",
-      notation: "has one endpoint",
+      name: "ray", phrase: "a ray", Phrase: "A ray",
+      definition: "starts at one point and goes on forever in one direction",
+      example: "a beam of light from a flashlight",
+      notation: "has exactly one endpoint",
+      endpoints: 1, hasEndpoints: true,
     },
     {
-      name: "line segment",
+      name: "line segment", phrase: "a line segment", Phrase: "A line segment",
       definition: "is a part of a line with two endpoints",
-      example: "a street between two intersections", 
+      example: "the edge of a ruler between its two ends",
       notation: "has two endpoints",
+      endpoints: 2, hasEndpoints: true,
     },
   ];
-  
-  const questionTypes = [
-    {
-      type: "definition",
-      getQuestion: (concept) => `What ${concept.definition}?`,
-      correctAnswer: (concept) => concept.name,
+
+  const pick = (arr) => arr[getRandomInt(0, arr.length - 1)];
+  const otherConcepts = (concept) => concepts.filter((c) => c.name !== concept.name);
+  const endpointLabel = (n) => (n === 0 ? "0 (none)" : String(n));
+  const ENDPOINT_OPTIONS = ["0 (none)", "1", "2", "infinitely many"];
+
+  // Each builder takes a concept and returns { question, correctAnswer, distractors } or,
+  // for fixed-option forms, { question, correctAnswer, fixedOptions }. A builder may return
+  // null when it does not apply to the given concept (the caller retries).
+  const builders = [
+    // Definition → identify the term.
+    (c) => ({
+      question: pick([`What ${c.definition}?`, `Which term ${c.definition}?`]),
+      correctAnswer: c.name,
+      distractors: shuffle(otherConcepts(c).map((x) => x.name)).slice(0, 3),
+    }),
+    // Example → identify the real-world example.
+    (c) => ({
+      question: pick([
+        `Which is the best example of ${c.phrase}?`,
+        `Which real-world object best represents ${c.phrase}?`,
+      ]),
+      correctAnswer: c.example,
+      distractors: shuffle(otherConcepts(c).map((x) => x.example)).slice(0, 3),
+    }),
+    // Notation true/false. A false variant borrows another concept's notation; within
+    // this concept set every notation is unique, so a borrowed statement is reliably false.
+    (c) => {
+      if (Math.random() < 0.5) {
+        const other = pick(otherConcepts(c));
+        return {
+          question: `True or False: ${c.Phrase} ${other.notation}.`,
+          correctAnswer: "False",
+          fixedOptions: ["True", "False"],
+        };
+      }
+      return {
+        question: `True or False: ${c.Phrase} ${c.notation}.`,
+        correctAnswer: "True",
+        fixedOptions: ["True", "False"],
+      };
     },
-    {
-      type: "example", 
-      getQuestion: (concept) => `Which is the best example of a ${concept.name}?`,
-      correctAnswer: (concept) => concept.example,
-    },
-    {
-      type: "notation",
-      getQuestion: (concept) => `A ${concept.name} ${concept.notation}.`,
-      correctAnswer: (concept) => "True",
+    // Endpoint count (point excluded — endpoints don't describe it).
+    (c) => {
+      if (!c.hasEndpoints) return null;
+      return {
+        question: `How many endpoints does ${c.phrase} have?`,
+        correctAnswer: endpointLabel(c.endpoints),
+        fixedOptions: ENDPOINT_OPTIONS,
+      };
     },
   ];
-  
-  const concept = concepts[getRandomInt(0, concepts.length - 1)];
-  const qType = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  
-  let wrongOptions;
-  if (qType.type === "definition") {
-    wrongOptions = concepts.filter(c => c.name !== concept.name).map(c => c.name);
-  } else if (qType.type === "example") {
-    wrongOptions = concepts.filter(c => c.example !== concept.example).map(c => c.example);
-  } else {
-    wrongOptions = ["False", "Sometimes", "Never"];
+
+  let built = null;
+  let concept = null;
+  for (let attempt = 0; attempt < 8 && !built; attempt += 1) {
+    concept = pick(concepts);
+    built = pick(builders)(concept);
+  }
+  if (!built) {
+    // Guaranteed-valid fallback.
+    concept = concepts[0];
+    built = {
+      question: `What ${concept.definition}?`,
+      correctAnswer: concept.name,
+      distractors: otherConcepts(concept).map((x) => x.name).slice(0, 3),
+    };
   }
 
-  const correctAnswer = qType.correctAnswer(concept);
-  const potentialDistractors = wrongOptions.slice(0, 3);
-  
+  const options = built.fixedOptions
+    ? shuffle([...built.fixedOptions])
+    : shuffle(generateUniqueOptions(built.correctAnswer, built.distractors));
+
   return {
-    question: qType.getQuestion(concept),
-    correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+    question: built.question,
+    correctAnswer: built.correctAnswer,
+    options,
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Remember: a ${concept.name} ${concept.definition}.`,
-    standard: "4.G.A.1", 
+    hint: `Remember: ${concept.phrase} ${concept.definition}.`,
+    standard: "4.G.A.1",
     concept: "Geometry",
     grade: "G4",
     subtopic: "points lines rays",

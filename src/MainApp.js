@@ -70,6 +70,7 @@ import Dashboard from './components/Dashboard';
 import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
 import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
+import { getQuestionMasteryKey } from "./utils/questionKey";
 import { getTopicAvailability } from "./services/topicAvailability";
 import {
   normalizeAllowedSubtopics,
@@ -1600,9 +1601,10 @@ const MainAppContent = () => {
           }
         }
 
-        // Track tag-based mastery for question retirement
-        if (currentQuestion.questionTag) {
-          updates[`questionMastery.${currentQuestion.questionTag}`] = increment(1);
+        // Track mastery for question retirement. Keyed by tag when present, else a stable
+        // signature hash so untagged generated questions also obey the class threshold.
+        if (currentQuestion.questionTag || !currentQuestion.questionId) {
+          updates[`questionMastery.${getQuestionMasteryKey(currentQuestion)}`] = increment(1);
         }
       } else {
         updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
@@ -1732,6 +1734,14 @@ const MainAppContent = () => {
         </span>
       );
       updates.coins = increment(1);
+
+      // Retire generated/tagged questions after enough correct answers (the class
+      // "Question Mastery Threshold"). Untagged generated questions are keyed by a stable
+      // signature hash so they obey the threshold too; bank questions without a tag are
+      // already tracked by id in answeredQuestionBankQuestions above.
+      if (currentQuestion.questionTag || !currentQuestion.questionId) {
+        updates[`questionMastery.${getQuestionMasteryKey(currentQuestion)}`] = increment(1);
+      }
 
       // Check if all topics will be completed after this answer (grade-aware)
       const dailyGoalsForGrade =

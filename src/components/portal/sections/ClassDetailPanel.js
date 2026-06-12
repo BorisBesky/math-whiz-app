@@ -11,6 +11,8 @@ import ModalWrapper from '../../ui/ModalWrapper';
 import SubtopicsFocusModal from '../SubtopicsFocusModal';
 import MessageComposer from '../../messaging/MessageComposer';
 import { getEnrollmentId, sendInternalMessage } from '../../../services/internalMessages';
+import { fetchClassQuestionPoolHealth } from '../../../services/questionPoolHealth';
+import QuestionPoolHealthBanner from '../QuestionPoolHealthBanner';
 import EditClassForm from '../../EditClassForm';
 
 const ClassDetailPanel = ({
@@ -90,6 +92,24 @@ const ClassDetailPanel = ({
   const [addingTeacher, setAddingTeacher] = useState(false);
   const [removingTeacherId, setRemovingTeacherId] = useState(null);
   const [classTeacherProfiles, setClassTeacherProfiles] = useState([]);
+  const [poolHealthFlags, setPoolHealthFlags] = useState([]);
+
+  // Surface "students are repeating questions" advisories for this class. Best-effort:
+  // a failure here must never block the panel, so errors are swallowed (logged only).
+  useEffect(() => {
+    if (!classId) {
+      setPoolHealthFlags([]);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchClassQuestionPoolHealth({ appId, classId })
+      .then((result) => { if (!cancelled) setPoolHealthFlags(result.flags); })
+      .catch((err) => {
+        console.warn('[ClassDetailPanel] question pool health unavailable', err?.message || err);
+        if (!cancelled) setPoolHealthFlags([]);
+      });
+    return () => { cancelled = true; };
+  }, [appId, classId]);
   const isAdmin = userRole === USER_ROLES.ADMIN;
   const isTeacherOnClass = userId && classItem && getTeacherIds(classItem).includes(userId);
   const canManageTeachers = isAdmin || isTeacherOnClass;
@@ -522,6 +542,12 @@ const ClassDetailPanel = ({
         {classItem.description && (
           <div className="px-6 py-4 text-sm text-gray-700 border-b border-gray-100">
             {classItem.description}
+          </div>
+        )}
+
+        {poolHealthFlags.length > 0 && (
+          <div className="px-6 pt-4">
+            <QuestionPoolHealthBanner flags={poolHealthFlags} />
           </div>
         )}
 
