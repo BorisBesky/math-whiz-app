@@ -317,3 +317,21 @@ Playwright tests in `tests/e2e/`. Run against port 3000 (`npm start`) or port 88
 - `quiz-helpers.js` — `detectQuestionType`, `provideAnswer`, `completeQuiz`
 
 CI uses 1 worker (avoids Firebase Auth rate limits); local uses 2. Retries: 2 in CI, 1 locally.
+
+## Internal messaging — gotchas & data flow
+
+**Teacher portal Messages tab data flow:** `MessagesSection` → `useTeacherStudentRelationships` (in `src/hooks/useInternalMessages.js`) → `getTeacherStudentRelationships()` (in `src/services/internalMessages.js`) → `InternalInbox`. The message list itself comes from a separate `useInternalMessages` `onSnapshot` on `artifacts/{appId}/messages` filtered by `participantIds array-contains userId`.
+
+**Two distinct error surfaces in the inbox — don't confuse them:**
+- Message-list `permission-denied` → friendly "Messaging is not available yet. Please deploy the updated Firestore rules…" (means rules aren't deployed).
+- Relationships-load error → raw `err.message`, e.g. "Missing or insufficient permissions" (a.k.a. "insufficient privileges"). This is the **relationships** path, NOT the message list.
+
+**Student-profile reads are gated and usually denied for teachers.** Rule `users/{userId}/math_whiz_data/profile` (`firestore/fs.rules`) only lets a teacher read a student profile when `request.auth.uid in resource.data.teacherIds` on that profile doc. That `teacherIds` field is maintained **only** by the manual `scripts/sync-teacher-ids.js` migration — nothing in the normal enrollment flow sets it — so it's effectively a silent no-op and client-side teacher reads of student profiles are denied in practice.
+
+**Fixed bug (2026-06-11):** commit `9f7d4a1` ("Prefer current student names") added `getStudentProfilesById()` which client-reads each student's profile inside `getTeacherStudentRelationships`. Because it used `Promise.all`, a single denied profile read rejected the whole batch and crashed the entire Messages tab. Fix: made the per-student profile read best-effort (try/catch, skip on denied/missing) so the name falls back to the enrollment-stored value. Regression test: `src/services/__tests__/internalMessages.test.js` → "does not fail the load when a student profile read is denied".
+
+**The `classStudents` read is open** to any authenticated user (`allow read: if request.auth != null`), so enrollment-derived names always work; only the live-profile *enhancement* is blocked client-side.
+
+**Architecture note:** message *writes* and teacher-profile resolution already go server-side via Admin SDK functions (`netlify/functions/send-internal-message.js`, `get-class-teachers.js`) precisely because client-side profile/role reads are unreliable for self-registered teachers (whose role lives in their Firestore profile, not a custom claim). The proper fix for live student names is a parallel `get-class-students`-style Admin SDK endpoint rather than client reads.
+
+**Outstanding (flagged, not yet done):** `send-internal-message.js` and `get-class-teachers.js` carry security-critical authz (sender-spoof → 403, enrollment-missing → 404, role-pair mismatch → 403, admin-or-teacher-on-class gate) but have **zero tests**. Pattern to follow when adding them: mock `firebase-admin` as in `src/__tests__/teacher-ai-focus-analysis.test.js`.

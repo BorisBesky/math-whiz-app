@@ -174,10 +174,19 @@ const getStudentProfilesById = async ({ db, appId, studentIds }) => {
   const uniqueStudentIds = Array.from(new Set(studentIds.filter(Boolean)));
 
   await Promise.all(uniqueStudentIds.map(async (studentId) => {
-    const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-    const profileSnap = await getDoc(profileRef);
-    if (profileSnap.exists()) {
-      profilesById.set(studentId, profileSnap.data() || {});
+    // Best-effort: the per-student profile read is gated by the profile rule, which only
+    // grants a teacher access when the student's profile carries a `teacherIds` array
+    // containing the teacher (maintained solely by scripts/sync-teacher-ids.js, so usually
+    // absent). A denied/missing read must NOT fail the whole relationships load — the name
+    // simply falls back to the enrollment-stored value in buildRelationshipFromEnrollment.
+    try {
+      const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        profilesById.set(studentId, profileSnap.data() || {});
+      }
+    } catch (err) {
+      console.warn('[getStudentProfilesById] Skipping unreadable student profile', studentId, err?.code || err);
     }
   }));
 
