@@ -409,4 +409,52 @@ describe('StudentsSection - Focus integration', () => {
   });
 });
 
+describe('StudentsSection - multi-class enrollment display', () => {
+  beforeEach(() => {
+    mockGetDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
+    mockGetIdToken.mockResolvedValue('token-abc');
+    getAuth.mockReturnValue({
+      currentUser: { getIdToken: (...args) => mockGetIdToken(...args) },
+    });
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({ status: 'ok', mode: 'get', savedRecommendation: null }) })
+    );
+  });
+
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  it('shows className for a student enrolled in multiple classes', () => {
+    const multiClassStudent = {
+      ...baseStudent,
+      className: 'Room 101, Room 202',
+      classIds: ['class-1', 'class-2'],
+    };
+    renderSection([multiClassStudent]);
+    expect(screen.getByText('Room 101, Room 202')).toBeInTheDocument();
+  });
+
+  it('displays Unassigned when student has no class', () => {
+    const unassignedStudent = {
+      ...baseStudent,
+      className: 'Unassigned',
+      classId: null,
+      classIds: [],
+    };
+    renderSection([unassignedStudent]);
+    expect(screen.getByText('Unassigned')).toBeInTheDocument();
+  });
+
+  it('passes all classIds to StudentFocusModal when opened', () => {
+    const multiClassStudent = {
+      ...baseStudent,
+      classIds: ['class-1', 'class-2'],
+    };
+    renderSection([multiClassStudent]);
+    fireEvent.click(screen.getByRole('button', { name: /set focus subtopics/i }));
+    expect(screen.getByTestId('student-focus-modal')).toBeInTheDocument();
+  });
+});
+
 export {};

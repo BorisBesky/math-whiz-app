@@ -82,16 +82,25 @@ describe('teacher-ai-focus-analysis handler', () => {
     mockDocs = new Map();
     mockSets = [];
     mockVerifyIdToken = jest.fn().mockResolvedValue({ uid: 'teacher-1', role: 'teacher' });
-    const makeDocRef = (path) => ({
-      path,
-      get: jest.fn().mockResolvedValue(mockDocs.get(path) || docSnap(null)),
-      set: jest.fn().mockImplementation(async (data, options) => {
-        mockSets.push({ path, data, options });
-      }),
-      collection: (name) => ({
-        doc: (id) => makeDocRef(`${path}/${name}/${id}`),
-      }),
-    });
+    const makeDocRef = (path) => {
+      const makeCollRef = (collPath) => {
+        const q = {
+          doc: (id) => makeDocRef(`${collPath}/${id}`),
+          where: jest.fn(() => q),
+          orderBy: jest.fn(() => q),
+          get: jest.fn().mockResolvedValue({ docs: [] }),
+        };
+        return q;
+      };
+      return {
+        path,
+        get: jest.fn().mockResolvedValue(mockDocs.get(path) || docSnap(null)),
+        set: jest.fn().mockImplementation(async (data, options) => {
+          mockSets.push({ path, data, options });
+        }),
+        collection: (name) => makeCollRef(`${path}/${name}`),
+      };
+    };
     mockDoc = jest.fn((path) => makeDocRef(path));
     mockFetch = jest.fn().mockResolvedValue({ status: 202 });
     mockGenerateContentWithRetry = jest.fn().mockResolvedValue({
