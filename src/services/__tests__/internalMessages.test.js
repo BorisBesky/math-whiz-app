@@ -191,36 +191,6 @@ describe('internalMessages service helpers', () => {
     expect(relationships[0].studentName).toBe('Margo');
   });
 
-  it('does not fail the load when a student profile read is denied', async () => {
-    // Teachers cannot read student profiles client-side unless the profile carries a
-    // teacherIds array (a rule no-op in practice). A denied read must fall back to the
-    // enrollment-stored name instead of taking down the whole relationships load.
-    mockEnrollmentDocs([
-      {
-        id: 'class-1__student-1',
-        classId: 'class-1',
-        studentId: 'student-1',
-        studentName: 'Ada',
-      },
-    ]);
-    const permissionError = Object.assign(new Error('Missing or insufficient permissions.'), {
-      code: 'permission-denied',
-    });
-    firestoreMock.getDoc.mockRejectedValue(permissionError);
-
-    const relationships = await getTeacherStudentRelationships({
-      db: {},
-      appId: 'app-1',
-      teacherId: 'teacher-1',
-      classes: [
-        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'], teacherName: 'Ms. Baker' },
-      ],
-    });
-
-    expect(relationships).toHaveLength(1);
-    expect(relationships[0].studentName).toBe('Ada');
-  });
-
   it('sends messages through the serverless function with an auth token', async () => {
     await sendInternalMessage({
       appId: 'app-1',

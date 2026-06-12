@@ -173,20 +173,17 @@ const getStudentProfilesById = async ({ db, appId, studentIds }) => {
   const profilesById = new Map();
   const uniqueStudentIds = Array.from(new Set(studentIds.filter(Boolean)));
 
+  // Teacher reads of a student profile are authorized by the profile rule's
+  // `request.auth.uid in resource.data.teacherIds` clause. That array is kept in sync
+  // with class membership server-side (join-class, class-students, manage-class-teacher),
+  // so for a legitimately enrolled student these reads succeed. We deliberately do NOT
+  // swallow a permission-denied here: a denial means the authorization data has drifted
+  // and should surface, not be hidden behind a stale fallback name.
   await Promise.all(uniqueStudentIds.map(async (studentId) => {
-    // Best-effort: the per-student profile read is gated by the profile rule, which only
-    // grants a teacher access when the student's profile carries a `teacherIds` array
-    // containing the teacher (maintained solely by scripts/sync-teacher-ids.js, so usually
-    // absent). A denied/missing read must NOT fail the whole relationships load — the name
-    // simply falls back to the enrollment-stored value in buildRelationshipFromEnrollment.
-    try {
-      const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-      const profileSnap = await getDoc(profileRef);
-      if (profileSnap.exists()) {
-        profilesById.set(studentId, profileSnap.data() || {});
-      }
-    } catch (err) {
-      console.warn('[getStudentProfilesById] Skipping unreadable student profile', studentId, err?.code || err);
+    const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+    const profileSnap = await getDoc(profileRef);
+    if (profileSnap.exists()) {
+      profilesById.set(studentId, profileSnap.data() || {});
     }
   }));
 

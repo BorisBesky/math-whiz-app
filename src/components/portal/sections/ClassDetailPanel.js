@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle, Edit3 } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
@@ -182,15 +182,36 @@ const ClassDetailPanel = ({
     });
   }, [teachers, currentTeacherIds]);
 
+  // Teacher membership is changed server-side: a class's teacherIds is the authorization
+  // key for reading enrolled students' profiles, and that array must be propagated onto
+  // every enrolled student's profile.teacherIds (which a client cannot write). The
+  // manage-class-teacher function does both atomically; a direct updateDoc here would
+  // leave students unreadable by the new teacher (the internal Messages tab would break).
+  const callManageTeacher = async (action, teacherUid) => {
+    const auth = getAuth();
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Authentication required.');
+    const response = await fetch('/.netlify/functions/manage-class-teacher', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action, appId, classId, teacherId: teacherUid }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || `Failed to ${action} teacher.`);
+    }
+    return result;
+  };
+
   const handleAddTeacher = async () => {
     if (!selectedTeacherToAdd) return;
     setAddingTeacher(true);
     setStatus(null);
     try {
-      const classRef = doc(db, 'artifacts', appId, 'classes', classId);
-      await updateDoc(classRef, {
-        teacherIds: arrayUnion(selectedTeacherToAdd),
-      });
+      await callManageTeacher('add', selectedTeacherToAdd);
       setSelectedTeacherToAdd('');
       setStatus({ type: 'success', message: 'Teacher added to class.' });
     } catch (err) {
@@ -209,10 +230,7 @@ const ClassDetailPanel = ({
     setRemovingTeacherId(teacherUid);
     setStatus(null);
     try {
-      const classRef = doc(db, 'artifacts', appId, 'classes', classId);
-      await updateDoc(classRef, {
-        teacherIds: arrayRemove(teacherUid),
-      });
+      await callManageTeacher('remove', teacherUid);
       setStatus({ type: 'success', message: 'Teacher removed from class.' });
     } catch (err) {
       console.error('Error removing teacher:', err);
