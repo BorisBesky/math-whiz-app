@@ -134,6 +134,9 @@ describe('ClassDetailPanel', () => {
     mockGetDoc = jest.fn().mockResolvedValue({ exists: () => false, data: () => ({}) });
     mockUpdateDoc = jest.fn().mockResolvedValue(undefined);
     mockGetIdToken = jest.fn().mockResolvedValue('token-abc');
+    require('firebase/auth').getAuth.mockReturnValue({
+      currentUser: { getIdToken: (...args) => mockGetIdToken(...args) },
+    });
 
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -255,6 +258,44 @@ describe('ClassDetailPanel', () => {
   it('shows teacher name in the teachers list', () => {
     render(<ClassDetailPanel {...defaultProps} />);
     expect(screen.getByText('Ms. Baker')).toBeInTheDocument();
+  });
+
+  it('resolves co-teacher profiles when the teacher roster prop is incomplete', async () => {
+    const coTeacherClass = makeClass({
+      teacherIds: ['teacher-1', 'teacher-2'],
+    });
+    global.fetch = jest.fn((url) => {
+      if (url === '/.netlify/functions/get-class-teachers') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            teachers: [
+              { uid: 'teacher-1', displayName: 'Ms. Baker', email: 'baker@school.com' },
+              { uid: 'teacher-2', displayName: 'Teacher B1', email: 'teacherb1@test.com' },
+            ],
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ joinCode: 'ABC123', joinUrl: 'https://example.com/join/ABC123', expiresAt: '' }),
+      });
+    });
+
+    render(
+      <ClassDetailPanel
+        {...defaultProps}
+        classItem={coTeacherClass}
+        teachers={[{ uid: 'teacher-1', displayName: 'Ms. Baker', email: 'baker@school.com' }]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/get-class-teachers', expect.any(Object));
+    });
+    expect(await screen.findByText('Teacher B1')).toBeInTheDocument();
+    expect(screen.queryByText('teacher-2')).not.toBeInTheDocument();
   });
 
   it('admin can remove a teacher when class has more than one teacher', () => {

@@ -89,6 +89,7 @@ const ClassDetailPanel = ({
   const [selectedTeacherToAdd, setSelectedTeacherToAdd] = useState('');
   const [addingTeacher, setAddingTeacher] = useState(false);
   const [removingTeacherId, setRemovingTeacherId] = useState(null);
+  const [classTeacherProfiles, setClassTeacherProfiles] = useState([]);
   const isAdmin = userRole === USER_ROLES.ADMIN;
   const isTeacherOnClass = userId && classItem && getTeacherIds(classItem).includes(userId);
   const canManageTeachers = isAdmin || isTeacherOnClass;
@@ -96,10 +97,73 @@ const ClassDetailPanel = ({
 
   const currentTeacherIds = useMemo(() => (classItem ? getTeacherIds(classItem) : []), [classItem]);
 
+  const mergedTeacherProfiles = useMemo(() => {
+    const byId = new Map();
+    [...teachers, ...classTeacherProfiles].forEach((teacher) => {
+      const teacherId = teacher?.uid || teacher?.id;
+      if (teacherId && !byId.has(teacherId)) {
+        byId.set(teacherId, teacher);
+      }
+    });
+    return byId;
+  }, [teachers, classTeacherProfiles]);
+
+  useEffect(() => {
+    if (!classId || currentTeacherIds.length === 0) {
+      return undefined;
+    }
+
+    const hasAllTeacherProfiles = currentTeacherIds.every((tid) => mergedTeacherProfiles.has(tid));
+    if (hasAllTeacherProfiles) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadClassTeachers = async () => {
+      try {
+        const auth = getAuth();
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
+
+        const response = await fetch('/.netlify/functions/get-class-teachers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ appId, classId }),
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          const nextProfiles = Array.isArray(data.teachers) ? data.teachers : [];
+          setClassTeacherProfiles((previousProfiles) => {
+            const previousKey = previousProfiles.map((teacher) => teacher?.uid || teacher?.id || '').join('|');
+            const nextKey = nextProfiles.map((teacher) => teacher?.uid || teacher?.id || '').join('|');
+            return previousKey === nextKey ? previousProfiles : nextProfiles;
+          });
+        }
+      } catch (err) {
+        console.error('[ClassDetailPanel] Failed to load class teachers', err);
+      }
+    };
+
+    loadClassTeachers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [appId, classId, currentTeacherIds, mergedTeacherProfiles]);
+
   const currentTeachersResolved = useMemo(() => {
     if (!classItem) return [];
     return currentTeacherIds.map((tid) => {
-      const matched = teachers.find((t) => t.uid === tid || t.id === tid);
+      const matched = mergedTeacherProfiles.get(tid);
       const isPrimaryTeacher = tid === classItem.teacherId;
       return matched
         ? { uid: tid, displayName: matched.displayName || matched.name, email: matched.email }
@@ -109,7 +173,7 @@ const ClassDetailPanel = ({
           email: isPrimaryTeacher ? classItem.teacherEmail || null : null,
         };
     });
-  }, [currentTeacherIds, teachers, classItem]);
+  }, [currentTeacherIds, mergedTeacherProfiles, classItem]);
 
   const availableTeachersToAdd = useMemo(() => {
     return teachers.filter((t) => {
@@ -459,7 +523,7 @@ const ClassDetailPanel = ({
               <div key={teacher.uid} className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
                 <div className="text-sm">
                   <span className="font-medium text-gray-900">
-                    {teacher.displayName || teacher.email || teacher.uid}
+                    {teacher.displayName || teacher.email || 'Teacher'}
                   </span>
                   {teacher.displayName && teacher.email && (
                     <span className="text-gray-500 ml-2">{teacher.email}</span>
