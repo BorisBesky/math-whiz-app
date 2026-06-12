@@ -2,6 +2,7 @@ import {
   createMessagePayload,
   getEnrollmentId,
   getParticipantIds,
+  sendInternalMessage,
   getTeacherStudentRelationships,
   isMessageUnreadForUser,
   normalizeMessageBody,
@@ -10,7 +11,6 @@ import {
 } from '../internalMessages';
 
 jest.mock('firebase/firestore', () => ({
-  addDoc: jest.fn(),
   arrayUnion: jest.fn((value) => ({ arrayUnion: value })),
   collection: jest.fn(() => ({ __type: 'collection' })),
   doc: jest.fn(() => ({ __type: 'doc' })),
@@ -20,6 +20,14 @@ jest.mock('firebase/firestore', () => ({
   serverTimestamp: jest.fn(() => 'SERVER_TIME'),
   updateDoc: jest.fn(),
   where: jest.fn(),
+}));
+
+const mockGetIdToken = jest.fn();
+
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({
+    currentUser: { getIdToken: (...args) => mockGetIdToken(...args) },
+  })),
 }));
 
 // eslint-disable-next-line import/first
@@ -40,6 +48,18 @@ describe('internalMessages service helpers', () => {
       exists: () => false,
       data: () => ({}),
     });
+    mockGetIdToken.mockResolvedValue('token-abc');
+    require('firebase/auth').getAuth.mockReturnValue({
+      currentUser: { getIdToken: (...args) => mockGetIdToken(...args) },
+    });
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'message-1' }),
+    });
+  });
+
+  afterEach(() => {
+    delete global.fetch;
   });
 
   it('creates an enrollment-centric message payload', () => {
@@ -169,5 +189,30 @@ describe('internalMessages service helpers', () => {
     });
 
     expect(relationships[0].studentName).toBe('Margo');
+  });
+
+  it('sends messages through the serverless function with an auth token', async () => {
+    await sendInternalMessage({
+      appId: 'app-1',
+      sender: { id: 'teacher-1', role: 'teacher', name: 'Ms. Baker' },
+      recipient: { id: 'student-1', role: 'student', name: 'Ada' },
+      enrollmentId: 'class-1__student-1',
+      className: 'Room 12',
+      body: 'Nice work',
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/send-internal-message', expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({
+        Authorization: 'Bearer token-abc',
+      }),
+    }));
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toMatchObject({
+      appId: 'app-1',
+      enrollmentId: 'class-1__student-1',
+      body: 'Nice work',
+      sender: { id: 'teacher-1', name: 'Ms. Baker' },
+      recipient: { id: 'student-1', name: 'Ada' },
+    });
   });
 });

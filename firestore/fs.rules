@@ -37,7 +37,12 @@ service cloud.firestore {
         // Students can access their own data.
         // Teachers can access data of students in their classes.
         // Admins can access all user data.
-        allow read, write: if request.auth != null && (
+        allow read: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isAdmin() ||
+                              request.auth.uid in resource.data.teacherIds
+                            );
+        allow write: if request.auth != null && (
                               request.auth.uid == userId ||
                               isAdmin() ||
                               (isTeacher() && (request.auth.uid in resource.data.teacherIds))

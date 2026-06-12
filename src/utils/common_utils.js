@@ -2,10 +2,6 @@
   const formatDate = (date) => {
     if (!date) return 'Never';
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Formatting date:", date);
-      }
-
       // Handle Firestore Timestamp objects
       if (date && typeof date === 'object' && 'seconds' in date && 'nanoseconds' in date) {
         const timestampDate = new Date(date.seconds * 1000);

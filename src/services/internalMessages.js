@@ -1,5 +1,4 @@
 import {
-  addDoc,
   arrayUnion,
   collection,
   doc,
@@ -10,6 +9,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { getTeacherIds } from '../utils/classHelpers';
 import { getStudentDisplayName } from '../utils/studentName';
 
@@ -97,25 +97,45 @@ export const createMessagePayload = ({
 };
 
 export const sendInternalMessage = async ({ db, appId, ...messageInput }) => {
-  if (!db) {
-    throw new Error('Firestore is not initialized.');
+  if (!appId) {
+    throw new Error('Application ID is required.');
+  }
+
+  const auth = getAuth();
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error('Authentication required.');
   }
 
   const payload = createMessagePayload(messageInput);
-  try {
-    const ref = await addDoc(getMessagesCollection(db, appId), payload);
-    return { id: ref.id, ...payload };
-  } catch (err) {
-    // Surface the exact payload + path the security rule is evaluating against.
-    // Without this, "Missing or insufficient permissions" is the only signal.
-    if (err?.code === 'permission-denied') {
-      // eslint-disable-next-line no-console
-      console.error('[sendInternalMessage] permission-denied. Rule needs an existing doc at:',
-        `artifacts/${appId}/classStudents/${payload.enrollmentId}`,
-        'payload:', payload);
-    }
-    throw err;
+  const response = await fetch('/.netlify/functions/send-internal-message', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      appId,
+      enrollmentId: payload.enrollmentId,
+      className: payload.className,
+      body: payload.body,
+      sender: {
+        id: payload.senderId,
+        name: payload.senderName,
+      },
+      recipient: {
+        id: payload.recipientId,
+        name: payload.recipientName,
+      },
+    }),
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to send message.');
   }
+
+  return result;
 };
 
 export const markMessageRead = async ({ db, appId, messageId, userId }) => {
