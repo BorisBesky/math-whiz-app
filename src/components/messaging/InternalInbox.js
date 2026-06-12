@@ -37,6 +37,23 @@ const formatMessageDate = (createdAt) => {
   return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 };
 
+const getRelationshipsByEnrollmentId = (relationships) => {
+  const byEnrollmentId = new Map();
+  relationships.forEach((relationship) => {
+    if (relationship?.enrollmentId && !byEnrollmentId.has(relationship.enrollmentId)) {
+      byEnrollmentId.set(relationship.enrollmentId, relationship);
+    }
+  });
+  return byEnrollmentId;
+};
+
+const getRelationshipParticipantName = (relationship, participantId) => {
+  if (!relationship || !participantId) return '';
+  if (participantId === relationship.studentId) return relationship.studentName || '';
+  if (participantId === relationship.teacherId) return relationship.teacherName || '';
+  return '';
+};
+
 const InternalInbox = ({
   title = 'Messages',
   description = 'Internal messages stay inside Math Whiz.',
@@ -75,6 +92,15 @@ const InternalInbox = ({
     () => new Set(relationships.map(getRelationshipKey).filter(Boolean)),
     [relationships],
   );
+  const relationshipsByEnrollmentId = useMemo(
+    () => getRelationshipsByEnrollmentId(relationships),
+    [relationships],
+  );
+
+  const getParticipantName = (message, participantId, snapshotName, fallback) => {
+    const relationship = relationshipsByEnrollmentId.get(getMessageEnrollmentId(message));
+    return getRelationshipParticipantName(relationship, participantId) || snapshotName || fallback;
+  };
 
   const handleMessageClick = (message) => {
     const key = getMessageRelationshipKey(message, currentUserId, currentUserRole);
@@ -149,6 +175,9 @@ const InternalInbox = ({
             {visibleMessages.map((message) => {
               const isMine = message.senderId === currentUserId;
               const isUnread = isMessageUnreadForUser(message, currentUserId);
+              const senderName = getParticipantName(message, message.senderId, message.senderName, 'Sender');
+              const recipientName = getParticipantName(message, message.recipientId, message.recipientName, 'Recipient');
+              const relationship = relationshipsByEnrollmentId.get(getMessageEnrollmentId(message));
 
               return (
                 <button
@@ -160,12 +189,12 @@ const InternalInbox = ({
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        {isMine ? 'You' : (message.senderName || 'Sender')}
+                        {isMine ? 'You' : senderName}
                         <span className="font-normal text-gray-400"> to </span>
-                        {isMine ? (message.recipientName || 'Recipient') : 'you'}
+                        {isMine ? recipientName : 'you'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {message.className || 'Class'} · {formatMessageDate(message.createdAt)}
+                        {relationship?.className || message.className || 'Class'} · {formatMessageDate(message.createdAt)}
                       </p>
                     </div>
                     {isUnread && (

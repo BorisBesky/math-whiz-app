@@ -34,6 +34,14 @@ const mockEnrollmentDocs = (docs) => {
 };
 
 describe('internalMessages service helpers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    firestoreMock.getDoc.mockResolvedValue({
+      exists: () => false,
+      data: () => ({}),
+    });
+  });
+
   it('creates an enrollment-centric message payload', () => {
     const payload = createMessagePayload({
       sender: { id: 'teacher-1', role: 'teacher', name: 'Ms. Baker' },
@@ -135,5 +143,31 @@ describe('internalMessages service helpers', () => {
         teacherName: 'Ms. Baker',
       },
     ]);
+  });
+
+  it('prefers current student profile names over stale classStudents names', async () => {
+    mockEnrollmentDocs([
+      {
+        id: 'class-1__student-1',
+        classId: 'class-1',
+        studentId: 'student-1',
+        studentName: 'Unknown',
+      },
+    ]);
+    firestoreMock.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ displayName: 'Margo' }),
+    });
+
+    const relationships = await getTeacherStudentRelationships({
+      db: {},
+      appId: 'app-1',
+      teacherId: 'teacher-1',
+      classes: [
+        { id: 'class-1', name: 'Room 12', teacherIds: ['teacher-1'], teacherName: 'Ms. Baker' },
+      ],
+    });
+
+    expect(relationships[0].studentName).toBe('Margo');
   });
 });

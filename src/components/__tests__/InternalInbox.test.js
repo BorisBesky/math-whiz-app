@@ -81,6 +81,47 @@ describe('InternalInbox', () => {
     expect(onMarkRead).toHaveBeenCalledWith('message-1');
   });
 
+  it('uses current relationship student names instead of stale message snapshots', () => {
+    render(
+      <InternalInbox
+        currentUserId="teacher-1"
+        currentUserName="Ms. Baker"
+        currentUserRole="teacher"
+        relationships={[
+          {
+            enrollmentId: 'class-1__student-1',
+            classId: 'class-1',
+            className: 'Room 12',
+            studentId: 'student-1',
+            studentName: 'Margo',
+            teacherId: 'teacher-1',
+            teacherName: 'Ms. Baker',
+          },
+        ]}
+        recipientRole="student"
+        onSend={jest.fn()}
+        onMarkRead={jest.fn()}
+        messages={[
+          {
+            id: 'message-stale',
+            body: 'Awesome blossom!!',
+            enrollmentId: 'class-1__student-1',
+            className: 'Room 12',
+            senderId: 'teacher-1',
+            senderName: 'Ms. Baker',
+            recipientId: 'student-1',
+            recipientName: 'Unknown',
+            readBy: ['teacher-1'],
+          },
+        ]}
+      />
+    );
+
+    const messageRow = screen.getByText('Awesome blossom!!').closest('button');
+    expect(messageRow).toHaveTextContent('You to Margo');
+    expect(messageRow).not.toHaveTextContent('You to Unknown');
+  });
+
   it('selects a teacher as the reply recipient for student inbox messages', async () => {
     const onSend = jest.fn().mockResolvedValue(undefined);
 

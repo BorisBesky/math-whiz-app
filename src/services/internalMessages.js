@@ -11,6 +11,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { getTeacherIds } from '../utils/classHelpers';
+import { getStudentDisplayName } from '../utils/studentName';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const ENROLLMENT_ID_SEPARATOR = '__';
@@ -133,7 +134,7 @@ const chunkArray = (items, size) => {
   return chunks;
 };
 
-const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId) => ({
+const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId, studentProfile = null) => ({
   // Always derive from (classId, studentId) — the Firestore rule's enrollmentExists()
   // looks the doc up at exactly this path, and legacy auto-ID enrollment docs would
   // otherwise produce a key that doesn't match any classStudents doc the rule can find.
@@ -141,10 +142,27 @@ const buildRelationshipFromEnrollment = (enrollment, classItem, teacherId) => ({
   classId: classItem.id,
   className: classItem.name || 'Class',
   studentId: enrollment.studentId,
-  studentName: enrollment.studentName || enrollment.studentEmail || `Student ${(enrollment.studentId || '').slice(-6)}`,
+  studentName: studentProfile
+    ? getStudentDisplayName({ id: enrollment.studentId, ...studentProfile }, enrollment.studentEmail || `Student ${(enrollment.studentId || '').slice(-6)}`)
+    : getStudentDisplayName(enrollment, enrollment.studentEmail || `Student ${(enrollment.studentId || '').slice(-6)}`),
   teacherId,
   teacherName: classItem.teacherName || classItem.teacherEmail || 'Teacher',
 });
+
+const getStudentProfilesById = async ({ db, appId, studentIds }) => {
+  const profilesById = new Map();
+  const uniqueStudentIds = Array.from(new Set(studentIds.filter(Boolean)));
+
+  await Promise.all(uniqueStudentIds.map(async (studentId) => {
+    const profileRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
+    const profileSnap = await getDoc(profileRef);
+    if (profileSnap.exists()) {
+      profilesById.set(studentId, profileSnap.data() || {});
+    }
+  }));
+
+  return profilesById;
+};
 
 /**
  * Composite key for the recipient dropdown. enrollmentId alone collapses multi-teacher
@@ -189,6 +207,12 @@ export const getTeacherStudentRelationships = async ({ db, appId, classes = [], 
   );
 
   const relationships = [];
+  const studentProfilesById = await getStudentProfilesById({
+    db,
+    appId,
+    studentIds: enrollmentDocs.map((enrollment) => enrollment.studentId),
+  });
+
   enrollmentDocs.forEach((enrollment) => {
     const classItem = classById.get(enrollment.classId);
     if (!classItem || !enrollment.studentId) return;
@@ -198,10 +222,10 @@ export const getTeacherStudentRelationships = async ({ db, appId, classes = [], 
 
     if (includeAllTeachers) {
       teacherIds.forEach((tid) => {
-        relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, tid));
+        relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, tid, studentProfilesById.get(enrollment.studentId)));
       });
     } else if (teacherIds.includes(teacherId)) {
-      relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, teacherId));
+      relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, teacherId, studentProfilesById.get(enrollment.studentId)));
     }
   });
 
@@ -237,6 +261,12 @@ export const getStudentTeacherRelationships = async ({ db, appId, studentId }) =
   // class can read and reply (Firestore rule allows any teacher on the class as
   // recipient).
   const relationships = [];
+  const studentProfilesById = await getStudentProfilesById({
+    db,
+    appId,
+    studentIds: [studentId],
+  });
+
   enrollments.forEach((enrollment) => {
     const classItem = classesById.get(enrollment.classId);
     if (!classItem) return;
@@ -245,9 +275,8 @@ export const getStudentTeacherRelationships = async ({ db, appId, studentId }) =
       ? classItem.teacherId
       : teacherIds[0];
     if (!primaryTeacherId) return;
-    relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, primaryTeacherId));
+    relationships.push(buildRelationshipFromEnrollment(enrollment, classItem, primaryTeacherId, studentProfilesById.get(enrollment.studentId)));
   });
 
   return relationships;
 };
-
