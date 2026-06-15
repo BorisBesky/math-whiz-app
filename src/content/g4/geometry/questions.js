@@ -864,7 +864,12 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     },
     {
       type: "realLife",
-      getQuestion: (angle) => `Which real-life example shows an ${angle.name}?`,
+      getQuestion: (angle) => {
+        // Use "an" only before names that start with a vowel sound
+        // ("acute", "obtuse"); use "a" before "right angle" / "straight angle".
+        const article = /^[aeiou]/i.test(angle.name) ? 'an' : 'a';
+        return `Which real-life example shows ${article} ${angle.name}?`;
+      },
     },
     {
       type: "addition",

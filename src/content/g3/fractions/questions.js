@@ -70,7 +70,10 @@ export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
   const maxNum = 5 + Math.floor(5 * difficulty);
   const f_num_eq = getRandomInt(minNum, maxNum);
   const f_den_eq = getRandomInt(f_num_eq + 1, 9);
-  const minMultiplier = 1 + Math.floor(3 * difficulty);
+  // Multiplier must be at least 2 so the "equivalent" answer is a different
+  // fraction than the one shown in the question (multiplier=1 produced the
+  // original back as the correct option).
+  const minMultiplier = 2 + Math.floor(3 * difficulty);
   const maxMultiplier = 6 + Math.floor(4 * difficulty);
   const multiplier = getRandomInt(minMultiplier, maxMultiplier);
   const eq_num = f_num_eq * multiplier;
@@ -167,8 +170,8 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
     correctAnswer: add_answer,
     options: shuffle(generateUniqueOptions(add_answer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: "To add fractions with different denominators, you first need to find a common denominator!",
-    standard: "4.NF.B.3",
+    hint: "To add fractions with different denominators, first find a common denominator. Then add the top numbers and keep the common denominator. Finally, simplify if you can.",
+    standard: "3.NF.A.3",
     concept: "Fractions",
     grade: "G3",
     subtopic: "addition",
@@ -201,7 +204,7 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
     options: shuffle(generateUniqueOptions(answer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
-    standard: "4.NF.B.3",
+    standard: "3.NF.A.3",
     concept: "Fractions",
     grade: "G3",
     subtopic: "subtraction",
@@ -227,7 +230,7 @@ export function generateFractionSimplificationQuestion(difficulty = 0.5) {
     options: shuffle(generateUniqueOptions(simplified_fraction, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "To simplify a fraction, find the largest number that can divide both the top and bottom numbers evenly.",
-    standard: "4.NF.A.1",
+    standard: "3.NF.A.3.b",
     concept: "Fractions",
     grade: "G3",
     subtopic: "simplification",

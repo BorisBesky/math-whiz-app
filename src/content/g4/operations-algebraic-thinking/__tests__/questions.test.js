@@ -70,4 +70,55 @@ describe('generateTwoStepPatternQuestion', () => {
     // The correct answer should be a valid number
     expect(isNaN(correctNum)).toBe(false);
   });
+
+  it('never generates a sequence with negative numbers (4th-grade appropriate)', () => {
+    // Run many times to exercise the "subtract then add" branch with various
+    // random step/start combinations.
+    for (let i = 0; i < 500; i += 1) {
+      const result = questions.generateTwoStepPatternQuestion();
+      // Pull every number out of the question text (the sequence).
+      const numbers = (result.question.match(/-?\d+/g) || []).map(Number);
+      numbers.forEach(n => {
+        expect(n).toBeGreaterThanOrEqual(0);
+      });
+      // And the correct answer.
+      expect(parseInt(result.correctAnswer, 10)).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('uses grammatical question text (no duplicated "next number")', () => {
+    for (let i = 0; i < 50; i += 1) {
+      const result = questions.generateTwoStepPatternQuestion();
+      expect(result.question).not.toMatch(/next number.*next number/);
+    }
+  });
+});
+
+describe('generateNumberPatternQuestion question text', () => {
+  it('uses grammatical question text (no duplicated "next number")', () => {
+    for (let i = 0; i < 50; i += 1) {
+      const result = questions.generateNumberPatternQuestion();
+      expect(result.question).not.toMatch(/next number.*next number/);
+    }
+  });
+});
+
+describe('generateMultiplesQuestion identify-form distractor count', () => {
+  it('always produces at least 3 distractors so the student sees at least 4 options', () => {
+    // Collect every "Which of these is a multiple of N?" question over many
+    // iterations and check the option count on each (without conditional
+    // expects).
+    const identifyResults = [];
+    for (let i = 0; i < 1000 && identifyResults.length < 100; i += 1) {
+      const result = questions.generateMultiplesQuestion();
+      if (typeof result.question === 'string' && result.question.startsWith('Which of these is a multiple of')) {
+        identifyResults.push(result);
+      }
+    }
+    expect(identifyResults.length).toBeGreaterThan(0);
+    const tooFewOptions = identifyResults
+      .filter(r => !Array.isArray(r.options) || r.options.length < 4)
+      .map(r => ({ question: r.question, optionCount: r.options ? r.options.length : 'missing' }));
+    expect(tooFewOptions).toEqual([]);
+  });
 });
