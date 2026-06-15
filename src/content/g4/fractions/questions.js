@@ -189,7 +189,7 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
     correctAnswer: simplifiedAnswer,
     options: shuffle(generateUniqueOptions(simplifiedAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: "When subtracting fractions with the same denominator, subtract the numerators and keep the denominator the same.",
+    hint: "To subtract fractions with different denominators, first find a common denominator. Then subtract the top numbers and keep the common denominator. Simplify if you can.",
     standard: "4.NF.B.3.a",
     concept: "Fractions 4th",
     grade: "G4",
