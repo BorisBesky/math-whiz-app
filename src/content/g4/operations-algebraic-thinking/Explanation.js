@@ -129,7 +129,7 @@ const OperationsAlgebraicThinkingExplanation = () => {
         <span style={styles.emoji}>🚦</span><strong>Remember:</strong> Multiplication and Division are like VIPs - they get to go before Addition and Subtraction (unless there are parentheses)!
       </div>
 
-      <h2 style={styles.h2}>� Multiplication Properties</h2>
+      <h2 style={styles.h2}>✖️ Multiplication Properties</h2>
       <p>Special rules that help us solve multiplication problems faster!</p>
       
       <div style={styles.example}>
@@ -158,7 +158,7 @@ const OperationsAlgebraicThinkingExplanation = () => {
         <span style={styles.emoji}>🪄</span><strong>Magic Trick:</strong> Use the Associative Property to look for easy numbers to multiply first, like 2 × 5 = 10!
       </div>
 
-      <h2 style={styles.h2}>�🔢 Prime and Composite Numbers</h2>
+      <h2 style={styles.h2}>🔢 Prime and Composite Numbers</h2>
       <p>Numbers can be organized into special groups based on their factors!</p>
       
       <div style={styles.example}>

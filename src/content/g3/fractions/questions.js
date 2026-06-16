@@ -189,6 +189,13 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
   let num1 = getRandomInt(1, den1 - 1);
   let num2 = getRandomInt(1, den2 - 1);
 
+  // G3 students should never see a negative-fraction answer. If the larger
+  // fraction is on the right, swap the two operands so the minuend is bigger.
+  if (num1 * den2 < num2 * den1) {
+    [num1, num2] = [num2, num1];
+    [den1, den2] = [den2, den1];
+  }
+
   const common_den = den1 * den2;
   const diff_num = num1 * den2 - num2 * den1;
   const answer = getSimplifiedFraction(diff_num, common_den);
