@@ -6,8 +6,9 @@ import { Delete, X } from 'lucide-react';
  * @param {string} value - Current input value
  * @param {function} onChange - Callback when value changes
  * @param {boolean} disabled - Whether the pad is disabled
+ * @param {boolean} allowFraction - Whether to show a fraction bar instead of decimal point
  */
-const NumberPad = React.memo(({ value, onChange, disabled = false }) => {
+const NumberPad = React.memo(({ value, onChange, disabled = false, allowFraction = false }) => {
   const handleNumberClick = (num) => {
     if (disabled) return;
     onChange(value + num);
@@ -18,6 +19,12 @@ const NumberPad = React.memo(({ value, onChange, disabled = false }) => {
     if (!value.includes('.')) {
       onChange(value === '' || value === '-' ? (value + '0.') : value + '.');
     }
+  };
+
+  const handleFractionClick = () => {
+    if (disabled) return;
+    if (!value || value === '-' || value.includes('/') || value.endsWith('.')) return;
+    onChange(value + '/');
   };
 
   const handleToggleSign = () => {
@@ -78,9 +85,15 @@ const NumberPad = React.memo(({ value, onChange, disabled = false }) => {
         <button onClick={() => handleNumberClick('0')} disabled={disabled} className={`${btnBase} ${numBtn}`}>
           0
         </button>
-        <button onClick={handleDecimalClick} disabled={disabled} className={`${btnBase} ${numBtn} text-2xl`} title="Decimal Point">
-          .
-        </button>
+        {allowFraction ? (
+          <button onClick={handleFractionClick} disabled={disabled} className={`${btnBase} ${numBtn} text-2xl`} title="Fraction Bar">
+            /
+          </button>
+        ) : (
+          <button onClick={handleDecimalClick} disabled={disabled} className={`${btnBase} ${numBtn} text-2xl`} title="Decimal Point">
+            .
+          </button>
+        )}
 
         {/* Actions */}
         <button onClick={handleClear} disabled={disabled} className={`${btnBase} ${actionBtn}`} title="Clear">
