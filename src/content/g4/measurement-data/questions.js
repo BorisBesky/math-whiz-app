@@ -8,6 +8,18 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// English singular forms for the unit names used in conversion hints.
+// Slicing off a final "s" turns "feet" into "fee" — so use a map for any
+// unit whose singular isn't just plural-minus-s.
+const UNIT_SINGULAR = {
+  feet: 'foot',
+};
+
+function singularize(unit) {
+  if (UNIT_SINGULAR[unit]) return UNIT_SINGULAR[unit];
+  return unit.endsWith('s') ? unit.slice(0, -1) : unit;
+}
+
 /**
  * Generates a random Measurement & Data question for 4th grade
  * @param {number} difficulty - Difficulty level from 0 to 1 (0=easiest, 1=hardest)
@@ -99,7 +111,7 @@ export function generateLengthConversionQuestion(difficulty = 0.5) {
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Remember: 1 ${lengthConv.from.slice(0, -1)} = ${lengthConv.factor} ${lengthConv.to}.`,
+    hint: `Remember: 1 ${singularize(lengthConv.from)} = ${lengthConv.factor} ${lengthConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
     grade: "G4",
@@ -156,7 +168,7 @@ export function generateWeightCapacityConversionQuestion(difficulty = 0.5) {
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Remember: 1 ${wcConv.from.slice(0, -1)} = ${wcConv.factor} ${wcConv.to}.`,
+    hint: `Remember: 1 ${singularize(wcConv.from)} = ${wcConv.factor} ${wcConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
     grade: "G4",
@@ -201,7 +213,7 @@ export function generateTimeConversionQuestion(difficulty = 0.5) {
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Remember: 1 ${timeConv.from.slice(0, -1)} = ${timeConv.factor} ${timeConv.to}.`,
+    hint: `Remember: 1 ${singularize(timeConv.from)} = ${timeConv.factor} ${timeConv.to}.`,
     standard: "4.MD.A.1",
     concept: "Measurement & Data 4th",
     grade: "G4",
@@ -394,10 +406,14 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   // Generate distractors
   const potentialDistractors = [];
   
-  // Distractor 1: Swap hour and minute (common mistake)
+  // Distractor 1: Swap hour and minute (a common student mistake — read the
+  // minute hand's clock-face position as if it were the hour). The minute
+  // hand pointing at the "N" mark on the clock face corresponds to minutes
+  // = N * 5, so the swapped hour is floor(minutes / 5), with the position
+  // "0" on the clock face read as 12.
   const swappedMinutes = hours * 5; // Convert hour to approximate minutes
-  // Convert minutes to approximate hours, always in range 1-12
-  const swappedHours = ((Math.floor(minutes / 5) % 12) + 1);
+  const swappedHourRaw = Math.floor(minutes / 5);
+  const swappedHours = swappedHourRaw === 0 ? 12 : swappedHourRaw;
   if (swappedHours >= 1 && swappedHours <= 12 && swappedMinutes !== minutes) {
     potentialDistractors.push(formatTime(swappedHours, swappedMinutes));
   }

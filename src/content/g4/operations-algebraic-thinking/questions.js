@@ -208,16 +208,20 @@ export function generateMultiplesQuestion(difficulty = 0.5) {
   const questionType = questionTypes[getRandomInt(0, Math.min(2, Math.floor(difficulty * 3)))];
   
   if (questionType === 'identify') {
-    // Identify which number is a multiple
-    const base = getRandomInt(2, 9);
+    // Identify which number is a multiple. base starts at 3 so we always have
+    // at least 2 distinct non-multiple offsets within one "step" of the
+    // target (base=2 only allowed offset of +1, yielding a single distractor).
+    const base = getRandomInt(3, 9);
     const multiplier = getRandomInt(2, 12);
     const correctAnswer = (base * multiplier).toString();
-    
-    // Generate non-multiples as distractors
+
+    // Generate non-multiples as distractors using both positive and negative
+    // offsets so we have enough candidates even when base is small.
     const potentialDistractors = [];
-    for (let i = 0; potentialDistractors.length < 3 && i < 20; i++) {
-      const nonMultiple = base * multiplier + getRandomInt(1, base - 1);
-      if (nonMultiple % base !== 0 && !potentialDistractors.includes(nonMultiple.toString())) {
+    for (let i = 0; potentialDistractors.length < 3 && i < 40; i++) {
+      const offset = getRandomInt(1, base - 1) * (Math.random() < 0.5 ? 1 : -1);
+      const nonMultiple = base * multiplier + offset;
+      if (nonMultiple > 0 && nonMultiple % base !== 0 && !potentialDistractors.includes(nonMultiple.toString())) {
         potentialDistractors.push(nonMultiple.toString());
       }
     }
@@ -325,7 +329,7 @@ export function generateNumberPatternQuestion(difficulty = 0.5) {
   ];
   
   return {
-    question: `Look at this number pattern and fill in the blank with the number that comes next number: ${sequence.join(', ')}, ___ `,
+    question: `Look at this number pattern and fill in the blank with the next number: ${sequence.join(', ')}, ___ `,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
@@ -424,17 +428,29 @@ export function generatePatternRuleQuestion(difficulty = 0.5) {
  */
 export function generateTwoStepPatternQuestion(difficulty = 0.5) {
   // More complex patterns for 4th grade
-  const step1 = getRandomInt(2, 9);
-  const step2 = getRandomInt(2, 9);
-  const startNum = getRandomInt(2, 10);
+  let step1 = getRandomInt(2, 9);
+  let step2 = getRandomInt(2, 9);
+  let startNum = getRandomInt(2, 10);
 
-  const operations = [
-    { name: "add then multiply", func1: (n) => (n + step1), func2: (n) => n * step2 },
-    { name: "multiply then add", func1: (n) => (n * step1), func2: (n) => n + step2 },
-    { name: "subtract then add", func1: (n) => (n - step1), func2: (n) => n + step2 },
-  ];
-  
-  const operation = operations[getRandomInt(0, operations.length - 1)];
+  // Pick an operation, then constrain step1/step2/startNum so the whole
+  // sequence (including the answer) stays non-negative — 4th-grade pattern
+  // questions should never display negative numbers.
+  const opName = ["add then multiply", "multiply then add", "subtract then add"][getRandomInt(0, 2)];
+  if (opName === "subtract then add") {
+    // Each "subtract step1, add step2" pair changes the running value by
+    // (step2 - step1). Require step2 > step1 so the sequence trends upward,
+    // and require startNum > step1 so the first subtraction stays positive.
+    step1 = getRandomInt(2, 5);
+    step2 = getRandomInt(step1 + 1, step1 + 4);
+    startNum = getRandomInt(step1 + 1, step1 + 9);
+  }
+
+  const operations = {
+    "add then multiply": { name: "add then multiply", func1: (n) => (n + step1), func2: (n) => n * step2 },
+    "multiply then add": { name: "multiply then add", func1: (n) => (n * step1), func2: (n) => n + step2 },
+    "subtract then add": { name: "subtract then add", func1: (n) => (n - step1), func2: (n) => n + step2 },
+  };
+  const operation = operations[opName];
   const sequence = [];
   sequence.push(startNum);
   for (let i = 1; i < 4; i+=2) {
@@ -461,7 +477,7 @@ export function generateTwoStepPatternQuestion(difficulty = 0.5) {
   }
 
   return {
-    question: `Look at this pattern and fill in the blank with the number that comes next number: ${sequence.join(', ')}, ___.`,
+    question: `Look at this pattern and fill in the blank with the next number: ${sequence.join(', ')}, ___.`,
     correctAnswer: correctAnswer,
     questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
     hint: hint,

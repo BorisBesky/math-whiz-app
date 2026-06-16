@@ -5,6 +5,26 @@ import {
   refreshAngleAdditionDiagram,
 } from '../questions.js';
 
+describe('geometry real-life angle question grammar', () => {
+  it('uses "a right angle" / "a straight angle" and "an acute angle" / "an obtuse angle"', () => {
+    const expectedArticle = { acute: 'an', obtuse: 'an', right: 'a', straight: 'a' };
+    const wrongPairings = [];
+    let sawAny = false;
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateAngleMeasurementQuestion();
+      const match = q.question.match(/^Which real-life example shows (a|an) (acute|right|obtuse|straight) angle\?$/);
+      if (!match) continue;
+      sawAny = true;
+      const [, article, name] = match;
+      if (article !== expectedArticle[name]) {
+        wrongPairings.push(`${article} ${name}`);
+      }
+    }
+    expect(sawAny).toBe(true);
+    expect(wrongPairings).toEqual([]);
+  });
+});
+
 describe('geometry angle real-life examples', () => {
   it('has at least 8 real-life examples for every angle type', () => {
     ANGLE_TYPES.forEach((angleType) => {
@@ -21,13 +41,13 @@ describe('geometry angle real-life examples', () => {
   });
 
   it('generates valid real-life angle questions with unique options', () => {
-    const realLifeQuestionPrefix = 'Which real-life example shows an ';
+    const realLifeQuestionRegex = /^Which real-life example shows (a|an) /;
     let realLifeQuestionCount = 0;
 
     for (let index = 0; index < 400; index += 1) {
       const question = generateAngleMeasurementQuestion();
 
-      if (!question.question.startsWith(realLifeQuestionPrefix)) {
+      if (!realLifeQuestionRegex.test(question.question)) {
         continue;
       }
 
@@ -50,10 +70,10 @@ describe('geometry angle real-life examples', () => {
   });
 
   it('includes optionImages for real-life questions only', () => {
-    const realLifePrefix = 'Which real-life example shows an';
+    const realLifeRegex = /^Which real-life example shows (a|an) /;
     const questions = Array.from({ length: 300 }, () => generateAngleMeasurementQuestion());
-    const realLifeQuestions = questions.filter((q) => q.question.startsWith(realLifePrefix));
-    const nonRealLifeQuestions = questions.filter((q) => !q.question.startsWith(realLifePrefix));
+    const realLifeQuestions = questions.filter((q) => realLifeRegex.test(q.question));
+    const nonRealLifeQuestions = questions.filter((q) => !realLifeRegex.test(q.question));
 
     expect(realLifeQuestions.length).toBeGreaterThan(0);
     expect(nonRealLifeQuestions.length).toBeGreaterThan(0);
