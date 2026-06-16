@@ -3,7 +3,26 @@ import { QUESTION_TYPES } from '../constants/shared-constants';
 /** Check if the passed in string is numeric (including negative numbers and decimals and commas) */
 function isNumeric(str) {
   if (typeof str !== 'string') return false;
-  return /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(str) || /^-?\d+(\.\d+)?$/.test(str);
+  return (
+    /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(str) ||
+    /^-?\d+(\.\d+)?$/.test(str) ||
+    isFractionAnswer(str)
+  );
+}
+
+/**
+ * Checks if a value is a simple numeric fraction like 5/12 or -3/4.
+ * @param {string|number} answer
+ * @returns {boolean}
+ */
+export function isFractionAnswer(answer) {
+  if (answer === null || answer === undefined) return false;
+  const compact = answer.toString().trim().replace(/,/g, '').replace(/\s+/g, '');
+  const match = compact.match(/^-?\d+\/-?\d+$/);
+  if (!match) return false;
+
+  const denominator = Number(compact.split('/')[1]);
+  return denominator !== 0;
 }
 
 /**
@@ -218,6 +237,38 @@ export function normalizeNumericAnswer(answer) {
   
   // Remove commas
   trimmed = trimmed.replace(/,/g, '');
+
+  // Normalize simple fractions to a reduced canonical form.
+  if (isFractionAnswer(trimmed)) {
+    const [rawNumerator, rawDenominator] = trimmed.replace(/\s+/g, '').split('/');
+    let numerator = parseInt(rawNumerator, 10);
+    let denominator = parseInt(rawDenominator, 10);
+
+    if (denominator === 0) return trimmed;
+    if (numerator === 0) return '0';
+
+    if (denominator < 0) {
+      numerator *= -1;
+      denominator *= -1;
+    }
+
+    const gcd = (a, b) => {
+      let left = Math.abs(a);
+      let right = Math.abs(b);
+      while (right !== 0) {
+        const temp = right;
+        right = left % right;
+        left = temp;
+      }
+      return left || 1;
+    };
+
+    const divisor = gcd(numerator, denominator);
+    numerator /= divisor;
+    denominator /= divisor;
+
+    return denominator === 1 ? numerator.toString() : `${numerator}/${denominator}`;
+  }
   
   // Handle decimal numbers (both positive and negative)
   if (trimmed.includes('.')) {
@@ -263,4 +314,3 @@ export function normalizeMathExpression(expression) {
   
   return normalized;
 }
-

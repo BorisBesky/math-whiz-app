@@ -12,6 +12,7 @@ import NumberPad from './NumberPad';
 import PlaceValueTable from './PlaceValueTable';
 import {
   isNumericQuestion,
+  isFractionAnswer,
   normalizeNumericAnswer,
   isAIEvaluatedQuestion,
   isFillInTheBlanksQuestion,
@@ -60,6 +61,26 @@ const QuizView = ({
   const currentQuestion = geometryQuestions.refreshAngleAdditionDiagram(currentQuiz[currentQuestionIndex]);
   const progressPercentage =
     ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+  const usesNumericInput =
+    isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE;
+  const usesFractionInput = usesNumericInput && isFractionAnswer(currentQuestion.correctAnswer);
+  const isCheckAnswerDisabled =
+    isValidatingDrawing ||
+    (currentQuestion.questionType === 'drawing'
+      ? !drawingImageBase64
+      : currentQuestion.questionType === 'write-in'
+        ? !writeInAnswer.trim()
+        : currentQuestion.questionType === 'drawing-with-text'
+          ? (!drawingImageBase64 || !writeInAnswer.trim())
+          : isFillInTheBlanksQuestion(currentQuestion)
+            ? (() => {
+                const blanks = parseBlanks(currentQuestion.question);
+                return fillInAnswers.length !== blanks.length ||
+                  fillInAnswers.some(ans => !ans || ans.trim() === '');
+              })()
+            : usesFractionInput
+              ? !isFractionAnswer(userAnswer)
+              : (userAnswer === null || userAnswer === ''));
 
   // Filter images by type
   const allQuestionImages = (currentQuestion.images || []).filter(img => !img.type || img.type === 'question' || img.type === 'uploaded');
@@ -385,13 +406,14 @@ const QuizView = ({
               );
             })()}
           </div>
-        ) : isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? (
+        ) : usesNumericInput ? (
           <div className="mb-6">
             {!isAnswered && (
               <NumberPad
                 value={numericInput}
                 onChange={handleNumericChange}
                 disabled={isAnswered}
+                allowFraction={usesFractionInput}
               />
             )}
             {isAnswered && (
@@ -563,7 +585,7 @@ const QuizView = ({
                 </span>
               ) : userAnswer !== null && userAnswer !== '' ? (
                 <span>
-                  {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? 'Your answer' : 'Selected'}:{" "}
+                  {usesNumericInput ? 'Your answer' : 'Selected'}:{" "}
                   <span className="font-bold">
                     {formatMathText(userAnswer)}
                   </span>
@@ -579,7 +601,7 @@ const QuizView = ({
                 </span>
               ) : (
                 <span className="italic text-gray-400">
-                  {isNumericQuestion(currentQuestion) && currentQuestion.questionType !== QUESTION_TYPES.MULTIPLE_CHOICE ? 'Enter a number' :
+                  {usesNumericInput ? (usesFractionInput ? 'Enter a fraction' : 'Enter a number') :
                   currentQuestion.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ? 'Select an answer' : ''}
                 </span>
               )}
@@ -595,22 +617,7 @@ const QuizView = ({
               ) : (
                 <button
                   onClick={checkAnswer}
-                  disabled={
-                    isValidatingDrawing ||
-                    (currentQuestion.questionType === 'drawing'
-                      ? !drawingImageBase64
-                      : currentQuestion.questionType === 'write-in'
-                        ? !writeInAnswer.trim()
-                        : currentQuestion.questionType === 'drawing-with-text'
-                          ? (!drawingImageBase64 || !writeInAnswer.trim())
-                          : isFillInTheBlanksQuestion(currentQuestion)
-                            ? (() => {
-                                const blanks = parseBlanks(currentQuestion.question);
-                                return fillInAnswers.length !== blanks.length ||
-                                       fillInAnswers.some(ans => !ans || ans.trim() === '');
-                              })()
-                            : (userAnswer === null || userAnswer === ''))
-                  }
+                  disabled={isCheckAnswerDisabled}
                   className="w-full bg-brand-mint text-white font-display font-bold py-2 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm min-h-[40px] flex items-center justify-center gap-2 shadow-sm"
                 >
                   {isValidatingDrawing && (

@@ -1,5 +1,5 @@
 
-const { isNumericQuestion, normalizeNumericAnswer, normalizeMathExpression, validateFillInAnswers } = require('../answer-helpers');
+const { isNumericQuestion, isFractionAnswer, normalizeNumericAnswer, normalizeMathExpression, validateFillInAnswers } = require('../answer-helpers');
 
 describe('isNumericQuestion', () => {
   test('returns true for numeric question with options', () => {
@@ -22,6 +22,22 @@ describe('isNumericQuestion', () => {
     const question = {
       correctAnswer: '3.74'
       // no options
+    };
+    expect(isNumericQuestion(question)).toBe(true);
+  });
+
+  test('returns true for fraction question WITHOUT options', () => {
+    const question = {
+      correctAnswer: '5/12'
+      // no options
+    };
+    expect(isNumericQuestion(question)).toBe(true);
+  });
+
+  test('returns true when all options are fractions', () => {
+    const question = {
+      correctAnswer: '5/12',
+      options: ['5/12', '4/12', '7/12']
     };
     expect(isNumericQuestion(question)).toBe(true);
   });
@@ -55,6 +71,20 @@ describe('isNumericQuestion', () => {
   });
 });
 
+describe('isFractionAnswer', () => {
+  test('detects simple fractions', () => {
+    expect(isFractionAnswer('5/12')).toBe(true);
+    expect(isFractionAnswer('-3/4')).toBe(true);
+    expect(isFractionAnswer(' 10 / 24 ')).toBe(true);
+  });
+
+  test('rejects zero denominators and non-fractions', () => {
+    expect(isFractionAnswer('1/0')).toBe(false);
+    expect(isFractionAnswer('3.5')).toBe(false);
+    expect(isFractionAnswer('five/twelve')).toBe(false);
+  });
+});
+
 describe('normalizeNumericAnswer', () => {
   test('removes commas from numbers', () => {
     expect(normalizeNumericAnswer('4,700')).toBe('4700');
@@ -84,6 +114,13 @@ describe('normalizeNumericAnswer', () => {
 
   test('preserves decimal precision', () => {
     expect(normalizeNumericAnswer('3.14159')).toBe('3.14159');
+  });
+
+  test('normalizes equivalent fractions', () => {
+    expect(normalizeNumericAnswer('10/24')).toBe('5/12');
+    expect(normalizeNumericAnswer(' 6 / 3 ')).toBe('2');
+    expect(normalizeNumericAnswer('-2/4')).toBe('-1/2');
+    expect(normalizeNumericAnswer('2/-4')).toBe('-1/2');
   });
 });
 

@@ -28,6 +28,12 @@ describe('NumberPad', () => {
       expect(screen.getByTitle('Decimal Point')).toBeInTheDocument();
     });
 
+    it('renders fraction bar button when fraction input is enabled', () => {
+      render(<NumberPad value="" onChange={mockOnChange} allowFraction={true} />);
+      expect(screen.getByTitle('Fraction Bar')).toBeInTheDocument();
+      expect(screen.queryByTitle('Decimal Point')).not.toBeInTheDocument();
+    });
+
     it('renders sign toggle button', () => {
       render(<NumberPad value="" onChange={mockOnChange} />);
       expect(screen.getByTitle('Toggle Positive/Negative')).toBeInTheDocument();
@@ -109,6 +115,32 @@ describe('NumberPad', () => {
       fireEvent.click(screen.getByTitle('Decimal Point'));
 
       expect(mockOnChange).toHaveBeenCalledWith('-0.');
+    });
+  });
+
+  describe('fraction bar', () => {
+    it('adds a fraction bar to a numerator', () => {
+      render(<NumberPad value="5" onChange={mockOnChange} allowFraction={true} />);
+
+      fireEvent.click(screen.getByTitle('Fraction Bar'));
+
+      expect(mockOnChange).toHaveBeenCalledWith('5/');
+    });
+
+    it('prevents multiple fraction bars', () => {
+      render(<NumberPad value="5/1" onChange={mockOnChange} allowFraction={true} />);
+
+      fireEvent.click(screen.getByTitle('Fraction Bar'));
+
+      expect(mockOnChange).not.toHaveBeenCalled();
+    });
+
+    it('does not add a fraction bar to an empty value', () => {
+      render(<NumberPad value="" onChange={mockOnChange} allowFraction={true} />);
+
+      fireEvent.click(screen.getByTitle('Fraction Bar'));
+
+      expect(mockOnChange).not.toHaveBeenCalled();
     });
   });
 
@@ -219,6 +251,14 @@ describe('NumberPad', () => {
       render(<NumberPad value="12" onChange={mockOnChange} disabled={true} />);
 
       fireEvent.click(screen.getByTitle('Decimal Point'));
+
+      expect(mockOnChange).not.toHaveBeenCalled();
+    });
+
+    it('prevents fraction bar click when disabled', () => {
+      render(<NumberPad value="12" onChange={mockOnChange} disabled={true} allowFraction={true} />);
+
+      fireEvent.click(screen.getByTitle('Fraction Bar'));
 
       expect(mockOnChange).not.toHaveBeenCalled();
     });
