@@ -1,6 +1,6 @@
 /* global __app_id, __initial_auth_token */
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 // KaTeX is loaded dynamically when quiz starts (see useEffect below)
 import {
   Award,
@@ -76,6 +76,7 @@ import {
   normalizeAllowedSubtopics,
   normalizeAllowedSubtopicsByTopic,
 } from "./utils/subtopicUtils";
+import { getPortalMessagesPath } from "./utils/userRoles";
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
@@ -2403,6 +2404,7 @@ Answer: [The answer]`;
     userData?.activeBackground && userData.activeBackground !== "default"
       ? storeItems.find((item) => item.id === userData.activeBackground)?.url
       : DEFAULT_BACKGROUND_IMAGE;
+  const portalMessagesPath = getPortalMessagesPath(userRole);
 
   if (!user || !userData) {
     return (
@@ -2488,10 +2490,14 @@ Answer: [The answer]`;
                 />
               } />
               <Route path="messages" element={
-                <StudentInbox
-                  user={user}
-                  userData={userData}
-                />
+                portalMessagesPath ? (
+                  <Navigate to={portalMessagesPath} replace />
+                ) : (
+                  <StudentInbox
+                    user={user}
+                    userData={userData}
+                  />
+                )
               } />
               <Route path="results/:topic/*" element={
                 <QuizResults

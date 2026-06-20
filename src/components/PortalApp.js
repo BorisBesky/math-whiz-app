@@ -77,7 +77,7 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
           />
         ),
       },
-      ...(userRole === USER_ROLES.TEACHER ? [{
+      ...([USER_ROLES.TEACHER, USER_ROLES.ADMIN].includes(userRole) ? [{
         id: 'messages',
         label: unreadMessageCount > 0 ? `Messages (${unreadMessageCount})` : 'Messages',
         description: 'Internal notes and feedback with students',

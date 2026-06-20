@@ -74,3 +74,9 @@ export const getRedirectPath = (userRole) => {
 export const isValidRole = (role) => {
   return Object.values(USER_ROLES).includes(role);
 };
+
+export const getPortalMessagesPath = (userRole) => {
+  if (userRole === USER_ROLES.TEACHER) return '/teacher/messages';
+  if (userRole === USER_ROLES.ADMIN) return '/admin/messages';
+  return null;
+};

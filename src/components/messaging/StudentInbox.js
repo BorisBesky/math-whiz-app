@@ -20,7 +20,7 @@ const StudentInbox = ({ user, userData }) => {
   } = useInternalMessages({ appId, userId, enabled: Boolean(userId) });
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="mt-16 w-full max-w-4xl mx-auto">
       <InternalInbox
         title="Inbox"
         description="Ask your teacher a question or read feedback. These messages stay inside Math Whiz."
