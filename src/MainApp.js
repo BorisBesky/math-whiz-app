@@ -549,10 +549,15 @@ const MainAppContent = () => {
     }
   }, [storeItems, storeTheme]);
 
-  // Auto-render KaTeX inside the quiz container when content changes
+  // Auto-render KaTeX inside the active quiz/results container when content changes
   // KaTeX CSS + JS are loaded dynamically to avoid bloating the initial bundle
   useEffect(() => {
-    if (quizState === APP_STATES.IN_PROGRESS && quizContainerRef.current) {
+    const shouldRenderMath = (
+      quizState === APP_STATES.IN_PROGRESS ||
+      quizState === APP_STATES.RESULTS
+    );
+
+    if (shouldRenderMath && quizContainerRef.current) {
       Promise.all([
         import('katex/dist/katex.min.css'),
         import('katex/contrib/auto-render'),
@@ -2512,6 +2517,7 @@ Answer: [The answer]`;
                   startNewQuiz={startNewQuiz}
                   navigateApp={navigateApp}
                   returnToTopics={returnToTopics}
+                  resultsContainerRef={quizContainerRef}
                 />
               } />
               <Route path="quiz/:topic/*" element={

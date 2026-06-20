@@ -16,6 +16,7 @@ const QuizResults = ({
   startNewQuiz,
   navigateApp,
   returnToTopics,
+  resultsContainerRef,
 }) => {
   const percentage = Math.round((score / currentQuiz.length) * 100);
   let message = "";
@@ -50,7 +51,10 @@ const QuizResults = ({
     isCurrentTopicCompleted && hasIncompleteTopics;
 
   return (
-    <div className="text-center bg-white/80 backdrop-blur-md p-8 rounded-card shadow-card border border-white/60 max-w-md mx-auto mt-16 animate-bounce-in">
+    <div
+      ref={resultsContainerRef}
+      className="text-center bg-white/80 backdrop-blur-md p-8 rounded-card shadow-card border border-white/60 max-w-md mx-auto mt-16 animate-bounce-in"
+    >
       <h2 className="text-3xl font-display font-bold text-gray-800 mb-3">
         Quiz Complete!
       </h2>
