@@ -123,6 +123,29 @@ const DivisionExplanation = () => {
         <br/>That's 4 jumps, so 24 ÷ 6 = 4!
       </div>
 
+      <h2 style={styles.h2}>🧮 Remainders - What's Left Over</h2>
+      <p>Sometimes numbers don't divide evenly. What's left over is called the <strong>remainder</strong>!</p>
+
+      <div style={styles.example}>
+        <strong>Example:</strong> 10 cookies for 3 friends
+        <br/>👦 Friend 1: 🍪🍪🍪 (3 cookies)
+        <br/>👧 Friend 2: 🍪🍪🍪 (3 cookies)
+        <br/>👦 Friend 3: 🍪🍪🍪 (3 cookies)
+        <br/>Cookies left over: 🍪 (1 cookie)
+        <br/><strong>10 ÷ 3 = 3 remainder 1</strong>
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🔎</span><strong>Find the Remainder:</strong> Make the biggest equal groups you can. What's left over is the remainder. The remainder is always smaller than the number you're dividing by.
+      </div>
+
+      <div style={styles.example}>
+        <strong>Quick Check:</strong> What is the remainder when 17 ÷ 5?
+        <br/>5 × 3 = 15 (closest without going over 17)
+        <br/>17 − 15 = 2
+        <br/><strong>17 ÷ 5 = 3 remainder 2</strong>
+      </div>
+
       <h2 style={styles.h2}>🏃‍♂️ Real Life Division</h2>
       <div style={styles.example}>
         <strong>🍕 Pizza Party:</strong> 24 pizza slices for 8 people

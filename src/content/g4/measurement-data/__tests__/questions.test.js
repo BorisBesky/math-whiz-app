@@ -55,9 +55,10 @@ describe('generateTimeConversionQuestion hint singularization', () => {
 describe('generateClockReadingQuestion swapped-hands distractor', () => {
   // Pick an option that swaps the hour and minute hands. The minute hand
   // pointing at clock-face position N (i.e. minutes = N * 5) should be read
-  // as N hours when treated as the hour hand.
+  // as N hours when treated as the hour hand. The hour hand pointing at
+  // position 12 (top of clock) corresponds to 0 minutes, not 60.
   function expectedSwappedTime(hours, minutes) {
-    const swappedMinutes = hours * 5;
+    const swappedMinutes = (hours % 12) * 5;
     const raw = Math.floor(minutes / 5);
     const swappedHours = raw === 0 ? 12 : raw;
     return `${swappedHours}:${swappedMinutes.toString().padStart(2, '0')}`;
@@ -105,10 +106,29 @@ describe('generateClockReadingQuestion swapped-hands distractor', () => {
       .filter(Boolean);
     expect(buggyOptionsFound).toEqual([]);
     // The new swap form ("12:HH") should appear for at least one on-the-hour
-    // time across the sampled questions.
+    // time across the sampled questions. The clock-face position N for the
+    // hour hand is (hour % 12), so for hour=12 that's 0 minutes, not 60.
     const newSwapFound = onHourSamples.some(({ hour, options }) => (
-      options.includes(`12:${(hour * 5).toString().padStart(2, '0')}`)
+      options.includes(`12:${((hour % 12) * 5).toString().padStart(2, '0')}`)
     ));
     expect(newSwapFound).toBe(true);
+  });
+
+  it('never produces a distractor with minutes >= 60', () => {
+    // Across all difficulties and many samples, no distractor should ever
+    // display an invalid time like "12:60" or "1:60" — that's a sign the
+    // hour-hand position is being mapped to minutes without modding by 12.
+    const difficulties = [0, 0.3, 0.5, 0.7, 1];
+    for (const difficulty of difficulties) {
+      for (let i = 0; i < 500; i += 1) {
+        const q = generateClockReadingQuestion(difficulty);
+        for (const option of q.options) {
+          const m = option.match(/^\d{1,2}:(\d{2})$/);
+          expect(m).not.toBeNull();
+          const mins = Number(m[1]);
+          expect(mins).toBeLessThan(60);
+        }
+      }
+    }
   });
 });

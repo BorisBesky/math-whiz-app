@@ -7,11 +7,23 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function getRandomIntUniqueDigits(count) {
-  const digits = new Set();
+function getRandomIntUniqueDigits(count, { firstNonZero = false } = {}) {
   if (count > 10) {
     throw new Error("Cannot generate more than 10 unique digits");
   }
+  if (firstNonZero && count > 1) {
+    // Pick the leading digit from 1-9, then fill the rest with unique digits
+    // (which may include 0). Without this guard the Set insertion order can
+    // place 0 first, producing numbers like "053" — not a valid 3-digit
+    // representation.
+    const firstDigit = getRandomInt(1, 9);
+    const digits = new Set([firstDigit]);
+    while (digits.size < count) {
+      digits.add(getRandomInt(0, 9));
+    }
+    return Array.from(digits);
+  }
+  const digits = new Set();
   while (digits.size < count) {
     digits.add(getRandomInt(0, 9));
   }
@@ -179,7 +191,7 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
 export function generatePlaceValueQuestion(difficulty = 0.5) {
   // Scale number of digits based on difficulty (3-7 digits)
   const numDigits = Math.max(3, Math.min(7, 3 + Math.floor(difficulty * 4)));
-  const number = getRandomIntUniqueDigits(numDigits).join('');
+  const number = getRandomIntUniqueDigits(numDigits, { firstNonZero: true }).join('');
   const positions = ["millions", "hundred thousands", "ten thousands", "thousands", "hundreds", "tens", "ones"];
   
   // At higher difficulty, focus on larger place values
