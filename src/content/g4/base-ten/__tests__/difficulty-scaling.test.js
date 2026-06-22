@@ -5,6 +5,7 @@
 
 import {
   generateQuestion as generateBaseTen,
+  generatePlaceValueQuestion,
   generatePlaceValueTableQuestion,
   generateDecimalPlaceIdentificationQuestion,
   generateDecimalDigitValueQuestion,
@@ -231,6 +232,33 @@ describe('Grade 4 Difficulty Scaling', () => {
         expect(question.options.length).toBeGreaterThanOrEqual(2);
         expect(question.options).toContain(question.correctAnswer);
         expect(new Set(question.options).size).toBe(question.options.length);
+      }
+    });
+  });
+
+  describe('Place value (whole-number) question', () => {
+    test('never presents a number with a leading zero', () => {
+      // "053" is not a valid 3-digit number — the leftmost place should be
+      // non-zero. Otherwise asking "what is the place value of 0 in 053"
+      // gives a wrong answer ("hundreds") because 53 has no hundreds place.
+      for (let i = 0; i < 500; i += 1) {
+        const difficulty = Math.random();
+        const q = generatePlaceValueQuestion(difficulty);
+        const numberMatch = q.question.match(/In the number (\d+),/);
+        expect(numberMatch).not.toBeNull();
+        const numStr = numberMatch[1];
+        expect(numStr[0]).not.toBe('0');
+      }
+    });
+
+    test('digit referenced in the question text actually appears in the number', () => {
+      for (let i = 0; i < 200; i += 1) {
+        const q = generatePlaceValueQuestion(Math.random());
+        const m = q.question.match(/In the number (\d+), what is the place value of the digit (\d)\?/);
+        expect(m).not.toBeNull();
+        const numStr = m[1];
+        const digit = m[2];
+        expect(numStr.includes(digit)).toBe(true);
       }
     });
   });

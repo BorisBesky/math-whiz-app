@@ -1,6 +1,28 @@
 import React, { createRef } from 'react';
 import { render } from '@testing-library/react';
-import QuizResults from '../QuizResults';
+
+// firebase.js calls getAuth(app) at module load. Without the Firebase API
+// key in env, that throws before any test runs. Stub the SDK + the app's
+// firebase module so QuizResults' import chain doesn't touch real auth.
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({})),
+  connectAuthEmulator: jest.fn(),
+}));
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(() => ({})),
+  connectFirestoreEmulator: jest.fn(),
+  collection: jest.fn(),
+  doc: jest.fn(),
+}));
+jest.mock('firebase/app', () => ({
+  initializeApp: jest.fn(() => ({})),
+}));
+jest.mock('../../firebase', () => ({
+  app: {},
+  auth: {},
+  db: {},
+  getStorageLazy: jest.fn(),
+}));
 
 jest.mock('../../services/topicAvailability', () => ({
   getTopicAvailability: () => ({
@@ -8,6 +30,8 @@ jest.mock('../../services/topicAvailability', () => ({
     topicStats: [],
   }),
 }));
+
+const QuizResults = require('../QuizResults').default;
 
 describe('QuizResults', () => {
   it('attaches the math-render container ref to the results card', () => {

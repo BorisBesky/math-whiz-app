@@ -410,8 +410,10 @@ export function generateClockReadingQuestion(difficulty = 0.5) {
   // minute hand's clock-face position as if it were the hour). The minute
   // hand pointing at the "N" mark on the clock face corresponds to minutes
   // = N * 5, so the swapped hour is floor(minutes / 5), with the position
-  // "0" on the clock face read as 12.
-  const swappedMinutes = hours * 5; // Convert hour to approximate minutes
+  // "0" on the clock face read as 12. The hour hand at position 12 (top of
+  // clock) corresponds to 0 minutes — hours * 5 = 60 would render as an
+  // invalid "X:60" time, so mod by 12.
+  const swappedMinutes = (hours % 12) * 5;
   const swappedHourRaw = Math.floor(minutes / 5);
   const swappedHours = swappedHourRaw === 0 ? 12 : swappedHourRaw;
   if (swappedHours >= 1 && swappedHours <= 12 && swappedMinutes !== minutes) {
