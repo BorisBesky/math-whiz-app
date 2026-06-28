@@ -7,6 +7,10 @@
 const CACHE_PREFIX = 'class_questions_cache_v2_';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+const isBrowserOffline = () => (
+  typeof navigator !== 'undefined' && navigator.onLine === false
+);
+
 /**
  * Generate cache key from parameters
  */
@@ -77,8 +81,15 @@ export const getCachedClassQuestions = (classId, topic, grade, appId) => {
     const { questions, timestamp } = JSON.parse(cachedData);
     const now = Date.now();
     
-    // Check if cache is expired
+    // Check if cache is expired. When the browser is offline, stale class
+    // questions are still better than blocking a student from practicing.
     if (now - timestamp > CACHE_TTL_MS) {
+      if (isBrowserOffline()) {
+        const deserializedQuestions = questions.map(deserializeQuestion);
+        console.log(`[questionCache] Offline stale cache hit for ${cacheKey}, returning ${deserializedQuestions.length} questions`);
+        return deserializedQuestions;
+      }
+
       // Remove expired cache
       localStorage.removeItem(cacheKey);
       console.log(`[questionCache] Cache expired for ${cacheKey}`);

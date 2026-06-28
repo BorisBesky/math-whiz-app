@@ -8,6 +8,7 @@ import {
 } from "../utils/complexityEngine";
 import { USER_ROLES } from "../utils/userRoles";
 import { fetchStudentHistory } from "../services/studentHistoryService";
+import { getQuestionHistory } from "../services/questionService";
 import {
   DEFAULT_DAILY_GOAL,
   GOAL_RANGE_MIN,
@@ -44,8 +45,16 @@ const Dashboard = ({
         }
       } catch (error) {
         console.warn("[Dashboard] Failed to load attempt history:", error);
-        if (!cancelled) {
-          setAttemptHistory(userData?.answeredQuestions || []);
+        try {
+          const cachedHistory = await getQuestionHistory(user.uid);
+          if (!cancelled) {
+            setAttemptHistory(cachedHistory);
+          }
+        } catch (cachedError) {
+          console.warn("[Dashboard] Failed to load cached attempt history:", cachedError);
+          if (!cancelled) {
+            setAttemptHistory(userData?.answeredQuestions || []);
+          }
         }
       } finally {
         if (!cancelled) {

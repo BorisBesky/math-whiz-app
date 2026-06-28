@@ -12,6 +12,23 @@ import { getUserAttemptsCollectionRef, getUserDocRef } from "../utils/firebaseHe
 import { getCachedClassQuestions, setCachedClassQuestions } from "../utils/questionCache";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
 
+export const isLikelyOfflineError = (error) => {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return true;
+  }
+
+  const errorCode = String(error?.code || '').toLowerCase();
+  const errorMessage = String(error?.message || error || '').toLowerCase();
+
+  return (
+    errorCode.includes('unavailable') ||
+    errorMessage.includes('offline') ||
+    errorMessage.includes('network') ||
+    errorMessage.includes('failed to fetch') ||
+    errorMessage.includes('client is offline')
+  );
+};
+
 // Retry helper with exponential backoff
 export const retryWithBackoff = async (fn, options = {}) => {
   const {
@@ -58,16 +75,30 @@ export const getQuestionHistory = async (userId) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
   const attemptsRef = getUserAttemptsCollectionRef(userId);
-  const attemptsSnapshot = attemptsRef ? await getDocs(attemptsRef) : null;
-  if (attemptsSnapshot && !attemptsSnapshot.empty) {
-    return attemptsSnapshot.docs
-      .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
-      .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+  try {
+    const attemptsSnapshot = attemptsRef ? await getDocs(attemptsRef) : null;
+    if (attemptsSnapshot && !attemptsSnapshot.empty) {
+      return attemptsSnapshot.docs
+        .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
+        .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+    }
+  } catch (error) {
+    if (!isLikelyOfflineError(error)) {
+      throw error;
+    }
+    console.warn('[questionService] Attempt history unavailable offline; falling back to cached profile history.', error);
   }
 
-  const userDoc = await getDoc(userDocRef);
-  if (userDoc.exists() && userDoc.data().answeredQuestions) {
-    return userDoc.data().answeredQuestions;
+  try {
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists() && userDoc.data().answeredQuestions) {
+      return userDoc.data().answeredQuestions;
+    }
+  } catch (error) {
+    if (!isLikelyOfflineError(error)) {
+      throw error;
+    }
+    console.warn('[questionService] Profile history unavailable offline; using empty history.', error);
   }
   return [];
 };
@@ -76,9 +107,16 @@ export const getQuestionHistory = async (userId) => {
 export const getAnsweredQuestionBankQuestions = async (userId) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
-  const userDoc = await getDoc(userDocRef);
-  if (userDoc.exists() && userDoc.data().answeredQuestionBankQuestions) {
-    return userDoc.data().answeredQuestionBankQuestions;
+  try {
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists() && userDoc.data().answeredQuestionBankQuestions) {
+      return userDoc.data().answeredQuestionBankQuestions;
+    }
+  } catch (error) {
+    if (!isLikelyOfflineError(error)) {
+      throw error;
+    }
+    console.warn('[questionService] Answered question-bank ids unavailable offline; using empty list.', error);
   }
   return [];
 };
@@ -357,7 +395,13 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
           });
 
           // Check if this is a missing index error
-          if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
+          if (isLikelyOfflineError(err)) {
+            errors[`classQuestions:${selectedClassId}`] = {
+              type: 'offline',
+              message: 'Class questions are unavailable while offline.',
+              details: errorMessage
+            };
+          } else if (errorMessage.toLowerCase().includes('index') || errorMessage.toLowerCase().includes('requires an index')) {
             errors[`classQuestions:${selectedClassId}`] = {
               type: 'index',
               message: 'Missing Firestore index. Please check the console for the index creation link.',
@@ -429,7 +473,7 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
         });
 
         errors.userQuestions = {
-          type: errorMessage.toLowerCase().includes('index') ? 'index' : 'query',
+          type: isLikelyOfflineError(err) ? 'offline' : (errorMessage.toLowerCase().includes('index') ? 'index' : 'query'),
           message: `Failed to load personal questions: ${errorMessage}`,
           details: errorMessage
         };
@@ -491,7 +535,7 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
       });
 
       errors.sharedQuestions = {
-        type: errorMessage.toLowerCase().includes('index') ? 'index' : 'query',
+        type: isLikelyOfflineError(err) ? 'offline' : (errorMessage.toLowerCase().includes('index') ? 'index' : 'query'),
         message: `Failed to load shared questions: ${errorMessage}`,
         details: errorMessage
       };
@@ -518,6 +562,13 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
 
   // If we have errors and no questions, throw an error with details
   if (questions.length === 0 && Object.keys(errors).length > 0) {
+    const onlyOfflineErrors = Object.values(errors).every((error) => error.type === 'offline');
+    if (onlyOfflineErrors) {
+      console.warn('[fetchQuestionsFromFirestore] Firestore is unavailable offline; continuing with generated questions.', errors);
+      questions.errors = errors;
+      return questions;
+    }
+
     const errorDetails = Object.entries(errors)
       .map(([source, error]) => `${source}: ${error.message}`)
       .join('; ');

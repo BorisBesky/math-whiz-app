@@ -7,10 +7,12 @@ const CACHE_KEY = 'store_images_cache';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /**
- * Get cached store images if available and not expired
+ * Get cached store images if available.
+ * @param {Object} options
+ * @param {boolean} options.allowExpired - Return stale cache as a fallback.
  * @returns {Array|null} Cached store items or null if not found/expired
  */
-export const getCachedStoreImages = () => {
+export const getCachedStoreImages = ({ allowExpired = false } = {}) => {
   try {
     const cachedData = localStorage.getItem(CACHE_KEY);
     
@@ -23,6 +25,11 @@ export const getCachedStoreImages = () => {
     
     // Check if cache is expired
     if (now - timestamp > CACHE_TTL_MS) {
+      if (allowExpired) {
+        console.log(`[storeImages] Stale cache hit, returning ${images.length} images`);
+        return images;
+      }
+
       // Remove expired cache
       localStorage.removeItem(CACHE_KEY);
       console.log('[storeImages] Cache expired');
@@ -90,6 +97,12 @@ export const loadStoreImages = async (forceRefresh = false) => {
     }
   }
 
+  const canReachNetwork = typeof navigator === 'undefined' || navigator.onLine !== false;
+  if (!canReachNetwork) {
+    const staleCached = getCachedStoreImages({ allowExpired: true });
+    return staleCached || [];
+  }
+
   try {
     console.log('[storeImages] Fetching store images from server...');
     const response = await fetch('/.netlify/functions/import-store-images', {
@@ -129,7 +142,7 @@ export const loadStoreImages = async (forceRefresh = false) => {
     console.error('[storeImages] Error loading store images:', error);
     
     // Try to return cached data even if expired as fallback
-    const cached = getCachedStoreImages();
+    const cached = getCachedStoreImages({ allowExpired: true });
     if (cached !== null) {
       console.log('[storeImages] Using expired cache as fallback');
       return cached;
@@ -227,4 +240,3 @@ export const deleteStoreTheme = async (theme) => {
     throw error;
   }
 };
-

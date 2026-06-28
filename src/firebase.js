@@ -5,7 +5,9 @@ import {
   connectAuthEmulator,
 } from "firebase/auth";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   connectFirestoreEmulator,
 } from "firebase/firestore";
 // Storage is loaded lazily — only needed for admin image uploads
@@ -36,7 +38,11 @@ if (typeof __firebase_config !== "undefined") {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 let _storage = null;
 const getStorageLazy = async () => {
   if (!_storage) {

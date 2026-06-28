@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart2,
   BookOpen,
@@ -11,6 +11,7 @@ import {
   Shield,
   Store,
   User,
+  WifiOff,
 } from "lucide-react";
 import { USER_ROLES } from "../utils/userRoles";
 import { APP_STATES } from "../constants/topics";
@@ -33,11 +34,27 @@ const AppHeader = ({
 }) => {
   const iconBtn = "p-2 rounded-xl hover:bg-white/80 hover:shadow-sm active:scale-95 transition-all duration-200";
   const appId = getAppId();
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator === 'undefined' ? true : navigator.onLine
+  );
   const unreadMessageCount = useUnreadMessageCount({
     appId,
     userId: authUser?.uid,
     enabled: Boolean(authUser?.uid),
   });
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <div className="fixed top-3 left-3 right-3 flex items-center gap-1.5 bg-white/70 backdrop-blur-md px-3 py-2 rounded-2xl shadow-card border border-white/50 z-10 overflow-x-auto" data-tutorial-id="navigation-menu">
@@ -82,6 +99,19 @@ const AppHeader = ({
         <Coins size={18} />
         <span>{userData?.coins || 0}</span>
       </div>
+
+      {!isOnline && (
+        <>
+          <div className="w-px h-6 bg-gray-200 mx-0.5" />
+          <div
+            className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700"
+            title="Offline"
+          >
+            <WifiOff size={14} />
+            <span>Offline</span>
+          </div>
+        </>
+      )}
 
       {/* Divider */}
       <div className="w-px h-6 bg-gray-200 mx-0.5" />
