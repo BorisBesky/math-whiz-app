@@ -1,9 +1,11 @@
 import {
   generateEquivalentFractionsQuestion,
   generateFractionAdditionQuestion,
+  generateFractionComparisonQuestion,
   generateFractionSubtractionQuestion,
   generateFractionSimplificationQuestion,
 } from '../questions.js';
+import { QUESTION_TYPES } from '../../../../constants/shared-constants.js';
 
 describe('G3 fractions: CCSS standards are 3rd-grade', () => {
   it('addition uses a 3.NF.* standard, not 4.NF.*', () => {
@@ -40,6 +42,35 @@ describe('generateEquivalentFractionsQuestion: never picks the original fraction
       expect(match).not.toBeNull();
       const original = `${match[1]}/${match[2]}`;
       expect(q.correctAnswer).not.toBe(original);
+    }
+  });
+});
+
+describe('generateFractionComparisonQuestion: consistent multiple-choice across both branches', () => {
+  it('always returns MULTIPLE_CHOICE with both < and > as options', () => {
+    for (let i = 0; i < 100; i += 1) {
+      const q = generateFractionComparisonQuestion();
+      expect(q.questionType).toBe(QUESTION_TYPES.MULTIPLE_CHOICE);
+      expect(Array.isArray(q.options)).toBe(true);
+      expect(q.options).toEqual(expect.arrayContaining(['<', '>']));
+      expect(['<', '>']).toContain(q.correctAnswer);
+    }
+  });
+});
+
+describe('generateFractionSimplificationQuestion: avoids degenerate / colliding distractors', () => {
+  it('does not emit "0/N" distractors and does not include the correct answer as a distractor', () => {
+    for (let i = 0; i < 300; i += 1) {
+      const q = generateFractionSimplificationQuestion();
+      for (const opt of q.options) {
+        // "0/anything" looks malformed to a student. The simplified form of 0
+        // is just "0" (no slash), which is allowed.
+        expect(opt).not.toMatch(/^0\/\d+$/);
+      }
+      // Options are unique and the correct answer appears exactly once.
+      const correctOccurrences = q.options.filter((o) => o === q.correctAnswer).length;
+      expect(correctOccurrences).toBe(1);
+      expect(new Set(q.options).size).toBe(q.options.length);
     }
   });
 });

@@ -115,7 +115,8 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     return {
       question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
       correctAnswer: correctAnswer,
-      questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
+      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
       standard: "3.NF.A.3.d",
       concept: "Fractions",
@@ -225,10 +226,24 @@ export function generateFractionSimplificationQuestion(difficulty = 0.5) {
   const starting_num = num * multiplier;
   const starting_den = den * multiplier;
   const simplified_fraction = getSimplifiedFraction(starting_num, starting_den);
+  // Build the "off-by-one numerator" distractor without ever producing "0/N"
+  // (visually weird) — shift away from zero when subtraction would land on 0.
+  const numShift = getRandomInt(1, Math.max(1, num - 1));
+  const shiftedNum = num - numShift > 0 ? num - numShift : num + numShift;
+  // The "halved both" distractor can simplify to the same value as the
+  // correct answer (e.g., 8/12 → 4/6 → 2/3, same as the correct 2/3). Use a
+  // genuinely different fraction in that case.
+  const halvedDistractor = getSimplifiedFraction(
+    Math.floor(starting_num / 2),
+    Math.floor(starting_den / 2)
+  );
+  const safeHalvedDistractor = halvedDistractor === simplified_fraction
+    ? `${num + 1}/${den + 1}`
+    : halvedDistractor;
   const potentialDistractors = [
     `${num}/${den + getRandomInt(1, 3)}`,
-    `${Math.abs(num - getRandomInt(1, 3))}/${den}`,
-    getSimplifiedFraction(Math.floor(starting_num / 2), Math.floor(starting_den / 2)),
+    `${shiftedNum}/${den}`,
+    safeHalvedDistractor,
   ];
 
   return {

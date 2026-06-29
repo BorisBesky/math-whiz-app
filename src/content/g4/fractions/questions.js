@@ -178,8 +178,15 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
     difference *= -1;
   }
   const simplifiedAnswer = simplifyFraction(difference, denominator * denominator2);
+  // When denominator === denominator2 the "subtract straight across" distractor
+  // would divide by zero (Math.abs(d - d) === 0 → simplifyFraction returns the
+  // literal string 'undefined'). Fall back to a safe alternate distractor in
+  // that case so students never see "undefined" as an answer choice.
+  const subtractStraightDistractor = denominator === denominator2
+    ? simplifyFraction(Math.abs(num1 - num2), denominator)
+    : simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2));
   const potentialDistractors = [
-    simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2)),
+    subtractStraightDistractor,
     simplifyFraction(difference + 1, denominator * denominator2),
     simplifyFraction(difference, denominator * denominator2 + 1),
   ];
@@ -206,14 +213,21 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
 export function generateFractionComparisonQuestion(difficulty = 0.5) {
   // Scale numerator and denominator ranges by difficulty
   const maxNum = Math.min(10, 4 + Math.floor(difficulty * 6));
+  const maxDen = 10 + Math.floor(difficulty * 5);
   let num1 = getRandomInt(1, maxNum);
-  const den1 = getRandomInt(num1 + 1, 10 + Math.floor(difficulty * 5));
+  let den1 = getRandomInt(num1 + 1, maxDen);
   let num2 = getRandomInt(1, maxNum);
-  const den2 = getRandomInt(num2 + 1, 10 + Math.floor(difficulty * 5));
+  let den2 = getRandomInt(num2 + 1, maxDen);
 
-  // Ensure fractions are different
-  if (num1 / den1 === num2 / den2) {
-    num2 = num1 + 1 <= maxNum ? num1 + 1 : num1 - 1;
+  // Ensure the two fractions have genuinely different values. Bumping only
+  // num2 (the previous behavior) can land on another equivalent fraction
+  // (e.g., 2/4 and 3/6 are both 0.5; bumping num2 to 3 leaves them equal).
+  // Re-roll both num2 and den2 until the cross-multiplied values differ.
+  let safety = 0;
+  while (num1 * den2 === num2 * den1 && safety < 20) {
+    num2 = getRandomInt(1, maxNum);
+    den2 = getRandomInt(num2 + 1, maxDen);
+    safety += 1;
   }
 
   const decimal1 = num1 / den1;
@@ -294,9 +308,16 @@ export function generateFractionMultiplicationQuestion(difficulty = 0.5) {
   
   const resultNumerator = numerator * wholeNumber;
   const simplifiedResult = simplifyFraction(resultNumerator, denominator);
-  
+
+  // The "added instead of multiplied" distractor collides with the answer
+  // when n + w === n * w (e.g., n = w = 2). Skip it in that case and use a
+  // different misconception fallback (multiplied the denominator too).
+  const addedInsteadDistractor = simplifyFraction(numerator + wholeNumber, denominator);
+  const safeAddedDistractor = addedInsteadDistractor === simplifiedResult
+    ? simplifyFraction(resultNumerator, denominator * wholeNumber)
+    : addedInsteadDistractor;
   const potentialDistractors = [
-    simplifyFraction(numerator + wholeNumber, denominator),
+    safeAddedDistractor,
     simplifyFraction(resultNumerator + 1, denominator),
     simplifyFraction(resultNumerator, denominator + 1),
   ];
@@ -390,21 +411,29 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
     
     let resultWhole = whole1 + whole2;
     let resultNum = num1 + num2;
-    
+    const carried = resultNum >= denominator;
+
     // Handle carrying
-    if (resultNum >= denominator) {
+    if (carried) {
       resultWhole += 1;
       resultNum -= denominator;
     }
-    
-    const correctAnswer = resultNum === 0 
-      ? `${resultWhole}` 
+
+    const correctAnswer = resultNum === 0
+      ? `${resultWhole}`
       : `${resultWhole} ${resultNum}/${denominator}`;
-    
+
+    // The "forgot to carry" distractor (whole1+whole2, num1+num2 / d) is
+    // identical to the correct answer when no carry was needed, so only emit
+    // it when carrying actually happened. Substitute a different misconception
+    // distractor otherwise.
+    const forgotToCarryDistractor = carried
+      ? `${whole1 + whole2} ${num1 + num2}/${denominator}`
+      : `${resultWhole} ${Math.max(1, resultNum - 1)}/${denominator}`;
     const potentialDistractors = [
-      `${resultWhole + 1} ${resultNum}/${denominator}`,
+      `${resultWhole + 1} ${resultNum === 0 ? 1 : resultNum}/${denominator}`,
       `${resultWhole} ${resultNum + 1}/${denominator}`,
-      `${whole1 + whole2} ${num1 + num2}/${denominator}`,
+      forgotToCarryDistractor,
     ];
     
     return {

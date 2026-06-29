@@ -184,7 +184,12 @@ export function generateEqualGroupsQuestion() {
  */
 export function generateFactFamilyQuestion() {
   const factor1 = getRandomInt(2, 9);
-  const factor2 = getRandomInt(2, 9);
+  // factor2 must differ from factor1: when they're equal the commutative
+  // question "If 4 × 4 = 16, what is 4 × 4?" is trivial (the same expression).
+  let factor2 = getRandomInt(2, 9);
+  while (factor2 === factor1) {
+    factor2 = getRandomInt(2, 9);
+  }
   const product = factor1 * factor2;
   
   const questionTypes = [
