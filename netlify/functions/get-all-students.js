@@ -144,8 +144,12 @@ exports.handler = async (event) => {
     }
 
     console.log("Executing query to fetch user profiles...");
-    const queryToRun = includeHistory ? query : query.select(...compactProfileFields);
-    const userDocsSnapshot = await queryToRun.get();
+    // Note: we intentionally do NOT use Firestore's native `.select()` projection here.
+    // Projection queries on a collectionGroup query are served directly from the index
+    // and require a dedicated composite index covering every selected field; without one
+    // (none is provisioned for this app) Firestore throws FAILED_PRECONDITION at query time.
+    // Instead we fetch full documents and trim fields in-process below.
+    const userDocsSnapshot = await query.get();
 
     if (userDocsSnapshot.empty) {
       console.log(`get users profiles returned 0 document references. The collection appears empty.`);
@@ -171,8 +175,16 @@ exports.handler = async (event) => {
       if (!userId || seenStudentIds.has(userId)) return;
       seenStudentIds.add(userId);
 
-      const profileData = userDoc.data();
-      const questionSummary = getQuestionSummary(profileData);
+      const fullProfileData = userDoc.data();
+      const profileData = includeHistory
+        ? fullProfileData
+        : compactProfileFields.reduce((acc, field) => {
+            if (Object.prototype.hasOwnProperty.call(fullProfileData, field)) {
+              acc[field] = fullProfileData[field];
+            }
+            return acc;
+          }, {});
+      const questionSummary = getQuestionSummary(fullProfileData);
       allStudentsData.push({
         id: userId,
         ...profileData,

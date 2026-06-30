@@ -2,11 +2,16 @@
  * Lightweight in-memory mock of the Firebase Admin Firestore surface used by the
  * Netlify functions (netlify/functions/*). It is deliberately NOT a full emulator —
  * it supports exactly the access patterns those handlers use:
- *   db.collection(name) / db.doc(path)
+ *   db.collection(name) / db.doc(path) / db.collectionGroup(name)
  *   collectionRef.doc(id) / .where(field, op, value) / .get() / .add(data) / .count().get()
  *   docRef.get() / .set(data, { merge }) / .update(data) / .delete() / .collection(name)
  *   FieldValue.serverTimestamp / arrayUnion / arrayRemove / increment
  *   FieldPath.documentId()
+ *
+ * Note: collectionGroup() intentionally does NOT support .select() (projection queries) —
+ * the real Firestore SDK requires those to be covered by an explicit composite index, which
+ * this app does not provision, so production code must not rely on it either. Calling
+ * .select() on a collectionGroup query here throws, acting as a regression guard.
  *
  * Documents are stored by full slash-delimited path. arrayUnion/arrayRemove are applied
  * eagerly on write so later reads in the same handler observe the reconciled value —
@@ -68,13 +73,14 @@ export function createAdminMock(initialDocs = {}) {
   const docRef = (path) => ({
     path,
     id: path.split('/').pop(),
+    get parent() { return collRef(path.split('/').slice(0, -1).join('/')); },
     get: async () => {
       const data = store.get(path);
       return {
         exists: data !== undefined,
         id: path.split('/').pop(),
         data: () => data,
-        ref: { path },
+        ref: docRef(path),
       };
     },
     set: async (data, options) => { sets.push({ path, data, options }); applyData(path, data, Boolean(options && options.merge)); },
@@ -107,6 +113,10 @@ export function createAdminMock(initialDocs = {}) {
 
     return {
       path,
+      get parent() {
+        const segs = path.split('/');
+        return segs.length <= 1 ? null : docRef(segs.slice(0, -1).join('/'));
+      },
       doc: (id) => docRef(`${path}/${id}`),
       where: (field, op, value) => collRef(path, [...filters, { field, op, value }]),
       add: async (data) => {
@@ -121,6 +131,38 @@ export function createAdminMock(initialDocs = {}) {
       get: async () => {
         const docs = queryDocs();
         return { docs, empty: docs.length === 0, forEach: (cb) => docs.forEach(cb) };
+      },
+    };
+  }
+
+  function collectionGroupRef(name, filters = []) {
+    const matchDoc = (id, data) => filters.every((f) => {
+      const fieldVal = f.field && f.field.__fieldPath === DOCUMENT_ID ? id : data[f.field];
+      if (f.op === '==') return fieldVal === f.value;
+      if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(fieldVal);
+      if (f.op === 'array-contains') return Array.isArray(fieldVal) && fieldVal.includes(f.value);
+      return true;
+    });
+
+    const queryDocs = () => {
+      const results = [];
+      for (const [docPath, data] of store.entries()) {
+        if (data === undefined) continue;
+        const segments = docPath.split('/');
+        if (segments.length < 2 || segments[segments.length - 2] !== name) continue;
+        const id = segments[segments.length - 1];
+        if (matchDoc(id, data)) {
+          results.push({ id, data: () => data, ref: docRef(docPath) });
+        }
+      }
+      return results;
+    };
+
+    return {
+      where: (field, op, value) => collectionGroupRef(name, [...filters, { field, op, value }]),
+      get: async () => {
+        const docs = queryDocs();
+        return { docs, empty: docs.length === 0, size: docs.length, forEach: (cb) => docs.forEach(cb) };
       },
     };
   }
@@ -143,6 +185,7 @@ export function createAdminMock(initialDocs = {}) {
 
   const db = {
     collection: (name) => collRef(name),
+    collectionGroup: (name) => collectionGroupRef(name),
     doc: (path) => docRef(path),
     batch,
   };
