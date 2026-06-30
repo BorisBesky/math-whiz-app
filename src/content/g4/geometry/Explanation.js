@@ -355,7 +355,7 @@ const GeometryExplanation = () => {
             '• 3 angles',
             '• Sum of angles = 180°',
             '• Can be many types (equilateral, isosceles, scalene)',
-            '• Can have lines of symmetry when opposite angles are equal',
+            '• Has lines of symmetry when at least two sides are equal (isosceles)',
             '• Simplest polygon',
             '• Very stable shape'
           ],
@@ -374,7 +374,7 @@ const GeometryExplanation = () => {
           funFact: 'A circle has infinite lines of symmetry - any line through the center!'
         },
         'pentagon-demo': {
-          name: '🔷 Pentagon',
+          name: '🔷 Regular Pentagon',
           properties: [
             '• 5 equal sides',
             '• 5 equal angles',
@@ -386,11 +386,11 @@ const GeometryExplanation = () => {
           funFact: 'The Pentagon building in Washington D.C. is shaped like a pentagon!'
         },
         'hexagon-demo': {
-          name: '⬡ Hexagon',
+          name: '⬡ Regular Hexagon',
           properties: [
             '• 6 equal sides',
             '• 6 equal angles',
-            '• 12 lines of symmetry',
+            '• 6 lines of symmetry',
             '• Sum of angles = 720°',
             '• Each angle = 120°',
             '• Tessellates perfectly'
@@ -943,8 +943,8 @@ const GeometryExplanation = () => {
         <div style={styles.example}>
           <strong>Real Life Angles:</strong>
           <br/>• Corner of a book = 90° (right angle)
-          <br/>• Open scissors = obtuse angle
-          <br/>• Laptop half-open = acute angle
+          <br/>• Open scissors = acute angle
+          <br/>• Laptop half-open = obtuse angle
           <br/>• Flat table = 180° (straight angle)
         </div>
 
@@ -1186,7 +1186,6 @@ const GeometryExplanation = () => {
               <strong>🔧 Parallelogram</strong><br/>
               • Opposite sides equal<br/>
               • Opposite angles equal<br/>
-              • No right angles<br/>
               • Opposite sides parallel<br/>
               <div id="parallelogram-demo" style={{ ...styles.svgContainer, marginTop: '10px' }}></div>
               <small style={{color: '#666', fontStyle: 'italic'}}>Leaning rectangle</small>

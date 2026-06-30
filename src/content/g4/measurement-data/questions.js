@@ -226,13 +226,22 @@ export function generateTimeConversionQuestion(difficulty = 0.5) {
  * @param {string} requestedSubtopic - Optional: 'area' or 'perimeter' to force a specific type
  */
 export function generateAreaPerimeterQuestion(difficulty = 0.5, requestedSubtopic = null) {
-  const rectLength = getRandomInt(4, 12);
-  const rectWidth = getRandomInt(3, 8);
+  // Re-roll dimensions when length×width === 2×(length+width). At those
+  // dimensions (4×4, 6×3, 3×6, ...) the "swapped formula" distractor
+  // becomes equal to the correct answer and the option count collapses
+  // after dedupe. Bounded loop so we never spin forever.
+  let rectLength, rectWidth;
+  let attempts = 0;
+  do {
+    rectLength = getRandomInt(4, 12);
+    rectWidth = getRandomInt(3, 8);
+    attempts += 1;
+  } while (rectLength * rectWidth === 2 * (rectLength + rectWidth) && attempts < 10);
   // If a specific subtopic is requested, use it; otherwise random
-  const isAreaQuestion = requestedSubtopic === 'area' 
-    ? true 
-    : requestedSubtopic === 'perimeter' 
-    ? false 
+  const isAreaQuestion = requestedSubtopic === 'area'
+    ? true
+    : requestedSubtopic === 'perimeter'
+    ? false
     : Math.random() < 0.5;
   const correctAnswerVal = isAreaQuestion
     ? rectLength * rectWidth

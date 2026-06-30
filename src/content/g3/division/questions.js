@@ -259,7 +259,7 @@ export function generateRemainderQuestion() {
   ];
   
   return {
-    question: `What is the remainder when ${dividend} ÷ ${divisor}?`,
+    question: `What is the remainder when ${dividend} is divided by ${divisor}?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,

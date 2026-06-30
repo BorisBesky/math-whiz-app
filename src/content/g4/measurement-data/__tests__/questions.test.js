@@ -3,6 +3,7 @@ import {
   generateWeightCapacityConversionQuestion,
   generateTimeConversionQuestion,
   generateClockReadingQuestion,
+  generateAreaPerimeterQuestion,
 } from '../questions.js';
 
 // Mock the clock SVG generator so the tests don't depend on its output.
@@ -132,3 +133,27 @@ describe('generateClockReadingQuestion swapped-hands distractor', () => {
     }
   });
 });
+
+describe('generateAreaPerimeterQuestion: avoids l*w === 2*(l+w) collision', () => {
+  // When length × width === 2 × (length + width) (e.g., 4×4 area=perim=16,
+  // 6×3 area=perim=18), the "swap-the-formula" distractor collapses into the
+  // correct answer and the option count drops below 4 after dedupe.
+  it('always has the correct answer present exactly once and at least 3 unique options', () => {
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateAreaPerimeterQuestion(0.5);
+      expect(q.options).toContain(q.correctAnswer);
+      const correctOccurrences = q.options.filter((o) => o === q.correctAnswer).length;
+      expect(correctOccurrences).toBe(1);
+      // Options must be unique.
+      expect(new Set(q.options).size).toBe(q.options.length);
+      // Verify the rectangle dimensions don't fall into the degenerate case.
+      const dimsMatch = q.question.match(/length of (\d+) units and a width of (\d+) units/);
+      expect(dimsMatch).not.toBeNull();
+      const [, lengthStr, widthStr] = dimsMatch;
+      const l = Number(lengthStr);
+      const w = Number(widthStr);
+      expect(l * w).not.toBe(2 * (l + w));
+    }
+  });
+});
+
