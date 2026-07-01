@@ -46,7 +46,8 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+        const message = errorData.error || `Request failed with status ${response.status}`;
+        throw new Error(errorData.details ? `${message}: ${errorData.details}` : message);
       }
 
       const rawStudentData = await response.json();

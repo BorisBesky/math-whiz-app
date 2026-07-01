@@ -108,8 +108,9 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
 
       console.log('fetchStudentData: API response status', response.status);
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.error || `Request failed with status ${response.status}`;
+        throw new Error(errorData.details ? `${message}: ${errorData.details}` : message);
       }
 
       const rawStudentData = await response.json();
