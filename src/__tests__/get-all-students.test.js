@@ -8,6 +8,7 @@ jest.mock('../../netlify/functions/firebase-admin', () => ({
     auth: () => ({ verifyIdToken: (...args) => mockState.verifyIdToken(...args) }),
   },
   db: {
+    collection: (...args) => mockState.db.collection(...args),
     collectionGroup: (...args) => mockState.db.collectionGroup(...args),
     doc: (...args) => mockState.db.doc(...args),
   },
@@ -18,9 +19,13 @@ const { handler } = require('../../netlify/functions/get-all-students');
 const APP = 'app-test';
 const p = (...parts) => `artifacts/${APP}/${parts.join('/')}`;
 const profilePath = (uid) => p('users', uid, 'math_whiz_data', 'profile');
+const classPath = (classId) => p('classes', classId);
+const enrollmentPath = (classId, studentId) => p('classStudents', `${classId}__${studentId}`);
 
 const seed = (docs, token = { uid: 'teacher-1' }) => {
   const harness = createAdminMock(docs);
+  const originalCollectionGroup = harness.db.collectionGroup;
+  harness.db.collectionGroup = jest.fn((...args) => originalCollectionGroup(...args));
   Object.assign(mockState, {
     db: harness.db,
     verifyIdToken: jest.fn().mockResolvedValue(token),
@@ -59,6 +64,8 @@ describe('get-all-students handler', () => {
   test('does not crash with a 500 when fetching a teacher\'s students (regression: native .select() on a collectionGroup query requires an unprovisioned composite index)', async () => {
     seed({
       [profilePath('teacher-1')]: { role: 'teacher', teacherIds: ['teacher-1'] },
+      [classPath('class-1')]: { teacherIds: ['teacher-1'], name: 'Room 1' },
+      [enrollmentPath('class-1', 'student-1')]: { classId: 'class-1', studentId: 'student-1' },
       [profilePath('student-1')]: {
         role: 'student',
         teacherIds: ['teacher-1'],
@@ -76,6 +83,7 @@ describe('get-all-students handler', () => {
     expect(body[0].displayName).toBe('Alice');
     expect(body[0].totalQuestions).toBe(10);
     expect(body[0].correctQuestions).toBe(8);
+    expect(mockState.db.collectionGroup).not.toHaveBeenCalled();
   });
 
   test('admin sees all students across teachers (200)', async () => {
@@ -93,6 +101,8 @@ describe('get-all-students handler', () => {
   test('compact mode (default) strips fields outside the allow-list', async () => {
     seed({
       [profilePath('teacher-1')]: { role: 'teacher', teacherIds: ['teacher-1'] },
+      [classPath('class-1')]: { teacherIds: ['teacher-1'], name: 'Room 1' },
+      [enrollmentPath('class-1', 'student-1')]: { classId: 'class-1', studentId: 'student-1' },
       [profilePath('student-1')]: {
         role: 'student',
         teacherIds: ['teacher-1'],
@@ -110,6 +120,8 @@ describe('get-all-students handler', () => {
   test('includeHistory=true returns full profile data, including fields outside the compact allow-list', async () => {
     seed({
       [profilePath('teacher-1')]: { role: 'teacher', teacherIds: ['teacher-1'] },
+      [classPath('class-1')]: { teacherIds: ['teacher-1'], name: 'Room 1' },
+      [enrollmentPath('class-1', 'student-1')]: { classId: 'class-1', studentId: 'student-1' },
       [profilePath('student-1')]: {
         role: 'student',
         teacherIds: ['teacher-1'],
