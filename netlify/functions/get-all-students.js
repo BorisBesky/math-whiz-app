@@ -40,6 +40,91 @@ const getQuestionSummary = (profileData) => {
   };
 };
 
+const buildStudentResponse = (userDoc, { appId, includeHistory, seenStudentIds }) => {
+  const docPath = userDoc.ref.path;
+  const studentProfilePathPrefix = `artifacts/${appId}/users/`;
+  // collectionGroup matches every `math_whiz_data` subtree in the project; constrain to this app.
+  if (!docPath.startsWith(studentProfilePathPrefix)) return null;
+
+  const userId = userDoc.ref.parent.parent.id;
+  if (!userId || seenStudentIds.has(userId)) return null;
+
+  const fullProfileData = userDoc.data();
+  if (!fullProfileData || fullProfileData.role !== 'student') return null;
+
+  seenStudentIds.add(userId);
+  const profileData = includeHistory
+    ? fullProfileData
+    : compactProfileFields.reduce((acc, field) => {
+        if (Object.prototype.hasOwnProperty.call(fullProfileData, field)) {
+          acc[field] = fullProfileData[field];
+        }
+        return acc;
+      }, {});
+  const questionSummary = getQuestionSummary(fullProfileData);
+  return {
+    id: userId,
+    ...profileData,
+    ...questionSummary,
+  };
+};
+
+const getTeacherStudentProfileDocs = async ({ appId, teacherId }) => {
+  const artifactRef = db.collection('artifacts').doc(appId);
+  const classesSnapshot = await artifactRef
+    .collection('classes')
+    .where('teacherIds', 'array-contains', teacherId)
+    .get();
+
+  if (classesSnapshot.empty) {
+    return getLegacyTeacherStudentProfileDocs({ appId, teacherId });
+  }
+
+  const classIds = classesSnapshot.docs.map((classDoc) => classDoc.id);
+  const enrollmentSnapshots = await Promise.all(classIds.map((classId) => (
+    artifactRef.collection('classStudents').where('classId', '==', classId).get()
+  )));
+
+  const studentIds = new Set();
+  enrollmentSnapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((enrollmentDoc) => {
+      const studentId = enrollmentDoc.data()?.studentId;
+      if (studentId) studentIds.add(studentId);
+    });
+  });
+
+  const profileRefs = [...studentIds].map((studentId) => (
+    artifactRef.collection('users').doc(studentId).collection('math_whiz_data').doc('profile')
+  ));
+  const profileSnaps = await Promise.all(profileRefs.map((profileRef) => profileRef.get()));
+  const profileDocs = profileSnaps.filter((profileSnap) => profileSnap.exists);
+
+  if (profileDocs.length > 0) {
+    return profileDocs;
+  }
+
+  return getLegacyTeacherStudentProfileDocs({ appId, teacherId });
+};
+
+const getLegacyTeacherStudentProfileDocs = async ({ appId, teacherId }) => {
+  try {
+    console.log("No enrollment-backed students found; checking legacy profile.teacherIds.");
+    const snapshot = await db.collectionGroup('math_whiz_data')
+      .where('teacherIds', 'array-contains', teacherId)
+      .get();
+    const docs = [];
+    snapshot.forEach((doc) => {
+      if (doc.ref.path.startsWith(`artifacts/${appId}/users/`)) {
+        docs.push(doc);
+      }
+    });
+    return docs;
+  } catch (error) {
+    console.warn("Legacy teacher profile lookup failed; continuing with no students.", error);
+    return [];
+  }
+};
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*", // Or your specific domain
@@ -128,28 +213,32 @@ exports.handler = async (event) => {
       }
     }
 
-    console.log("getting user profiles group ...");
-    const usersCollectionGroupRef = db.collectionGroup('math_whiz_data');
-
-    let query;
+    let userDocsSnapshot;
 
     if (isTeacher) {
-      console.log("User is teacher, will filter students by teacherId in their teacherIds array.");
-      query = usersCollectionGroupRef
-        .where('role', '==', 'student')
-        .where('teacherIds', 'array-contains', authenticatedUserId);
+      console.log("User is teacher, will fetch students through class enrollments.");
+      const teacherStudentDocs = await getTeacherStudentProfileDocs({
+        appId,
+        teacherId: authenticatedUserId,
+      });
+      userDocsSnapshot = {
+        empty: teacherStudentDocs.length === 0,
+        size: teacherStudentDocs.length,
+        forEach: (cb) => teacherStudentDocs.forEach(cb),
+      };
     } else {
+      console.log("getting user profiles group ...");
+      const usersCollectionGroupRef = db.collectionGroup('math_whiz_data');
       console.log("User is admin, will return all students.");
-      query = usersCollectionGroupRef.where('role', '==', 'student');
+      const query = usersCollectionGroupRef.where('role', '==', 'student');
+      console.log("Executing query to fetch user profiles...");
+      // Note: we intentionally do NOT use Firestore's native `.select()` projection here.
+      // Projection queries on a collectionGroup query are served directly from the index
+      // and require a dedicated composite index covering every selected field; without one
+      // (none is provisioned for this app) Firestore throws FAILED_PRECONDITION at query time.
+      // Instead we fetch full documents and trim fields in-process below.
+      userDocsSnapshot = await query.get();
     }
-
-    console.log("Executing query to fetch user profiles...");
-    // Note: we intentionally do NOT use Firestore's native `.select()` projection here.
-    // Projection queries on a collectionGroup query are served directly from the index
-    // and require a dedicated composite index covering every selected field; without one
-    // (none is provisioned for this app) Firestore throws FAILED_PRECONDITION at query time.
-    // Instead we fetch full documents and trim fields in-process below.
-    const userDocsSnapshot = await query.get();
 
     if (userDocsSnapshot.empty) {
       console.log(`get users profiles returned 0 document references. The collection appears empty.`);
@@ -162,34 +251,12 @@ exports.handler = async (event) => {
 
     console.log(`get users profiles found ${userDocsSnapshot.size} document reference(s). Fetching data for each...`);
 
-    const studentProfilePathPrefix = `artifacts/${appId}/users/`;
     const allStudentsData = [];
     const seenStudentIds = new Set();
 
     userDocsSnapshot.forEach((userDoc) => {
-      const docPath = userDoc.ref.path;
-      // collectionGroup matches every `math_whiz_data` subtree in the project; constrain to this app.
-      if (!docPath.startsWith(studentProfilePathPrefix)) return;
-
-      const userId = userDoc.ref.parent.parent.id;
-      if (!userId || seenStudentIds.has(userId)) return;
-      seenStudentIds.add(userId);
-
-      const fullProfileData = userDoc.data();
-      const profileData = includeHistory
-        ? fullProfileData
-        : compactProfileFields.reduce((acc, field) => {
-            if (Object.prototype.hasOwnProperty.call(fullProfileData, field)) {
-              acc[field] = fullProfileData[field];
-            }
-            return acc;
-          }, {});
-      const questionSummary = getQuestionSummary(fullProfileData);
-      allStudentsData.push({
-        id: userId,
-        ...profileData,
-        ...questionSummary,
-      });
+      const student = buildStudentResponse(userDoc, { appId, includeHistory, seenStudentIds });
+      if (student) allStudentsData.push(student);
     });
 
     if (isTeacher) {
