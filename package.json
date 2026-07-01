@@ -43,7 +43,9 @@
     "delete:preview": "node scripts/delete-users-without-math-whiz-data.js --dry-run",
     "delete:execute": "node scripts/delete-users-without-math-whiz-data.js --execute",
     "normalize-students:preview": "node scripts/normalize-student-names.js",
-    "normalize-students:execute": "node scripts/normalize-student-names.js --execute"
+    "normalize-students:execute": "node scripts/normalize-student-names.js --execute",
+    "firestore:deploy-indexes": "firebase deploy --only firestore:indexes",
+    "firestore:deploy-rules": "firebase deploy --only firestore:rules"
   },
   "jest": {
     "collectCoverageFrom": [
