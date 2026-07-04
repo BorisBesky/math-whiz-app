@@ -33,7 +33,14 @@ const AboutOverview = () => {
     }
     canonical.setAttribute('href', 'https://mathwhizapp.kids/about');
 
-    const script = document.createElement('script');
+    let script = document.getElementById('seo-json-ld');
+    const createdScript = !script;
+    const prevJson = script?.textContent;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'seo-json-ld';
+      document.head.appendChild(script);
+    }
     script.type = 'application/ld+json';
     script.text = JSON.stringify({
       '@context': 'https://schema.org',
@@ -65,11 +72,14 @@ const AboutOverview = () => {
         'Common Core aligned',
       ],
     });
-    document.head.appendChild(script);
 
     return () => {
       document.title = 'Math Whiz — Adaptive Math Practice for 3rd & 4th Graders';
-      document.head.removeChild(script);
+      if (createdScript) {
+        document.head.removeChild(script);
+      } else if (prevJson) {
+        script.textContent = prevJson;
+      }
       const canon = document.querySelector('link[rel="canonical"]');
       if (canon) canon.setAttribute('href', 'https://mathwhizapp.kids/');
     };

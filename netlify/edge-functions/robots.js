@@ -1,6 +1,4 @@
-export default async (request) => {
-  const host = request.headers.get("host") || "mathwhizapp.kids";
-
+export default async () => {
   const body = `User-agent: *
 Allow: /
 Allow: /about/
@@ -10,7 +8,7 @@ Disallow: /admin
 Disallow: /teacher
 Disallow: /portal
 
-Sitemap: https://${host}/sitemap.xml`;
+Sitemap: https://mathwhizapp.kids/sitemap.xml`;
 
   return new Response(body, {
     headers: {
