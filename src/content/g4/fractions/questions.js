@@ -172,24 +172,70 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
   let num2 = getRandomInt(2, denominator2 - 1);
 
   let difference = num1 * denominator2 - num2 * denominator;
-  if (difference <= 0) {
+  // If the two fractions are equal, the "answer" is 0 and several distractor
+  // formulas also evaluate to 0, collapsing the option pool. Nudge num1 by 1
+  // (either direction) to guarantee a non-zero difference.
+  if (difference === 0) {
+    if (num1 + 1 <= denominator - 1) {
+      num1 += 1;
+    } else if (num1 - 1 >= 2) {
+      num1 -= 1;
+    } else {
+      num2 = Math.max(2, num2 - 1);
+    }
+    difference = num1 * denominator2 - num2 * denominator;
+  }
+  if (difference < 0) {
     [num1, num2] = [num2, num1];
     [denominator, denominator2] = [denominator2, denominator];
     difference *= -1;
   }
   const simplifiedAnswer = simplifyFraction(difference, denominator * denominator2);
-  // When denominator === denominator2 the "subtract straight across" distractor
-  // would divide by zero (Math.abs(d - d) === 0 → simplifyFraction returns the
-  // literal string 'undefined'). Fall back to a safe alternate distractor in
-  // that case so students never see "undefined" as an answer choice.
-  const subtractStraightDistractor = denominator === denominator2
-    ? simplifyFraction(Math.abs(num1 - num2), denominator)
-    : simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2));
-  const potentialDistractors = [
-    subtractStraightDistractor,
-    simplifyFraction(difference + 1, denominator * denominator2),
-    simplifyFraction(difference, denominator * denominator2 + 1),
+  // Build a bigger candidate pool of misconception distractors and pick the
+  // first three that do NOT collide with the correct answer or each other.
+  // Historical bugs:
+  //  1) When denominator === denominator2, "subtract straight across" simplifies
+  //     to the correct answer (or, in older code, divides by zero → "undefined").
+  //  2) When denominator2 is a multiple of denominator (e.g. 5/10 with base 5),
+  //     the "subtract numerators & subtract denominators" formula also
+  //     simplifies to the correct answer (e.g. 3/5 - 4/10 → distractor 1/5).
+  //  3) `simplifyFraction(diff + 1, common)` can coincidentally simplify to
+  //     match another distractor when diff+1 shares factors with the common
+  //     denominator.
+  const common_den = denominator * denominator2;
+  const candidateDistractors = [
+    // "Add the denominators" misconception — very common student error.
+    simplifyFraction(Math.abs(num1 - num2), denominator + denominator2),
+    // "Subtract numerators, subtract denominators" — only add when denominators
+    // differ (would be undefined otherwise). Kept lower-priority than the
+    // "add the denominators" candidate above since it can silently equal the
+    // correct answer when one denom is a multiple of the other.
+    denominator !== denominator2
+      ? simplifyFraction(Math.abs(num1 - num2), Math.abs(denominator - denominator2))
+      : null,
+    // Off-by-one on the simplified numerator (uses the simplified form so it
+    // reads as a plausible near-miss).
+    (() => {
+      const [an, ad] = simplifiedAnswer.includes('/')
+        ? simplifiedAnswer.split('/').map(Number)
+        : [Number(simplifiedAnswer), 1];
+      return simplifyFraction(an + 1, ad);
+    })(),
+    // Off-by-one on the un-simplified numerator.
+    simplifyFraction(difference + 1, common_den),
+    // Off-by-one on the un-simplified denominator.
+    simplifyFraction(difference, common_den + 1),
+    // "Forgot to find common denominator" — added numerators over d1.
+    simplifyFraction(num1 + num2, denominator),
   ];
+  const seen = new Set([simplifiedAnswer, 'undefined']);
+  const potentialDistractors = [];
+  for (const cand of candidateDistractors) {
+    if (cand == null || seen.has(cand)) continue;
+    potentialDistractors.push(cand);
+    seen.add(cand);
+    if (potentialDistractors.length === 3) break;
+  }
 
   return {
     question: `What is ${num1}/${denominator} - ${num2}/${denominator2}?`,

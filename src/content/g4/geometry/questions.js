@@ -503,31 +503,46 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
       name: "square",
       description: "has 4 equal sides and 4 right angles",
       properties: ["4 sides", "all sides equal", "all angles 90°"],
+      // Subclass hierarchy: which other shapes also satisfy this description.
+      // Used to keep those out of the distractor pool so the question has a
+      // single mathematically-correct answer.
+      subclassOf: [],
     },
     {
       name: "rectangle",
-      description: "has 4 sides with opposite sides equal and 4 right angles",
+      description: "has 4 sides with opposite sides equal, adjacent sides of different lengths, and 4 right angles",
       properties: ["4 sides", "opposite sides equal", "all angles 90°"],
+      // Squares satisfy the generic rectangle description; the "adjacent sides
+      // of different lengths" clause above excludes squares mathematically,
+      // but keep them out of the distractor pool as a belt-and-suspenders.
+      subclassOf: ["square"],
     },
     {
       name: "triangle",
       description: "has 3 sides and 3 angles",
       properties: ["3 sides", "3 angles"],
+      subclassOf: [],
     },
     {
       name: "rhombus",
-      description: "has 4 equal sides but angles are not necessarily 90°",
+      description: "has 4 equal sides and no right angles",
       properties: ["4 sides", "all sides equal", "opposite angles equal"],
+      subclassOf: ["square"],
     },
     {
       name: "parallelogram",
-      description: "has 4 sides with opposite sides parallel and equal and angles not necessarily 90°",
+      description: "has 4 sides with opposite sides parallel and equal, adjacent sides of different lengths, and no right angles",
       properties: ["4 sides", "opposite sides parallel", "opposite sides equal"],
+      subclassOf: ["square", "rectangle", "rhombus"],
     },
   ];
-  
+
   const shape = shapes[getRandomInt(0, shapes.length - 1)];
-  const otherShapes = shapes.filter((s) => s.name !== shape.name);
+  // Exclude any shape that would also satisfy this description due to the
+  // quadrilateral hierarchy (e.g. squares also satisfy the rectangle
+  // description at the definition level).
+  const excludedNames = new Set([shape.name, ...shape.subclassOf]);
+  const otherShapes = shapes.filter((s) => !excludedNames.has(s.name));
   const wrongOptions = otherShapes
     .map((s) => s.name)
     .slice(0, 2);
@@ -647,36 +662,43 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
       name: "square",
       properties: [
         "all sides equal",
-        "all angles are 90°", 
+        "all angles are 90°",
         "opposite sides parallel",
         "4 lines of symmetry",
       ],
+      // Which other shape names would also correctly satisfy this property
+      // list under the quadrilateral hierarchy. Kept out of the distractor
+      // pool so the question has a single correct answer.
+      subclassOf: [],
     },
     {
       name: "rectangle",
       properties: [
-        "opposite sides equal",
+        "opposite sides equal but NOT all sides equal",
         "all angles are 90°",
-        "opposite sides parallel", 
+        "opposite sides parallel",
         "2 lines of symmetry",
       ],
+      subclassOf: ["square"],
     },
     {
       name: "rhombus",
       properties: [
         "all sides equal",
-        "opposite angles equal and not necessarily 90°",
+        "opposite angles equal but NOT all angles 90°",
         "opposite sides parallel",
         "2 lines of symmetry",
       ],
+      subclassOf: ["square"],
     },
     {
-      name: "parallelogram", 
+      name: "parallelogram",
       properties: [
-        "opposite sides equal",
-        "opposite angles equal and not necessarily 90°",
+        "opposite sides equal but NOT all sides equal",
+        "opposite angles equal but NOT all angles 90°",
         "opposite sides parallel",
       ],
+      subclassOf: ["square", "rectangle", "rhombus"],
     },
     {
       name: "trapezoid",
@@ -685,13 +707,17 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
         "can have different shapes",
         "may have a line of symmetry",
       ],
+      subclassOf: [],
     },
   ];
-  
+
   const quad = quadrilaterals[getRandomInt(0, quadrilaterals.length - 1)];
   const properties = quad.properties;
+  // Exclude any shape that is a subclass of the target — e.g. a square would
+  // otherwise be a defensible answer for the "parallelogram" question.
+  const excludedNames = new Set([quad.name, ...quad.subclassOf]);
   const wrongQuads = quadrilaterals
-    .filter(q => q.name !== quad.name)
+    .filter(q => !excludedNames.has(q.name))
     .map(q => q.name)
     .slice(0, 3);
   
@@ -859,7 +885,12 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     },
     {
       type: "measure",
-      getQuestion: (angle) => `${angle.name} measures:`,
+      getQuestion: (angle) => {
+        // Use "an" only before names that start with a vowel sound
+        // ("acute", "obtuse"); use "a" before "right angle" / "straight angle".
+        const article = /^[aeiou]/i.test(angle.name) ? 'An' : 'A';
+        return `${article} ${angle.name} measures:`;
+      },
       correctAnswer: (angle) => angle.range,
     },
     {

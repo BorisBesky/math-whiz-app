@@ -252,8 +252,22 @@ export function generateRemainderQuestion() {
   const dividend = quotient * divisor + remainder;
 
   const correctAnswer = remainder.toString();
+  // When remainder === divisor - 1, the naive distractors [remainder+1, ...,
+  // divisor] contain two copies of `divisor`, which generateUniqueOptions
+  // silently dedupes — leaving fewer than 4 options. Swap in a fallback that
+  // is guaranteed different from `divisor`, `remainder`, and the low
+  // distractor.
+  let highDistractor = remainder + 1;
+  if (highDistractor === divisor) {
+    const lowFallback = remainder - 1;
+    // Prefer the quotient; fall back to divisor+1 if quotient would collide
+    // with the correct answer or the other distractors.
+    highDistractor = (quotient !== remainder && quotient !== divisor && quotient !== lowFallback)
+      ? quotient
+      : divisor + 1;
+  }
   const potentialDistractors = [
-    (remainder + 1).toString(),
+    highDistractor.toString(),
     (remainder - 1 >= 0 ? remainder - 1 : remainder + 1).toString(),
     divisor.toString(),
   ];

@@ -17,4 +17,16 @@ describe('G3 division: remainder question wording', () => {
       expect(q.options.length).toBeGreaterThanOrEqual(2);
     }
   });
+
+  it('always produces 4 distinct options (no distractor collision when remainder+1 === divisor)', () => {
+    // Bug: when remainder === divisor - 1 (common — ~1/3 of the time when
+    // divisor=3), the naive distractors [remainder+1, remainder-1, divisor]
+    // included `divisor` twice, causing generateUniqueOptions to silently
+    // drop a duplicate and leave only 3 options.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateRemainderQuestion();
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options.length).toBe(4);
+    }
+  });
 });
