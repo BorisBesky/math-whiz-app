@@ -67,7 +67,11 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
 
 export function generateEquivalentFractionsQuestion(difficulty = 0.5) {
   const minNum = 1 + Math.floor(4 * difficulty);
-  const maxNum = 5 + Math.floor(5 * difficulty);
+  // Clamp numerator at 8 so `f_den_eq = getRandomInt(f_num_eq + 1, 9)` always
+  // has a valid range — otherwise at high difficulty we can produce
+  // degenerate fractions like 10/10 (equal to 1) whose "equivalent" answer
+  // is 20/20.
+  const maxNum = Math.min(8, 5 + Math.floor(5 * difficulty));
   const f_num_eq = getRandomInt(minNum, maxNum);
   const f_den_eq = getRandomInt(f_num_eq + 1, 9);
   // Multiplier must be at least 2 so the "equivalent" answer is a different

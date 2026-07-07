@@ -44,6 +44,19 @@ describe('generateEquivalentFractionsQuestion: never picks the original fraction
       expect(q.correctAnswer).not.toBe(original);
     }
   });
+
+  it('never produces a whole-number "fraction" like 10/10 at high difficulty', () => {
+    // At difficulty=1 the old code would allow f_num_eq = 10 with the
+    // denominator forced to 10, producing "Which fraction is equivalent to
+    // 10/10?" — a degenerate whole number written as a fraction.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateEquivalentFractionsQuestion(1);
+      const match = q.question.match(/equivalent to (\d+)\/(\d+)\?/);
+      expect(match).not.toBeNull();
+      const [, num, den] = match.map(Number);
+      expect(num).toBeLessThan(den);
+    }
+  });
 });
 
 describe('generateFractionComparisonQuestion: consistent multiple-choice across both branches', () => {

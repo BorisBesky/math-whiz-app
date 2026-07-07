@@ -58,10 +58,16 @@ export function generateAreaQuestion() {
   const md_length = getRandomInt(3, 15);
   const md_width = getRandomInt(3, 10);
   const area = md_length * md_width;
+  const perimeter = (md_length + md_width) * 2;
+  const sumSides = md_length + md_width;
   const correctAnswer = `${area} cm²`;
+  // Perimeter distractor equals the area for pairs like (3,6), (4,4), (6,3).
+  // Shift by +2 whenever the "perimeter as area" distractor would collide.
+  const perimeterDistractor = perimeter === area ? perimeter + 2 : perimeter;
+  const sumDistractor = sumSides === area ? sumSides + 1 : sumSides;
   const potentialDistractors = [
-    `${(md_length + md_width) * 2} cm²`,
-    `${md_length + md_width} cm²`,
+    `${perimeterDistractor} cm²`,
+    `${sumDistractor} cm²`,
     `${area + 10} cm²`,
   ];
 
@@ -106,9 +112,20 @@ export function generateVolumeQuestion() {
   const vol_w = getRandomInt(2, 4);
   const vol_h = getRandomInt(1, 3);
   const volume = vol_l * vol_w * vol_h;
+  const sumDims = vol_l + vol_w + vol_h;
+  // Sum of dimensions equals the volume for (3,2,1) etc., and can collide with
+  // the "volume - 2" distractor (e.g. 2×2×2 → volume=8, sum=5, volume-2=6 but
+  // 2×3×1 → volume=6, sum=6). Shift the sum distractor if it collides with any
+  // of the other displayed answers.
+  const collidesWithVolume = sumDims === volume;
+  const collidesWithMinus2 = sumDims === volume - 2;
+  const collidesWithPlus5 = sumDims === volume + 5;
+  const sumDistractor = collidesWithVolume || collidesWithMinus2 || collidesWithPlus5
+    ? volume + 1
+    : sumDims;
   const correctAnswer = `${volume} cubes`;
   const potentialDistractors = [
-    `${vol_l + vol_w + vol_h} cubes`,
+    `${sumDistractor} cubes`,
     `${volume + 5} cubes`,
     `${volume - 2} cubes`,
   ];

@@ -235,14 +235,25 @@ export function generateRoundingQuestion(difficulty = 0.5) {
     { name: "millions", divisor: 1000000 }
   ];
   
-  // Select rounding place based on difficulty (easier = smaller places)
-  const maxIndex = Math.min(5, Math.floor(difficulty * 6));
+  // Select rounding place based on difficulty (easier = smaller places).
+  // Also cap the maximum place at the largest divisor whose next digit fits in
+  // the number — otherwise "round 6,234 to the nearest million" produces a
+  // correct answer of 0, and the "rounded - divisor" distractor goes negative.
+  const availableIndex = roundingOptions.reduce(
+    (max, opt, idx) => (number >= opt.divisor ? idx : max),
+    0
+  );
+  const maxIndex = Math.min(5, Math.floor(difficulty * 6), availableIndex);
   const roundTo = roundingOptions[getRandomInt(0, maxIndex)];
   const rounded = Math.round(number / roundTo.divisor) * roundTo.divisor;
   const correctAnswer = rounded.toString();
+  // Filter out negative or zero distractors — students shouldn't see negatives
+  // in a rounding problem, and 0 collides with the correct answer only when
+  // `rounded === roundTo.divisor` (rare given the guard above).
+  const roundedMinus = rounded - roundTo.divisor;
   const potentialDistractors = [
     (rounded + roundTo.divisor).toString(),
-    (rounded - roundTo.divisor).toString(),
+    roundedMinus > 0 ? roundedMinus.toString() : (rounded + 2 * roundTo.divisor).toString(),
     (number).toString(),
   ];
 
@@ -636,7 +647,7 @@ export function generateAdditionWordProblemQuestion(difficulty = 0.5) {
     {
       context: "library collection",
       question: (library, type1, count1, type2, count2, total) =>
-        `${library} Library has ${addCommas(count1)} ${type1} and ${addCommas(count2)} ${type2}. How many books and magazines do they have altogether?`
+        `${library} Library has ${addCommas(count1)} ${type1} and ${addCommas(count2)} ${type2}. How many ${type1} and ${type2} do they have altogether?`
     },
     {
       context: "votes",

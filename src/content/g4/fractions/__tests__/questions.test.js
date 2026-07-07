@@ -41,6 +41,24 @@ describe('G4 fractions: subtraction never shows "undefined" as a multiple-choice
   });
 });
 
+describe('G4 fractions: subtraction distractor pool stays distinct in the equal-denominator case', () => {
+  it('always produces 4 unique options — the equal-denom "subtract straight across" distractor used to equal the correct answer', () => {
+    // When denominator === denominator2 the previous "subtract straight
+    // across" distractor was simplifyFraction(|num1-num2|, denominator),
+    // which IS the correct answer for equal-denominator subtraction. The
+    // duplicate got dropped by generateUniqueOptions, leaving only 3 options.
+    // Run at difficulty 0.4 where the denominator range is smallest so the
+    // equal-denominator case is likely.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateFractionSubtractionQuestion(0.4);
+      const correctOccurrences = q.options.filter((o) => o === q.correctAnswer).length;
+      expect(correctOccurrences).toBe(1);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options.length).toBe(4);
+    }
+  });
+});
+
 describe('G4 fractions: comparison correctly handles equivalent-but-different-looking fractions', () => {
   it('never picks "<" or ">" when the two fractions are actually equal', () => {
     for (let i = 0; i < 500; i += 1) {

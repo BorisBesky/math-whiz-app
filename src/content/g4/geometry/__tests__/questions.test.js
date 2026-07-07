@@ -2,6 +2,8 @@ import {
   ANGLE_TYPES,
   generateAngleMeasurementQuestion,
   generatePointsLinesRaysQuestion,
+  generateShapeClassificationQuestion,
+  generateQuadrilateralPropertiesQuestion,
   refreshAngleAdditionDiagram,
 } from '../questions.js';
 
@@ -183,5 +185,78 @@ describe('points / lines / rays questions', () => {
     const endpointQuestions = runMany(400).filter((q) => /How many endpoints/.test(q.question));
     expect(endpointQuestions.length).toBeGreaterThan(0); // the form does occur
     endpointQuestions.forEach((q) => expect(q.question).not.toMatch(/does a point have/));
+  });
+});
+
+describe('geometry angle "measure" question grammar', () => {
+  it('uses "An acute/obtuse angle measures:" and "A right/straight angle measures:"', () => {
+    // Old wording: "acute angle measures:" — missing an article.
+    let sawAny = false;
+    const wrongPairings = [];
+    for (let i = 0; i < 1000; i += 1) {
+      const q = generateAngleMeasurementQuestion();
+      const match = q.question.match(/^(A|An) (acute|right|obtuse|straight) angle measures:$/);
+      if (!match) continue;
+      sawAny = true;
+      const [, article, name] = match;
+      const expected = /^[aeiou]/i.test(name) ? 'An' : 'A';
+      if (article !== expected) {
+        wrongPairings.push(`${article} ${name}`);
+      }
+    }
+    expect(sawAny).toBe(true);
+    expect(wrongPairings).toEqual([]);
+    // Explicitly guard against the pre-fix wording.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateAngleMeasurementQuestion();
+      expect(q.question).not.toMatch(/^(acute|right|obtuse|straight) angle measures:$/);
+    }
+  });
+});
+
+describe('geometry shape classification: no hierarchy-driven ambiguity', () => {
+  it('never puts a subclass shape into the distractor pool (e.g., "square" when the answer is "rectangle")', () => {
+    // Rectangle description "opposite sides equal ... 4 right angles" is
+    // also satisfied by a square; rhombus description "4 equal sides" is
+    // also satisfied by a square; parallelogram description is satisfied by
+    // all three. Those must not appear as distractors.
+    const forbiddenBySubject = {
+      rectangle: ['square'],
+      rhombus: ['square'],
+      parallelogram: ['square', 'rectangle', 'rhombus'],
+    };
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateShapeClassificationQuestion();
+      const forbidden = forbiddenBySubject[q.correctAnswer] || [];
+      forbidden.forEach((name) => {
+        expect(q.options).not.toContain(name);
+      });
+      // Sanity: correct answer is in options; options are distinct.
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+});
+
+describe('geometry quadrilateral properties: hierarchy-driven multiple correct answers are removed', () => {
+  it('never puts a subclass shape into the distractor pool for parallelogram / rectangle / rhombus', () => {
+    // The parallelogram property list is satisfied by squares, rectangles,
+    // and rhombuses. The rectangle and rhombus property lists are satisfied
+    // by squares. None of those subclass names should ever appear as
+    // distractors for their superclass question.
+    const forbiddenBySubject = {
+      rectangle: ['square'],
+      rhombus: ['square'],
+      parallelogram: ['square', 'rectangle', 'rhombus'],
+    };
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateQuadrilateralPropertiesQuestion();
+      const forbidden = forbiddenBySubject[q.correctAnswer] || [];
+      forbidden.forEach((name) => {
+        expect(q.options).not.toContain(name);
+      });
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+    }
   });
 });
