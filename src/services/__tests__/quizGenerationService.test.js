@@ -42,7 +42,7 @@ jest.mock('../../content', () => ({
   },
 }));
 
-const { generateQuizQuestions } = require('../quizGenerationService');
+const { generateQuizQuestions, isMultipleChoiceAnswerable } = require('../quizGenerationService');
 
 const run = (over = {}) => generateQuizQuestions(
   'Geometry',
@@ -93,5 +93,74 @@ describe('generateQuizQuestions — generated-question retirement', () => {
     const key = getQuestionMasteryKey(GEN_QUESTION);
     const questions = await run({ tagMastery: { [key]: 3 }, tagMasteryThreshold: 5 });
     expect(questions).toHaveLength(1);
+  });
+});
+
+describe('isMultipleChoiceAnswerable', () => {
+  test('accepts an MC question whose options contain the correct answer', () => {
+    expect(isMultipleChoiceAnswerable(GEN_QUESTION)).toBe(true);
+  });
+
+  test('rejects an MC question whose correct answer is not among the options', () => {
+    // e.g. "What is 4 × 2/10?" with a hallucinated/bad option set that omits 4/5.
+    expect(isMultipleChoiceAnswerable({
+      question: 'What is 4 × 2/10?',
+      correctAnswer: '4/5',
+      options: ['2/10', '6/10', '4/10', '2/5'],
+    })).toBe(false);
+  });
+
+  test('compares as strings so number-vs-string does not false-positive', () => {
+    expect(isMultipleChoiceAnswerable({ correctAnswer: 12, options: ['6', '12', '18', '24'] })).toBe(true);
+    expect(isMultipleChoiceAnswerable({ correctAnswer: '12', options: [6, 12, 18, 24] })).toBe(true);
+  });
+
+  test('exempts questions with no options list (fill-in / drawing)', () => {
+    expect(isMultipleChoiceAnswerable({ correctAnswer: '42', options: [] })).toBe(true);
+    expect(isMultipleChoiceAnswerable({ correctAnswer: '42' })).toBe(true);
+  });
+
+  test('rejects an options-bearing question with a missing correct answer', () => {
+    expect(isMultipleChoiceAnswerable({ correctAnswer: '', options: ['a', 'b'] })).toBe(false);
+  });
+});
+
+describe('generateQuizQuestions — unanswerable-question safety net', () => {
+  let randomSpy;
+  beforeEach(() => {
+    mockFetchFirestore.mockResolvedValue([]);
+    mockAdapt.mockReturnValue([]);
+    mockRank.mockReturnValue([]);
+    mockIsSubtopicAllowed.mockReturnValue(true);
+    randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    randomSpy.mockRestore();
+    jest.clearAllMocks();
+  });
+
+  test('skips a generated MC question whose correct answer is not among its options', async () => {
+    mockGenerate.mockImplementation(() => ({
+      question: 'What is 4 × 2/10?',
+      correctAnswer: '4/5',
+      options: ['2/10', '6/10', '4/10', '2/5'], // no 4/5 → unanswerable
+      questionType: 'multiple-choice',
+      subtopic: 'multiplication',
+    }));
+    const questions = await run();
+    expect(questions).toHaveLength(0);
+  });
+
+  test('serves the question once its options include the correct answer', async () => {
+    mockGenerate.mockImplementation(() => ({
+      question: 'What is 4 × 2/10?',
+      correctAnswer: '4/5',
+      options: ['4/5', '3/5', '9/10', '8/11'],
+      questionType: 'multiple-choice',
+      subtopic: 'multiplication',
+    }));
+    const questions = await run();
+    expect(questions).toHaveLength(1);
+    expect(questions[0].options).toContain('4/5');
   });
 });

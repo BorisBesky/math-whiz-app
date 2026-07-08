@@ -23,6 +23,21 @@ const refreshQuestionImages = async (question, topic, grade) => {
     : question;
 };
 
+/**
+ * A multiple-choice question is unanswerable if its stated correct answer isn't one of the
+ * options — the student literally cannot select it. Deterministic generators guarantee this
+ * invariant, but imported question-bank docs and AI-generated questions can violate it
+ * (e.g. hallucinated options, or a bad PDF import). Comparison is string-based so a
+ * number-vs-string mismatch doesn't cause a false positive. Questions with no options list
+ * (fill-in, drawing, write-in) are exempt.
+ */
+export const isMultipleChoiceAnswerable = (question) => {
+  const { options, correctAnswer } = question || {};
+  if (!Array.isArray(options) || options.length === 0) return true;
+  if (correctAnswer === undefined || correctAnswer === null || correctAnswer === "") return false;
+  return options.map((option) => String(option)).includes(String(correctAnswer));
+};
+
 // --- Dynamic Quiz Generation ---
 export const generateQuizQuestions = async (
   topic,
@@ -229,6 +244,18 @@ export const generateQuizQuestions = async (
       : Math.random() <= acceptProb && !usedQuestions.has(questionSig);
 
     if (shouldAccept) {
+      // Safety net: never surface a multiple-choice question whose options don't contain
+      // its own correct answer — the student couldn't answer it. Generator output already
+      // satisfies this; this guards malformed imported/AI-generated bank questions.
+      if (!isMultipleChoiceAnswerable(question)) {
+        console.warn(
+          `[generateQuizQuestions] Skipping unanswerable multiple-choice question ` +
+          `(correct answer "${question.correctAnswer}" not among options): ${question.question}`
+        );
+        consecutiveFilteredCount++;
+        continue;
+      }
+
       usedQuestions.add(questionSig);
       questions.push(question);
       // Reset consecutive filtered count when we successfully accept a question

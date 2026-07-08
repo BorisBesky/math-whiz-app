@@ -79,13 +79,21 @@ describe('G4 fractions: comparison correctly handles equivalent-but-different-lo
   });
 });
 
-describe('G4 fractions: multiplication options stay distinct (n*w === n+w guard)', () => {
-  it('correct answer is not duplicated by the "added instead of multiplied" distractor', () => {
-    for (let i = 0; i < 300; i += 1) {
-      const q = generateFractionMultiplicationQuestion(0.5);
-      const correctOccurrences = q.options.filter((o) => o === q.correctAnswer).length;
-      expect(correctOccurrences).toBe(1);
-      expect(new Set(q.options).size).toBe(q.options.length);
+describe('G4 fractions: multiplication always renders 4 distinct options incl. the answer', () => {
+  it('every question has exactly 4 unique options containing the correct answer, across difficulties', () => {
+    // Distractors are misconception-based and heavily simplified, so many collapse onto
+    // the same value (or onto the answer). This used to leave questions with only 2-3
+    // options. Sweep the whole difficulty range so all (whole, numerator, denominator)
+    // combinations the generator can pick are exercised.
+    for (let d = 0; d <= 1.0001; d += 0.05) {
+      for (let i = 0; i < 60; i += 1) {
+        const q = generateFractionMultiplicationQuestion(d);
+        expect(q.options).toContain(q.correctAnswer);
+        expect(q.options.filter((o) => o === q.correctAnswer).length).toBe(1);
+        expect(new Set(q.options).size).toBe(q.options.length);
+        expect(q.options.length).toBe(4);
+        expect(q.options).not.toContain('undefined');
+      }
     }
   });
 });

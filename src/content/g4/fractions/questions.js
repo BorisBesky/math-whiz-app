@@ -355,23 +355,40 @@ export function generateFractionMultiplicationQuestion(difficulty = 0.5) {
   const resultNumerator = numerator * wholeNumber;
   const simplifiedResult = simplifyFraction(resultNumerator, denominator);
 
-  // The "added instead of multiplied" distractor collides with the answer
-  // when n + w === n * w (e.g., n = w = 2). Skip it in that case and use a
-  // different misconception fallback (multiplied the denominator too).
-  const addedInsteadDistractor = simplifyFraction(numerator + wholeNumber, denominator);
-  const safeAddedDistractor = addedInsteadDistractor === simplifiedResult
-    ? simplifyFraction(resultNumerator, denominator * wholeNumber)
-    : addedInsteadDistractor;
-  const potentialDistractors = [
-    safeAddedDistractor,
-    simplifyFraction(resultNumerator + 1, denominator),
-    simplifyFraction(resultNumerator, denominator + 1),
+  // Misconception-based distractors, ordered by pedagogical value. Each is simplified,
+  // so several can collapse onto the same value (or onto the correct answer) — e.g. many
+  // reduce to n/d. We therefore build the pool defensively: keep only distinct, non-empty
+  // values that differ from the correct answer, then guarantee 3 distractors (so the
+  // question always renders 4 distinct options) by nudging the numerator outward.
+  const candidateDistractors = [
+    simplifyFraction(numerator + wholeNumber, denominator),       // added instead of multiplied
+    simplifyFraction(resultNumerator, denominator * wholeNumber), // multiplied the denominator too
+    simplifyFraction(numerator, denominator),                     // ignored the whole number
+    simplifyFraction(resultNumerator + 1, denominator),           // off-by-one high
+    simplifyFraction(resultNumerator - 1, denominator),           // off-by-one low
+    simplifyFraction(resultNumerator, denominator + 1),           // wrong denominator
   ];
+
+  const seen = new Set([simplifiedResult]);
+  const distractors = [];
+  for (const candidate of candidateDistractors) {
+    if (candidate && candidate !== 'undefined' && !seen.has(candidate)) {
+      seen.add(candidate);
+      distractors.push(candidate);
+    }
+  }
+  for (let offset = 2; distractors.length < 3 && offset <= 50; offset++) {
+    const candidate = simplifyFraction(resultNumerator + offset, denominator);
+    if (candidate && !seen.has(candidate)) {
+      seen.add(candidate);
+      distractors.push(candidate);
+    }
+  }
 
   return {
     question: `What is ${wholeNumber} × ${numerator}/${denominator}?`,
     correctAnswer: simplifiedResult,
-    options: shuffle(generateUniqueOptions(simplifiedResult, potentialDistractors)),
+    options: shuffle(generateUniqueOptions(simplifiedResult, distractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "To multiply a fraction by a whole number, multiply the numerator by the whole number and keep the same denominator.",
     standard: "4.NF.B.4.a",
