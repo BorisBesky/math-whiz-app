@@ -5,6 +5,7 @@ import { getTopicsForGrade, getAppId } from '../../utils/common_utils';
 import { getSubtopicsForTopic } from '../../utils/subtopicUtils';
 import { getStudentDisplayName } from '../../utils/studentName';
 import ModalWrapper from '../ui/ModalWrapper';
+import { getAllGrades, getDefaultGradeKey } from '../../content/registry';
 
 /**
  * Shared modal for managing a student's focus subtopics for a class enrollment.
@@ -22,7 +23,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
   const appId = appIdProp || getAppId();
   const classId = classIdProp || student?.classId || null;
 
-  const [grade, setGrade] = useState(student?.grade || 'G3');
+  const [grade, setGrade] = useState(student?.grade || getDefaultGradeKey());
   const [topic, setTopic] = useState('');
   const [restrictions, setRestrictions] = useState({});
   const [selected, setSelected] = useState([]);
@@ -48,7 +49,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
         if (cancelled) return;
 
         const current = snap.exists() ? (snap.data().allowedSubtopicsByTopic || {}) : {};
-        const initialGrade = student.grade || 'G3';
+        const initialGrade = student.grade || getDefaultGradeKey();
         const initialTopics = getTopicsForGrade(initialGrade);
         const initialTopic = initialTopics[0] || '';
 
@@ -203,7 +204,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Grade</label>
               <div className="inline-flex rounded-button border border-gray-200 bg-gray-50 p-1" role="tablist">
-                {['G3', 'G4'].map((g) => (
+                {getAllGrades().map(({ key: g, label }) => (
                   <button
                     key={g}
                     type="button"
@@ -216,7 +217,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    {g === 'G3' ? '3rd Grade' : '4th Grade'}
+                    {label}
                   </button>
                 ))}
               </div>

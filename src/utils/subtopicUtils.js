@@ -1,5 +1,5 @@
 // Utility functions for working with subtopics
-import { content } from '../content/index.js';
+import { getTopicByName } from '../content/registry';
 
 /**
  * Get subtopics for a topic by topic name and grade
@@ -9,39 +9,12 @@ import { content } from '../content/index.js';
  */
 export const getSubtopicsForTopic = (topicName, grade) => {
   try {
-    const gradeId = grade.toLowerCase(); // Convert G3 -> g3, G4 -> g4
-
-    // Attempt to find the topicId by matching topicName to the display name in content
-    const topicsForGrade = content.getTopicsForGrade
-      ? content.getTopicsForGrade(gradeId)
-      : (content[gradeId] || {});
-
-    // topicsForGrade is an array of topic objects, not an object with topicIds as keys
-    let topicId = null;
-    const topicsArray = Array.isArray(topicsForGrade) ? topicsForGrade : Object.values(topicsForGrade);
-    for (const topicObj of topicsArray) {
-      // Try to match by displayName or name property
-      if (
-        (topicObj.displayName && topicObj.displayName === topicName) ||
-        (topicObj.name && topicObj.name === topicName)
-      ) {
-        topicId = topicObj.id; // Use the actual topic.id, not array index
-        break;
-      }
-    }
-
-    if (!topicId) {
-      console.warn(`[getSubtopicsForTopic] Unknown topic: ${topicName} for grade: ${gradeId}`);
-      return [];
-    }
-
-    const topic = content.getTopic(gradeId, topicId);
+    // Registry lookup: exact name, then declared aliases, then normalized match.
+    const topic = getTopicByName(topicName, grade);
     if (!topic) {
-      console.warn(`[getSubtopicsForTopic] Topic not found: ${gradeId}/${topicId}`);
+      console.warn(`[getSubtopicsForTopic] Unknown topic: ${topicName} for grade: ${grade}`);
       return [];
     }
-
-    // Return subtopics array if it exists, otherwise empty array
     return topic.subtopics || [];
   } catch (error) {
     console.error(`[getSubtopicsForTopic] Error getting subtopics for ${topicName}:`, error);

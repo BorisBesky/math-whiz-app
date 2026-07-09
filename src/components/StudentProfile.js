@@ -3,14 +3,10 @@ import { Check, Mail, User, Users } from 'lucide-react';
 import { updateEmail, updateProfile } from 'firebase/auth';
 import { updateDoc } from 'firebase/firestore';
 import { getUserDocRef } from '../utils/firebaseHelpers';
+import { normalizeGradeKey } from '../content/registry';
 
-const normalizeClassGrade = (gradeValue) => {
-  if (!gradeValue) return null;
-  const normalized = String(gradeValue).trim().toUpperCase();
-  if (normalized === 'G3' || normalized.includes('3')) return 'G3';
-  if (normalized === 'G4' || normalized.includes('4')) return 'G4';
-  return null;
-};
+// Registry-backed grade normalization (shared semantics with MainApp).
+const normalizeClassGrade = (gradeValue) => normalizeGradeKey(gradeValue);
 
 const StudentProfile = ({
   user,

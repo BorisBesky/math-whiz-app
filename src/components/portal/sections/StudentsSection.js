@@ -6,7 +6,13 @@ import {
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import { formatDate, normalizeDate, calculateTopicProgressForRange, getTodayDateString } from '../../../utils/common_utils';
-import { SUBTOPICS_BY_GRADE_TOPIC, VALID_TOPICS_BY_GRADE } from '../../../constants/topics';
+import { SUBTOPICS_BY_GRADE_TOPIC } from '../../../constants/topics';
+import {
+  getAllGrades,
+  getDefaultGradeKey,
+  getTopicByName,
+  getTopicNamesForGrade,
+} from '../../../content/registry';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
@@ -30,7 +36,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
   const [sortField, setSortField] = useState('questionsToday');
   const [sortDirection, setSortDirection] = useState('desc');
   const [showGoalsModal, setShowGoalsModal] = useState(false);
-  const [goalGrade, setGoalGrade] = useState('G3');
+  const [goalGrade, setGoalGrade] = useState(getDefaultGradeKey());
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [focusStudent, setFocusStudent] = useState(null);
@@ -178,7 +184,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   // Goals Logic
   const openGoalsModalForStudent = (student) => {
-    const grade = student.grade || 'G3';
+    const grade = student.grade || getDefaultGradeKey();
     const current = student.dailyGoalsByGrade?.[grade] || {};
 
     setGoalGrade(grade);
@@ -189,7 +195,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   const openGoalsModalForSelected = () => {
     const ids = Array.from(selectedStudents);
-    const grade = 'G3';
+    const grade = getDefaultGradeKey();
 
     setGoalGrade(grade);
     setGoalTargets({});
@@ -225,11 +231,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setFocusStudent(null);
   };
 
-  const getGradeForTopic = (topic) => {
-    if (VALID_TOPICS_BY_GRADE.G3?.includes(topic)) return 'G3';
-    if (VALID_TOPICS_BY_GRADE.G4?.includes(topic)) return 'G4';
-    return viewingStudent?.grade || 'G3';
-  };
+  const getGradeForTopic = (topic) => (
+    getTopicByName(topic)?.grade || viewingStudent?.grade || getDefaultGradeKey()
+  );
 
   const hasReviewFocusAreas = (focusMap = reviewFocusMap) => (
     Object.values(focusMap || {}).some((subtopics) => Array.isArray(subtopics) && subtopics.length > 0)
@@ -609,10 +613,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   // Render Student Detail View
   if (viewingStudent) {
-    const allFocusTopics = [...new Set([
-      ...(VALID_TOPICS_BY_GRADE.G3 || []),
-      ...(VALID_TOPICS_BY_GRADE.G4 || []),
-    ])];
+    const allFocusTopics = [...new Set(
+      getAllGrades().flatMap((grade) => getTopicNamesForGrade(grade.key))
+    )];
     const reviewTopics = Object.keys(reviewFocusMap || {});
     const addableTopics = allFocusTopics.filter((topic) => !reviewTopics.includes(topic));
 
@@ -715,79 +718,45 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             </div>
           </div>
 
-          {/* G3 Progress */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-              <Target className="w-4 h-4 mr-2" />
-              Grade 3 Progress
-            </h4>
-            <div className="space-y-3">
-              {calculateTopicProgressForRange(viewingStudent, 'G3', startDate, endDate).map(topic => (
-                <div key={topic.topic} className="flex flex-col">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-600">{topic.topic}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        {topic.averageCorrect}/{topic.goal}
-                        {topic.activeDays > 1 && (
-                          <span className="text-xs text-gray-400 ml-1">
-                            ({topic.activeDays}d)
-                          </span>
-                        )}
+          {/* Per-grade progress panels (one per enabled grade) */}
+          {getAllGrades().map((grade) => (
+            <div key={grade.key} className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <Target className="w-4 h-4 mr-2" />
+                Grade {grade.ordinal} Progress
+              </h4>
+              <div className="space-y-3">
+                {calculateTopicProgressForRange(viewingStudent, grade.key, startDate, endDate).map(topic => (
+                  <div key={topic.topic} className="flex flex-col">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-600 truncate max-w-[150px]" title={topic.topic}>
+                        {topic.topic}
                       </span>
-                      {topic.completed && (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      )}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">
+                          {topic.averageCorrect}/{topic.goal}
+                          {topic.activeDays > 1 && (
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({topic.activeDays}d)
+                            </span>
+                          )}
+                        </span>
+                        {topic.completed && (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
+                        style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
+                      ></div>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* G4 Progress */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-              <Target className="w-4 h-4 mr-2" />
-              Grade 4 Progress
-            </h4>
-            <div className="space-y-3">
-              {calculateTopicProgressForRange(viewingStudent, 'G4', startDate, endDate).map(topic => (
-                <div key={topic.topic} className="flex flex-col">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-600 truncate max-w-[150px]" title={topic.topic}>
-                      {topic.topic}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        {topic.averageCorrect}/{topic.goal}
-                        {topic.activeDays > 1 && (
-                          <span className="text-xs text-gray-400 ml-1">
-                            ({topic.activeDays}d)
-                          </span>
-                        )}
-                      </span>
-                      {topic.completed && (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
         )}
 

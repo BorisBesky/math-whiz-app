@@ -5,6 +5,7 @@ import ModalWrapper from '../ui/ModalWrapper';
 import { getTopicsForGrade, getAppId } from '../../utils/common_utils';
 import { getSubtopicsForTopic } from '../../utils/subtopicUtils';
 import { getStudentDisplayName } from '../../utils/studentName';
+import { getAllGrades, getDefaultGradeKey } from '../../content/registry';
 
 const SubtopicsFocusModal = ({
   isOpen,
@@ -17,7 +18,7 @@ const SubtopicsFocusModal = ({
   const appId = getAppId();
   const db = getFirestore();
 
-  const initialGrade = student?.grade || student?.selectedGrade || 'G3';
+  const initialGrade = student?.grade || student?.selectedGrade || getDefaultGradeKey();
   const initialTopics = useMemo(() => getTopicsForGrade(initialGrade), [initialGrade]);
 
   const [grade, setGrade] = useState(initialGrade);
@@ -31,7 +32,7 @@ const SubtopicsFocusModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const startGrade = student?.grade || student?.selectedGrade || 'G3';
+    const startGrade = student?.grade || student?.selectedGrade || getDefaultGradeKey();
     const startTopics = getTopicsForGrade(startGrade);
     const startTopic = startTopics[0] || '';
     setGrade(startGrade);
@@ -169,7 +170,7 @@ const SubtopicsFocusModal = ({
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Grade</label>
           <div className="inline-flex rounded-button border border-gray-200 bg-gray-50 p-1" role="tablist">
-            {['G3', 'G4'].map((g) => (
+            {getAllGrades().map(({ key: g, label }) => (
               <button
                 key={g}
                 type="button"
@@ -182,7 +183,7 @@ const SubtopicsFocusModal = ({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {g === 'G3' ? '3rd Grade' : '4th Grade'}
+                {label}
               </button>
             ))}
           </div>

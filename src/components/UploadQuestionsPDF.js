@@ -3,7 +3,7 @@ import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock, Trash2 }
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, query, where, onSnapshot, limit, doc, updateDoc } from 'firebase/firestore';
 import QuestionReviewModal from './QuestionReviewModal';
-import { GRADES } from '../constants/topics';
+import { getAllGrades, getDefaultGradeKey, getGrade } from '../content/registry';
 
 const generateClientJobId = (userId) => {
   return `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -21,7 +21,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [checkingJobs, setCheckingJobs] = useState(true);
   const [currentJobId, setCurrentJobId] = useState(null);
   const [pollingJobId, setPollingJobId] = useState(null);
-  const [selectedGrade, setSelectedGrade] = useState(GRADES.G3);
+  const [selectedGrade, setSelectedGrade] = useState(getDefaultGradeKey());
 
   // Helper function to process query snapshots into filtered and sorted jobs
   const processJobsSnapshot = useCallback((snapshot, shouldLog = false) => {
@@ -495,7 +495,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                               {job.fileName || 'Unknown PDF'}
                             </p>
                             <p className="text-xs text-gray-600">
-                              {job.totalQuestions || 0} questions • {job.grade === (GRADES?.G4 ?? 'G4') ? 'Grade 4' : 'Grade 3'} • {job.createdAt.toLocaleString()}
+                              {job.totalQuestions || 0} questions • {`Grade ${getGrade(job.grade)?.ordinal || 3}`} • {job.createdAt.toLocaleString()}
                             </p>
                           </div>
                           <div className="flex items-center space-x-2 ml-3">
@@ -534,8 +534,9 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                 disabled={uploading}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value={GRADES.G3}>Grade 3</option>
-                <option value={GRADES.G4}>Grade 4</option>
+                {getAllGrades().map((grade) => (
+                  <option key={grade.key} value={grade.key}>Grade {grade.ordinal}</option>
+                ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
                 Select the grade level to match questions with appropriate topics

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ModalWrapper from './ui/ModalWrapper';
+import { getAllGrades } from '../content/registry';
 
 const CreateClassForm = ({ onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -13,10 +14,7 @@ const CreateClassForm = ({ onSubmit, onCancel }) => {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
 
-  const gradeLevels = [
-    'G3',
-    'G4'
-  ];
+  const gradeLevels = getAllGrades().map((grade) => grade.key);
 
   const validateForm = () => {
     const newErrors = {};
