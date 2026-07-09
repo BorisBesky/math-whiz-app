@@ -10,8 +10,17 @@
 
 const contentManifest = require('../content/content-manifest.generated.json');
 
-// Grades sorted by ordinal (guaranteed by the codegen)
-const contentGrades = contentManifest.grades;
+// Enabled grades/topics only, sorted by ordinal (codegen guarantees order).
+// Staged content ("enabled": false) is excluded from every derived constant:
+// these feed validation lists, AI prompts, and teacher-facing pickers, all of
+// which must only see the live curriculum. Data-matching lookups that need to
+// see staged/retired content use the registries' permissive queries instead.
+const contentGrades = contentManifest.grades
+  .filter((grade) => grade.enabled)
+  .map((grade) => ({
+    ...grade,
+    topics: grade.topics.filter((topic) => topic.enabled),
+  }));
 
 // Grade constants, e.g. { G3: 'G3', G4: 'G4' }
 const GRADES = {};

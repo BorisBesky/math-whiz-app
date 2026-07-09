@@ -64,9 +64,11 @@ src/
   services/                 # Business logic: internalMessages, questionService, quizGenerationService
   utils/                    # Pure helpers (common_utils, studentName, subtopicUtils, …)
   contexts/                 # AuthContext (roles + custom claims)
-  content/
-    g3/                     # 4 topics: Multiplication, Division, Fractions, Measurement & Data
-    g4/                     # 6 topics: Operations, Base Ten, Fractions, Measurement, Geometry, Binary
+  content/                  # PLUGGABLE: a topic = a folder with manifest.json (see below)
+    registry.js             # Client query facade (grades, topics, themes, hooks)
+    *.generated.*           # Committed codegen output — regenerate, never hand-edit
+    g3/                     # grade.json + 4 topics: Multiplication, Division, Fractions, Measurement & Data
+    g4/                     # grade.json + 6 topics: Operations, Base Ten, Fractions, Measurement, Geometry, Binary
 netlify/
   functions/                # 24 serverless functions (auth, AI, data, PDF)
   edge-functions/           # robots.txt, sitemap.xml
@@ -76,6 +78,36 @@ tests/
 firestore/                  # Firestore security rules & indexes
 scripts/                    # One-off admin/migration Node scripts (18 files)
 ```
+
+## Content authoring (pluggable topics & grades)
+
+Curriculum content is a plug-in system — **the folder is the registration**
+(full guide: `docs/CONTENT_AUTHORING.md`; design: `docs/PLUGGABLE_CONTENT_PLAN.md`):
+
+- New topic: `npm run new:topic -- --grade g4 --id algebra --name "Algebra"`,
+  fill in `manifest.json` + `questions.js` + `Explanation.js`, flip `"enabled": true`.
+  It then appears everywhere (student picker, portal modals, question bank, all four
+  AI functions' prompts and validation) with zero code edits.
+- New grade: `npm run new:grade -- --key G5 --label "5th Grade"`, add topics, enable.
+- Single source of truth: `src/content/<grade>/<topic>/manifest.json` +
+  `src/content/<grade>/grade.json`, aggregated by `npm run generate:content`
+  (auto-runs on prestart/prebuild) into two committed generated files. A Jest drift
+  test fails CI when they're stale. `shared-constants.js` exports (`TOPICS`,
+  `VALID_TOPICS_BY_GRADE`, `SUBTOPICS_BY_GRADE_TOPIC`) are derived — never hand-edit.
+- Query via `src/content/registry.js` (client) / `netlify/functions/content-registry.js`
+  (server); never import topic folders directly from app code.
+- **Topic `name` and grade `key` are Firestore storage keys — never rename once live**
+  (use `displayName` + `aliases` instead).
+- `"enabled": false` stages content invisibly (excluded from student lists, validation,
+  and AI prompts; still resolvable for stored-data lookups).
+- Every topic must satisfy the shared generator contract
+  (`src/content/__tests__/topicContracts.test.js`, runs automatically per topic):
+  well-formed questions at all difficulties, MC answer among options, emitted
+  `subtopic` values declared in the manifest, `allowedSubtopics` respected, ≥10
+  distinct questions per 200 draws.
+- AI prompt text lives in manifests (`ai.guidelines`, grade `ai.storyRequirements`);
+  changes surface in `src/__tests__/ai-prompt-snapshots.test.js` — review the diff,
+  then update snapshots deliberately.
 
 ## Running things
 

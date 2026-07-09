@@ -1,6 +1,6 @@
 # Plan: Pluggable Content Modules (Topics & Grade Levels)
 
-Status: Phases 0–2 implemented on `feature/pluggable-content`; Phases 3+ pending.
+Status: Phases 0–4 implemented on `feature/pluggable-content`; Phase 5 (pilots) pending.
 Author: drafted 2026-07-08
 
 Implementation notes vs. this plan:
@@ -30,6 +30,31 @@ Implementation notes vs. this plan:
   one-time migrations). QuizView's render-time geometry refresh was replaced
   by display preparation at the two quiz entry points (generation + resume)
   via the topic's `loadQuestionHooks`/`prepareForDisplay` hook.
+- Phase 3 conscious snapshot changes (everything else byte-identical):
+  gemini-proxy's story prompts now derive from the same manifest
+  `ai.guidelines` as question generation, unifying guidance that had forked
+  (G3 M&D "×"→"x"; fuller Base Ten and Fractions 4th lines; the missing
+  Binary Operations line restored). The grade-specific Requirements blocks
+  moved to grade.json `ai.storyRequirements` (replacing the reserved
+  `promptEnhancement` field). Unknown grades now get an invalid-grade error
+  instead of the mislabeled invalid-topic error (path was unreachable in
+  production). teacher-ai's SUBTOPIC_ALIASES moved into topic manifests as a
+  schema-validated `subtopicAliases` field.
+- Phase 4 finding (via the new shared generator contract): three G4
+  generators emitted subtopic labels missing from the canonical lists —
+  geometry emitted the alias forms ("line symmetry" etc., breaking Focus
+  restriction on those families), base-ten emitted two alias forms plus the
+  deliberate "multi-step word problems" family, and
+  operations-algebraic-thinking emitted five families with no canonical home.
+  Fixes: generators re-tagged to canonical where aliases had declared intent;
+  the genuinely-new families added to the manifests (now Focus-restrictable
+  for the first time). teacher-ai's prompt snapshot updated accordingly.
+- Phase 4 staging semantics hardened by a scaffold probe: `enabled: false`
+  content is excluded from ALL derived constants, validation lists, and AI
+  prompts (shared-constants and the server registry filter it), while
+  data-matching lookups stay permissive. A disabled grade may have zero
+  topics. Verified: with a staged topic and staged grade present, the entire
+  suite stays green.
 
 ## 1. Goal
 

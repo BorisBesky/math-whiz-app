@@ -32,13 +32,21 @@ const gradeAdjective = (gradeKey) => {
   return grade ? `${grade.shortLabel} grade` : String(gradeKey);
 };
 
-/** Topic manifests for a grade key ([] for unknown grades). Includes staged topics. */
-const topicsForGrade = (gradeKey) => getGrade(gradeKey)?.topics || [];
+/**
+ * Enabled topic manifests for a grade key ([] for unknown grades). Staged
+ * topics ("enabled": false) are excluded — these lists feed validation and
+ * AI prompts, which must only see the live curriculum.
+ */
+const topicsForGrade = (gradeKey) =>
+  (getGrade(gradeKey)?.topics || []).filter((topic) => topic.enabled);
 
-/** Topic names for a grade key, in display order. */
+/** Enabled topic names for a grade key, in display order. */
 const topicNamesForGrade = (gradeKey) => topicsForGrade(gradeKey).map((topic) => topic.name);
 
-/** Grade key whose topics include the given name, else the fallback. */
+/**
+ * Grade key whose topics include the given name, else the fallback.
+ * Permissive (searches staged topics too): infers grades for stored records.
+ */
 const inferGradeForTopic = (topicName, fallbackGradeKey) => {
   const owner = enabledGrades.find((grade) =>
     grade.topics.some((topic) => topic.name === topicName)
@@ -46,9 +54,12 @@ const inferGradeForTopic = (topicName, fallbackGradeKey) => {
   return owner ? owner.key : fallbackGradeKey;
 };
 
-/** subtopicAliases map ({ alias: canonical }) for a grade/topic pair. */
+/**
+ * subtopicAliases map ({ alias: canonical }) for a grade/topic pair.
+ * Permissive (searches staged topics too): normalizes stored records.
+ */
 const subtopicAliasesFor = (gradeKey, topicName) => {
-  const topic = topicsForGrade(gradeKey).find((entry) => entry.name === topicName);
+  const topic = (getGrade(gradeKey)?.topics || []).find((entry) => entry.name === topicName);
   return topic?.subtopicAliases || {};
 };
 

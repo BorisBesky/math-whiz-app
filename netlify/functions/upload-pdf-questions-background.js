@@ -3,6 +3,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const {
   getDefaultGradeKey,
   getGrade,
+  isValidGradeKey,
   topicNamesForGrade,
 } = require("./content-registry");
 const Busboy = require("busboy");
@@ -278,9 +279,9 @@ const parseMultipartFormData = (event) => {
 // Builds the Gemini prompt for extracting questions from an uploaded PDF.
 // Pure function of the grade so tests can freeze the prompt text.
 const buildExtractionPrompt = (grade) => {
-  // Grade-specific topics for the prompt; unknown grades fall back to the
-  // default grade (historical behavior)
-  const gradeInfo = getGrade(grade) || getGrade(getDefaultGradeKey());
+  // Grade-specific topics for the prompt; unknown or disabled grades fall
+  // back to the default grade (historical behavior)
+  const gradeInfo = getGrade(isValidGradeKey(grade) ? grade : getDefaultGradeKey());
   const topicsListForPrompt = topicNamesForGrade(gradeInfo.key).join(", ");
   const gradeLabel = `Grade ${gradeInfo.ordinal}`;
 
@@ -845,10 +846,10 @@ async function processPDFAsync(
         );
       }
 
-      // Validate topic against grade-specific topics (unknown grades fall
-      // back to the default grade, matching the extraction prompt)
+      // Validate topic against grade-specific topics (unknown or disabled
+      // grades fall back to the default grade, matching the extraction prompt)
       const validTopics = topicNamesForGrade(
-        getGrade(grade) ? grade : getDefaultGradeKey()
+        isValidGradeKey(grade) ? grade : getDefaultGradeKey()
       );
       let questionTopic = q.topic || validTopics[0]; // Default to first topic if not specified
 

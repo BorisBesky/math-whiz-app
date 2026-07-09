@@ -28,6 +28,7 @@ import {
 } from '../constants/appConstants';
 import { sanitizeTopicName } from '../utils/firebaseHelpers';
 import content from '../content';
+import { getTopicNamesForGrade } from '../content/registry';
 
 // Canonical topic lists as of Phase 0. Order matters: quizTopicsByGrade order
 // is what students see in TopicSelection, and VALID_TOPICS_BY_GRADE[grade][0]
@@ -78,11 +79,12 @@ describe('topic lists agree across all sources (names AND order)', () => {
   test.each([
     ['G3', 'g3'],
     ['G4', 'g4'],
-  ])('content registry topics for %s match the canonical set', (grade, gradeId) => {
-    // Set comparison: the registry's internal order (g4 lists Geometry first)
-    // differs from the student-facing quizTopicsByGrade order and is not
-    // user-visible today, so only membership is frozen here.
-    const registryNames = content.getTopicsForGrade(gradeId).map((t) => t.name);
+  ])('registry facade topics for %s match the canonical set', (grade, gradeId) => {
+    // The facade filters staged ("enabled": false) content, so this stays
+    // canonical even while a new topic folder is being developed. The raw
+    // content API (content.getTopicsForGrade) intentionally includes staged
+    // topics for data-matching lookups.
+    const registryNames = getTopicNamesForGrade(gradeId);
     expect([...registryNames].sort()).toEqual([...CANONICAL_TOPICS[grade]].sort());
   });
 });

@@ -24,6 +24,8 @@
   },
   "scripts": {
     "generate:content": "node scripts/build-content-registry.js",
+    "new:topic": "node scripts/new-topic.js",
+    "new:grade": "node scripts/new-grade.js",
     "prestart": "npm run generate:content",
     "start": "react-scripts start",
     "prebuild": "npm run generate:content",

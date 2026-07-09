@@ -617,7 +617,7 @@ export function generateSubtractionWordProblemQuestion(difficulty = 0.5) {
     standard: "4.NBT.B.4",
     concept: "Base Ten",
     grade: "G4",
-    subtopic: "subtraction word problems",
+    subtopic: "subtraction",
     difficultyRange: { min: 0.4, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
@@ -732,7 +732,7 @@ export function generateAdditionWordProblemQuestion(difficulty = 0.5) {
     standard: "4.NBT.B.4",
     concept: "Base Ten",
     grade: "G4",
-    subtopic: "addition word problems",
+    subtopic: "addition",
     difficultyRange: { min: 0.4, max: 1.0 },
     suggestedDifficulty: difficulty,
   };

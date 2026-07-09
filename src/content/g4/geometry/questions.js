@@ -602,7 +602,7 @@ export function generateTriangleClassificationBySidesQuestion(difficulty = 0.5) 
     standard: "4.G.A.2",
     concept: "Geometry",
     grade: "G4",
-    subtopic: "triangle classification",
+    subtopic: "triangles",
     difficultyRange: { min: 0.4, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
@@ -646,7 +646,7 @@ export function generateTriangleClassificationByAnglesQuestion(difficulty = 0.5)
     standard: "4.G.A.2",
     concept: "Geometry",
     grade: "G4",
-    subtopic: "triangle classification",
+    subtopic: "triangles",
     difficultyRange: { min: 0.4, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
@@ -730,7 +730,7 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
     standard: "4.G.A.2",
     concept: "Geometry", 
     grade: "G4",
-    subtopic: "quadrilateral properties",
+    subtopic: "quadrilaterals",
     difficultyRange: { min: 0.5, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
@@ -784,7 +784,7 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
     standard: "4.G.A.3",
     concept: "Geometry",
     grade: "G4", 
-    subtopic: "line symmetry",
+    subtopic: "symmetry",
     difficultyRange: { min: 0.3, max: 1.0 },
     suggestedDifficulty: difficulty,
   };
