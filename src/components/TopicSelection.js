@@ -3,10 +3,13 @@ import { Award } from "lucide-react";
 import { updateDoc } from "firebase/firestore";
 import { getTodayDateString, getUserDocRef, sanitizeTopicName } from "../utils/firebaseHelpers";
 import { getTopicAvailability } from "../services/topicAvailability";
-import {
-  DEFAULT_DAILY_GOAL,
-  quizTopicsByGrade,
-} from "../constants/appConstants";
+import { DEFAULT_DAILY_GOAL } from "../constants/appConstants";
+import { getAllGrades, getDefaultGradeKey, getGrade } from "../content/registry";
+import { getTopicsForGrade } from "../utils/common_utils";
+import { getTopicTheme } from "./topicThemes";
+
+// Active-pill colors cycle per grade position (G3 blue, G4 purple, ...).
+const GRADE_PILL_ACTIVE_CLASSES = ["bg-brand-blue", "bg-brand-purple"];
 
 const AnimatedTitle = () => (
   <img
@@ -32,8 +35,10 @@ const TopicSelection = ({
 }) => {
   const { availableTopics, unavailableTopics, allCompleted, topicStats } =
     getTopicAvailability(userData, selectedGrade);
-  const currentTopics =
-    quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+  const currentTopics = getTopicsForGrade(selectedGrade);
+  const gradeShort =
+    getGrade(selectedGrade)?.shortLabel ||
+    getGrade(getDefaultGradeKey())?.shortLabel;
 
   const handleGradeChange = async (newGrade) => {
     // Optimistically set the UI state and mark change as in-progress so snapshots don't flip us back
@@ -55,7 +60,7 @@ const TopicSelection = ({
             userData.dailyGoalsByGrade[newGrade] = {};
 
             // Initialize goals for the new grade
-            quizTopicsByGrade[newGrade].forEach((topic) => {
+            getTopicsForGrade(newGrade).forEach((topic) => {
               userData.dailyGoalsByGrade[newGrade][topic] = DEFAULT_DAILY_GOAL;
             });
 
@@ -71,7 +76,7 @@ const TopicSelection = ({
             };
 
             // Initialize topic-specific progress for the new grade
-            quizTopicsByGrade[newGrade].forEach((topic) => {
+            getTopicsForGrade(newGrade).forEach((topic) => {
               const sanitizedTopic = sanitizeTopicName(topic);
               userData.progressByGrade[today][newGrade][sanitizedTopic] = {
                 correct: 0,
@@ -106,21 +111,6 @@ const TopicSelection = ({
     }
   };
 
-  // Per-topic color theming
-  const topicColors = {
-    'Multiplication':                 { bg: 'bg-blue-50',    border: 'border-blue-200',   accent: 'bg-blue-500',    text: 'text-blue-700',    hoverBg: 'hover:bg-blue-100',    icon: '\u2715', lightBg: 'bg-blue-100' },
-    'Division':                       { bg: 'bg-purple-50',  border: 'border-purple-200', accent: 'bg-purple-500',  text: 'text-purple-700',  hoverBg: 'hover:bg-purple-100',  icon: '\u00F7', lightBg: 'bg-purple-100' },
-    'Fractions':                      { bg: 'bg-rose-50',    border: 'border-rose-200',   accent: 'bg-rose-500',    text: 'text-rose-700',    hoverBg: 'hover:bg-rose-100',    icon: '\u00BD', lightBg: 'bg-rose-100' },
-    'Measurement & Data':             { bg: 'bg-amber-50',   border: 'border-amber-200',  accent: 'bg-amber-500',   text: 'text-amber-700',   hoverBg: 'hover:bg-amber-100',   icon: '\uD83D\uDCCF', lightBg: 'bg-amber-100' },
-    'Operations & Algebraic Thinking': { bg: 'bg-teal-50',   border: 'border-teal-200',   accent: 'bg-teal-500',    text: 'text-teal-700',    hoverBg: 'hover:bg-teal-100',    icon: '\uD83E\uDDEE', lightBg: 'bg-teal-100' },
-    'Base Ten':                       { bg: 'bg-indigo-50',  border: 'border-indigo-200', accent: 'bg-indigo-500',  text: 'text-indigo-700',  hoverBg: 'hover:bg-indigo-100',  icon: '\uD83D\uDD22', lightBg: 'bg-indigo-100' },
-    'Fractions 4th':                  { bg: 'bg-pink-50',    border: 'border-pink-200',   accent: 'bg-pink-500',    text: 'text-pink-700',    hoverBg: 'hover:bg-pink-100',    icon: '\u00BE', lightBg: 'bg-pink-100' },
-    'Measurement & Data 4th':         { bg: 'bg-orange-50',  border: 'border-orange-200', accent: 'bg-orange-500',  text: 'text-orange-700',  hoverBg: 'hover:bg-orange-100',  icon: '\uD83D\uDCD0', lightBg: 'bg-orange-100' },
-    'Geometry':                       { bg: 'bg-emerald-50', border: 'border-emerald-200',accent: 'bg-emerald-500', text: 'text-emerald-700', hoverBg: 'hover:bg-emerald-100', icon: '\uD83D\uDCD0', lightBg: 'bg-emerald-100' },
-    'Binary Operations':              { bg: 'bg-cyan-50',    border: 'border-cyan-200',   accent: 'bg-cyan-500',    text: 'text-cyan-700',    hoverBg: 'hover:bg-cyan-100',    icon: '\u26A1', lightBg: 'bg-cyan-100' },
-  };
-  const defaultColor = { bg: 'bg-gray-50', border: 'border-gray-200', accent: 'bg-gray-500', text: 'text-gray-600', hoverBg: 'hover:bg-gray-100', icon: '\uD83D\uDCDA', lightBg: 'bg-gray-100' };
-
   return (
     <div className="text-center mt-16 pb-20 px-4">
       {/* Title */}
@@ -131,33 +121,26 @@ const TopicSelection = ({
       {/* Grade and class source selector */}
       <div className="mb-8 flex justify-center">
         <div className="inline-flex bg-white rounded-full p-1.5 shadow-card border border-gray-100">
-          <button
-            onClick={() => handleGradeChange("G3")}
-            className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
-              selectedGrade === "G3"
-                ? "bg-brand-blue text-white shadow-glow-blue"
-                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            3rd Grade
-          </button>
-          <button
-            onClick={() => handleGradeChange("G4")}
-            className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
-              selectedGrade === "G4"
-                ? "bg-brand-purple text-white shadow-glow-blue"
-                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            4th Grade
-          </button>
+          {getAllGrades().map((grade, index) => (
+            <button
+              key={grade.key}
+              onClick={() => handleGradeChange(grade.key)}
+              className={`px-6 py-2.5 rounded-full font-display font-bold text-base transition-all duration-300 ${
+                selectedGrade === grade.key
+                  ? `${GRADE_PILL_ACTIVE_CLASSES[index % GRADE_PILL_ACTIVE_CLASSES.length]} text-white shadow-glow-blue`
+                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              {grade.label}
+            </button>
+          ))}
         </div>
       </div>
 
       <p className="font-display text-2xl md:text-3xl font-bold text-gray-800 mb-6">
         Pick a topic to practice{' '}
         <span className="text-gradient-brand">
-          {selectedGrade === "G3" ? "3rd" : "4th"} Grade
+          {gradeShort} Grade
         </span>{' '}
         math!
       </p>
@@ -181,7 +164,7 @@ const TopicSelection = ({
           const isAvailable = availableTopics.includes(topic);
           const isCompleted =
             topicStats?.find((t) => t.topic === topic)?.completed || false;
-          const colors = topicColors[topic] || defaultColor;
+          const colors = getTopicTheme(topic);
           const stat = topicStats?.find((t) => t.topic === topic);
           const progressPct = stat ? Math.min(100, (stat.correctAnswers / Math.max(stat.goal, 1)) * 100) : 0;
 
@@ -274,7 +257,7 @@ const TopicSelection = ({
         <p className="text-sm text-gray-600 font-medium">
           {allCompleted ? (
             <span className="text-green-600 font-display font-bold">
-              {'\uD83C\uDF89'} All {selectedGrade === "G3" ? "3rd" : "4th"} grade topics
+              {'\uD83C\uDF89'} All {gradeShort} grade topics
               completed! Ready for a fresh start?
             </span>
           ) : unavailableTopics.length > 0 ? (

@@ -48,9 +48,16 @@ import {
   STORE_BACKGROUND_COST,
   DEFAULT_BACKGROUND_IMAGE,
   conceptExplanationFiles,
-  quizTopicsByGrade,
-  TOPIC_CONTENT_MAP,
 } from "./constants/appConstants";
+import {
+  getAllGrades,
+  getDefaultGradeKey,
+  getGrade,
+  getTopicContent,
+  getTopicNamesForGrade,
+  normalizeGradeKey,
+  prepareQuestionsForDisplay,
+} from "./content/registry";
 import {
   getTodayDateString,
 	  getUserDocRef,
@@ -60,7 +67,6 @@ import {
   encodeTopicForPath,
   decodeTopicFromPath,
 } from "./utils/firebaseHelpers";
-import content from "./content";
 import { loadStoreImages, getCachedStoreImages } from "./utils/storeImages";
 import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
@@ -92,13 +98,25 @@ export { db } from './firebase';
 
 // Store items are now loaded dynamically from Firebase Storage
 
-const normalizeClassGrade = (gradeValue) => {
-  if (!gradeValue) return null;
-  const normalized = String(gradeValue).trim().toUpperCase();
-  if (normalized === 'G3' || normalized.includes('3')) return 'G3';
-  if (normalized === 'G4' || normalized.includes('4')) return 'G4';
-  return null;
+// Registry-backed: matches grade keys and ordinal digits for however many
+// grades exist ('G5' works the day a g5 content folder is enabled).
+const normalizeClassGrade = (gradeValue) => normalizeGradeKey(gradeValue);
+
+// The app predates grade selection: the top-level `dailyGoals`/`progress`
+// fields and the dual-write branches in checkAnswer are pinned to that
+// historical G3-era data model. This is intentionally NOT the registry's
+// default grade — it names the legacy data shape, which never changes even
+// if the default grade someday does.
+const LEGACY_GRADE_KEY = "G3";
+
+// Topic names for a grade with the historical fallback to the default grade.
+const topicNamesForGrade = (gradeKey) => {
+  const names = getTopicNamesForGrade(gradeKey);
+  return names.length > 0 ? names : getTopicNamesForGrade(getDefaultGradeKey());
 };
+
+const gradeShortLabel = (gradeKey) =>
+  getGrade(gradeKey)?.shortLabel || getGrade(getDefaultGradeKey())?.shortLabel || "";
 
 const normalizeQuestionBankProbability = (value) => {
   if (value === null || value === undefined || value === '') return null;
@@ -195,7 +213,7 @@ const MainAppContent = () => {
   );
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [selectedGrade, setSelectedGrade] = useState("G3"); // Default to 3rd grade
+  const [selectedGrade, setSelectedGrade] = useState(getDefaultGradeKey());
   const [currentTopic, setCurrentTopic] = useState(null);
   const [currentQuiz, setCurrentQuiz] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -466,6 +484,17 @@ const MainAppContent = () => {
     quizFinishedRef.current = false;
     setCurrentTopic(topic);
     setCurrentQuiz(pausedData.questions);
+    // Re-apply the topic's display hook (e.g. regenerate geometry diagram
+    // SVGs) to persisted questions. Replaces QuizView's render-time refresh;
+    // the functional set only swaps if the quiz hasn't changed meanwhile.
+    prepareQuestionsForDisplay(topic, pausedData.questions)
+      .then((prepared) => {
+        if (prepared === pausedData.questions) return;
+        setCurrentQuiz((current) => (current === pausedData.questions ? prepared : current));
+      })
+      .catch((error) => {
+        console.warn('Failed to apply display hooks to resumed quiz:', error);
+      });
     setCurrentQuestionIndex(pausedData.index);
     setScore(pausedData.score);
     questionStartTime.current = Date.now();
@@ -740,23 +769,26 @@ const MainAppContent = () => {
               const updatePayload = {};
               let needsUpdate = false;
 
-              // Migration: Set selectedGrade if missing (default to G3 for existing users)
+              // Migration: Set selectedGrade if missing (users predating
+              // grade selection were on the legacy G3-era app)
               if (!data.selectedGrade) {
-                data.selectedGrade = "G3";
-                updatePayload.selectedGrade = "G3";
+                data.selectedGrade = LEGACY_GRADE_KEY;
+                updatePayload.selectedGrade = LEGACY_GRADE_KEY;
                 needsUpdate = true;
               }
 
-              // Migration: dailyGoals → dailyGoalsByGrade
+              // Migration: dailyGoals → dailyGoalsByGrade (old goals belong
+              // to the legacy grade; every other grade starts with defaults)
               if (data.dailyGoals && !data.dailyGoalsByGrade) {
                 const dailyGoalsByGrade = {
-                  G3: { ...data.dailyGoals }, // Copy existing goals to G3
-                  G4: {}, // Initialize G4 goals
+                  [LEGACY_GRADE_KEY]: { ...data.dailyGoals },
                 };
-
-                // Initialize G4 goals with defaults
-                quizTopicsByGrade.G4.forEach((topic) => {
-                  dailyGoalsByGrade.G4[topic] = DEFAULT_DAILY_GOAL;
+                getAllGrades().forEach((grade) => {
+                  if (grade.key === LEGACY_GRADE_KEY) return;
+                  dailyGoalsByGrade[grade.key] = {};
+                  getTopicNamesForGrade(grade.key).forEach((topic) => {
+                    dailyGoalsByGrade[grade.key][topic] = DEFAULT_DAILY_GOAL;
+                  });
                 });
 
                 data.dailyGoalsByGrade = dailyGoalsByGrade;
@@ -764,39 +796,36 @@ const MainAppContent = () => {
                 needsUpdate = true;
               }
 
-              // Migration: progress → progressByGrade
+              // Migration: progress → progressByGrade (existing progress data
+              // belongs to the legacy grade; other grades start empty)
               if (data.progress && !data.progressByGrade) {
                 const progressByGrade = {};
 
-                // Migrate existing progress data to G3 for each date
                 Object.keys(data.progress).forEach((date) => {
                   progressByGrade[date] = {
-                    G3: { ...data.progress[date] },
-                    G4: {}, // Initialize empty G4 progress for this date
+                    [LEGACY_GRADE_KEY]: { ...data.progress[date] },
                   };
-
-                  // Initialize G4 progress for this date
-                  quizTopicsByGrade.G4.forEach((topic) => {
-                    const sanitizedTopic = sanitizeTopicName(topic);
-                    progressByGrade[date].G4[sanitizedTopic] = {
-                      correct: 0,
-                      incorrect: 0,
-                    };
-                  });
-
-                  // Ensure 'all' exists for both grades
-                  if (!progressByGrade[date].G3.all) {
-                    progressByGrade[date].G3.all = {
+                  if (!progressByGrade[date][LEGACY_GRADE_KEY].all) {
+                    progressByGrade[date][LEGACY_GRADE_KEY].all = {
                       correct: 0,
                       incorrect: 0,
                       timeSpent: 0,
                     };
                   }
-                  progressByGrade[date].G4.all = {
-                    correct: 0,
-                    incorrect: 0,
-                    timeSpent: 0,
-                  };
+
+                  getAllGrades().forEach((grade) => {
+                    if (grade.key === LEGACY_GRADE_KEY) return;
+                    const gradeProgress = {
+                      all: { correct: 0, incorrect: 0, timeSpent: 0 },
+                    };
+                    getTopicNamesForGrade(grade.key).forEach((topic) => {
+                      gradeProgress[sanitizeTopicName(topic)] = {
+                        correct: 0,
+                        incorrect: 0,
+                      };
+                    });
+                    progressByGrade[date][grade.key] = gradeProgress;
+                  });
                 });
 
                 data.progressByGrade = progressByGrade;
@@ -804,27 +833,20 @@ const MainAppContent = () => {
                 needsUpdate = true;
               }
 
-              // Ensure today exists in progressByGrade for both grades
+              // Ensure today exists in progressByGrade for every grade
               if (!data.progressByGrade?.[today]) {
-                const initialTodayProgress = {
-                  G3: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
-                  G4: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
-                };
-
-                // Initialize topic-specific progress for both grades
-                quizTopicsByGrade.G3.forEach((topic) => {
-                  const sanitizedTopic = sanitizeTopicName(topic);
-                  initialTodayProgress.G3[sanitizedTopic] = {
-                    correct: 0,
-                    incorrect: 0,
+                const initialTodayProgress = {};
+                getAllGrades().forEach((grade) => {
+                  const gradeProgress = {
+                    all: { correct: 0, incorrect: 0, timeSpent: 0 },
                   };
-                });
-                quizTopicsByGrade.G4.forEach((topic) => {
-                  const sanitizedTopic = sanitizeTopicName(topic);
-                  initialTodayProgress.G4[sanitizedTopic] = {
-                    correct: 0,
-                    incorrect: 0,
-                  };
+                  getTopicNamesForGrade(grade.key).forEach((topic) => {
+                    gradeProgress[sanitizeTopicName(topic)] = {
+                      correct: 0,
+                      incorrect: 0,
+                    };
+                  });
+                  initialTodayProgress[grade.key] = gradeProgress;
                 });
 
                 if (!data.progressByGrade) {
@@ -916,50 +938,38 @@ const MainAppContent = () => {
             } else {
               const today = getTodayDateString();
 
-              // Initialize goals for both grades
-              const dailyGoalsByGrade = {
-                G3: {},
-                G4: {},
-              };
-              quizTopicsByGrade.G3.forEach((topic) => {
-                dailyGoalsByGrade.G3[topic] = DEFAULT_DAILY_GOAL;
-              });
-              quizTopicsByGrade.G4.forEach((topic) => {
-                dailyGoalsByGrade.G4[topic] = DEFAULT_DAILY_GOAL;
-              });
-
-              // Initialize progress for both grades
-              const progressByGrade = {
-                [today]: {
-                  G3: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
-                  G4: { all: { correct: 0, incorrect: 0, timeSpent: 0 } },
-                },
-              };
-
-              // Initialize topic-specific progress
-              quizTopicsByGrade.G3.forEach((topic) => {
-                const sanitizedTopic = sanitizeTopicName(topic);
-                progressByGrade[today].G3[sanitizedTopic] = {
-                  correct: 0,
-                  incorrect: 0,
+              // Initialize goals and progress for every grade
+              const defaultGradeKey = getDefaultGradeKey();
+              const dailyGoalsByGrade = {};
+              const progressByGrade = { [today]: {} };
+              getAllGrades().forEach((grade) => {
+                dailyGoalsByGrade[grade.key] = {};
+                const gradeProgress = {
+                  all: { correct: 0, incorrect: 0, timeSpent: 0 },
                 };
-              });
-              quizTopicsByGrade.G4.forEach((topic) => {
-                const sanitizedTopic = sanitizeTopicName(topic);
-                progressByGrade[today].G4[sanitizedTopic] = {
-                  correct: 0,
-                  incorrect: 0,
-                };
+                getTopicNamesForGrade(grade.key).forEach((topic) => {
+                  dailyGoalsByGrade[grade.key][topic] = DEFAULT_DAILY_GOAL;
+                  gradeProgress[sanitizeTopicName(topic)] = {
+                    correct: 0,
+                    incorrect: 0,
+                  };
+                });
+                progressByGrade[today][grade.key] = gradeProgress;
               });
 
               const initialData = {
                 coins: 0,
-                selectedGrade: "G3", // Default to 3rd grade for new users
+                selectedGrade: defaultGradeKey,
                 dailyGoalsByGrade,
                 progressByGrade,
-                // Legacy fields for backward compatibility
-                dailyGoals: dailyGoalsByGrade.G3,
-                progress: { [today]: progressByGrade[today].G3 },
+                // Legacy fields for backward compatibility (pinned to the
+                // historical G3-era data model, not the default grade)
+                dailyGoals: dailyGoalsByGrade[LEGACY_GRADE_KEY] || {},
+                progress: {
+                  [today]: progressByGrade[today][LEGACY_GRADE_KEY] || {
+                    all: { correct: 0, incorrect: 0, timeSpent: 0 },
+                  },
+                },
                 pausedQuizzes: {},
                 ownedBackgrounds: ["default"],
                 activeBackground: "default",
@@ -982,12 +992,12 @@ const MainAppContent = () => {
               setDoc(userDocRef, initialData)
                 .then(() => {
                   setUserData(initialData);
-                  setSelectedGrade("G3");
+                  setSelectedGrade(defaultGradeKey);
                 })
                 .catch((error) => {
                   console.error("Failed to create user document:", error);
                   setUserData(initialData);
-                  setSelectedGrade("G3");
+                  setSelectedGrade(defaultGradeKey);
                 });
               setLastAskedComplexityByTopic({});
             }
@@ -1591,7 +1601,7 @@ const MainAppContent = () => {
         updates[`${gradeAllProgress_path}.correct`] = increment(1);
         updates[`${gradeTopicProgress_path}.correct`] = increment(1);
 
-        if (selectedGrade === "G3") {
+        if (selectedGrade === LEGACY_GRADE_KEY) {
           updates[`${allProgress_path}.correct`] = increment(1);
           updates[`${topicProgress_path}.correct`] = increment(1);
         }
@@ -1616,7 +1626,7 @@ const MainAppContent = () => {
         updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
         updates[`${gradeTopicProgress_path}.incorrect`] = increment(1);
 
-        if (selectedGrade === "G3") {
+        if (selectedGrade === LEGACY_GRADE_KEY) {
           updates[`${allProgress_path}.incorrect`] = increment(1);
           updates[`${topicProgress_path}.incorrect`] = increment(1);
         }
@@ -1626,7 +1636,7 @@ const MainAppContent = () => {
       updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
       updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken);
 
-      if (selectedGrade === "G3") {
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
         updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
       }
@@ -1754,8 +1764,7 @@ const MainAppContent = () => {
         userData?.dailyGoalsByGrade?.[selectedGrade] ||
         userData?.dailyGoals ||
         {};
-      const currentTopicsForGrade =
-        quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+      const currentTopicsForGrade = topicNamesForGrade(selectedGrade);
       const goalForTopic =
         dailyGoalsForGrade[currentTopic] || DEFAULT_DAILY_GOAL;
 
@@ -1797,7 +1806,7 @@ const MainAppContent = () => {
                 Correct! +1 Coin! <Coins className="text-yellow-500" />
               </span>
               <span className="flex items-center justify-center gap-2 font-bold text-purple-600">
-                🎉 All {selectedGrade === "G3" ? "3rd" : "4th"} Grade Topics
+                🎉 All {gradeShortLabel(selectedGrade)} Grade Topics
                 Mastered! Progress Reset! <Award className="text-purple-500" />
               </span>
             </span>
@@ -1810,8 +1819,7 @@ const MainAppContent = () => {
 
     // Handle progress updates based on whether we're resetting or not
     if (shouldResetProgress) {
-      const currentTopicsForGrade =
-        quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+      const currentTopicsForGrade = topicNamesForGrade(selectedGrade);
 
       // Reset all topic progress counters for this grade
       currentTopicsForGrade.forEach((topic) => {
@@ -1829,7 +1837,7 @@ const MainAppContent = () => {
         ] = 0;
 
         // Update legacy structure if selected grade is G3
-        if (selectedGrade === "G3") {
+        if (selectedGrade === LEGACY_GRADE_KEY) {
           updates[`progress.${today}.${sanitizedTopic}.correct`] = 0;
           updates[`progress.${today}.${sanitizedTopic}.incorrect`] = 0;
           updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = 0;
@@ -1844,7 +1852,7 @@ const MainAppContent = () => {
         `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}.timeSpent`
       ] = timeTaken;
 
-      if (selectedGrade === "G3") {
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`progress.${today}.${sanitizedTopic}.correct`] = 1;
         updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = timeTaken;
       }
@@ -1853,7 +1861,7 @@ const MainAppContent = () => {
       updates[`${gradeAllProgress_path}.correct`] = increment(1);
       updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
 
-      if (selectedGrade === "G3") {
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`${allProgress_path}.correct`] = increment(1);
         updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
       }
@@ -1863,7 +1871,7 @@ const MainAppContent = () => {
         updates[`${gradeAllProgress_path}.correct`] = increment(1);
         updates[`${gradeTopicProgress_path}.correct`] = increment(1);
 
-        if (selectedGrade === "G3") {
+        if (selectedGrade === LEGACY_GRADE_KEY) {
           updates[`${allProgress_path}.correct`] = increment(1);
           updates[`${topicProgress_path}.correct`] = increment(1);
         }
@@ -1871,7 +1879,7 @@ const MainAppContent = () => {
         updates[`${gradeAllProgress_path}.incorrect`] = increment(1);
         updates[`${gradeTopicProgress_path}.incorrect`] = increment(1);
 
-        if (selectedGrade === "G3") {
+        if (selectedGrade === LEGACY_GRADE_KEY) {
           updates[`${allProgress_path}.incorrect`] = increment(1);
           updates[`${topicProgress_path}.incorrect`] = increment(1);
         }
@@ -1881,15 +1889,14 @@ const MainAppContent = () => {
       updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
       updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken);
 
-      if (selectedGrade === "G3") {
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
         updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
       }
     }
 
     // Calculate daily goal bonus based on selected grade
-    const currentTopicsForGrade =
-      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+    const currentTopicsForGrade = topicNamesForGrade(selectedGrade);
     const dailyGoalsForGrade =
       userData?.dailyGoalsByGrade?.[selectedGrade] ||
       userData?.dailyGoals ||
@@ -2002,8 +2009,7 @@ const MainAppContent = () => {
     const updates = {};
 
     // Get topics for the current grade
-    const currentTopics =
-      quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+    const currentTopics = topicNamesForGrade(selectedGrade);
 
     // Reset all topic progress counters for the current grade
     currentTopics.forEach((topic) => {
@@ -2021,7 +2027,7 @@ const MainAppContent = () => {
       ] = 0;
 
       // Update legacy structure only for G3
-      if (selectedGrade === "G3") {
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`progress.${today}.${sanitizedTopic}.correct`] = 0;
         updates[`progress.${today}.${sanitizedTopic}.incorrect`] = 0;
         updates[`progress.${today}.${sanitizedTopic}.timeSpent`] = 0;
@@ -2031,9 +2037,7 @@ const MainAppContent = () => {
     await updateDoc(userDocRef, updates);
 
     setFeedback({
-      message: `🎉 ${
-        selectedGrade === "G3" ? "3rd" : "4th"
-      } Grade progress reset! All topics are now available for a fresh start!`,
+      message: `🎉 ${gradeShortLabel(selectedGrade)} Grade progress reset! All topics are now available for a fresh start!`,
       type: "success",
     });
     setTimeout(() => setFeedback(null), 3000);
@@ -2310,16 +2314,12 @@ const MainAppContent = () => {
   const handleExplainConcept = async () => {
     const concept = currentQuiz[currentQuestionIndex].concept;
 
-    // Use TOPIC_CONTENT_MAP for data-driven lookup instead of per-topic if/else
-    const contentEntry = TOPIC_CONTENT_MAP[concept];
+    // Registry lookup — concept equals the topic name for generated questions
+    const topicContent = getTopicContent(concept);
     let ReactComponent = null;
-    if (contentEntry) {
-      const [gradeId, topicId] = contentEntry;
-      const topicContent = content.getTopic(gradeId, topicId);
-      if (topicContent?.loadExplanationComponent) {
-        // Load explanation component on demand (code-split per topic)
-        ReactComponent = await topicContent.loadExplanationComponent();
-      }
+    if (topicContent?.loadExplanationComponent) {
+      // Load explanation component on demand (code-split per topic)
+      ReactComponent = await topicContent.loadExplanationComponent();
     }
 
     if (ReactComponent) {
@@ -2369,7 +2369,7 @@ const MainAppContent = () => {
 
     // Check if user has already created a story for this topic today for this grade
     if (todaysStories[currentTopic]) {
-      const gradeLabel = selectedGrade === "G3" ? "3rd" : "4th";
+      const gradeLabel = gradeShortLabel(selectedGrade);
       setFeedback({
         message: `You've already created a story problem for ${currentTopic} in ${gradeLabel} grade today! Come back tomorrow for more stories.`,
         type: "error",
@@ -2378,7 +2378,7 @@ const MainAppContent = () => {
       return;
     }
 
-    const gradeLabel = selectedGrade === "G3" ? "3rd" : "4th";
+    const gradeLabel = gradeShortLabel(selectedGrade);
     const prompt = `Create a fun and short math story problem for a ${gradeLabel} grader based on the topic of "${currentTopic}". Make it one paragraph long.
 
 Then, on a new line, state the question clearly, starting with "Question:".

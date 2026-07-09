@@ -2,26 +2,15 @@ import {
   adaptAnsweredHistory,
   rankQuestionsByComplexity,
 } from "../utils/complexityEngine";
-import { DEFAULT_DAILY_GOAL, TOPIC_CONTENT_MAP } from "../constants/appConstants";
+import { DEFAULT_DAILY_GOAL } from "../constants/appConstants";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
 import { getQuestionSignature, getQuestionMasteryKey } from "../utils/questionKey";
 import { fetchQuestionsFromFirestore } from "./questionService";
-import content from "../content";
-
-const refreshQuestionImages = async (question, topic, grade) => {
-  if (grade !== "G4" || topic !== "Geometry") {
-    return question;
-  }
-
-  const geometryQuestions = await import("../content/g4/geometry/questions");
-  const refreshAngleAdditionDiagram =
-    geometryQuestions.refreshAngleAdditionDiagram ||
-    geometryQuestions.default?.refreshAngleAdditionDiagram;
-
-  return typeof refreshAngleAdditionDiagram === "function"
-    ? refreshAngleAdditionDiagram(question)
-    : question;
-};
+import {
+  getDefaultGradeKey,
+  getTopicContent,
+  prepareQuestionForDisplay,
+} from "../content/registry";
 
 /**
  * A multiple-choice question is unanswerable if its stated correct answer isn't one of the
@@ -44,7 +33,7 @@ export const generateQuizQuestions = async (
   dailyGoals,
   questionHistory,
   difficulty,
-  grade = "G3",
+  grade = getDefaultGradeKey(),
   userId = null,
   classId = null,
   answeredQuestionIds = [],
@@ -152,18 +141,14 @@ export const generateQuizQuestions = async (
 
     // If not using Firestore question, generate one
     if (!useFirestoreQuestion) {
-      const contentEntry = TOPIC_CONTENT_MAP[topic];
-      if (contentEntry) {
-        const [gradeId, topicId] = contentEntry;
-        const topicContent = content.getTopic(gradeId, topicId);
-        if (topicContent) {
-          const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
-          // Load question generator on demand (code-split per topic)
-          const generateQuestion = await topicContent.loadGenerateQuestion();
-          question = generateQuestion(difficulty, allowedSubtopicsForThisTopic);
-          if (question) {
-            question.concept = topic;
-          }
+      const topicContent = getTopicContent(topic);
+      if (topicContent) {
+        const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
+        // Load question generator on demand (code-split per topic)
+        const generateQuestion = await topicContent.loadGenerateQuestion();
+        question = generateQuestion(difficulty, allowedSubtopicsForThisTopic);
+        if (question) {
+          question.concept = topic;
         }
       } else {
         question = {
@@ -181,7 +166,7 @@ export const generateQuizQuestions = async (
       continue;
     }
 
-    question = await refreshQuestionImages(question, topic, grade);
+    question = await prepareQuestionForDisplay(topic, question);
 
     // Use complexity-based mastery to bias selection toward struggled/unseen items
     // Only apply to generated questions, not Firestore questions

@@ -7,6 +7,11 @@ export const geometry = {
   ...manifest,
   loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
   loadExplanationComponent: () => import('./Explanation').then(m => m.default),
+  // Angle-addition questions rebuild their diagram SVG from the question text
+  // so persisted/imported copies without images still render one.
+  loadQuestionHooks: () => import('./questions').then(m => ({
+    prepareForDisplay: m.refreshAngleAdditionDiagram,
+  })),
 };
 
 export default geometry;

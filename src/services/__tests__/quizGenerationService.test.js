@@ -24,7 +24,6 @@ jest.mock('../../utils/complexityEngine', () => ({
 
 jest.mock('../../constants/appConstants', () => ({
   DEFAULT_DAILY_GOAL: 1,
-  TOPIC_CONTENT_MAP: { Geometry: ['g4', 'geometry'] },
 }));
 
 jest.mock('../../utils/subtopicUtils', () => ({
@@ -35,11 +34,10 @@ jest.mock('../questionService', () => ({
   fetchQuestionsFromFirestore: (...args) => mockFetchFirestore(...args),
 }));
 
-jest.mock('../../content', () => ({
-  __esModule: true,
-  default: {
-    getTopic: () => ({ loadGenerateQuestion: async () => mockGenerate }),
-  },
+jest.mock('../../content/registry', () => ({
+  getDefaultGradeKey: () => 'G3',
+  getTopicContent: () => ({ loadGenerateQuestion: async () => mockGenerate }),
+  prepareQuestionForDisplay: async (topic, question) => question,
 }));
 
 const { generateQuizQuestions, isMultipleChoiceAnswerable } = require('../quizGenerationService');
@@ -49,7 +47,7 @@ const run = (over = {}) => generateQuizQuestions(
   { Geometry: 1 }, // dailyGoals → 1 question
   [], // questionHistory
   0.5, // difficulty
-  'G3', // grade kept non-G4 so refreshQuestionImages is a no-op
+  'G3', // grade (display hooks are identity in this test's registry mock)
   'student-1',
   ['class-1'],
   [], // answeredQuestionIds
