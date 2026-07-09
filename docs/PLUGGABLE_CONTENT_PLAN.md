@@ -1,6 +1,6 @@
 # Plan: Pluggable Content Modules (Topics & Grade Levels)
 
-Status: Phases 0–1 implemented on `feature/pluggable-content`; Phases 2+ pending.
+Status: Phases 0–2 implemented on `feature/pluggable-content`; Phases 3+ pending.
 Author: drafted 2026-07-08
 
 Implementation notes vs. this plan:
@@ -15,6 +15,21 @@ Implementation notes vs. this plan:
   consumes `registry.generated.js` (the plan sketched that for Phase 2), so
   the per-grade `index.js` registration files are gone — the folder is the
   registration as of Phase 1.
+- Phase 2 went wider than the written consumer list: the audit found and
+  migrated additional hardcoded-grade components the plan had not enumerated
+  (AdminPortal, ClassDetail, StudentProfile's duplicated grade normalizer,
+  EditClassForm, EditQuestionModal, QuestionReviewModal, UploadQuestionsPDF,
+  GenerateQuestionsModal). AdminPortal's hardcoded G4 topic list had drifted
+  (missing Binary Operations) — the registry list fixed it.
+- Phase 2 deviation: no `src/test-utils/contentRegistryMock.js` was needed —
+  the real registry is pure data and works in every Jest suite; only
+  quizGenerationService.test.js mocks it (to stub the generator loader).
+- Intentional grade literals that remain in src/: doc-comment examples and
+  `LEGACY_GRADE_KEY = "G3"` pins (MainApp, Dashboard, AdminPortal) naming the
+  pre-grades data model (top-level dailyGoals/progress dual-writes and
+  one-time migrations). QuizView's render-time geometry refresh was replaced
+  by display preparation at the two quiz entry points (generation + resume)
+  via the topic's `loadQuestionHooks`/`prepareForDisplay` hook.
 
 ## 1. Goal
 
