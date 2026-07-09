@@ -16,6 +16,11 @@
     "comparison",
     "decimal place value"
   ],
+  "subtopicAliases": {
+    "addition word problems": "addition",
+    "subtraction word problems": "subtraction",
+    "long division with remainder": "division"
+  },
   "objectives": [
     "Understand place value to 1,000,000",
     "Compare and order multi-digit numbers",

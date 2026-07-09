@@ -109,6 +109,13 @@ const collectContent = () => {
           errors.push(`${manifestPath}: topic folder is missing ${required}`);
         }
       }
+      Object.entries(manifest.subtopicAliases || {}).forEach(([alias, target]) => {
+        if (!manifest.subtopics.includes(target)) {
+          errors.push(
+            `${manifestPath}: subtopicAliases["${alias}"] points at "${target}", which is not in subtopics`
+          );
+        }
+      });
       return manifest;
     });
 

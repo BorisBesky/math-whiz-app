@@ -1,8 +1,17 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { admin, db } = require("./firebase-admin");
-const { GRADES, TOPICS, VALID_TOPICS_BY_GRADE } = require("./constants");
+const {
+  getDefaultGradeKey,
+  getEnabledGradeKeys,
+  getGrade,
+  gradeAdjective,
+  isValidGradeKey,
+  storyRequirementLines,
+  topicGuidelineLines,
+  topicNamesForGrade,
+} = require("./content-registry");
 
-// Valid math topics by grade are now imported from constants.js
+// Valid grades/topics and prompt text derive from the content manifests
 
 // Helper function to get today's date string
 const getTodayDateString = () => {
@@ -26,7 +35,7 @@ const verifyAuthToken = async (authHeader) => {
 };
 
 // Helper function to check and update rate limiting (grade-aware)
-const checkRateLimit = async (userId, topic, grade = GRADES.G3) => {
+const checkRateLimit = async (userId, topic, grade = getDefaultGradeKey()) => {
   const today = getTodayDateString();
   const userDoc = db
     .collection("artifacts")
@@ -46,7 +55,7 @@ const checkRateLimit = async (userId, topic, grade = GRADES.G3) => {
 
   // Check if user has already used this topic today for this grade
   if (dailyStories[topic]) {
-    const gradeLabel = grade === GRADES.G3 ? "3rd grade" : "4th grade";
+    const gradeLabel = gradeAdjective(grade);
     throw new Error(
       `You have already created a story problem for ${topic} in ${gradeLabel} today. Please try a different topic or come back tomorrow.`
     );
@@ -55,7 +64,7 @@ const checkRateLimit = async (userId, topic, grade = GRADES.G3) => {
   // Check total queries for today for this grade (max 4 per day per grade)
   const totalStoriesToday = Object.keys(dailyStories).length;
   if (totalStoriesToday >= 4) {
-    const gradeLabel = grade === GRADES.G3 ? "3rd grade" : "4th grade";
+    const gradeLabel = gradeAdjective(grade);
     throw new Error(
       `You have reached your daily limit of 4 story problems for ${gradeLabel}. Please come back tomorrow.`
     );
@@ -69,79 +78,40 @@ const checkRateLimit = async (userId, topic, grade = GRADES.G3) => {
   return true;
 };
 
-// Helper function to validate topic and enhance prompt (grade-aware)
-const validateAndEnhancePrompt = (originalPrompt, topic, grade = GRADES.G3) => {
-  const validTopics = VALID_TOPICS_BY_GRADE[grade];
-  if (!validTopics || !validTopics.includes(topic)) {
-    const gradeLabel = grade === GRADES.G3 ? "3rd grade" : "4th grade";
+// Helper function to validate topic and enhance prompt (grade-aware).
+// Topic guidelines come from each topic manifest's ai.guidelines and the
+// Requirements block from the grade manifest's ai.storyRequirements, so the
+// story prompt stays in lockstep with question-generation guidance.
+const validateAndEnhancePrompt = (originalPrompt, topic, grade = getDefaultGradeKey()) => {
+  if (!isValidGradeKey(grade)) {
     throw new Error(
-      `Invalid topic: ${topic} for ${gradeLabel}. Valid topics are: ${
-        validTopics ? validTopics.join(", ") : "none defined"
-      }`
+      `Invalid grade: ${grade}. Valid grades are: ${getEnabledGradeKeys().join(", ")}`
     );
   }
 
-  // Grade-specific prompt enhancement
-  if (grade === GRADES.G3) {
-    return enhance3rdGradePrompt(originalPrompt, topic);
-  } else if (grade === GRADES.G4) {
-    return enhance4thGradePrompt(originalPrompt, topic);
-  } else {
-    throw new Error(`Invalid grade: ${grade}. Valid grades are: ${GRADES.G3}, ${GRADES.G4}`);
+  const validTopics = topicNamesForGrade(grade);
+  if (!validTopics.includes(topic)) {
+    throw new Error(
+      `Invalid topic: ${topic} for ${gradeAdjective(grade)}. Valid topics are: ${validTopics.join(", ")}`
+    );
   }
+
+  return buildStoryPrompt(grade, topic, originalPrompt);
 };
 
-// 3rd grade prompt enhancement (existing logic)
-const enhance3rdGradePrompt = (originalPrompt, topic) => {
-  const enhancedPrompt = `You are a helpful math tutor for 3rd grade students. Please create a fun and educational story problem based ONLY on the topic "${topic}" for Math Whiz app users.
+const buildStoryPrompt = (gradeKey, topic, originalPrompt) => {
+  const grade = getGrade(gradeKey);
+  return `You are a helpful math tutor for ${grade.shortLabel} grade students. Please create a fun and educational story problem based ONLY on the topic "${topic}" for Math Whiz app users.
 
 Topic Guidelines:
-- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
-- Division: Focus on equal sharing, grouping, and the relationship with multiplication
-- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
-- Measurement & Data: Focus on area (length × width), perimeter (adding all sides), and volume (counting cubes or length × width × height)
+${topicGuidelineLines(gradeKey)}
 
 Requirements:
-- Keep the story age-appropriate for 3rd graders (ages 8-9)
-- Use fun, relatable scenarios (animals, food, toys, school, etc.)
-- Make the math problem clear and solvable
-- End with a clear question
-- Provide the answer on a new line in the format "Answer: [your answer]"
-- Keep the story to one paragraph
-- Use only topics and concepts appropriate for 3rd grade math
+${storyRequirementLines(gradeKey)}
 
 Original request: ${originalPrompt}
 
 Please create the story problem now:`;
-
-  return enhancedPrompt;
-};
-
-// 4th grade prompt enhancement (updated for current topics)
-const enhance4thGradePrompt = (originalPrompt, topic) => {
-  const enhancedPrompt = `You are a helpful math tutor for 4th grade students. Please create a fun and educational story problem based ONLY on the topic "${topic}" for Math Whiz app users.
-
-Topic Guidelines:
-- Operations & Algebraic Thinking: Focus on multiplicative comparisons ("3 times as many"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
-- Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships
-- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions
-- Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
-- Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
-
-Requirements:
-- Keep the story age-appropriate for 4th graders (ages 9-10)
-- Use engaging, realistic scenarios that connect to their experiences
-- Make the math problem clear and solvable using 4th grade methods
-- End with a clear question
-- Provide the answer on a new line in the format "Answer: [your answer]"
-- Keep the story to one paragraph
-- Use only topics and concepts appropriate for 4th grade math (Common Core 4th grade standards)
-
-Original request: ${originalPrompt}
-
-Please create the story problem now:`;
-
-  return enhancedPrompt;
 };
 
 exports.handler = async (event) => {
@@ -175,7 +145,7 @@ exports.handler = async (event) => {
       event.headers.authorization || event.headers.Authorization;
     const userId = await verifyAuthToken(authHeader);
 
-    const { prompt, topic, grade = GRADES.G3 } = JSON.parse(event.body);
+    const { prompt, topic, grade = getDefaultGradeKey() } = JSON.parse(event.body);
 
     if (!prompt) {
       return {
@@ -193,11 +163,11 @@ exports.handler = async (event) => {
       };
     }
 
-    if (![GRADES.G3, GRADES.G4].includes(grade)) {
+    if (!getEnabledGradeKeys().includes(grade)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: `Grade must be ${GRADES.G3} or ${GRADES.G4}` }),
+        body: JSON.stringify({ error: `Grade must be ${getEnabledGradeKeys().join(" or ")}` }),
       };
     }
 

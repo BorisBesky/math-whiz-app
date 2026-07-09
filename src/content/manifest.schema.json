@@ -58,6 +58,11 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "Single source of truth for the topic's subtopics (portal Focus modals, generators, AI prompts, validation)."
     },
+    "subtopicAliases": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "description": "Alternate subtopic labels mapped to their canonical subtopic (each value MUST be an entry of subtopics — enforced by the codegen). Used when normalizing AI- or teacher-supplied subtopic names, e.g. teacher-ai-focus-analysis."
+    },
     "objectives": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 },

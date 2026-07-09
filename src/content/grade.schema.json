@@ -53,9 +53,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "promptEnhancement": { "type": "string" }
+        "storyRequirements": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Bullet lines for the Requirements block of the story-problem prompt (gemini-proxy). Topic guidance comes from each topic manifest's ai.guidelines."
+        }
       },
-      "description": "Reserved for Phase 3: per-grade prompt text for gemini-proxy. Not populated until its consumer derives from manifests."
+      "description": "Per-grade AI prompt configuration."
     }
   }
 }
