@@ -1,0 +1,354 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`gemini-generate-questions TOPIC_GUIDELINES text is frozen 1`] = `
+Object {
+  "G3": "Topic Guidelines for 3rd Grade:
+- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
+- Division: Focus on equal sharing, grouping, and the relationship with multiplication
+- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
+- Measurement & Data: Focus on area (length x width), perimeter (adding all sides), and volume (counting cubes or length x width x height)",
+  "G4": "Topic Guidelines for 4th Grade:
+- Operations & Algebraic Thinking: Focus on multiplicative comparisons (\\"3 times as many\\"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
+- Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships, and decimal place value (identifying digits in tenths/hundredths/thousandths places, understanding the value of decimal digits, writing decimals in expanded form, the 10x relationship between adjacent decimal places). Note: decimal place value is about understanding positions/values, not about converting fractions to decimals or decimal arithmetic (those belong to Fractions 4th)
+- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions (including placing decimals on a number line), decimal operations (adding, subtracting, multiplying, and dividing decimals)
+- Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
+- Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
+- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.",
+}
+`;
+
+exports[`gemini-generate-questions buildPrompt for G3 is frozen 1`] = `
+"You are an expert math curriculum designer. Generate exactly 5 unique math questions for 3rd grade students on the topic \\"Multiplication\\".
+
+Topic Guidelines for 3rd Grade:
+- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
+- Division: Focus on equal sharing, grouping, and the relationship with multiplication
+- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
+- Measurement & Data: Focus on area (length x width), perimeter (adding all sides), and volume (counting cubes or length x width x height)
+
+Question types to generate: multiple-choice, numeric, fill-in-the-blanks
+Distribute questions roughly equally across the requested types.
+
+Rules for each question type:
+- \\"multiple-choice\\": Provide exactly 4 options in the \\"options\\" array. \\"correctAnswer\\" MUST be exactly one of the 4 options (character-for-character match).
+- \\"numeric\\": \\"correctAnswer\\" is the numeric answer as a string (e.g. \\"42\\"). \\"options\\" must be an empty array [].
+- \\"fill-in-the-blanks\\": Use \\"__\\" (double underscore) in the question text for each blank. \\"correctAnswer\\" uses \\" ;; \\" to separate answers for multiple blanks (e.g. \\"12 ;; 24\\"). Include an \\"inputTypes\\" array with one entry per blank, each being \\"numeric\\" or \\"mixed\\". \\"options\\" must be an empty array [].
+
+
+
+Requirements:
+- Questions must be age-appropriate for 3rd grade students
+- Vary difficulty from easy to challenging
+- Use diverse, engaging real-world scenarios
+- Each question must be unique and test different aspects of \\"Multiplication\\"
+- For multiple-choice, correctAnswer MUST be one of the 4 options (exact match)
+- All answers must be mathematically correct
+- Include a helpful \\"hint\\" for each question
+- Include the relevant Common Core \\"standard\\" code (e.g. \\"3.OA.C.7\\")
+- Include a brief \\"concept\\" label (e.g. \\"Multiplication Facts\\")
+
+Return ONLY a valid JSON array (no markdown code fences, no text before or after). Each element must have this exact structure:
+{
+  \\"question\\": \\"The question text here\\",
+  \\"topic\\": \\"Multiplication\\",
+  \\"grade\\": \\"G3\\",
+  \\"questionType\\": \\"one of: multiple-choice, numeric, fill-in-the-blanks\\",
+  \\"correctAnswer\\": \\"the correct answer\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"],
+  \\"inputTypes\\": [],
+  \\"hint\\": \\"A helpful hint\\",
+  \\"standard\\": \\"X.XX.X.X\\",
+  \\"concept\\": \\"Brief concept name\\"
+}
+
+Notes:
+- \\"options\\" is required for multiple-choice (exactly 4 items), empty array [] for other types
+- \\"inputTypes\\" is only needed for fill-in-the-blanks, empty array [] for other types
+- Do NOT include any fields other than those listed above
+- Generate exactly 5 questions"
+`;
+
+exports[`gemini-generate-questions buildPrompt for G4 is frozen 1`] = `
+"You are an expert math curriculum designer. Generate exactly 5 unique math questions for 4th grade students on the topic \\"Operations & Algebraic Thinking\\".
+
+Topic Guidelines for 4th Grade:
+- Operations & Algebraic Thinking: Focus on multiplicative comparisons (\\"3 times as many\\"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
+- Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships, and decimal place value (identifying digits in tenths/hundredths/thousandths places, understanding the value of decimal digits, writing decimals in expanded form, the 10x relationship between adjacent decimal places). Note: decimal place value is about understanding positions/values, not about converting fractions to decimals or decimal arithmetic (those belong to Fractions 4th)
+- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions (including placing decimals on a number line), decimal operations (adding, subtracting, multiplying, and dividing decimals)
+- Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
+- Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
+- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.
+
+Question types to generate: multiple-choice, numeric, fill-in-the-blanks
+Distribute questions roughly equally across the requested types.
+
+Rules for each question type:
+- \\"multiple-choice\\": Provide exactly 4 options in the \\"options\\" array. \\"correctAnswer\\" MUST be exactly one of the 4 options (character-for-character match).
+- \\"numeric\\": \\"correctAnswer\\" is the numeric answer as a string (e.g. \\"42\\"). \\"options\\" must be an empty array [].
+- \\"fill-in-the-blanks\\": Use \\"__\\" (double underscore) in the question text for each blank. \\"correctAnswer\\" uses \\" ;; \\" to separate answers for multiple blanks (e.g. \\"12 ;; 24\\"). Include an \\"inputTypes\\" array with one entry per blank, each being \\"numeric\\" or \\"mixed\\". \\"options\\" must be an empty array [].
+
+
+
+Requirements:
+- Questions must be age-appropriate for 4th grade students
+- Vary difficulty from easy to challenging
+- Use diverse, engaging real-world scenarios
+- Each question must be unique and test different aspects of \\"Operations & Algebraic Thinking\\"
+- For multiple-choice, correctAnswer MUST be one of the 4 options (exact match)
+- All answers must be mathematically correct
+- Include a helpful \\"hint\\" for each question
+- Include the relevant Common Core \\"standard\\" code (e.g. \\"3.OA.C.7\\")
+- Include a brief \\"concept\\" label (e.g. \\"Multiplication Facts\\")
+
+Return ONLY a valid JSON array (no markdown code fences, no text before or after). Each element must have this exact structure:
+{
+  \\"question\\": \\"The question text here\\",
+  \\"topic\\": \\"Operations & Algebraic Thinking\\",
+  \\"grade\\": \\"G4\\",
+  \\"questionType\\": \\"one of: multiple-choice, numeric, fill-in-the-blanks\\",
+  \\"correctAnswer\\": \\"the correct answer\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"],
+  \\"inputTypes\\": [],
+  \\"hint\\": \\"A helpful hint\\",
+  \\"standard\\": \\"X.XX.X.X\\",
+  \\"concept\\": \\"Brief concept name\\"
+}
+
+Notes:
+- \\"options\\" is required for multiple-choice (exactly 4 items), empty array [] for other types
+- \\"inputTypes\\" is only needed for fill-in-the-blanks, empty array [] for other types
+- Do NOT include any fields other than those listed above
+- Generate exactly 5 questions"
+`;
+
+exports[`gemini-generate-questions buildPrompt with additional instructions is frozen 1`] = `
+"You are an expert math curriculum designer. Generate exactly 3 unique math questions for 3rd grade students on the topic \\"Fractions\\".
+
+Topic Guidelines for 3rd Grade:
+- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
+- Division: Focus on equal sharing, grouping, and the relationship with multiplication
+- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
+- Measurement & Data: Focus on area (length x width), perimeter (adding all sides), and volume (counting cubes or length x width x height)
+
+Question types to generate: multiple-choice
+Distribute questions roughly equally across the requested types.
+
+Rules for each question type:
+- \\"multiple-choice\\": Provide exactly 4 options in the \\"options\\" array. \\"correctAnswer\\" MUST be exactly one of the 4 options (character-for-character match).
+
+
+Additional User Instructions:
+- Apply the following user instructions when generating questions: Use pizza examples.
+- You must still fully follow all topic guidelines, grade appropriateness, and JSON/schema requirements below.
+- If any user instruction conflicts with these core requirements, prioritize the core requirements.
+
+
+Requirements:
+- Questions must be age-appropriate for 3rd grade students
+- Vary difficulty from easy to challenging
+- Use diverse, engaging real-world scenarios
+- Each question must be unique and test different aspects of \\"Fractions\\"
+- For multiple-choice, correctAnswer MUST be one of the 4 options (exact match)
+- All answers must be mathematically correct
+- Include a helpful \\"hint\\" for each question
+- Include the relevant Common Core \\"standard\\" code (e.g. \\"3.OA.C.7\\")
+- Include a brief \\"concept\\" label (e.g. \\"Multiplication Facts\\")
+
+Return ONLY a valid JSON array (no markdown code fences, no text before or after). Each element must have this exact structure:
+{
+  \\"question\\": \\"The question text here\\",
+  \\"topic\\": \\"Fractions\\",
+  \\"grade\\": \\"G3\\",
+  \\"questionType\\": \\"one of: multiple-choice\\",
+  \\"correctAnswer\\": \\"the correct answer\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"],
+  \\"inputTypes\\": [],
+  \\"hint\\": \\"A helpful hint\\",
+  \\"standard\\": \\"X.XX.X.X\\",
+  \\"concept\\": \\"Brief concept name\\"
+}
+
+Notes:
+- \\"options\\" is required for multiple-choice (exactly 4 items), empty array [] for other types
+- \\"inputTypes\\" is only needed for fill-in-the-blanks, empty array [] for other types
+- Do NOT include any fields other than those listed above
+- Generate exactly 3 questions"
+`;
+
+exports[`gemini-proxy enhanced prompt for G3 is frozen 1`] = `
+"You are a helpful math tutor for 3rd grade students. Please create a fun and educational story problem based ONLY on the topic \\"Multiplication\\" for Math Whiz app users.
+
+Topic Guidelines:
+- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
+- Division: Focus on equal sharing, grouping, and the relationship with multiplication
+- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
+- Measurement & Data: Focus on area (length × width), perimeter (adding all sides), and volume (counting cubes or length × width × height)
+
+Requirements:
+- Keep the story age-appropriate for 3rd graders (ages 8-9)
+- Use fun, relatable scenarios (animals, food, toys, school, etc.)
+- Make the math problem clear and solvable
+- End with a clear question
+- Provide the answer on a new line in the format \\"Answer: [your answer]\\"
+- Keep the story to one paragraph
+- Use only topics and concepts appropriate for 3rd grade math
+
+Original request: Create a fun math story problem.
+
+Please create the story problem now:"
+`;
+
+exports[`gemini-proxy enhanced prompt for G4 is frozen 1`] = `
+"You are a helpful math tutor for 4th grade students. Please create a fun and educational story problem based ONLY on the topic \\"Geometry\\" for Math Whiz app users.
+
+Topic Guidelines:
+- Operations & Algebraic Thinking: Focus on multiplicative comparisons (\\"3 times as many\\"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
+- Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships
+- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions
+- Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
+- Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
+
+Requirements:
+- Keep the story age-appropriate for 4th graders (ages 9-10)
+- Use engaging, realistic scenarios that connect to their experiences
+- Make the math problem clear and solvable using 4th grade methods
+- End with a clear question
+- Provide the answer on a new line in the format \\"Answer: [your answer]\\"
+- Keep the story to one paragraph
+- Use only topics and concepts appropriate for 4th grade math (Common Core 4th grade standards)
+
+Original request: Create a fun math story problem.
+
+Please create the story problem now:"
+`;
+
+exports[`teacher-ai-focus-analysis buildPrompt with fixed inputs is frozen (embeds SUBTOPICS_BY_GRADE_TOPIC wholesale) 1`] = `
+"You are an elementary math instructional coach for Math Whiz. Analyze the aggregate student performance data below and recommend which topics and subtopics need additional focus to achieve mastery.
+
+Student context:
+{\\"grade\\":\\"G4\\",\\"startDate\\":\\"2026-06-01\\",\\"endDate\\":\\"2026-06-30\\"}
+
+Known curriculum subtopics:
+{\\"G3\\":{\\"Multiplication\\":[\\"basic multiplication\\",\\"skip counting\\",\\"arrays and groups\\",\\"word problems\\",\\"fact families\\"],\\"Division\\":[\\"basic division\\",\\"equal sharing\\",\\"grouping\\",\\"fact families\\",\\"remainders\\",\\"arrays\\"],\\"Fractions\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"simplification\\"],\\"Measurement & Data\\":[\\"area\\",\\"perimeter\\",\\"volume\\"]},\\"G4\\":{\\"Operations & Algebraic Thinking\\":[\\"multiplicative comparison\\",\\"prime vs composite\\",\\"factors\\",\\"multiples\\",\\"number patterns\\"],\\"Base Ten\\":[\\"place value\\",\\"rounding\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"division\\",\\"comparison\\",\\"decimal place value\\"],\\"Fractions 4th\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"decimal notation\\",\\"decimal operations\\",\\"mixed numbers\\",\\"decimal number line\\"],\\"Measurement & Data 4th\\":[\\"length conversion\\",\\"weight and capacity conversion\\",\\"time conversion\\",\\"clock reading\\",\\"area\\",\\"perimeter\\",\\"angles\\",\\"data interpretation\\",\\"line plots\\"],\\"Geometry\\":[\\"lines and angles\\",\\"points lines rays\\",\\"classify shapes\\",\\"symmetry\\",\\"triangles\\",\\"quadrilaterals\\",\\"angle measurement\\",\\"find missing side\\",\\"composite shapes\\",\\"rectangle to square\\",\\"photo collage\\"],\\"Binary Operations\\":[\\"binary to decimal conversion\\",\\"decimal to binary conversion\\",\\"binary addition\\",\\"binary subtraction\\",\\"binary multiplication\\",\\"binary division\\",\\"place value in binary\\",\\"comparing binary numbers\\"]}}
+
+Aggregate performance by topic/subtopic:
+{\\"Geometry\\":{\\"symmetry\\":{\\"attempts\\":4,\\"correct\\":1}}}
+
+Deterministic need ranking from the app:
+[{\\"topic\\":\\"Geometry\\",\\"subtopic\\":\\"symmetry\\",\\"need\\":0.9}]
+
+Areas with too little data:
+[{\\"topic\\":\\"Base Ten\\",\\"subtopic\\":\\"rounding\\"}]
+
+Recent missed-question samples:
+[{\\"topic\\":\\"Geometry\\",\\"subtopic\\":\\"symmetry\\",\\"question\\":\\"Which shape has a line of symmetry?\\"}]
+
+Return ONLY valid JSON with this exact object shape:
+{
+  \\"summary\\": \\"1-2 sentence teacher-facing summary\\",
+  \\"recommendations\\": [
+    {
+      \\"grade\\": \\"G3 or G4\\",
+      \\"topic\\": \\"exact topic name\\",
+      \\"subtopic\\": \\"exact subtopic name from Known curriculum subtopics, never Unspecified\\",
+      \\"reason\\": \\"short reason tied to the aggregate metrics\\",
+      \\"confidence\\": \\"high, medium, or low\\"
+    }
+  ],
+  \\"notEnoughData\\": [
+    {
+      \\"grade\\": \\"G3 or G4\\",
+      \\"topic\\": \\"exact topic name\\",
+      \\"subtopic\\": \\"exact subtopic name or Unspecified\\",
+      \\"note\\": \\"short note\\"
+    }
+  ]
+}
+
+Rules:
+- Recommend no more than 6 subtopics.
+- Do not recommend subtopics with 85%+ accuracy unless attempts are fewer than 3.
+- Use \\"notEnoughData\\" for areas where the student has fewer than 3 attempts.
+- Never invent topics or subtopics.
+- Do not include student names or personal data."
+`;
+
+exports[`upload-pdf-questions-background extraction prompt for G3 is frozen 1`] = `
+"You are an expert at extracting math quiz questions from PDF documents. 
+Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
+
+1. The question text
+2. Question type: (choose ONLY from these 6: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text')
+   - 'numeric': if the answer is a numeric value (e.g., \\"5.3\\", \\"-1.2\\", \\"0.001\\")
+   - 'fill-in-the-blanks': if the question has one or more blanks to fill in (e.g., \\"5 × ____ = 20\\" or \\"The product of ____ and ____ is 24\\")
+     * Use __ (two underscores) to indicate each blank in the question text
+     * Provide answers separated by ;; (double semicolons) in the correctAnswer field
+     * Example: question: \\"5 × ____ = ____\\", correctAnswer: \\"4 ;; 20\\"
+   - 'drawing': if the user has to draw or mark something on an existing graphic (e.g., \\"Draw an obtuse triangle\\", \\"Mark the point on the number line\\")
+   - 'write-in': if the user has to write a text explanation or show work (e.g., \\"Explain your reasoning\\", \\"Show how you solved this\\")
+   - 'drawing-with-text': if the user has to both draw/mark something AND write an explanation
+   - 'multiple-choice': all other questions with answer choices
+3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing', 'write-in', 'drawing-with-text')
+   - For 'drawing', 'write-in', and 'drawing-with-text' questions, you can provide an expected answer description in 'correctAnswer' or omit it.
+4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
+   - Must provide exactly 4 options for multiple-choice questions
+5. A helpful hint (if available)
+6. The math topic (choose ONLY from these Grade 3 topics: Multiplication, Division, Fractions, Measurement & Data)
+
+IMPORTANT: 
+- The topic MUST be one of these exact values: Multiplication, Division, Fractions, Measurement & Data
+- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
+- For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
+
+Return the results as a JSON array where each question has this structure:
+{
+  \\"question\\": \\"question text (use __ for blanks in fill-in-the-blanks)\\",
+  \\"questionType\\": \\"multiple-choice\\" | \\"numeric\\" | \\"drawing\\" | \\"fill-in-the-blanks\\" | \\"write-in\\" | \\"drawing-with-text\\",
+  \\"correctAnswer\\": \\"correct answer (use ;; to separate multiple answers for fill-in-the-blanks)\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"] (required for multiple-choice, empty array for others),
+  \\"hint\\": \\"helpful hint or explanation\\",
+  \\"topic\\": \\"topic name from the allowed list\\"
+}
+
+Extract ALL questions from the PDF. Be thorough and accurate."
+`;
+
+exports[`upload-pdf-questions-background extraction prompt for G4 is frozen 1`] = `
+"You are an expert at extracting math quiz questions from PDF documents. 
+Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
+
+1. The question text
+2. Question type: (choose ONLY from these 6: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text')
+   - 'numeric': if the answer is a numeric value (e.g., \\"5.3\\", \\"-1.2\\", \\"0.001\\")
+   - 'fill-in-the-blanks': if the question has one or more blanks to fill in (e.g., \\"5 × ____ = 20\\" or \\"The product of ____ and ____ is 24\\")
+     * Use __ (two underscores) to indicate each blank in the question text
+     * Provide answers separated by ;; (double semicolons) in the correctAnswer field
+     * Example: question: \\"5 × ____ = ____\\", correctAnswer: \\"4 ;; 20\\"
+   - 'drawing': if the user has to draw or mark something on an existing graphic (e.g., \\"Draw an obtuse triangle\\", \\"Mark the point on the number line\\")
+   - 'write-in': if the user has to write a text explanation or show work (e.g., \\"Explain your reasoning\\", \\"Show how you solved this\\")
+   - 'drawing-with-text': if the user has to both draw/mark something AND write an explanation
+   - 'multiple-choice': all other questions with answer choices
+3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing', 'write-in', 'drawing-with-text')
+   - For 'drawing', 'write-in', and 'drawing-with-text' questions, you can provide an expected answer description in 'correctAnswer' or omit it.
+4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
+   - Must provide exactly 4 options for multiple-choice questions
+5. A helpful hint (if available)
+6. The math topic (choose ONLY from these Grade 4 topics: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations)
+
+IMPORTANT: 
+- The topic MUST be one of these exact values: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations
+- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
+- For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
+
+Return the results as a JSON array where each question has this structure:
+{
+  \\"question\\": \\"question text (use __ for blanks in fill-in-the-blanks)\\",
+  \\"questionType\\": \\"multiple-choice\\" | \\"numeric\\" | \\"drawing\\" | \\"fill-in-the-blanks\\" | \\"write-in\\" | \\"drawing-with-text\\",
+  \\"correctAnswer\\": \\"correct answer (use ;; to separate multiple answers for fill-in-the-blanks)\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"] (required for multiple-choice, empty array for others),
+  \\"hint\\": \\"helpful hint or explanation\\",
+  \\"topic\\": \\"topic name from the allowed list\\"
+}
+
+Extract ALL questions from the PDF. Be thorough and accurate."
+`;

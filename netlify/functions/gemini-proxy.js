@@ -293,3 +293,8 @@ exports.handler = async (event) => {
     };
   }
 };
+
+// Exposed for characterization tests only (see src/__tests__/ai-prompt-snapshots.test.js)
+exports._test = {
+  validateAndEnhancePrompt,
+};
