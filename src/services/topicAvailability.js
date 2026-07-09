@@ -1,8 +1,10 @@
-import { DEFAULT_DAILY_GOAL, quizTopicsByGrade } from "../constants/appConstants";
+import { DEFAULT_DAILY_GOAL } from "../constants/appConstants";
+import { getDefaultGradeKey } from "../content/registry";
+import { getTopicsForGrade } from "../utils/common_utils";
 import { getTodayDateString, sanitizeTopicName } from "../utils/firebaseHelpers";
 
 // --- Helper function to check topic availability ---
-export const getTopicAvailability = (userData, selectedGrade = "G3") => {
+export const getTopicAvailability = (userData, selectedGrade = getDefaultGradeKey()) => {
   if (!userData)
     return {
       availableTopics: [],
@@ -12,8 +14,8 @@ export const getTopicAvailability = (userData, selectedGrade = "G3") => {
     };
 
   const today = getTodayDateString();
-  const currentTopics =
-    quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+  // Registry-backed; unknown grades fall back to the default grade's topics.
+  const currentTopics = getTopicsForGrade(selectedGrade);
 
 
   // Get goals and progress for the selected grade

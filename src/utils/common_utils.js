@@ -1,4 +1,6 @@
   /* global __app_id */
+  import { getDefaultGradeKey, getTopicNamesForGrade } from '../content/registry';
+
   const formatDate = (date) => {
     if (!date) return 'Never';
     try {
@@ -96,20 +98,15 @@
   };
 
   /**
-   * Returns the array of topic constants for a given grade.
-   * Replaces 4+ duplicated getTopicsForGrade functions across TeacherDashboard,
-   * StudentsSection, ClassDetailPanel, and MainApp.
+   * Returns the array of topic names for a given grade, from the content
+   * registry (single source: the topic manifests). Unknown grades fall back
+   * to the default grade's topics — a legacy behavior callers rely on.
    * @param {string} grade - The grade identifier (e.g., 'G3', 'G4')
    * @returns {string[]} Array of topic name strings for the grade
    */
   const getTopicsForGrade = (grade) => {
-    // Inline the mapping to avoid a circular dependency on shared-constants
-    // (shared-constants uses CommonJS, and this file uses ES modules)
-    const GRADE_TOPICS = {
-      G3: ['Multiplication', 'Division', 'Fractions', 'Measurement & Data'],
-      G4: ['Operations & Algebraic Thinking', 'Base Ten', 'Fractions 4th', 'Measurement & Data 4th', 'Geometry', 'Binary Operations'],
-    };
-    return GRADE_TOPICS[grade] || GRADE_TOPICS.G3;
+    const names = getTopicNamesForGrade(grade);
+    return names.length > 0 ? names : getTopicNamesForGrade(getDefaultGradeKey());
   };
 
   /**

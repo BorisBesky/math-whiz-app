@@ -14,8 +14,15 @@ import {
   GOAL_RANGE_MIN,
   GOAL_RANGE_MAX,
   GOAL_RANGE_STEP,
-  quizTopicsByGrade,
 } from "../constants/appConstants";
+import { getAllGrades, getDefaultGradeKey, getGrade } from "../content/registry";
+import { getTopicsForGrade } from "../utils/common_utils";
+
+// Legacy pre-grades data model: top-level dailyGoals mirrors G3 (see MainApp).
+const LEGACY_GRADE_KEY = "G3";
+
+// Active-pill colors cycle per grade position (G3 blue, G4 purple, ...).
+const GRADE_PILL_ACTIVE_CLASSES = ["bg-brand-blue", "bg-brand-purple"];
 
 const Dashboard = ({
   userData,
@@ -29,8 +36,10 @@ const Dashboard = ({
   const [attemptHistory, setAttemptHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const today = getTodayDateString();
-  const currentTopics =
-    quizTopicsByGrade[selectedGrade] || quizTopicsByGrade.G3;
+  const currentTopics = getTopicsForGrade(selectedGrade);
+  const gradeShort =
+    getGrade(selectedGrade)?.shortLabel ||
+    getGrade(getDefaultGradeKey())?.shortLabel;
 
   useEffect(() => {
     if (!user?.uid) return undefined;
@@ -84,11 +93,11 @@ const Dashboard = ({
     answeredQuestions.filter(
       (q) =>
         q.date === today &&
-        (q.grade === selectedGrade || (!q.grade && selectedGrade === "G3"))
+        (q.grade === selectedGrade || (!q.grade && selectedGrade === LEGACY_GRADE_KEY))
     ) || [];
   const totalQuestionsAnswered =
     answeredQuestions.filter(
-      (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
+      (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === LEGACY_GRADE_KEY)
     ).length || 0;
 
   // Calculate overall stats from actual answered questions
@@ -125,7 +134,7 @@ const Dashboard = ({
   // Complexity insights for the selected grade only
   const gradeFilteredHistory =
     answeredQuestions.filter(
-      (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === "G3")
+      (q) => q.grade === selectedGrade || (!q.grade && selectedGrade === LEGACY_GRADE_KEY)
     ) || [];
   const adaptedGradeHistory = adaptAnsweredHistory(
     gradeFilteredHistory,
@@ -163,8 +172,8 @@ const Dashboard = ({
       const updates = {};
       updates[`dailyGoalsByGrade.${selectedGrade}.${topic}`] = newGoal;
 
-      // Also update legacy dailyGoals if this is G3
-      if (selectedGrade === "G3") {
+      // Also update legacy dailyGoals if this is the legacy grade
+      if (selectedGrade === LEGACY_GRADE_KEY) {
         updates[`dailyGoals.${topic}`] = newGoal;
       }
 
@@ -175,7 +184,7 @@ const Dashboard = ({
   return (
     <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-card shadow-card border border-white/60 mt-16 animate-fade-in" data-tutorial-id="dashboard-container">
       <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 mb-5 text-center" data-tutorial-id="dashboard-title">
-        {selectedGrade === "G3" ? "3rd" : "4th"} Grade Progress
+        {gradeShort} Grade Progress
       </h2>
       {historyLoading && (
         <p className="text-center text-sm text-gray-500 mb-4">Loading progress history...</p>
@@ -184,26 +193,19 @@ const Dashboard = ({
       {/* Grade Selector */}
       <div className="mb-6 flex justify-center">
         <div className="inline-flex bg-gray-100 rounded-full p-1">
-          <button
-            onClick={() => setSelectedGrade("G3")}
-            className={`px-5 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 ${
-              selectedGrade === "G3"
-                ? "bg-brand-blue text-white shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            3rd Grade
-          </button>
-          <button
-            onClick={() => setSelectedGrade("G4")}
-            className={`px-5 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 ${
-              selectedGrade === "G4"
-                ? "bg-brand-purple text-white shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            4th Grade
-          </button>
+          {getAllGrades().map((grade, index) => (
+            <button
+              key={grade.key}
+              onClick={() => setSelectedGrade(grade.key)}
+              className={`px-5 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 ${
+                selectedGrade === grade.key
+                  ? `${GRADE_PILL_ACTIVE_CLASSES[index % GRADE_PILL_ACTIVE_CLASSES.length]} text-white shadow-sm`
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {grade.label}
+            </button>
+          ))}
         </div>
       </div>
 
