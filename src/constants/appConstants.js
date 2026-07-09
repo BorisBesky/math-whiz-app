@@ -1,5 +1,10 @@
 import { TOPICS } from "./topics";
-import { getAllGrades, getAllTopics, getTopicNamesForGrade } from "../content/registry";
+import {
+  getAllGrades,
+  getAllTopics,
+  getTopicNamesForGrade,
+  getTopicsForGrade,
+} from "../content/registry";
 
 export const DEFAULT_DAILY_GOAL = 4;
 export const DAILY_GOAL_BONUS = 10;
@@ -38,8 +43,11 @@ export const quizTopicsByGrade = Object.fromEntries(
 
 /**
  * @deprecated Query src/content/registry (getTopicContent) instead.
- * Kept as a derived alias while remaining imports migrate.
+ * Kept as a derived alias while remaining imports migrate. Enabled topics
+ * only, mirroring the student-facing curriculum.
  */
 export const TOPIC_CONTENT_MAP = Object.fromEntries(
-  getAllTopics().map((topic) => [topic.name, [topic.grade.toLowerCase(), topic.id]])
+  getAllGrades().flatMap((grade) =>
+    getTopicsForGrade(grade.key).map((topic) => [topic.name, [topic.grade.toLowerCase(), topic.id]])
+  )
 );

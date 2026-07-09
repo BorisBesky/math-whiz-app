@@ -119,8 +119,10 @@ const collectContent = () => {
       return manifest;
     });
 
-    if (topics.length === 0) {
-      errors.push(`${gradePath}: grade has no topic folders with a manifest.json`);
+    if (topics.length === 0 && grade.enabled) {
+      // A disabled grade may sit empty (freshly scaffolded, staging); an
+      // enabled one would render an empty student topic picker.
+      errors.push(`${gradePath}: enabled grade has no topic folders with a manifest.json`);
     }
 
     // Per-grade invariants
