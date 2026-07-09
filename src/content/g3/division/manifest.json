@@ -1,0 +1,33 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "division",
+  "name": "Division",
+  "grade": "G3",
+  "order": 2,
+  "description": "Understanding division through equal sharing, grouping, and fact families",
+  "standards": ["3.OA.A.2", "3.OA.A.3", "3.OA.B.6", "3.OA.C.7"],
+  "subtopics": [
+    "basic division",
+    "equal sharing",
+    "grouping",
+    "fact families",
+    "remainders",
+    "arrays"
+  ],
+  "objectives": [
+    "Understand division as equal sharing and grouping",
+    "Solve division problems using various strategies",
+    "Connect division to multiplication through fact families",
+    "Solve word problems involving division",
+    "Understand remainders in division",
+    "Use arrays to model division problems"
+  ],
+  "ui": { "icon": "÷", "theme": "purple" },
+  "ai": {
+    "guidelines": "Focus on equal sharing, grouping, and the relationship with multiplication"
+  },
+  "legacyExplanationHtml": "/divisionExplanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

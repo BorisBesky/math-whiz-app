@@ -1,0 +1,36 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "base-ten",
+  "name": "Base Ten",
+  "grade": "G4",
+  "order": 2,
+  "description": "Place value, rounding, and multi-digit operations",
+  "standards": ["4.NBT.A.1", "4.NBT.A.2", "4.NBT.A.3", "4.NBT.B.4", "4.NBT.B.5", "4.NBT.B.6", "4.NF.C.6"],
+  "subtopics": [
+    "place value",
+    "rounding",
+    "addition",
+    "subtraction",
+    "multiplication",
+    "division",
+    "comparison",
+    "decimal place value"
+  ],
+  "objectives": [
+    "Understand place value to 1,000,000",
+    "Compare and order multi-digit numbers",
+    "Round numbers to any place value",
+    "Add and subtract multi-digit numbers",
+    "Multiply and divide multi-digit numbers",
+    "Use number patterns and properties",
+    "Understand decimal place value for tenths, hundredths, and thousandths"
+  ],
+  "ui": { "icon": "🔢", "theme": "indigo" },
+  "ai": {
+    "guidelines": "Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships, and decimal place value (identifying digits in tenths/hundredths/thousandths places, understanding the value of decimal digits, writing decimals in expanded form, the 10x relationship between adjacent decimal places). Note: decimal place value is about understanding positions/values, not about converting fractions to decimals or decimal arithmetic (those belong to Fractions 4th)"
+  },
+  "legacyExplanationHtml": "/nbt4Explanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

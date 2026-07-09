@@ -1,7 +1,20 @@
 # Plan: Pluggable Content Modules (Topics & Grade Levels)
 
-Status: proposed (not yet implemented)
+Status: Phases 0–1 implemented on `feature/pluggable-content`; Phases 2+ pending.
 Author: drafted 2026-07-08
+
+Implementation notes vs. this plan:
+- Phase 1 deviation: `grade.json` does **not** yet carry `ai.promptEnhancement`
+  (the gemini-proxy per-grade text interpolates the topic, so the template
+  moves together with its consumer in Phase 3; the schema reserves the field).
+- Phase 1 deviation: there is deliberately **no `pretest` codegen hook** — CI
+  runs `npm test`, so regenerating before tests would mask stale committed
+  files. Freshness is enforced by `src/__tests__/content-registry-drift.test.js`;
+  `prestart`/`prebuild` keep local runs and deploys fresh.
+- Phase 1 went slightly further than written: `src/content/index.js` already
+  consumes `registry.generated.js` (the plan sketched that for Phase 2), so
+  the per-grade `index.js` registration files are gone — the folder is the
+  registration as of Phase 1.
 
 ## 1. Goal
 

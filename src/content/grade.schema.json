@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Math Whiz grade manifest",
+  "description": "Pure-data description of one grade level, stored as grade.json in the grade's content folder. The folder plus this file is what makes a grade exist (see docs/PLUGGABLE_CONTENT_PLAN.md). Validated by scripts/build-content-registry.js.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "key", "label", "shortLabel", "ordinal", "description", "default", "enabled"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "type": "string",
+      "pattern": "^g[0-9]+$",
+      "description": "Lowercase folder id (e.g. g4). Must equal the grade's folder name."
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^G[0-9]+$",
+      "description": "Storage key used in profiles.selectedGrade, classes.gradeLevel and question-bank docs. IMMUTABLE once published."
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Full label, e.g. \"4th Grade\"."
+    },
+    "shortLabel": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short label used inline in copy, e.g. \"4th\"."
+    },
+    "ordinal": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Numeric grade level. Drives sort order and grade normalization (matching the digit in values like \"Grade 4\")."
+    },
+    "description": { "type": "string" },
+    "default": {
+      "type": "boolean",
+      "description": "Grade new students start in. Exactly one enabled grade must set this to true."
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "false = grade is fully wired but invisible to users (safe staging for a new grade)."
+    },
+    "standards": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "description": "Grade-level Common Core standards by strand (informational)."
+    },
+    "ai": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "promptEnhancement": { "type": "string" }
+      },
+      "description": "Reserved for Phase 3: per-grade prompt text for gemini-proxy. Not populated until its consumer derives from manifests."
+    }
+  }
+}
