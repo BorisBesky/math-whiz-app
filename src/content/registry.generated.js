@@ -14,6 +14,8 @@ import g4Fractions from './g4/fractions';
 import g4MeasurementData from './g4/measurement-data';
 import g4Geometry from './g4/geometry';
 import g4BinaryOperations from './g4/binary-operations';
+import g4Algebra from './g4/algebra';
+import g5Grade from './g5/grade.json';
 
 export const grades = [
   {
@@ -22,7 +24,11 @@ export const grades = [
   },
   {
     manifest: g4Grade,
-    topics: [g4OperationsAlgebraicThinking, g4BaseTen, g4Fractions, g4MeasurementData, g4Geometry, g4BinaryOperations],
+    topics: [g4OperationsAlgebraicThinking, g4BaseTen, g4Fractions, g4MeasurementData, g4Geometry, g4BinaryOperations, g4Algebra],
+  },
+  {
+    manifest: g5Grade,
+    topics: [],
   },
 ];
 

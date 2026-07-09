@@ -1,7 +1,23 @@
 # Plan: Pluggable Content Modules (Topics & Grade Levels)
 
-Status: Phases 0–4 implemented on `feature/pluggable-content`; Phase 5 (pilots) pending.
+Status: Phases 0–5 implemented on `feature/pluggable-content`. Phase 6 (topic-id
+storage migration, per-class topic toggles) intentionally deferred.
 Author: drafted 2026-07-08
+
+Phase 5 outcome: the Algebra pilot (G4, `src/content/g4/algebra/`, staged with
+`enabled: false`) was built end-to-end through the documented workflow — five
+subtopic generator families (variables, evaluating expressions, one-step
+equations, input output tables, growing patterns), a real Explanation
+component, and correctness tests that decode the deterministic question
+formats and verify the math. The commit diff touched ONLY the content folders
+plus regenerated files, which was the acceptance criterion. Flip-check
+verified: with `enabled: true`, Algebra appears in VALID_TOPICS_BY_GRADE,
+SUBTOPICS_BY_GRADE_TOPIC, TOPICS.ALGEBRA, and all AI prompt guideline lines
+with zero code edits (enabling it for real additionally requires updating the
+Phase 0 characterization literals and the teacher-ai prompt snapshot in the
+same PR — that is the deliberate-change protocol working as designed). The
+staged G5 grade folder exists (`src/content/g5/grade.json`, disabled, empty);
+the codegen guardrail correctly rejects enabling a grade with no topics.
 
 Implementation notes vs. this plan:
 - Phase 1 deviation: `grade.json` does **not** yet carry `ai.promptEnhancement`

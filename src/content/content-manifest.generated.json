@@ -572,8 +572,70 @@
           "aliases": [],
           "enabled": true,
           "version": 1
+        },
+        {
+          "id": "algebra",
+          "name": "Algebra",
+          "grade": "G4",
+          "order": 7,
+          "description": "Pre-algebra foundations: variables, evaluating expressions, one-step equations, and patterns",
+          "standards": [
+            "4.OA.A.3",
+            "4.OA.C.5",
+            "5.OA.A.1",
+            "5.OA.A.2"
+          ],
+          "subtopics": [
+            "variables",
+            "evaluating expressions",
+            "one-step equations",
+            "input output tables",
+            "growing patterns"
+          ],
+          "objectives": [
+            "Understand that a letter can stand for an unknown number",
+            "Identify the variable in an expression or equation",
+            "Evaluate simple expressions for a given whole-number value",
+            "Solve one-step addition, subtraction, multiplication, and division equations",
+            "Apply a rule to find the output (or input) of a number machine",
+            "Extend growing number patterns and describe their rules"
+          ],
+          "ui": {
+            "icon": "ⓧ",
+            "theme": "violet"
+          },
+          "ai": {
+            "guidelines": "Focus on using a letter as a variable for an unknown number, evaluating simple expressions for a given whole-number value (like 3 × n + 2 when n = 4), solving one-step addition, subtraction, multiplication, and division equations, applying input-output rules, and extending growing number patterns. Keep numbers within 0-100 and all answers whole numbers."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": false,
+          "version": 1
         }
       ]
+    },
+    {
+      "id": "g5",
+      "key": "G5",
+      "label": "5th Grade",
+      "shortLabel": "5th",
+      "ordinal": 5,
+      "description": "5th Grade mathematics topics",
+      "default": false,
+      "enabled": false,
+      "ai": {
+        "storyRequirements": [
+          "- Keep the story age-appropriate for 5th graders",
+          "- Use engaging, realistic scenarios",
+          "- Make the math problem clear and solvable",
+          "- End with a clear question",
+          "- Provide the answer on a new line in the format \"Answer: [your answer]\"",
+          "- Keep the story to one paragraph",
+          "- Use only topics and concepts appropriate for 5th grade math"
+        ]
+      },
+      "standards": {},
+      "topics": []
     }
   ]
 }
