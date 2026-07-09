@@ -1,0 +1,23 @@
+{
+  "$schema": "../grade.schema.json",
+  "id": "g5",
+  "key": "G5",
+  "label": "5th Grade",
+  "shortLabel": "5th",
+  "ordinal": 5,
+  "description": "5th Grade mathematics topics",
+  "default": false,
+  "enabled": false,
+  "ai": {
+    "storyRequirements": [
+      "- Keep the story age-appropriate for 5th graders",
+      "- Use engaging, realistic scenarios",
+      "- Make the math problem clear and solvable",
+      "- End with a clear question",
+      "- Provide the answer on a new line in the format \"Answer: [your answer]\"",
+      "- Keep the story to one paragraph",
+      "- Use only topics and concepts appropriate for 5th grade math"
+    ]
+  },
+  "standards": {}
+}
