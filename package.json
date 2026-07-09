@@ -23,7 +23,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "generate:content": "node scripts/build-content-registry.js",
+    "prestart": "npm run generate:content",
     "start": "react-scripts start",
+    "prebuild": "npm run generate:content",
     "build": "react-scripts build && node scripts/inline-critical-css.js",
     "test": "react-scripts test",
     "test:coverage": "react-scripts test --coverage --watchAll=false",
@@ -91,6 +94,7 @@
   "devDependencies": {
     "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.56.1",
+    "ajv": "^8.20.0",
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.2.2",
     "eslint": "^8.57.1",

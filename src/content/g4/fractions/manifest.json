@@ -1,0 +1,39 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "fractions",
+  "name": "Fractions 4th",
+  "grade": "G4",
+  "order": 3,
+  "description": "Equivalent fractions, comparison, addition, subtraction, and decimal notation",
+  "standards": ["4.NF.A.1", "4.NF.A.2", "4.NF.B.3.a", "4.NF.B.3.b", "4.NF.B.4.a", "4.NF.C.5", "4.NF.C.6", "4.NF.C.7"],
+  "subtopics": [
+    "equivalent fractions",
+    "comparison",
+    "addition",
+    "subtraction",
+    "multiplication",
+    "decimal notation",
+    "decimal operations",
+    "mixed numbers",
+    "decimal number line"
+  ],
+  "objectives": [
+    "Understand equivalent fractions",
+    "Compare and order fractions",
+    "Add and subtract fractions with like denominators",
+    "Multiply fractions by whole numbers",
+    "Express fractions with denominators of 10 as decimals",
+    "Compare decimal notations for fractions",
+    "Add, subtract, multiply, and divide decimals",
+    "Solve word problems involving fractions",
+    "Locate and mark decimals on a number line"
+  ],
+  "ui": { "icon": "¾", "theme": "pink" },
+  "ai": {
+    "guidelines": "Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions (including placing decimals on a number line), decimal operations (adding, subtracting, multiplying, and dividing decimals)"
+  },
+  "legacyExplanationHtml": "/nf4Explanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

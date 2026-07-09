@@ -1,31 +1,40 @@
 // Shared constants that work with both ES modules and CommonJS
 // This file uses CommonJS format to be compatible with both environments
+//
+// Topic and grade data DERIVE from the generated content manifest — the
+// single source of truth is src/content/<grade>/<topic>/manifest.json plus
+// src/content/<grade>/grade.json (see docs/PLUGGABLE_CONTENT_PLAN.md).
+// Regenerate with: node scripts/build-content-registry.js
+// Export names and shapes are unchanged so existing consumers (client code
+// and Netlify functions alike) keep working.
 
-// Grade constants
-const GRADES = {
-  G3: 'G3',
-  G4: 'G4',
-};
+const contentManifest = require('../content/content-manifest.generated.json');
 
-// Core math topics
-const TOPICS = {
-  // 3rd Grade Topics
-  MULTIPLICATION: 'Multiplication',
-  DIVISION: 'Division',
-  FRACTIONS: 'Fractions',
-  MEASUREMENT_DATA: 'Measurement & Data',
+// Grades sorted by ordinal (guaranteed by the codegen)
+const contentGrades = contentManifest.grades;
+
+// Grade constants, e.g. { G3: 'G3', G4: 'G4' }
+const GRADES = {};
+contentGrades.forEach((grade) => {
+  GRADES[grade.key] = grade.key;
+});
+
+// 'Measurement & Data 4th' -> 'MEASUREMENT_DATA_4TH'
+const toConstantKey = (name) =>
+  name
+    .toUpperCase()
+    .replace(/&/g, ' ')
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+// Legacy concept labels that are NOT topics: historical explanation/concept
+// keys still present in student data and conceptExplanationFiles. They have
+// no manifest and never will.
+const LEGACY_CONCEPTS = {
   AREA: 'Area',
   PERIMETER: 'Perimeter',
   VOLUME: 'Volume',
-  
-  // 4th Grade Topics
-  OPERATIONS_ALGEBRAIC_THINKING: 'Operations & Algebraic Thinking',
-  BASE_TEN: 'Base Ten',
-  FRACTIONS_4TH: 'Fractions 4th',  // Note: Same as 3rd grade fractions
-  MEASUREMENT_DATA_4TH: 'Measurement & Data 4th',
-  GEOMETRY: 'Geometry',
-  BINARY_OPERATIONS: 'Binary Operations',
-  
+
   // Fraction subtopics
   FRACTIONS_ADDITION: 'Fractions: Addition',
   FRACTIONS_SIMPLIFICATION: 'Fractions: Simplification',
@@ -33,119 +42,31 @@ const TOPICS = {
   FRACTIONS_COMPARISON: 'Fractions: Comparison',
 };
 
-// Valid topics by grade (for gemini-proxy validation)
-const VALID_TOPICS_BY_GRADE = {
-  [GRADES.G3]: [
-    TOPICS.MULTIPLICATION,
-    TOPICS.DIVISION,
-    TOPICS.FRACTIONS,
-    TOPICS.MEASUREMENT_DATA,
-  ],
-  [GRADES.G4]: [
-    TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-    TOPICS.BASE_TEN,
-    TOPICS.FRACTIONS_4TH,
-    TOPICS.MEASUREMENT_DATA_4TH,
-    TOPICS.GEOMETRY,
-    TOPICS.BINARY_OPERATIONS,
-  ],
-};
+// Core math topics: derived constants like TOPICS.MULTIPLICATION plus the
+// legacy concept labels above.
+const TOPICS = {};
+contentGrades.forEach((grade) => {
+  grade.topics.forEach((topic) => {
+    TOPICS[toConstantKey(topic.name)] = topic.name;
+  });
+});
+Object.assign(TOPICS, LEGACY_CONCEPTS);
 
-const SUBTOPICS_BY_GRADE_TOPIC = {
-  [GRADES.G3]: {
-    [TOPICS.MULTIPLICATION]: [
-      'basic multiplication',
-      'skip counting',
-      'arrays and groups',
-      'word problems',
-      'fact families',
-    ],
-    [TOPICS.DIVISION]: [
-      'basic division',
-      'equal sharing',
-      'grouping',
-      'fact families',
-      'remainders',
-      'arrays',
-    ],
-    [TOPICS.FRACTIONS]: [
-      'equivalent fractions',
-      'comparison',
-      'addition',
-      'subtraction',
-      'simplification',
-    ],
-    [TOPICS.MEASUREMENT_DATA]: [
-      'area',
-      'perimeter',
-      'volume',
-    ],
-  },
-  [GRADES.G4]: {
-    [TOPICS.OPERATIONS_ALGEBRAIC_THINKING]: [
-      'multiplicative comparison',
-      'prime vs composite',
-      'factors',
-      'multiples',
-      'number patterns',
-    ],
-    [TOPICS.BASE_TEN]: [
-      'place value',
-      'rounding',
-      'addition',
-      'subtraction',
-      'multiplication',
-      'division',
-      'comparison',
-      'decimal place value',
-    ],
-    [TOPICS.FRACTIONS_4TH]: [
-      'equivalent fractions',
-      'comparison',
-      'addition',
-      'subtraction',
-      'multiplication',
-      'decimal notation',
-      'decimal operations',
-      'mixed numbers',
-      'decimal number line',
-    ],
-    [TOPICS.MEASUREMENT_DATA_4TH]: [
-      'length conversion',
-      'weight and capacity conversion',
-      'time conversion',
-      'clock reading',
-      'area',
-      'perimeter',
-      'angles',
-      'data interpretation',
-      'line plots',
-    ],
-    [TOPICS.GEOMETRY]: [
-      'lines and angles',
-      'points lines rays',
-      'classify shapes',
-      'symmetry',
-      'triangles',
-      'quadrilaterals',
-      'angle measurement',
-      'find missing side',
-      'composite shapes',
-      'rectangle to square',
-      'photo collage',
-    ],
-    [TOPICS.BINARY_OPERATIONS]: [
-      'binary to decimal conversion',
-      'decimal to binary conversion',
-      'binary addition',
-      'binary subtraction',
-      'binary multiplication',
-      'binary division',
-      'place value in binary',
-      'comparing binary numbers',
-    ],
-  },
-};
+// Valid topics by grade (for gemini-proxy validation and question imports).
+// Includes disabled (staged) topics on purpose: validation surfaces stay
+// permissive; student-facing lists filter on "enabled" instead.
+const VALID_TOPICS_BY_GRADE = {};
+contentGrades.forEach((grade) => {
+  VALID_TOPICS_BY_GRADE[grade.key] = grade.topics.map((topic) => topic.name);
+});
+
+const SUBTOPICS_BY_GRADE_TOPIC = {};
+contentGrades.forEach((grade) => {
+  SUBTOPICS_BY_GRADE_TOPIC[grade.key] = {};
+  grade.topics.forEach((topic) => {
+    SUBTOPICS_BY_GRADE_TOPIC[grade.key][topic.name] = topic.subtopics;
+  });
+});
 
 // Question type constants
 const QUESTION_TYPES = {

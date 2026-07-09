@@ -1,45 +1,12 @@
 // 4th Grade Geometry Topic Module
-// Heavy imports (questions.js, Explanation.js, shapes.js) are loaded on demand
+// Metadata lives in manifest.json; heavy imports (questions.js, Explanation.js,
+// shapes.js) load on demand when a quiz starts or an explanation opens.
+import manifest from './manifest.json';
 
 export const geometry = {
-  id: 'geometry',
-  name: 'Geometry',
-  description: 'Points, lines, angles, and classification of shapes',
-  grade: 'G4',
-  standards: ['4.G.A.1', '4.G.A.2', '4.G.A.3', '4.MD.A.3'],
-
-  // Lazy loaders — loaded on demand when quiz starts or explanation opens
+  ...manifest,
   loadGenerateQuestion: () => import('./questions').then(m => m.generateQuestion),
   loadExplanationComponent: () => import('./Explanation').then(m => m.default),
-  
-  // Topic metadata
-  subtopics: [
-    'lines and angles',
-    'points lines rays',
-    'classify shapes',
-    'symmetry',
-    'triangles',
-    'quadrilaterals',
-    'angle measurement',
-    'find missing side',
-    'composite shapes',
-    'rectangle to square',
-    'photo collage'
-  ],
-  
-  // Learning objectives
-  objectives: [
-    'Identify and draw points, lines, line segments, rays, and angles',
-    'Classify triangles by their sides and angles',
-    'Classify quadrilaterals by their properties',
-    'Identify lines of symmetry in shapes',
-    'Recognize parallel and perpendicular lines',
-    'Measure and classify angles (acute, right, obtuse, straight)',
-    'Find a missing side length given the area or perimeter of a square or rectangle',
-    'Find the area and perimeter of composite shapes built from squares and rectangles',
-    'Find the original area of a rectangle after it is transformed into a square',
-    'Find square photo side lengths in a rectangular collage using total area and a side-length ratio'
-  ]
 };
 
 export default geometry;

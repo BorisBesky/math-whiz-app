@@ -1,0 +1,31 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "operations-algebraic-thinking",
+  "name": "Operations & Algebraic Thinking",
+  "grade": "G4",
+  "order": 1,
+  "description": "Multiplicative comparisons, prime and composite numbers, factors and multiples",
+  "standards": ["4.OA.A.1", "4.OA.A.2", "4.OA.A.3", "4.OA.B.4", "4.OA.C.5"],
+  "subtopics": [
+    "multiplicative comparison",
+    "prime vs composite",
+    "factors",
+    "multiples",
+    "number patterns"
+  ],
+  "objectives": [
+    "Solve multiplicative comparison word problems",
+    "Identify prime and composite numbers",
+    "Find factors and multiples of whole numbers",
+    "Recognize and extend number patterns",
+    "Use mathematical reasoning and problem-solving strategies"
+  ],
+  "ui": { "icon": "🧮", "theme": "teal" },
+  "ai": {
+    "guidelines": "Focus on multiplicative comparisons (\"3 times as many\"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems"
+  },
+  "legacyExplanationHtml": "/oa4Explanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

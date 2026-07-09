@@ -149,13 +149,17 @@ describe('legacy explanation fallbacks', () => {
   // manifests without changing coverage.
   const TOPICS_WITHOUT_LEGACY_IFRAME = ['Measurement & Data'];
 
-  test('conceptExplanationFiles coverage matches the known exception list', () => {
-    for (const topicName of ALL_CANONICAL_TOPICS) {
-      if (TOPICS_WITHOUT_LEGACY_IFRAME.includes(topicName)) {
-        expect(conceptExplanationFiles[topicName]).toBeUndefined();
-      } else {
+  test('every topic outside the exception list has an iframe entry', () => {
+    ALL_CANONICAL_TOPICS
+      .filter((topicName) => !TOPICS_WITHOUT_LEGACY_IFRAME.includes(topicName))
+      .forEach((topicName) => {
         expect(conceptExplanationFiles[topicName]).toEqual(expect.stringMatching(/^\/.+\.html$/));
-      }
-    }
+      });
+  });
+
+  test('the known exceptions have no iframe entry', () => {
+    TOPICS_WITHOUT_LEGACY_IFRAME.forEach((topicName) => {
+      expect(conceptExplanationFiles[topicName]).toBeUndefined();
+    });
   });
 });

@@ -1,0 +1,38 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "measurement-data",
+  "name": "Measurement & Data 4th",
+  "grade": "G4",
+  "order": 4,
+  "description": "Unit conversions, area, perimeter, angles, and data representation",
+  "standards": ["4.MD.A.1", "4.MD.A.2", "4.MD.A.3", "4.MD.B.4", "4.MD.C.5", "4.MD.C.6", "4.MD.C.7"],
+  "subtopics": [
+    "length conversion",
+    "weight and capacity conversion",
+    "time conversion",
+    "clock reading",
+    "area",
+    "perimeter",
+    "angles",
+    "data interpretation",
+    "line plots"
+  ],
+  "objectives": [
+    "Convert between different units of measurement",
+    "Solve problems involving measurement and conversion",
+    "Read and interpret analog clocks",
+    "Find area and perimeter of rectangles",
+    "Understand angle measurement and classification",
+    "Create and interpret line plots",
+    "Solve problems using measurement data",
+    "Apply measurement concepts to real-world problems"
+  ],
+  "ui": { "icon": "📐", "theme": "orange" },
+  "ai": {
+    "guidelines": "Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement"
+  },
+  "legacyExplanationHtml": "/md4Explanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

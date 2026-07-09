@@ -1,0 +1,48 @@
+{
+  "$schema": "../grade.schema.json",
+  "id": "g4",
+  "key": "G4",
+  "label": "4th Grade",
+  "shortLabel": "4th",
+  "ordinal": 4,
+  "description": "Fourth grade mathematics topics",
+  "default": false,
+  "enabled": true,
+  "standards": {
+    "Operations & Algebraic Thinking": [
+      "4.OA.A.1",
+      "4.OA.A.2",
+      "4.OA.A.3",
+      "4.OA.B.4",
+      "4.OA.C.5"
+    ],
+    "Number & Operations in Base Ten": [
+      "4.NBT.A.1",
+      "4.NBT.A.2",
+      "4.NBT.A.3",
+      "4.NBT.B.4",
+      "4.NBT.B.5",
+      "4.NBT.B.6"
+    ],
+    "Number & Operations—Fractions": [
+      "4.NF.A.1",
+      "4.NF.A.2",
+      "4.NF.B.3",
+      "4.NF.B.4",
+      "4.NF.C.5",
+      "4.NF.C.6",
+      "4.NF.C.7"
+    ],
+    "Measurement & Data": [
+      "4.MD.A.1",
+      "4.MD.A.2",
+      "4.MD.A.3",
+      "4.MD.B.4",
+      "4.MD.C.5",
+      "4.MD.C.6",
+      "4.MD.C.7"
+    ],
+    "Geometry": ["4.G.A.1", "4.G.A.2", "4.G.A.3"],
+    "Binary Operations": ["4.NBT.A.1", "4.NBT.B.4", "4.NBT.B.5", "4.NBT.B.6", "4.OA.A.3"]
+  }
+}

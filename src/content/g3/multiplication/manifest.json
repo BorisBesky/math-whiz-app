@@ -1,0 +1,32 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "multiplication",
+  "name": "Multiplication",
+  "grade": "G3",
+  "order": 1,
+  "description": "Understanding multiplication through skip counting, arrays, and equal groups",
+  "standards": ["3.OA.A.1", "3.OA.A.3", "3.OA.B.5", "3.OA.C.7"],
+  "subtopics": [
+    "basic multiplication",
+    "skip counting",
+    "arrays and groups",
+    "word problems",
+    "fact families"
+  ],
+  "objectives": [
+    "Understand multiplication as repeated addition",
+    "Use skip counting to solve multiplication problems",
+    "Represent multiplication using arrays and groups",
+    "Solve word problems involving equal groups",
+    "Apply the commutative property of multiplication",
+    "Connect multiplication and division as inverse operations"
+  ],
+  "ui": { "icon": "✕", "theme": "blue" },
+  "ai": {
+    "guidelines": "Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)"
+  },
+  "legacyExplanationHtml": "/multiplicationExplanation.html",
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

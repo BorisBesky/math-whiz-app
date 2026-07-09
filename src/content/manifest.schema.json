@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Math Whiz topic manifest",
+  "description": "Pure-data description of one curriculum topic. Lives next to the topic's code as manifest.json and is the single source of truth for topic metadata (see docs/PLUGGABLE_CONTENT_PLAN.md). Validated by scripts/build-content-registry.js.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "grade",
+    "order",
+    "description",
+    "standards",
+    "subtopics",
+    "objectives",
+    "ui",
+    "ai",
+    "aliases",
+    "enabled",
+    "version"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case slug. Must equal the topic's folder name. Unique within its grade."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name AND Firestore storage key (daily goals, progress paths, question-bank docs, focus restrictions are all keyed by it). IMMUTABLE once published — renaming orphans student data. To change the label, set displayName and add the old spelling to aliases."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional UI label override. Defaults to name."
+    },
+    "grade": {
+      "type": "string",
+      "pattern": "^G[0-9]+$",
+      "description": "Grade key. Must equal the enclosing grade folder's grade.json key."
+    },
+    "order": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Display order within the grade (student topic picker, prompts, dropdowns). Unique per grade."
+    },
+    "description": { "type": "string", "minLength": 1 },
+    "standards": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Common Core standard codes covered by this topic."
+    },
+    "subtopics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Single source of truth for the topic's subtopics (portal Focus modals, generators, AI prompts, validation)."
+    },
+    "objectives": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Learning objectives (informational)."
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["icon", "theme"],
+      "properties": {
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Single glyph or emoji shown on the topic card."
+        },
+        "theme": {
+          "enum": [
+            "blue",
+            "purple",
+            "rose",
+            "amber",
+            "teal",
+            "indigo",
+            "pink",
+            "orange",
+            "emerald",
+            "cyan",
+            "violet",
+            "gray"
+          ],
+          "description": "Named color theme. Mapped to literal Tailwind class bundles in code (Phase 2: src/components/topicThemes.js) because Tailwind's JIT purges class strings it cannot see statically — never put raw class names in JSON."
+        }
+      }
+    },
+    "ai": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["guidelines"],
+      "properties": {
+        "guidelines": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One-line topic guideline embedded in AI question-generation prompts (gemini-generate-questions TOPIC_GUIDELINES). Wording changes alter live prompts — see the Phase 0 snapshots."
+        },
+        "focusGuidelines": {
+          "type": "string",
+          "description": "Optional extra guidance for teacher-ai-focus-analysis."
+        }
+      }
+    },
+    "legacyExplanationHtml": {
+      "type": ["string", "null"],
+      "pattern": "^/.+\\.html$",
+      "description": "Legacy iframe explanation under public/ used only when the React Explanation component is unavailable. null when the topic never had one."
+    },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Former names of this topic, used for normalized matching of old question-bank documents."
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "false = topic is fully wired but hidden from students (safe staging). Validation surfaces stay permissive for disabled topics."
+    },
+    "version": { "type": "integer", "minimum": 1 }
+  }
+}
