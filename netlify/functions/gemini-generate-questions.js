@@ -1,7 +1,14 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { admin, db } = require("./firebase-admin");
-const { GRADES, VALID_TOPICS_BY_GRADE, QUESTION_TYPES } = require("./constants");
+const { QUESTION_TYPES } = require("./constants");
 const { generateContentWithRetry } = require("./retry-utils");
+const {
+  getEnabledGradeKeys,
+  getGrade,
+  gradeAdjective,
+  topicGuidelineLines,
+  topicNamesForGrade,
+} = require("./content-registry");
 
 // Allowed question types for generation (exclude AI-evaluated types)
 const GENERATABLE_TYPES = [
@@ -103,25 +110,19 @@ const extractJsonCandidate = (text) => {
   return text;
 };
 
-// Grade-specific topic guidelines
-const TOPIC_GUIDELINES = {
-  [GRADES.G3]: `Topic Guidelines for 3rd Grade:
-- Multiplication: Focus on repeated addition, groups, arrays, and skip counting (2-12 times tables)
-- Division: Focus on equal sharing, grouping, and the relationship with multiplication
-- Fractions: Focus on parts of a whole, equivalent fractions, comparing fractions, and simple addition/subtraction
-- Measurement & Data: Focus on area (length x width), perimeter (adding all sides), and volume (counting cubes or length x width x height)`,
-  [GRADES.G4]: `Topic Guidelines for 4th Grade:
-- Operations & Algebraic Thinking: Focus on multiplicative comparisons ("3 times as many"), prime/composite numbers, factors and multiples, number patterns, multi-step word problems
-- Base Ten: Focus on place value to 1,000,000, rounding to any place, multi-digit addition/subtraction/multiplication, division with remainders, understanding place value relationships, and decimal place value (identifying digits in tenths/hundredths/thousandths places, understanding the value of decimal digits, writing decimals in expanded form, the 10x relationship between adjacent decimal places). Note: decimal place value is about understanding positions/values, not about converting fractions to decimals or decimal arithmetic (those belong to Fractions 4th)
-- Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions (including placing decimals on a number line), decimal operations (adding, subtracting, multiplying, and dividing decimals)
-- Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
-- Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
-- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.`,
-};
+// Grade-specific topic guidelines, assembled from each topic manifest's
+// ai.guidelines (src/content/<grade>/<topic>/manifest.json). Frozen by the
+// prompt snapshot tests.
+const TOPIC_GUIDELINES = Object.fromEntries(
+  getEnabledGradeKeys().map((gradeKey) => [
+    gradeKey,
+    `Topic Guidelines for ${getGrade(gradeKey).shortLabel} Grade:\n${topicGuidelineLines(gradeKey)}`,
+  ])
+);
 
 // Build the Gemini prompt
 const buildPrompt = (grade, topic, questionTypes, count, additionalInstructions = "") => {
-  const gradeLabel = grade === GRADES.G3 ? "3rd grade" : "4th grade";
+  const gradeLabel = gradeAdjective(grade);
   const typeInstructions = questionTypes.map((type) => {
     switch (type) {
       case QUESTION_TYPES.MULTIPLE_CHOICE:
@@ -275,15 +276,15 @@ exports.handler = async (event) => {
     const { grade, topic, questionTypes, count, appId, additionalInstructions } = JSON.parse(event.body);
 
     // Validate inputs
-    if (!grade || ![GRADES.G3, GRADES.G4].includes(grade)) {
+    if (!grade || !getEnabledGradeKeys().includes(grade)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: `Grade must be ${GRADES.G3} or ${GRADES.G4}` }),
+        body: JSON.stringify({ error: `Grade must be ${getEnabledGradeKeys().join(" or ")}` }),
       };
     }
 
-    const validTopics = VALID_TOPICS_BY_GRADE[grade];
+    const validTopics = topicNamesForGrade(grade);
     if (!topic || !validTopics.includes(topic)) {
       return {
         statusCode: 400,

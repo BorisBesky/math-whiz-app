@@ -8,6 +8,17 @@
   "description": "Fourth grade mathematics topics",
   "default": false,
   "enabled": true,
+  "ai": {
+    "storyRequirements": [
+      "- Keep the story age-appropriate for 4th graders (ages 9-10)",
+      "- Use engaging, realistic scenarios that connect to their experiences",
+      "- Make the math problem clear and solvable using 4th grade methods",
+      "- End with a clear question",
+      "- Provide the answer on a new line in the format \"Answer: [your answer]\"",
+      "- Keep the story to one paragraph",
+      "- Use only topics and concepts appropriate for 4th grade math (Common Core 4th grade standards)"
+    ]
+  },
   "standards": {
     "Operations & Algebraic Thinking": [
       "4.OA.A.1",

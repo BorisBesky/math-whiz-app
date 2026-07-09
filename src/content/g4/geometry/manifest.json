@@ -19,6 +19,11 @@
     "rectangle to square",
     "photo collage"
   ],
+  "subtopicAliases": {
+    "line symmetry": "symmetry",
+    "triangle classification": "triangles",
+    "quadrilateral properties": "quadrilaterals"
+  },
   "objectives": [
     "Identify and draw points, lines, line segments, rays, and angles",
     "Classify triangles by their sides and angles",

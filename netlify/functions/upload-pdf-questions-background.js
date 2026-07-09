@@ -1,6 +1,10 @@
 const { admin, db } = require("./firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { GRADES, VALID_TOPICS_BY_GRADE } = require("./constants");
+const {
+  getDefaultGradeKey,
+  getGrade,
+  topicNamesForGrade,
+} = require("./content-registry");
 const Busboy = require("busboy");
 const {
   getErrorSummary,
@@ -274,11 +278,11 @@ const parseMultipartFormData = (event) => {
 // Builds the Gemini prompt for extracting questions from an uploaded PDF.
 // Pure function of the grade so tests can freeze the prompt text.
 const buildExtractionPrompt = (grade) => {
-  // Get grade-specific topics for the prompt
-  const gradeTopics =
-    VALID_TOPICS_BY_GRADE[grade] || VALID_TOPICS_BY_GRADE[GRADES.G3];
-  const topicsListForPrompt = gradeTopics.join(", ");
-  const gradeLabel = grade === GRADES.G4 ? "Grade 4" : "Grade 3";
+  // Grade-specific topics for the prompt; unknown grades fall back to the
+  // default grade (historical behavior)
+  const gradeInfo = getGrade(grade) || getGrade(getDefaultGradeKey());
+  const topicsListForPrompt = topicNamesForGrade(gradeInfo.key).join(", ");
+  const gradeLabel = `Grade ${gradeInfo.ordinal}`;
 
   return `You are an expert at extracting math quiz questions from PDF documents. 
 Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
@@ -459,7 +463,7 @@ exports.handler = async (event) => {
 
     const appId = fields.appId || "default-app-id";
     const classId = fields.classId || null; // Optional: can be null for global question bank
-    const grade = fields.grade || GRADES.G3; // Default to Grade 3 if not specified
+    const grade = fields.grade || getDefaultGradeKey(); // Default grade if not specified
     const providedJobId = sanitizeJobId(fields.jobId, userId);
 
     // Verify teacher role
@@ -841,9 +845,11 @@ async function processPDFAsync(
         );
       }
 
-      // Validate topic against grade-specific topics
-      const validTopics =
-        VALID_TOPICS_BY_GRADE[grade] || VALID_TOPICS_BY_GRADE[GRADES.G3];
+      // Validate topic against grade-specific topics (unknown grades fall
+      // back to the default grade, matching the extraction prompt)
+      const validTopics = topicNamesForGrade(
+        getGrade(grade) ? grade : getDefaultGradeKey()
+      );
       let questionTopic = q.topic || validTopics[0]; // Default to first topic if not specified
 
       // Check if the provided topic is valid for this grade

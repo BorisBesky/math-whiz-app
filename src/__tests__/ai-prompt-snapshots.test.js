@@ -90,19 +90,18 @@ describe('gemini-proxy', () => {
     );
   });
 
-  test('unknown grade falls into the invalid-topic path with a "4th grade" label (legacy quirk)', () => {
-    // grade !== 'G3' makes the label ternary print "4th grade" even for G5,
-    // and the missing topic list renders as "none defined". Frozen so Phase 3
-    // reproduces it (or changes it consciously).
+  test('unknown grade gets an invalid-grade error listing the enabled grades', () => {
+    // Phase 3 conscious change: the legacy quirk labeled unknown grades
+    // "4th grade" and reported "none defined" topics. Grades are now
+    // validated first (this path was already unreachable in production —
+    // the handler pre-validates the grade).
     let message;
     try {
       validateAndEnhancePrompt('p', 'Multiplication', 'G5');
     } catch (err) {
       message = err.message;
     }
-    expect(message).toBe(
-      'Invalid topic: Multiplication for 4th grade. Valid topics are: none defined'
-    );
+    expect(message).toBe('Invalid grade: G5. Valid grades are: G3, G4');
   });
 });
 

@@ -4,10 +4,15 @@ const fetch = require("node-fetch");
 const { generateContentWithRetry } = require("./retry-utils");
 const { isTeacherOnClass } = require("./class-helpers");
 const {
-  GRADES,
   VALID_TOPICS_BY_GRADE,
   SUBTOPICS_BY_GRADE_TOPIC,
 } = require("../../src/constants/shared-constants.js");
+const {
+  getDefaultGradeKey,
+  getEnabledGradeKeys,
+  inferGradeForTopic: registryInferGradeForTopic,
+  subtopicAliasesFor,
+} = require("./content-registry");
 
 const MODES = new Set(["get", "suggest", "update", "delete", "apply"]);
 const UNSPECIFIED_SUBTOPIC = "Unspecified";
@@ -41,28 +46,10 @@ const normalizeDate = (value) => {
   return dateString.split("T")[0];
 };
 
-const inferGradeForTopic = (topic, fallbackGrade = GRADES.G3) => {
-  if (VALID_TOPICS_BY_GRADE[GRADES.G3].includes(topic)) return GRADES.G3;
-  if (VALID_TOPICS_BY_GRADE[GRADES.G4].includes(topic)) return GRADES.G4;
-  return fallbackGrade;
-};
+const inferGradeForTopic = (topic, fallbackGrade = getDefaultGradeKey()) =>
+  registryInferGradeForTopic(topic, fallbackGrade);
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
-
-const SUBTOPIC_ALIASES = {
-  [GRADES.G4]: {
-    Geometry: {
-      "line symmetry": "symmetry",
-      "triangle classification": "triangles",
-      "quadrilateral properties": "quadrilaterals",
-    },
-    "Base Ten": {
-      "addition word problems": "addition",
-      "subtraction word problems": "subtraction",
-      "long division with remainder": "division",
-    },
-  },
-};
 
 const normalizeSubtopicForTopic = (grade, topic, subtopic) => {
   const raw = String(subtopic || "").trim();
@@ -72,7 +59,9 @@ const normalizeSubtopicForTopic = (grade, topic, subtopic) => {
   const direct = valid.find((item) => normalizeText(item) === normalizeText(raw));
   if (direct) return direct;
 
-  const alias = SUBTOPIC_ALIASES[grade]?.[topic]?.[raw] || SUBTOPIC_ALIASES[grade]?.[topic]?.[normalizeText(raw)];
+  // Alternate labels declared in the topic manifest (subtopicAliases)
+  const aliases = subtopicAliasesFor(grade, topic);
+  const alias = aliases[raw] || aliases[normalizeText(raw)];
   if (alias) return alias;
 
   return UNSPECIFIED_SUBTOPIC;
@@ -225,7 +214,7 @@ const aggregateQuestions = (questions, { startDate, endDate, fallbackGrade }) =>
 
   inRange.forEach((question) => {
     const topic = question.topic || "Unknown";
-    const grade = [GRADES.G3, GRADES.G4].includes(question.grade)
+    const grade = getEnabledGradeKeys().includes(question.grade)
       ? question.grade
       : inferGradeForTopic(topic, fallbackGrade);
     if (!VALID_TOPICS_BY_GRADE[grade]?.includes(topic)) return;
@@ -381,7 +370,7 @@ Return ONLY valid JSON with this exact object shape:
   "summary": "1-2 sentence teacher-facing summary",
   "recommendations": [
     {
-      "grade": "G3 or G4",
+      "grade": "${getEnabledGradeKeys().join(' or ')}",
       "topic": "exact topic name",
       "subtopic": "exact subtopic name from Known curriculum subtopics, never Unspecified",
       "reason": "short reason tied to the aggregate metrics",
@@ -390,7 +379,7 @@ Return ONLY valid JSON with this exact object shape:
   ],
   "notEnoughData": [
     {
-      "grade": "G3 or G4",
+      "grade": "${getEnabledGradeKeys().join(' or ')}",
       "topic": "exact topic name",
       "subtopic": "exact subtopic name or Unspecified",
       "note": "short note"
@@ -413,7 +402,7 @@ const validateAnalysis = (parsed, aggregate) => {
   const seen = new Set();
 
   rawRecommendations.forEach((item) => {
-    const grade = [GRADES.G3, GRADES.G4].includes(item?.grade)
+    const grade = getEnabledGradeKeys().includes(item?.grade)
       ? item.grade
       : inferGradeForTopic(item?.topic);
     const topic = item?.topic;
@@ -443,7 +432,7 @@ const validateAnalysis = (parsed, aggregate) => {
   const validatedNotEnoughData = Array.isArray(parsed?.notEnoughData) && parsed.notEnoughData.length > 0
     ? parsed.notEnoughData.slice(0, 8).reduce((items, item) => {
         const topic = item?.topic;
-        const grade = [GRADES.G3, GRADES.G4].includes(item?.grade)
+        const grade = getEnabledGradeKeys().includes(item?.grade)
           ? item.grade
           : inferGradeForTopic(topic);
         const validTopic = VALID_TOPICS_BY_GRADE[grade]?.includes(topic);
@@ -634,7 +623,7 @@ const processTeacherAiFocusSuggestion = async ({
   const aggregate = aggregateQuestions(questionHistory, {
     startDate,
     endDate,
-    fallbackGrade: studentData.selectedGrade || studentData.grade || GRADES.G3,
+    fallbackGrade: studentData.selectedGrade || studentData.grade || getDefaultGradeKey(),
   });
 
   if (aggregate.questionsInRange.length === 0) {

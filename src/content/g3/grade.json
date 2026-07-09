@@ -8,6 +8,17 @@
   "description": "Third grade mathematics topics",
   "default": true,
   "enabled": true,
+  "ai": {
+    "storyRequirements": [
+      "- Keep the story age-appropriate for 3rd graders (ages 8-9)",
+      "- Use fun, relatable scenarios (animals, food, toys, school, etc.)",
+      "- Make the math problem clear and solvable",
+      "- End with a clear question",
+      "- Provide the answer on a new line in the format \"Answer: [your answer]\"",
+      "- Keep the story to one paragraph",
+      "- Use only topics and concepts appropriate for 3rd grade math"
+    ]
+  },
   "standards": {
     "Operations & Algebraic Thinking": [
       "3.OA.A.1",
