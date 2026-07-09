@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Target, Loader2, AlertCircle } from 'lucide-react';
 import ModalWrapper from '../ui/ModalWrapper';
 import { getTopicsForGrade } from '../../utils/common_utils';
+import { getAllGrades, getDefaultGradeKey } from '../../content/registry';
 
 const DEFAULT_TARGET = 4;
 
@@ -24,7 +25,7 @@ const buildInitialTargets = (grade, existingTargets) => {
 const GoalsModal = ({
   isOpen,
   onClose,
-  initialGrade = 'G3',
+  initialGrade = getDefaultGradeKey(),
   initialTargets,
   studentCount = 1,
   onSave,
@@ -149,7 +150,7 @@ const GoalsModal = ({
               Grade
             </label>
             <div className="inline-flex rounded-button border border-gray-200 bg-gray-50 p-1" role="tablist">
-              {['G3', 'G4'].map((g) => (
+              {getAllGrades().map(({ key: g, label }) => (
                 <button
                   key={g}
                   type="button"
@@ -162,7 +163,7 @@ const GoalsModal = ({
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {g === 'G3' ? '3rd Grade' : '4th Grade'}
+                  {label}
                 </button>
               ))}
             </div>

@@ -38,6 +38,7 @@ import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, formatTime, normalizeDate, getTopicsForGrade, calculateTopicProgressForRange, getTodayDateString, getAppId } from '../utils/common_utils';
 import { useSearchParams } from 'react-router-dom';
+import { getAllGrades, getDefaultGradeKey } from '../content/registry';
 
 const TeacherDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,7 +60,7 @@ const TeacherDashboard = () => {
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [isSelectAll, setIsSelectAll] = useState(false);
-  const [goalGrade, setGoalGrade] = useState('G3');
+  const [goalGrade, setGoalGrade] = useState(getDefaultGradeKey());
   const [goalTargets, setGoalTargets] = useState({});
   const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [uploadClassId, setUploadClassId] = useState(null);
@@ -173,7 +174,7 @@ const TeacherDashboard = () => {
         return {
           id: data.id,
           email: data.email || null,
-          selectedGrade: data.selectedGrade || 'G3',
+          selectedGrade: data.selectedGrade || getDefaultGradeKey(),
           coins: data.coins || 0,
           class: className,
           classId: data.classId,
@@ -480,7 +481,7 @@ const TeacherDashboard = () => {
   };
 
   const openGoalsModalForStudent = (student) => {
-    const grade = student.selectedGrade || 'G3';
+    const grade = student.selectedGrade || getDefaultGradeKey();
     const topics = getTopicsForGrade(grade);
     const current = {};
     topics.forEach(t => {
@@ -494,7 +495,7 @@ const TeacherDashboard = () => {
 
   const openGoalsModalForSelected = () => {
     const ids = Array.from(selectedStudents);
-    const grade = 'G3';
+    const grade = getDefaultGradeKey();
     const topics = getTopicsForGrade(grade);
     const current = {};
     topics.forEach(t => { current[t] = 4; });
@@ -1353,77 +1354,43 @@ const TeacherDashboard = () => {
                 </div>
               </div>
 
-              {/* Grade 3 Progress */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                  <Target className="w-4 h-4 mr-2" />
-                  Grade 3 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
-                </h4>
-                <div className="space-y-3">
-                  {calculateTopicProgressForRange(selectedStudent, 'G3', startDate, endDate).map(topic => (
-                    <div key={topic.topic} className="flex flex-col">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600">{topic.topic}</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-500">
-                            {topic.averageCorrect}/{topic.goal}
-                            {topic.activeDays > 1 && (
-                              <span className="text-xs text-gray-400 ml-1">
-                                ({topic.activeDays}d)
-                              </span>
+              {/* Per-grade progress panels (one per enabled grade) */}
+              {getAllGrades().map((grade) => (
+                <div key={grade.key} className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <Target className="w-4 h-4 mr-2" />
+                    Grade {grade.ordinal} Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
+                  </h4>
+                  <div className="space-y-3">
+                    {calculateTopicProgressForRange(selectedStudent, grade.key, startDate, endDate).map(topic => (
+                      <div key={topic.topic} className="flex flex-col">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">
+                              {topic.averageCorrect}/{topic.goal}
+                              {topic.activeDays > 1 && (
+                                <span className="text-xs text-gray-400 ml-1">
+                                  ({topic.activeDays}d)
+                                </span>
+                              )}
+                            </span>
+                            {topic.completed && (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
                             )}
-                          </span>
-                          {topic.completed && (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                          )}
+                          </div>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
+                            style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
+                          ></div>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Grade 4 Progress */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                  <Target className="w-4 h-4 mr-2" />
-                  Grade 4 Progress {startDate === endDate ? `(for ${formatDate(startDate)})` : `(from ${formatDate(startDate)} to ${formatDate(endDate)})`}
-                </h4>
-                <div className="space-y-3">
-                  {calculateTopicProgressForRange(selectedStudent, 'G4', startDate, endDate).map(topic => (
-                    <div key={topic.topic} className="flex flex-col">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-500">
-                            {topic.averageCorrect}/{topic.goal}
-                            {topic.activeDays > 1 && (
-                              <span className="text-xs text-gray-400 ml-1">
-                                ({topic.activeDays}d)
-                              </span>
-                            )}
-                          </span>
-                          {topic.completed && (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                          style={{ width: `${Math.min((topic.averageCorrect / topic.goal) * 100, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
 
             {/* Questions by Date Range */}
@@ -1577,8 +1544,9 @@ const TeacherDashboard = () => {
                 onChange={(e) => handleGoalGradeChange(e.target.value)}
                 className="border rounded px-2 py-1"
               >
-                <option value="G3">G3</option>
-                <option value="G4">G4</option>
+                {getAllGrades().map((grade) => (
+                  <option key={grade.key} value={grade.key}>{grade.key}</option>
+                ))}
               </select>
               <span className="text-sm text-gray-500">Applying to {goalStudentIds.length} student(s)</span>
             </div>

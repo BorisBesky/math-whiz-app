@@ -11,6 +11,7 @@ import { db } from '../firebase';
 import { getUserAttemptsCollectionRef, getUserDocRef } from "../utils/firebaseHelpers";
 import { getCachedClassQuestions, setCachedClassQuestions } from "../utils/questionCache";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
+import { gradeWordPattern, normalizeGradeKey } from "../content/registry";
 
 export const isLikelyOfflineError = (error) => {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -123,18 +124,20 @@ export const getAnsweredQuestionBankQuestions = async (userId) => {
 
 const normalizeGradeValue = (gradeValue) => {
   if (!gradeValue) return '';
-  const normalized = String(gradeValue).trim().toUpperCase();
-  if (normalized === 'G3' || normalized.includes('3')) return 'G3';
-  if (normalized === 'G4' || normalized.includes('4')) return 'G4';
-  return normalized;
+  // Registry-backed key matching; unknown values pass through uppercased
+  // (historical behavior for free-form grade strings on bank questions).
+  return normalizeGradeKey(gradeValue) || String(gradeValue).trim().toUpperCase();
 };
+
+// Grade vocabulary ('3rd', 'grade 4', 'g4', ...) derived from the registry.
+const GRADE_WORD_REGEX = new RegExp(gradeWordPattern(), 'g');
 
 const normalizeTopicValue = (topicValue) => (
   String(topicValue || '')
     .trim()
     .toLowerCase()
     .replace(/&/g, 'and')
-    .replace(/\b(3rd|4th|grade\s*[34]|g[34])\b/g, '')
+    .replace(GRADE_WORD_REGEX, '')
     .replace(/[^a-z0-9]+/g, '')
 );
 

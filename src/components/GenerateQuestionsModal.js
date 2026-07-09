@@ -2,7 +2,8 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Sparkles, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import ModalWrapper from './ui/ModalWrapper';
 import { getAuth } from 'firebase/auth';
-import { GRADES, VALID_TOPICS_BY_GRADE, QUESTION_TYPES } from '../constants/topics';
+import { VALID_TOPICS_BY_GRADE, QUESTION_TYPES } from '../constants/topics';
+import { getAllGrades, getDefaultGradeKey } from '../content/registry';
 
 const BATCH_SIZE = 25;
 const MAX_QUESTIONS = 15;
@@ -16,7 +17,7 @@ const GENERATABLE_TYPES = [
 ];
 
 const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
-  const [grade, setGrade] = useState(GRADES.G3);
+  const [grade, setGrade] = useState(getDefaultGradeKey());
   const [topic, setTopic] = useState('');
   const [questionTypes, setQuestionTypes] = useState([QUESTION_TYPES.MULTIPLE_CHOICE]);
   const [countInput, setCountInput] = useState(String(DEFAULT_QUESTION_COUNT));
@@ -204,8 +205,9 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
               disabled={generating}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             >
-              <option value={GRADES.G3}>3rd Grade</option>
-              <option value={GRADES.G4}>4th Grade</option>
+              {getAllGrades().map((g) => (
+                <option key={g.key} value={g.key}>{g.label}</option>
+              ))}
             </select>
           </div>
 

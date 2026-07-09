@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
-import { TOPICS } from '../constants/topics';
 import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore, writeBatch } from 'firebase/firestore';
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 import ConfirmationModal from './ui/ConfirmationModal';
@@ -32,6 +31,11 @@ import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
 import { getTeacherIds } from '../utils/classHelpers';
 import { fetchStudentHistory } from '../services/studentHistoryService';
+import { getAllGrades, getDefaultGradeKey } from '../content/registry';
+
+// Pre-grades data era: the top-level `progress` field belongs to G3 (see MainApp).
+const LEGACY_GRADE_KEY = 'G3';
+import { getTopicsForGrade } from '../utils/common_utils';
 
 const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
@@ -131,8 +135,12 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
         const latestActivity = data.latestActivity ? new Date(data.latestActivity) : null;
 
         const today = getTodayDateString();
-        const progressG3 = data.progressByGrade?.[today]?.G3 || data.progress?.[today] || {};
-        const progressG4 = data.progressByGrade?.[today]?.G4 || {};
+        const progressByGradeKey = {};
+        getAllGrades().forEach((grade) => {
+          const legacyFallback = grade.key === LEGACY_GRADE_KEY ? data.progress?.[today] : null;
+          progressByGradeKey[grade.key] =
+            data.progressByGrade?.[today]?.[grade.key] || legacyFallback || {};
+        });
 
         totalQuestions += totalStudentQuestions;
         totalCorrect += correctAnswers;
@@ -144,7 +152,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
         return {
           id: data.id,
           email: data.email || null,
-          selectedGrade: data.selectedGrade || 'G3',
+          selectedGrade: data.selectedGrade || getDefaultGradeKey(),
           coins: data.coins || 0,
           class: classNames,
           classId: data.classId,
@@ -152,8 +160,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           questionsToday: questionsTodayCount,
           accuracy: accuracy,
           latestActivity: latestActivity,
-          progressG3: progressG3,
-          progressG4: progressG4,
+          progressByGradeKey,
           answeredQuestions: [],
           historyLoaded: false,
           dailyGoalsByGrade: data.dailyGoalsByGrade || {},
@@ -702,10 +709,10 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   };
 
   const calculateTopicProgress = (student, grade) => {
-    const progress = grade === 'G3' ? student.progressG3 : student.progressG4;
-    const topics = grade === 'G3'
-      ? [TOPICS.MULTIPLICATION, TOPICS.DIVISION, TOPICS.FRACTIONS, TOPICS.MEASUREMENT_DATA]
-      : [TOPICS.OPERATIONS_ALGEBRAIC_THINKING, TOPICS.BASE_TEN, TOPICS.FRACTIONS_4TH, TOPICS.MEASUREMENT_DATA_4TH, TOPICS.GEOMETRY];
+    const progress = student.progressByGradeKey?.[grade] || {};
+    // Registry-backed (also restores Binary Operations, which the old
+    // hardcoded G4 list was missing)
+    const topics = getTopicsForGrade(grade);
 
     return topics.map(topic => {
       const sanitizedTopic = topic.replace(/[^a-zA-Z0-9]/g, '_');
@@ -2047,67 +2054,38 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                   </div>
                 </div>
 
-                {/* Grade 3 Progress */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <Target className="w-4 h-4 mr-2" />
-                    Grade 3 Progress (Today)
-                  </h4>
-                  <div className="space-y-3">
-                    {calculateTopicProgress(selectedStudent, 'G3').map(topic => (
-                      <div key={topic.topic} className="flex flex-col">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-gray-600">{topic.topic}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">
-                              {topic.correct}/{topic.goal}
-                            </span>
-                            {topic.completed && (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            )}
+                {/* Per-grade progress panels (one per enabled grade) */}
+                {getAllGrades().map((grade) => (
+                  <div key={grade.key} className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                      <Target className="w-4 h-4 mr-2" />
+                      Grade {grade.ordinal} Progress (Today)
+                    </h4>
+                    <div className="space-y-3">
+                      {calculateTopicProgress(selectedStudent, grade.key).map(topic => (
+                        <div key={topic.topic} className="flex flex-col">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-500">
+                                {topic.correct}/{topic.goal}
+                              </span>
+                              {topic.completed && (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
+                              style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
+                            ></div>
                           </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                {/* Grade 4 Progress */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <Target className="w-4 h-4 mr-2" />
-                    Grade 4 Progress (Today)
-                  </h4>
-                  <div className="space-y-3">
-                    {calculateTopicProgress(selectedStudent, 'G4').map(topic => (
-                      <div key={topic.topic} className="flex flex-col">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-gray-600">{topic.topic.length > 20 ? topic.topic.substring(0, 20) + '...' : topic.topic}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">
-                              {topic.correct}/{topic.goal}
-                            </span>
-                            {topic.completed && (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${topic.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${Math.min((topic.correct / topic.goal) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Recent Questions */}
@@ -2160,7 +2138,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                {question.grade || 'G3'}
+                                {question.grade || getDefaultGradeKey()}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

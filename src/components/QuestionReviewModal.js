@@ -5,6 +5,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { TOPICS, QUESTION_TYPES, ALL_QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
+import { getAllGrades } from '../content/registry';
 
 const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCancel, source = 'pdf-upload' }) => {
   const removeUndefinedFields = (obj) => {
@@ -65,7 +66,7 @@ const QuestionReviewModal = ({ questions, fileName, classId, appId, onSave, onCa
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [handleEscapeKey]);
 
-  const gradeOptions = ['G3', 'G4'];
+  const gradeOptions = getAllGrades().map((grade) => grade.key);
   const questionTypeOptions = [
     { value: QUESTION_TYPES.MULTIPLE_CHOICE, label: 'Multiple Choice' },
     { value: QUESTION_TYPES.NUMERIC, label: 'Numeric Answer' },

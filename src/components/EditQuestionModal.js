@@ -4,13 +4,14 @@ import ModalWrapper from './ui/ModalWrapper';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { TOPICS, QUESTION_TYPES } from '../constants/topics';
+import { getAllGrades } from '../content/registry';
 
 const EditQuestionModal = ({ question, onSave, onCancel }) => {
     const [editedQuestion, setEditedQuestion] = useState({ ...question });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
-    const gradeOptions = ['G3', 'G4'];
+    const gradeOptions = getAllGrades().map((grade) => grade.key);
     const questionTypeOptions = [
         { value: QUESTION_TYPES.MULTIPLE_CHOICE, label: 'Multiple Choice' },
         { value: QUESTION_TYPES.NUMERIC, label: 'Numeric Answer' },

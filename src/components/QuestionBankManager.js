@@ -6,11 +6,12 @@ import QuestionReviewModal from './QuestionReviewModal';
 import GenerateQuestionsModal from './GenerateQuestionsModal';
 import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
-import { TOPICS, QUESTION_TYPES } from '../constants/topics';
+import { QUESTION_TYPES } from '../constants/topics';
 import { clearCachedClassQuestions } from '../utils/questionCache';
 import { isAIEvaluatedQuestion } from '../utils/answer-helpers';
 import 'katex/dist/katex.min.css';
 import renderMathInElement from 'katex/contrib/auto-render';
+import { getAllGrades, getTopicNamesForGrade } from '../content/registry';
 
 export const mapQuestionBankDoc = (doc) => ({
   ...doc.data(),
@@ -105,20 +106,10 @@ const QuestionBankManager = ({
     setCurrentPage(1);
   }, [filterTopic, filterGrade, filterSource, filterTeacher, filterType, filterHasImage, searchQuery, isRegexMode, internalViewMode]);
 
-  const topicOptions = [
-    TOPICS.MULTIPLICATION,
-    TOPICS.DIVISION,
-    TOPICS.FRACTIONS,
-    TOPICS.MEASUREMENT_DATA,
-    TOPICS.OPERATIONS_ALGEBRAIC_THINKING,
-    TOPICS.BASE_TEN,
-    TOPICS.FRACTIONS_4TH,
-    TOPICS.MEASUREMENT_DATA_4TH,
-    TOPICS.GEOMETRY,
-    TOPICS.BINARY_OPERATIONS
-  ];
+  // All topics across enabled grades, in grade/topic display order
+  const topicOptions = getAllGrades().flatMap((grade) => getTopicNamesForGrade(grade.key));
 
-  const gradeOptions = ['G3', 'G4'];
+  const gradeOptions = getAllGrades().map((grade) => grade.key);
 
   // Load questions from teacher's questionBank (only if not provided externally)
   useEffect(() => {

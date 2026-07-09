@@ -7,6 +7,7 @@ import UploadQuestionsPDF from './UploadQuestionsPDF';
 import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
 import { formatDate, getAppId } from '../utils/common_utils';
+import { getDefaultGradeKey } from '../content/registry';
 
 const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
   const [students, setStudents] = useState([]);
@@ -49,7 +50,7 @@ const ClassDetail = ({ classData, onBack, onUpdateClass }) => {
             name: data.name || data.displayName || enr.studentName || `Student ${userId.slice(-6)}`,
             email: data.email || enr.studentEmail || '',
             classId: classData.id,
-            selectedGrade: data.selectedGrade || 'G3',
+            selectedGrade: data.selectedGrade || getDefaultGradeKey(),
             coins: data.coins || 0,
             joinedAt: data.updatedAt || data.createdAt || enr.joinedAt || new Date(),
             lastActivity: getLastActivity(data),
