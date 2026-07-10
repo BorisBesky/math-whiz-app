@@ -334,4 +334,6 @@ export const generateQuestion = (difficulty, allowedSubtopics = null) => {
   return GENERATORS_BY_SUBTOPIC[subtopic](difficulty);
 };
 
-export default { generateQuestion };
+const operationsAlgebraicThinkingQuestions = { generateQuestion };
+
+export default operationsAlgebraicThinkingQuestions;
