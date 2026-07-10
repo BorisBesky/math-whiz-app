@@ -105,7 +105,7 @@ const generateDecimalPlaceValueQuestion = (difficulty) => {
     return {
       question: `In the number ${text}, what digit is in the ${PLACES[index]} place?`,
       correctAnswer: String(digits[index]),
-      questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
+      questionType: QUESTION_TYPES.NUMERIC,
       hint: 'Count places outward from the decimal point in the right direction.',
       ...baseFields('decimal place value', '5.NBT.A.3'),
     };

@@ -4,6 +4,7 @@
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
 import { generateQuestion } from '../questions';
+import { QUESTION_TYPES } from '../../../../constants/topics.js';
 
 const DIFFICULTIES = [0, 0.25, 0.5, 0.75, 1];
 
@@ -37,6 +38,7 @@ describe('Base Ten 5th correctness', () => {
       } else if ((m = q.question.match(/^In the number (\d{3})\.(\d{3}), what digit is in the (\w+) place\?$/))) {
         const digits = (m[1] + m[2]).split('');
         expect(q.correctAnswer).toBe(digits[PLACE_INDEX[m[3]]]);
+        expect(q.questionType).toBe(QUESTION_TYPES.NUMERIC);
       } else if ((m = q.question.match(/^([\d.]+) is how many times as large as ([\d.]+)\?$/))) {
         const a = toThousandths(m[1]);
         const b = toThousandths(m[2]);

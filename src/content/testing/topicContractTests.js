@@ -61,6 +61,13 @@ export const runTopicContractTests = (topicModule, options = {}) => {
         // A multiple-choice question the student cannot answer is a hard bug.
         expect(isMultipleChoiceAnswerable(question)).toBe(true);
 
+        if (question.questionType === 'fill-in-the-blanks') {
+          const blanks = question.question.match(/_{2,}/g) || [];
+          const answers = String(question.correctAnswer).split(';;');
+          expect(blanks.length).toBe(answers.length);
+          expect(blanks.length).toBeGreaterThan(0);
+        }
+
         // Subtopic must be declared and belong to the manifest — the portal
         // Focus feature and the repeat-pressure analysis key on it.
         expect(topicModule.subtopics).toContain(question.subtopic);
