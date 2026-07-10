@@ -4,8 +4,8 @@
 // generateQuestion(difficulty [0..1], allowedSubtopics | null) returns a
 // question object — or null when the restriction can't be satisfied.
 //
-// All coordinate questions live in the first quadrant and are text-only —
-// points are described by movements or ordered pairs, never by a picture.
+// All coordinate questions live in the first quadrant. Each one includes a
+// labeled coordinate-grid SVG so students can read the x- and y-values.
 //
 // Question-text formats are deterministic per family so the topic tests can
 // decode a question and independently verify its answer — keep the wording
@@ -13,6 +13,7 @@
 // definition/hierarchy banks are mirrored in the test file.
 import { QUESTION_TYPES } from '../../../constants/topics.js';
 import manifest from './manifest.json';
+import { createCoordinateGridImage } from './coordinate-grid';
 
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -34,6 +35,12 @@ const baseFields = (subtopic, standard) => ({
   standard,
 });
 
+const questionImage = (points) => [{
+  type: 'question',
+  data: createCoordinateGridImage({ points }),
+  description: 'Coordinate grid with numbered x- and y-axes',
+}];
+
 /* ------------------------------------------------------------------ */
 /* coordinate plane — ordered pairs and axes (5.G.A.1)                 */
 /* Formats:                                                            */
@@ -43,9 +50,10 @@ const baseFields = (subtopic, standard) => ({
 /*    <y-axis|x-axis>?"                                                */
 /* ------------------------------------------------------------------ */
 const generateCoordinatePlaneQuestion = (difficulty) => {
-  const x = randomInt(1, 6 + Math.round(difficulty * 6));
-  let y = randomInt(1, 6 + Math.round(difficulty * 6));
-  if (y === x) y = x + 1; // keep (x, y) vs (y, x) distractors distinct
+  const maxCoordinate = 6 + Math.round(difficulty * 6);
+  const x = randomInt(1, maxCoordinate);
+  let y = randomInt(1, maxCoordinate);
+  if (y === x) y = y === maxCoordinate ? y - 1 : y + 1; // keep (x, y) vs (y, x) distractors distinct
 
   if (randomInt(0, 1) === 0) {
     const correct = `(${x}, ${y})`;
@@ -55,6 +63,7 @@ const generateCoordinatePlaneQuestion = (difficulty) => {
       options: shuffle([correct, `(${y}, ${x})`, `(${x}, 0)`, `(0, ${y})`]),
       questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: 'The first number is the trip along the x-axis (right); the second is the trip up.',
+      images: questionImage([{ x, y, label: 'P' }]),
       ...baseFields('coordinate plane', '5.G.A.1'),
     };
   }
@@ -68,6 +77,7 @@ const generateCoordinatePlaneQuestion = (difficulty) => {
     hint: askYAxis
       ? 'Distance from the y-axis is the sideways trip — the FIRST coordinate.'
       : 'Distance from the x-axis is the trip up — the SECOND coordinate.',
+    images: questionImage([{ x, y, label: 'P' }]),
     ...baseFields('coordinate plane', '5.G.A.1'),
   };
 };
@@ -87,8 +97,9 @@ const generateGridDistancesQuestion = (difficulty) => {
     const [placeA, placeB] = shuffle(PLACES).slice(0, 2);
     const shared = randomInt(1, 9);
     const p1 = randomInt(0, 9);
-    let p2 = randomInt(0, 9 + Math.round(difficulty * 3));
-    if (p2 === p1) p2 += 1;
+    const maxCoordinate = 9 + Math.round(difficulty * 3);
+    let p2 = randomInt(0, maxCoordinate);
+    if (p2 === p1) p2 = p2 === maxCoordinate ? p2 - 1 : p2 + 1;
     const vertical = randomInt(0, 1) === 0; // shared x → distance is vertical
     const a = vertical ? [shared, p1] : [p1, shared];
     const b = vertical ? [shared, p2] : [p2, shared];
@@ -98,6 +109,10 @@ const generateGridDistancesQuestion = (difficulty) => {
       options: [],
       questionType: QUESTION_TYPES.NUMERIC,
       hint: 'The points share one coordinate, so just find the difference of the other one.',
+      images: questionImage([
+        { x: a[0], y: a[1], label: placeA },
+        { x: b[0], y: b[1], label: placeB },
+      ]),
       ...baseFields('distances on a grid', '5.G.A.2'),
     };
   }
@@ -105,14 +120,27 @@ const generateGridDistancesQuestion = (difficulty) => {
   const k = randomInt(1, 12);
   const onX = randomInt(0, 1) === 0;
   const correct = onX ? `(${k}, 0)` : `(0, ${k})`;
+  const offAxisCoordinate = k === 1 ? 2 : 1;
+  const options = shuffle([
+    correct,
+    onX ? `(0, ${k})` : `(${k}, 0)`,
+    `(${k}, ${k})`,
+    onX ? `(${k}, ${offAxisCoordinate})` : `(${offAxisCoordinate}, ${k})`,
+  ]);
+  const points = options.map((option) => {
+    const [, x, y] = option.match(/^\((\d+), (\d+)\)$/);
+    return { x: Number(x), y: Number(y), label: option };
+  });
+
   return {
     question: `Which of these points lies on the ${onX ? 'x-axis' : 'y-axis'}?`,
     correctAnswer: correct,
-    options: shuffle([correct, onX ? `(0, ${k})` : `(${k}, 0)`, `(${k}, ${k})`, `(${k}, 1)`]),
+    options,
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: onX
       ? 'On the x-axis you have moved up 0 units — the second coordinate is 0.'
       : 'On the y-axis you have moved right 0 units — the first coordinate is 0.',
+    images: questionImage(points),
     ...baseFields('distances on a grid', '5.G.A.2'),
   };
 };

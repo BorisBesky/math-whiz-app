@@ -249,6 +249,9 @@ const MainAppContent = () => {
   const quizFinishedRef = useRef(false);
   // Guard to prevent snapshot-driven grade reverts immediately after a user-initiated grade change
   const gradeChangeInProgressRef = useRef(false);
+  // Class selection may choose an initial grade, but should not override a
+  // student's later choice of another enabled grade.
+  const classGradeSelectionRef = useRef(null);
 
   // Navigate to login page for anonymous users to upgrade their account
   const handleUserClick = () => {
@@ -370,7 +373,10 @@ const MainAppContent = () => {
   };
 
   useEffect(() => {
-    if (enrolledClasses.length === 0) return;
+    if (enrolledClasses.length === 0) {
+      classGradeSelectionRef.current = null;
+      return;
+    }
     const savedClassId = userData?.selectedQuizClassId;
     const savedClass = savedClassId
       ? enrolledClasses.find((classItem) => classItem.id === savedClassId)
@@ -390,6 +396,15 @@ const MainAppContent = () => {
         .map((classItem) => normalizeClassGrade(classItem.gradeLevel || classItem.grade))
         .filter(Boolean)
     ));
+    const classGradeSelection = classesToInferFrom
+      .map((classItem) => `${classItem.id}:${normalizeClassGrade(classItem.gradeLevel || classItem.grade) || ''}`)
+      .sort()
+      .join('|');
+
+    if (classGradeSelection === classGradeSelectionRef.current) {
+      return;
+    }
+    classGradeSelectionRef.current = classGradeSelection;
 
     if (selectedGrades.length === 1 && selectedGrades[0] !== selectedGrade) {
       gradeChangeInProgressRef.current = true;
