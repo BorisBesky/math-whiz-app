@@ -1,6 +1,6 @@
 // Question generation for 4th Grade Operations & Algebraic Thinking topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 
 // Helper functions
 // Get random integer between min and max (inclusive)

@@ -22,7 +22,7 @@ import {
   validateBlankAnswerCount,
 } from '../utils/answer-helpers';
 import { encodeTopicForPath } from '../utils/firebaseHelpers';
-import { QUESTION_TYPES } from '../constants/shared-constants';
+import { QUESTION_TYPES } from '../constants/topics';
 
 const QuizView = ({
   currentQuiz,

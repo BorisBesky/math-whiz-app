@@ -1,4 +1,4 @@
-import { QUESTION_TYPES } from '../constants/shared-constants';
+import { QUESTION_TYPES } from '../constants/topics';
 
 /** Check if the passed in string is numeric (including negative numbers and decimals and commas) */
 function isNumeric(str) {

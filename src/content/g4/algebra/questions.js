@@ -7,7 +7,7 @@
 // Question-text formats are deterministic per family so the topic tests can
 // decode a question and independently verify its answer — keep the wording
 // in sync with __tests__/questions.test.js if you change it.
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 import manifest from './manifest.json';
 
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;

@@ -1,5 +1,5 @@
 // Question generation for 3rd Grade Multiplication topic
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 
 // Helper functions

@@ -44,42 +44,55 @@ const CANONICAL_TOPICS = {
     'Binary Operations',
     'Algebra',
   ],
+  G5: [
+    'Operations & Algebraic Thinking 5th',
+    'Base Ten 5th',
+    'Fractions 5th',
+    'Measurement & Data 5th',
+    'Geometry 5th',
+  ],
 };
-const ALL_CANONICAL_TOPICS = [...CANONICAL_TOPICS.G3, ...CANONICAL_TOPICS.G4];
+const ALL_CANONICAL_TOPICS = [
+  ...CANONICAL_TOPICS.G3,
+  ...CANONICAL_TOPICS.G4,
+  ...CANONICAL_TOPICS.G5,
+];
 
 describe('grade keys', () => {
-  test('GRADES contains exactly G3 and G4', () => {
-    expect(GRADES).toEqual({ G3: 'G3', G4: 'G4' });
+  test('GRADES contains exactly G3, G4, and G5', () => {
+    expect(GRADES).toEqual({ G3: 'G3', G4: 'G4', G5: 'G5' });
   });
 });
 
 describe('topic lists agree across all sources (names AND order)', () => {
-  test.each(['G3', 'G4'])('common_utils.getTopicsForGrade(%s)', (grade) => {
+  test.each(['G3', 'G4', 'G5'])('common_utils.getTopicsForGrade(%s)', (grade) => {
     expect(getTopicsForGrade(grade)).toEqual(CANONICAL_TOPICS[grade]);
   });
 
   test('common_utils.getTopicsForGrade falls back to the G3 list for unknown grades', () => {
     // Legacy quirk relied on by callers — preserve until a deliberate change.
-    expect(getTopicsForGrade('G5')).toEqual(CANONICAL_TOPICS.G3);
+    expect(getTopicsForGrade('G6')).toEqual(CANONICAL_TOPICS.G3);
     expect(getTopicsForGrade(undefined)).toEqual(CANONICAL_TOPICS.G3);
   });
 
-  test.each(['G3', 'G4'])('appConstants.quizTopicsByGrade.%s', (grade) => {
+  test.each(['G3', 'G4', 'G5'])('appConstants.quizTopicsByGrade.%s', (grade) => {
     expect(quizTopicsByGrade[grade]).toEqual(CANONICAL_TOPICS[grade]);
   });
 
-  test.each(['G3', 'G4'])('shared-constants VALID_TOPICS_BY_GRADE.%s', (grade) => {
+  test.each(['G3', 'G4', 'G5'])('shared-constants VALID_TOPICS_BY_GRADE.%s', (grade) => {
     expect(VALID_TOPICS_BY_GRADE[grade]).toEqual(CANONICAL_TOPICS[grade]);
   });
 
   test('first topic per grade is pinned (upload-pdf default-topic fallback)', () => {
     expect(VALID_TOPICS_BY_GRADE.G3[0]).toBe('Multiplication');
     expect(VALID_TOPICS_BY_GRADE.G4[0]).toBe('Operations & Algebraic Thinking');
+    expect(VALID_TOPICS_BY_GRADE.G5[0]).toBe('Operations & Algebraic Thinking 5th');
   });
 
   test.each([
     ['G3', 'g3'],
     ['G4', 'g4'],
+    ['G5', 'g5'],
   ])('registry facade topics for %s match the canonical set', (grade, gradeId) => {
     // The facade filters staged ("enabled": false) content, so this stays
     // canonical even while a new topic folder is being developed. The raw
@@ -129,6 +142,7 @@ describe('subtopic parity: topic modules vs shared-constants', () => {
   test('SUBTOPICS_BY_GRADE_TOPIC covers exactly the canonical topics per grade', () => {
     expect(Object.keys(SUBTOPICS_BY_GRADE_TOPIC.G3).sort()).toEqual([...CANONICAL_TOPICS.G3].sort());
     expect(Object.keys(SUBTOPICS_BY_GRADE_TOPIC.G4).sort()).toEqual([...CANONICAL_TOPICS.G4].sort());
+    expect(Object.keys(SUBTOPICS_BY_GRADE_TOPIC.G5).sort()).toEqual([...CANONICAL_TOPICS.G5].sort());
   });
 });
 
@@ -148,9 +162,14 @@ describe('legacy explanation fallbacks', () => {
   // G3 'Measurement & Data' has never had a direct iframe entry — only its
   // legacy sub-concepts (Area, Perimeter, Volume) do. Harmless today because
   // TOPIC_CONTENT_MAP serves it a React explanation first, so the iframe
-  // fallback is unreachable. Frozen as-is; Phase 1 moves these paths into
-  // manifests without changing coverage.
-  const TOPICS_WITHOUT_LEGACY_IFRAME = ['Measurement & Data', 'Algebra'];
+  // fallback is unreachable. Topics born after the manifest migration
+  // (Algebra, all of G5) use React explanations only and never get an
+  // iframe entry.
+  const TOPICS_WITHOUT_LEGACY_IFRAME = [
+    'Measurement & Data',
+    'Algebra',
+    ...CANONICAL_TOPICS.G5,
+  ];
 
   test('every topic outside the exception list has an iframe entry', () => {
     ALL_CANONICAL_TOPICS
