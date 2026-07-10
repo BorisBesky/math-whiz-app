@@ -1,5 +1,5 @@
 // Question generation for 4th Grade Measurement & Data topic
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
 import { generateClockSVG } from '../../../utils/clockGenerator.js';
 

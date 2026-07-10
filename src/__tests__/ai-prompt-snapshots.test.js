@@ -35,6 +35,7 @@ describe('gemini-generate-questions', () => {
   test.each([
     ['G3', 'Multiplication'],
     ['G4', 'Operations & Algebraic Thinking'],
+    ['G5', 'Base Ten 5th'],
   ])('buildPrompt for %s is frozen', (grade, topic) => {
     expect(
       generateQuestions._test.buildPrompt(grade, topic, GENERATABLE_TYPES, 5, '')
@@ -60,6 +61,7 @@ describe('gemini-proxy', () => {
   test.each([
     ['G3', 'Multiplication'],
     ['G4', 'Geometry'],
+    ['G5', 'Fractions 5th'],
   ])('enhanced prompt for %s is frozen', (grade, topic) => {
     expect(
       validateAndEnhancePrompt('Create a fun math story problem.', topic, grade)
@@ -97,23 +99,23 @@ describe('gemini-proxy', () => {
     // the handler pre-validates the grade).
     let message;
     try {
-      validateAndEnhancePrompt('p', 'Multiplication', 'G5');
+      validateAndEnhancePrompt('p', 'Multiplication', 'G6');
     } catch (err) {
       message = err.message;
     }
-    expect(message).toBe('Invalid grade: G5. Valid grades are: G3, G4');
+    expect(message).toBe('Invalid grade: G6. Valid grades are: G3, G4, G5');
   });
 });
 
 describe('upload-pdf-questions-background', () => {
   const { buildExtractionPrompt } = uploadPdf._test;
 
-  test.each(['G3', 'G4'])('extraction prompt for %s is frozen', (grade) => {
+  test.each(['G3', 'G4', 'G5'])('extraction prompt for %s is frozen', (grade) => {
     expect(buildExtractionPrompt(grade)).toMatchSnapshot();
   });
 
   test('unknown grade falls back to the G3 topic list and "Grade 3" label', () => {
-    expect(buildExtractionPrompt('G5')).toBe(buildExtractionPrompt('G3'));
+    expect(buildExtractionPrompt('G6')).toBe(buildExtractionPrompt('G3'));
   });
 });
 

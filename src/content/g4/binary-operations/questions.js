@@ -1,5 +1,5 @@
 // Question generation for 4th Grade Binary Operations topic
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 
 // Helper functions
 function getRandomInt(min, max) {

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "measurement-data",
+  "name": "Measurement & Data 5th",
+  "grade": "G5",
+  "order": 4,
+  "description": "Unit conversions, line plots with fractions, and volume of rectangular prisms",
+  "standards": ["5.MD.A.1", "5.MD.B.2", "5.MD.C.3", "5.MD.C.4", "5.MD.C.5"],
+  "subtopics": [
+    "unit conversions",
+    "line plots",
+    "volume concepts",
+    "volume of rectangular prisms",
+    "additive volume"
+  ],
+  "objectives": [
+    "Convert among units within the metric and customary measurement systems",
+    "Interpret line plots with measurements in fractions of a unit",
+    "Understand volume as counting unit cubes with no gaps or overlaps",
+    "Find volumes of right rectangular prisms with V = l × w × h",
+    "Find volumes of solid figures composed of two rectangular prisms"
+  ],
+  "ui": { "icon": "📦", "theme": "amber" },
+  "ai": {
+    "guidelines": "Focus on converting measurement units within one system (like centimeters to meters or feet to inches, including decimal metric conversions), interpreting line plots whose measurements are fractions of a unit (1/4, 1/2, 3/4), understanding volume as counting unit cubes, computing volumes of right rectangular prisms with V = l × w × h, and finding volumes of figures made of two non-overlapping rectangular prisms. Keep conversions exact and volumes whole numbers."
+  },
+  "legacyExplanationHtml": null,
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

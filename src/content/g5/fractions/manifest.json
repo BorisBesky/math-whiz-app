@@ -1,0 +1,41 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "fractions",
+  "name": "Fractions 5th",
+  "grade": "G5",
+  "order": 3,
+  "description": "Adding and subtracting unlike denominators, and multiplying and dividing fractions",
+  "standards": [
+    "5.NF.A.1",
+    "5.NF.A.2",
+    "5.NF.B.3",
+    "5.NF.B.4",
+    "5.NF.B.5",
+    "5.NF.B.6",
+    "5.NF.B.7"
+  ],
+  "subtopics": [
+    "add and subtract unlike denominators",
+    "mixed numbers",
+    "fraction as division",
+    "multiplying fractions",
+    "multiplication as scaling",
+    "dividing unit fractions"
+  ],
+  "objectives": [
+    "Add and subtract fractions with unlike denominators using equivalent fractions",
+    "Add and subtract mixed numbers with unlike denominators",
+    "Interpret a fraction as division of the numerator by the denominator",
+    "Multiply fractions by whole numbers and by other fractions",
+    "Predict how multiplying by a fraction changes a number without calculating",
+    "Divide unit fractions by whole numbers and whole numbers by unit fractions"
+  ],
+  "ui": { "icon": "½", "theme": "rose" },
+  "ai": {
+    "guidelines": "Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form."
+  },
+  "legacyExplanationHtml": null,
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

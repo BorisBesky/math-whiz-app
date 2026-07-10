@@ -620,22 +620,263 @@
       "label": "5th Grade",
       "shortLabel": "5th",
       "ordinal": 5,
-      "description": "5th Grade mathematics topics",
+      "description": "Fifth grade mathematics topics",
       "default": false,
-      "enabled": false,
+      "enabled": true,
       "ai": {
         "storyRequirements": [
-          "- Keep the story age-appropriate for 5th graders",
-          "- Use engaging, realistic scenarios",
-          "- Make the math problem clear and solvable",
+          "- Keep the story age-appropriate for 5th graders (ages 10-11)",
+          "- Use engaging, realistic scenarios that connect to their experiences",
+          "- Make the math problem clear and solvable using 5th grade methods",
           "- End with a clear question",
           "- Provide the answer on a new line in the format \"Answer: [your answer]\"",
           "- Keep the story to one paragraph",
-          "- Use only topics and concepts appropriate for 5th grade math"
+          "- Use only topics and concepts appropriate for 5th grade math (Common Core 5th grade standards)"
         ]
       },
-      "standards": {},
-      "topics": []
+      "standards": {
+        "Operations & Algebraic Thinking 5th": [
+          "5.OA.A.1",
+          "5.OA.A.2",
+          "5.OA.A.2.1",
+          "5.OA.B.3"
+        ],
+        "Base Ten 5th": [
+          "5.NBT.A.1",
+          "5.NBT.A.2",
+          "5.NBT.A.3",
+          "5.NBT.A.4",
+          "5.NBT.B.5",
+          "5.NBT.B.6",
+          "5.NBT.B.7"
+        ],
+        "Fractions 5th": [
+          "5.NF.A.1",
+          "5.NF.A.2",
+          "5.NF.B.3",
+          "5.NF.B.4",
+          "5.NF.B.5",
+          "5.NF.B.6",
+          "5.NF.B.7"
+        ],
+        "Measurement & Data 5th": [
+          "5.MD.A.1",
+          "5.MD.B.2",
+          "5.MD.C.3",
+          "5.MD.C.4",
+          "5.MD.C.5"
+        ],
+        "Geometry 5th": [
+          "5.G.A.1",
+          "5.G.A.2",
+          "5.G.B.3",
+          "5.G.B.4"
+        ]
+      },
+      "topics": [
+        {
+          "id": "operations-algebraic-thinking",
+          "name": "Operations & Algebraic Thinking 5th",
+          "grade": "G5",
+          "order": 1,
+          "description": "Numerical expressions with parentheses, prime factorization, and paired number patterns",
+          "standards": [
+            "5.OA.A.1",
+            "5.OA.A.2",
+            "5.OA.A.2.1",
+            "5.OA.B.3"
+          ],
+          "subtopics": [
+            "order of operations",
+            "writing expressions",
+            "interpreting expressions",
+            "prime factorization",
+            "numerical patterns"
+          ],
+          "objectives": [
+            "Evaluate numerical expressions containing parentheses and brackets",
+            "Write simple expressions that record calculations described in words",
+            "Interpret and compare numerical expressions without evaluating them",
+            "Express a whole number from 2 to 50 as a product of its prime factors",
+            "Generate two numerical patterns from rules and relate their corresponding terms"
+          ],
+          "ui": {
+            "icon": "🧮",
+            "theme": "purple"
+          },
+          "ai": {
+            "guidelines": "Focus on evaluating numerical expressions with parentheses and brackets (order of operations), writing simple expressions from verbal descriptions (like \"add 8 and 7, then multiply by 2\" as 2 × (8 + 7)), comparing expressions without evaluating them, expressing whole numbers from 2 to 50 as products of prime factors, and generating two numerical patterns from rules to compare corresponding terms. Keep all values whole numbers and results within 0-1000."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": true,
+          "version": 1
+        },
+        {
+          "id": "base-ten",
+          "name": "Base Ten 5th",
+          "grade": "G5",
+          "order": 2,
+          "description": "Decimal place value, powers of ten, and operations with multi-digit numbers and decimals",
+          "standards": [
+            "5.NBT.A.1",
+            "5.NBT.A.2",
+            "5.NBT.A.3",
+            "5.NBT.A.4",
+            "5.NBT.B.5",
+            "5.NBT.B.6",
+            "5.NBT.B.7"
+          ],
+          "subtopics": [
+            "decimal place value",
+            "powers of ten",
+            "comparing decimals",
+            "rounding decimals",
+            "multi-digit multiplication",
+            "division with two-digit divisors",
+            "decimal operations"
+          ],
+          "objectives": [
+            "Understand that a digit is worth 10 times the place to its right and 1/10 the place to its left",
+            "Multiply and divide numbers by powers of 10",
+            "Read, write, and compare decimals to thousandths",
+            "Round decimals to any place",
+            "Fluently multiply multi-digit whole numbers",
+            "Divide whole numbers with up to four-digit dividends and two-digit divisors",
+            "Add, subtract, multiply, and divide decimals to hundredths"
+          ],
+          "ui": {
+            "icon": "🔢",
+            "theme": "indigo"
+          },
+          "ai": {
+            "guidelines": "Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": true,
+          "version": 1
+        },
+        {
+          "id": "fractions",
+          "name": "Fractions 5th",
+          "grade": "G5",
+          "order": 3,
+          "description": "Adding and subtracting unlike denominators, and multiplying and dividing fractions",
+          "standards": [
+            "5.NF.A.1",
+            "5.NF.A.2",
+            "5.NF.B.3",
+            "5.NF.B.4",
+            "5.NF.B.5",
+            "5.NF.B.6",
+            "5.NF.B.7"
+          ],
+          "subtopics": [
+            "add and subtract unlike denominators",
+            "mixed numbers",
+            "fraction as division",
+            "multiplying fractions",
+            "multiplication as scaling",
+            "dividing unit fractions"
+          ],
+          "objectives": [
+            "Add and subtract fractions with unlike denominators using equivalent fractions",
+            "Add and subtract mixed numbers with unlike denominators",
+            "Interpret a fraction as division of the numerator by the denominator",
+            "Multiply fractions by whole numbers and by other fractions",
+            "Predict how multiplying by a fraction changes a number without calculating",
+            "Divide unit fractions by whole numbers and whole numbers by unit fractions"
+          ],
+          "ui": {
+            "icon": "½",
+            "theme": "rose"
+          },
+          "ai": {
+            "guidelines": "Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": true,
+          "version": 1
+        },
+        {
+          "id": "measurement-data",
+          "name": "Measurement & Data 5th",
+          "grade": "G5",
+          "order": 4,
+          "description": "Unit conversions, line plots with fractions, and volume of rectangular prisms",
+          "standards": [
+            "5.MD.A.1",
+            "5.MD.B.2",
+            "5.MD.C.3",
+            "5.MD.C.4",
+            "5.MD.C.5"
+          ],
+          "subtopics": [
+            "unit conversions",
+            "line plots",
+            "volume concepts",
+            "volume of rectangular prisms",
+            "additive volume"
+          ],
+          "objectives": [
+            "Convert among units within the metric and customary measurement systems",
+            "Interpret line plots with measurements in fractions of a unit",
+            "Understand volume as counting unit cubes with no gaps or overlaps",
+            "Find volumes of right rectangular prisms with V = l × w × h",
+            "Find volumes of solid figures composed of two rectangular prisms"
+          ],
+          "ui": {
+            "icon": "📦",
+            "theme": "amber"
+          },
+          "ai": {
+            "guidelines": "Focus on converting measurement units within one system (like centimeters to meters or feet to inches, including decimal metric conversions), interpreting line plots whose measurements are fractions of a unit (1/4, 1/2, 3/4), understanding volume as counting unit cubes, computing volumes of right rectangular prisms with V = l × w × h, and finding volumes of figures made of two non-overlapping rectangular prisms. Keep conversions exact and volumes whole numbers."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": true,
+          "version": 1
+        },
+        {
+          "id": "geometry",
+          "name": "Geometry 5th",
+          "grade": "G5",
+          "order": 5,
+          "description": "The coordinate plane and classifying two-dimensional figures in a hierarchy",
+          "standards": [
+            "5.G.A.1",
+            "5.G.A.2",
+            "5.G.B.3",
+            "5.G.B.4"
+          ],
+          "subtopics": [
+            "coordinate plane",
+            "distances on a grid",
+            "classifying shapes",
+            "shape hierarchy"
+          ],
+          "objectives": [
+            "Use ordered pairs to name and locate points in the first quadrant",
+            "Understand that the coordinates tell distances from the axes",
+            "Solve real-world problems using points on a coordinate grid",
+            "Classify two-dimensional figures by their properties",
+            "Understand that properties of a category apply to all its subcategories"
+          ],
+          "ui": {
+            "icon": "🗺️",
+            "theme": "emerald"
+          },
+          "ai": {
+            "guidelines": "Focus on the first quadrant of the coordinate plane: naming points with ordered pairs (x, y), understanding that the first coordinate is the distance along the x-axis and the second along the y-axis, finding horizontal or vertical distances between points that share a coordinate, and classifying two-dimensional figures in a hierarchy (every square is a rectangle and a rhombus, every rectangle is a parallelogram, a trapezoid has exactly one pair of parallel sides). Keep coordinates whole numbers from 0 to 12."
+          },
+          "legacyExplanationHtml": null,
+          "aliases": [],
+          "enabled": true,
+          "version": 1
+        }
+      ]
     }
   ]
 }

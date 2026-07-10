@@ -13,7 +13,7 @@ import {
 
 describe('grades', () => {
   test('getAllGrades returns enabled grades sorted by ordinal', () => {
-    expect(getAllGrades().map((g) => g.key)).toEqual(['G3', 'G4']);
+    expect(getAllGrades().map((g) => g.key)).toEqual(['G3', 'G4', 'G5']);
   });
 
   test('getGrade accepts key or id in either case', () => {
@@ -69,7 +69,14 @@ describe('topics', () => {
       'Measurement & Data',
     ]);
     expect(getTopicNamesForGrade('g4')[0]).toBe('Operations & Algebraic Thinking');
-    expect(getTopicNamesForGrade('G5')).toEqual([]);
+    expect(getTopicNamesForGrade('G5')).toEqual([
+      'Operations & Algebraic Thinking 5th',
+      'Base Ten 5th',
+      'Fractions 5th',
+      'Measurement & Data 5th',
+      'Geometry 5th',
+    ]);
+    expect(getTopicNamesForGrade('G6')).toEqual([]);
   });
 
   test('topic objects expose manifest metadata and lazy loaders', () => {

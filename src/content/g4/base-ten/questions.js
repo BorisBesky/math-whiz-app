@@ -1,6 +1,6 @@
 // Question generation for 4th Grade Base Ten topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 
 // Helper functions
 function getRandomInt(min, max) {

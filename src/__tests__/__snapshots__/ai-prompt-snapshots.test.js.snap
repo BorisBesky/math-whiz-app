@@ -15,6 +15,12 @@ Object {
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
 - Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.
 - Algebra: Focus on using a letter as a variable for an unknown number, evaluating simple expressions for a given whole-number value (like 3 × n + 2 when n = 4), solving one-step addition, subtraction, multiplication, and division equations, applying input-output rules, and extending growing number patterns. Keep numbers within 0-100 and all answers whole numbers.",
+  "G5": "Topic Guidelines for 5th Grade:
+- Operations & Algebraic Thinking 5th: Focus on evaluating numerical expressions with parentheses and brackets (order of operations), writing simple expressions from verbal descriptions (like \\"add 8 and 7, then multiply by 2\\" as 2 × (8 + 7)), comparing expressions without evaluating them, expressing whole numbers from 2 to 50 as products of prime factors, and generating two numerical patterns from rules to compare corresponding terms. Keep all values whole numbers and results within 0-1000.
+- Base Ten 5th: Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly.
+- Fractions 5th: Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form.
+- Measurement & Data 5th: Focus on converting measurement units within one system (like centimeters to meters or feet to inches, including decimal metric conversions), interpreting line plots whose measurements are fractions of a unit (1/4, 1/2, 3/4), understanding volume as counting unit cubes, computing volumes of right rectangular prisms with V = l × w × h, and finding volumes of figures made of two non-overlapping rectangular prisms. Keep conversions exact and volumes whole numbers.
+- Geometry 5th: Focus on the first quadrant of the coordinate plane: naming points with ordered pairs (x, y), understanding that the first coordinate is the distance along the x-axis and the second along the y-axis, finding horizontal or vertical distances between points that share a coordinate, and classifying two-dimensional figures in a hierarchy (every square is a rectangle and a rhombus, every rectangle is a parallelogram, a trapezoid has exactly one pair of parallel sides). Keep coordinates whole numbers from 0 to 12.",
 }
 `;
 
@@ -107,6 +113,58 @@ Return ONLY a valid JSON array (no markdown code fences, no text before or after
   \\"question\\": \\"The question text here\\",
   \\"topic\\": \\"Operations & Algebraic Thinking\\",
   \\"grade\\": \\"G4\\",
+  \\"questionType\\": \\"one of: multiple-choice, numeric, fill-in-the-blanks\\",
+  \\"correctAnswer\\": \\"the correct answer\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"],
+  \\"inputTypes\\": [],
+  \\"hint\\": \\"A helpful hint\\",
+  \\"standard\\": \\"X.XX.X.X\\",
+  \\"concept\\": \\"Brief concept name\\"
+}
+
+Notes:
+- \\"options\\" is required for multiple-choice (exactly 4 items), empty array [] for other types
+- \\"inputTypes\\" is only needed for fill-in-the-blanks, empty array [] for other types
+- Do NOT include any fields other than those listed above
+- Generate exactly 5 questions"
+`;
+
+exports[`gemini-generate-questions buildPrompt for G5 is frozen 1`] = `
+"You are an expert math curriculum designer. Generate exactly 5 unique math questions for 5th grade students on the topic \\"Base Ten 5th\\".
+
+Topic Guidelines for 5th Grade:
+- Operations & Algebraic Thinking 5th: Focus on evaluating numerical expressions with parentheses and brackets (order of operations), writing simple expressions from verbal descriptions (like \\"add 8 and 7, then multiply by 2\\" as 2 × (8 + 7)), comparing expressions without evaluating them, expressing whole numbers from 2 to 50 as products of prime factors, and generating two numerical patterns from rules to compare corresponding terms. Keep all values whole numbers and results within 0-1000.
+- Base Ten 5th: Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly.
+- Fractions 5th: Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form.
+- Measurement & Data 5th: Focus on converting measurement units within one system (like centimeters to meters or feet to inches, including decimal metric conversions), interpreting line plots whose measurements are fractions of a unit (1/4, 1/2, 3/4), understanding volume as counting unit cubes, computing volumes of right rectangular prisms with V = l × w × h, and finding volumes of figures made of two non-overlapping rectangular prisms. Keep conversions exact and volumes whole numbers.
+- Geometry 5th: Focus on the first quadrant of the coordinate plane: naming points with ordered pairs (x, y), understanding that the first coordinate is the distance along the x-axis and the second along the y-axis, finding horizontal or vertical distances between points that share a coordinate, and classifying two-dimensional figures in a hierarchy (every square is a rectangle and a rhombus, every rectangle is a parallelogram, a trapezoid has exactly one pair of parallel sides). Keep coordinates whole numbers from 0 to 12.
+
+Question types to generate: multiple-choice, numeric, fill-in-the-blanks
+Distribute questions roughly equally across the requested types.
+
+Rules for each question type:
+- \\"multiple-choice\\": Provide exactly 4 options in the \\"options\\" array. \\"correctAnswer\\" MUST be exactly one of the 4 options (character-for-character match).
+- \\"numeric\\": \\"correctAnswer\\" is the numeric answer as a string (e.g. \\"42\\"). \\"options\\" must be an empty array [].
+- \\"fill-in-the-blanks\\": Use \\"__\\" (double underscore) in the question text for each blank. \\"correctAnswer\\" uses \\" ;; \\" to separate answers for multiple blanks (e.g. \\"12 ;; 24\\"). Include an \\"inputTypes\\" array with one entry per blank, each being \\"numeric\\" or \\"mixed\\". \\"options\\" must be an empty array [].
+
+
+
+Requirements:
+- Questions must be age-appropriate for 5th grade students
+- Vary difficulty from easy to challenging
+- Use diverse, engaging real-world scenarios
+- Each question must be unique and test different aspects of \\"Base Ten 5th\\"
+- For multiple-choice, correctAnswer MUST be one of the 4 options (exact match)
+- All answers must be mathematically correct
+- Include a helpful \\"hint\\" for each question
+- Include the relevant Common Core \\"standard\\" code (e.g. \\"3.OA.C.7\\")
+- Include a brief \\"concept\\" label (e.g. \\"Multiplication Facts\\")
+
+Return ONLY a valid JSON array (no markdown code fences, no text before or after). Each element must have this exact structure:
+{
+  \\"question\\": \\"The question text here\\",
+  \\"topic\\": \\"Base Ten 5th\\",
+  \\"grade\\": \\"G5\\",
   \\"questionType\\": \\"one of: multiple-choice, numeric, fill-in-the-blanks\\",
   \\"correctAnswer\\": \\"the correct answer\\",
   \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"],
@@ -226,6 +284,30 @@ Original request: Create a fun math story problem.
 Please create the story problem now:"
 `;
 
+exports[`gemini-proxy enhanced prompt for G5 is frozen 1`] = `
+"You are a helpful math tutor for 5th grade students. Please create a fun and educational story problem based ONLY on the topic \\"Fractions 5th\\" for Math Whiz app users.
+
+Topic Guidelines:
+- Operations & Algebraic Thinking 5th: Focus on evaluating numerical expressions with parentheses and brackets (order of operations), writing simple expressions from verbal descriptions (like \\"add 8 and 7, then multiply by 2\\" as 2 × (8 + 7)), comparing expressions without evaluating them, expressing whole numbers from 2 to 50 as products of prime factors, and generating two numerical patterns from rules to compare corresponding terms. Keep all values whole numbers and results within 0-1000.
+- Base Ten 5th: Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly.
+- Fractions 5th: Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form.
+- Measurement & Data 5th: Focus on converting measurement units within one system (like centimeters to meters or feet to inches, including decimal metric conversions), interpreting line plots whose measurements are fractions of a unit (1/4, 1/2, 3/4), understanding volume as counting unit cubes, computing volumes of right rectangular prisms with V = l × w × h, and finding volumes of figures made of two non-overlapping rectangular prisms. Keep conversions exact and volumes whole numbers.
+- Geometry 5th: Focus on the first quadrant of the coordinate plane: naming points with ordered pairs (x, y), understanding that the first coordinate is the distance along the x-axis and the second along the y-axis, finding horizontal or vertical distances between points that share a coordinate, and classifying two-dimensional figures in a hierarchy (every square is a rectangle and a rhombus, every rectangle is a parallelogram, a trapezoid has exactly one pair of parallel sides). Keep coordinates whole numbers from 0 to 12.
+
+Requirements:
+- Keep the story age-appropriate for 5th graders (ages 10-11)
+- Use engaging, realistic scenarios that connect to their experiences
+- Make the math problem clear and solvable using 5th grade methods
+- End with a clear question
+- Provide the answer on a new line in the format \\"Answer: [your answer]\\"
+- Keep the story to one paragraph
+- Use only topics and concepts appropriate for 5th grade math (Common Core 5th grade standards)
+
+Original request: Create a fun math story problem.
+
+Please create the story problem now:"
+`;
+
 exports[`teacher-ai-focus-analysis buildPrompt with fixed inputs is frozen (embeds SUBTOPICS_BY_GRADE_TOPIC wholesale) 1`] = `
 "You are an elementary math instructional coach for Math Whiz. Analyze the aggregate student performance data below and recommend which topics and subtopics need additional focus to achieve mastery.
 
@@ -233,7 +315,7 @@ Student context:
 {\\"grade\\":\\"G4\\",\\"startDate\\":\\"2026-06-01\\",\\"endDate\\":\\"2026-06-30\\"}
 
 Known curriculum subtopics:
-{\\"G3\\":{\\"Multiplication\\":[\\"basic multiplication\\",\\"skip counting\\",\\"arrays and groups\\",\\"word problems\\",\\"fact families\\"],\\"Division\\":[\\"basic division\\",\\"equal sharing\\",\\"grouping\\",\\"fact families\\",\\"remainders\\",\\"arrays\\"],\\"Fractions\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"simplification\\"],\\"Measurement & Data\\":[\\"area\\",\\"perimeter\\",\\"volume\\"]},\\"G4\\":{\\"Operations & Algebraic Thinking\\":[\\"multiplicative comparison\\",\\"prime vs composite\\",\\"factors\\",\\"multiples\\",\\"number patterns\\",\\"multiplication word problems\\",\\"division word problems\\",\\"multi-digit multiplication\\",\\"long division\\",\\"long division with remainder\\"],\\"Base Ten\\":[\\"place value\\",\\"rounding\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"division\\",\\"comparison\\",\\"decimal place value\\",\\"multi-step word problems\\"],\\"Fractions 4th\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"decimal notation\\",\\"decimal operations\\",\\"mixed numbers\\",\\"decimal number line\\"],\\"Measurement & Data 4th\\":[\\"length conversion\\",\\"weight and capacity conversion\\",\\"time conversion\\",\\"clock reading\\",\\"area\\",\\"perimeter\\",\\"angles\\",\\"data interpretation\\",\\"line plots\\"],\\"Geometry\\":[\\"lines and angles\\",\\"points lines rays\\",\\"classify shapes\\",\\"symmetry\\",\\"triangles\\",\\"quadrilaterals\\",\\"angle measurement\\",\\"find missing side\\",\\"composite shapes\\",\\"rectangle to square\\",\\"photo collage\\"],\\"Binary Operations\\":[\\"binary to decimal conversion\\",\\"decimal to binary conversion\\",\\"binary addition\\",\\"binary subtraction\\",\\"binary multiplication\\",\\"binary division\\",\\"place value in binary\\",\\"comparing binary numbers\\"],\\"Algebra\\":[\\"variables\\",\\"evaluating expressions\\",\\"one-step equations\\",\\"input output tables\\",\\"growing patterns\\"]}}
+{\\"G3\\":{\\"Multiplication\\":[\\"basic multiplication\\",\\"skip counting\\",\\"arrays and groups\\",\\"word problems\\",\\"fact families\\"],\\"Division\\":[\\"basic division\\",\\"equal sharing\\",\\"grouping\\",\\"fact families\\",\\"remainders\\",\\"arrays\\"],\\"Fractions\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"simplification\\"],\\"Measurement & Data\\":[\\"area\\",\\"perimeter\\",\\"volume\\"]},\\"G4\\":{\\"Operations & Algebraic Thinking\\":[\\"multiplicative comparison\\",\\"prime vs composite\\",\\"factors\\",\\"multiples\\",\\"number patterns\\",\\"multiplication word problems\\",\\"division word problems\\",\\"multi-digit multiplication\\",\\"long division\\",\\"long division with remainder\\"],\\"Base Ten\\":[\\"place value\\",\\"rounding\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"division\\",\\"comparison\\",\\"decimal place value\\",\\"multi-step word problems\\"],\\"Fractions 4th\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"decimal notation\\",\\"decimal operations\\",\\"mixed numbers\\",\\"decimal number line\\"],\\"Measurement & Data 4th\\":[\\"length conversion\\",\\"weight and capacity conversion\\",\\"time conversion\\",\\"clock reading\\",\\"area\\",\\"perimeter\\",\\"angles\\",\\"data interpretation\\",\\"line plots\\"],\\"Geometry\\":[\\"lines and angles\\",\\"points lines rays\\",\\"classify shapes\\",\\"symmetry\\",\\"triangles\\",\\"quadrilaterals\\",\\"angle measurement\\",\\"find missing side\\",\\"composite shapes\\",\\"rectangle to square\\",\\"photo collage\\"],\\"Binary Operations\\":[\\"binary to decimal conversion\\",\\"decimal to binary conversion\\",\\"binary addition\\",\\"binary subtraction\\",\\"binary multiplication\\",\\"binary division\\",\\"place value in binary\\",\\"comparing binary numbers\\"],\\"Algebra\\":[\\"variables\\",\\"evaluating expressions\\",\\"one-step equations\\",\\"input output tables\\",\\"growing patterns\\"]},\\"G5\\":{\\"Operations & Algebraic Thinking 5th\\":[\\"order of operations\\",\\"writing expressions\\",\\"interpreting expressions\\",\\"prime factorization\\",\\"numerical patterns\\"],\\"Base Ten 5th\\":[\\"decimal place value\\",\\"powers of ten\\",\\"comparing decimals\\",\\"rounding decimals\\",\\"multi-digit multiplication\\",\\"division with two-digit divisors\\",\\"decimal operations\\"],\\"Fractions 5th\\":[\\"add and subtract unlike denominators\\",\\"mixed numbers\\",\\"fraction as division\\",\\"multiplying fractions\\",\\"multiplication as scaling\\",\\"dividing unit fractions\\"],\\"Measurement & Data 5th\\":[\\"unit conversions\\",\\"line plots\\",\\"volume concepts\\",\\"volume of rectangular prisms\\",\\"additive volume\\"],\\"Geometry 5th\\":[\\"coordinate plane\\",\\"distances on a grid\\",\\"classifying shapes\\",\\"shape hierarchy\\"]}}
 
 Aggregate performance by topic/subtopic:
 {\\"Geometry\\":{\\"symmetry\\":{\\"attempts\\":4,\\"correct\\":1}}}
@@ -252,7 +334,7 @@ Return ONLY valid JSON with this exact object shape:
   \\"summary\\": \\"1-2 sentence teacher-facing summary\\",
   \\"recommendations\\": [
     {
-      \\"grade\\": \\"G3 or G4\\",
+      \\"grade\\": \\"G3 or G4 or G5\\",
       \\"topic\\": \\"exact topic name\\",
       \\"subtopic\\": \\"exact subtopic name from Known curriculum subtopics, never Unspecified\\",
       \\"reason\\": \\"short reason tied to the aggregate metrics\\",
@@ -261,7 +343,7 @@ Return ONLY valid JSON with this exact object shape:
   ],
   \\"notEnoughData\\": [
     {
-      \\"grade\\": \\"G3 or G4\\",
+      \\"grade\\": \\"G3 or G4 or G5\\",
       \\"topic\\": \\"exact topic name\\",
       \\"subtopic\\": \\"exact subtopic name or Unspecified\\",
       \\"note\\": \\"short note\\"
@@ -341,6 +423,46 @@ Analyze this PDF and extract all math questions you find. If a question consists
 
 IMPORTANT: 
 - The topic MUST be one of these exact values: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations, Algebra
+- Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
+- For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
+
+Return the results as a JSON array where each question has this structure:
+{
+  \\"question\\": \\"question text (use __ for blanks in fill-in-the-blanks)\\",
+  \\"questionType\\": \\"multiple-choice\\" | \\"numeric\\" | \\"drawing\\" | \\"fill-in-the-blanks\\" | \\"write-in\\" | \\"drawing-with-text\\",
+  \\"correctAnswer\\": \\"correct answer (use ;; to separate multiple answers for fill-in-the-blanks)\\",
+  \\"options\\": [\\"option1\\", \\"option2\\", \\"option3\\", \\"option4\\"] (required for multiple-choice, empty array for others),
+  \\"hint\\": \\"helpful hint or explanation\\",
+  \\"topic\\": \\"topic name from the allowed list\\"
+}
+
+Extract ALL questions from the PDF. Be thorough and accurate."
+`;
+
+exports[`upload-pdf-questions-background extraction prompt for G5 is frozen 1`] = `
+"You are an expert at extracting math quiz questions from PDF documents. 
+Analyze this PDF and extract all math questions you find. If a question consists of multiple parts, create a separate question for each. Then, for each question, provide:
+
+1. The question text
+2. Question type: (choose ONLY from these 6: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text')
+   - 'numeric': if the answer is a numeric value (e.g., \\"5.3\\", \\"-1.2\\", \\"0.001\\")
+   - 'fill-in-the-blanks': if the question has one or more blanks to fill in (e.g., \\"5 × ____ = 20\\" or \\"The product of ____ and ____ is 24\\")
+     * Use __ (two underscores) to indicate each blank in the question text
+     * Provide answers separated by ;; (double semicolons) in the correctAnswer field
+     * Example: question: \\"5 × ____ = ____\\", correctAnswer: \\"4 ;; 20\\"
+   - 'drawing': if the user has to draw or mark something on an existing graphic (e.g., \\"Draw an obtuse triangle\\", \\"Mark the point on the number line\\")
+   - 'write-in': if the user has to write a text explanation or show work (e.g., \\"Explain your reasoning\\", \\"Show how you solved this\\")
+   - 'drawing-with-text': if the user has to both draw/mark something AND write an explanation
+   - 'multiple-choice': all other questions with answer choices
+3. The correct answer. Do not include the units in the correct answer for numeric questions. (REQUIRED for 'multiple-choice' and 'numeric', OPTIONAL for 'drawing', 'write-in', 'drawing-with-text')
+   - For 'drawing', 'write-in', and 'drawing-with-text' questions, you can provide an expected answer description in 'correctAnswer' or omit it.
+4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
+   - Must provide exactly 4 options for multiple-choice questions
+5. A helpful hint (if available)
+6. The math topic (choose ONLY from these Grade 5 topics: Operations & Algebraic Thinking 5th, Base Ten 5th, Fractions 5th, Measurement & Data 5th, Geometry 5th)
+
+IMPORTANT: 
+- The topic MUST be one of these exact values: Operations & Algebraic Thinking 5th, Base Ten 5th, Fractions 5th, Measurement & Data 5th, Geometry 5th
 - Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
 - For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
 

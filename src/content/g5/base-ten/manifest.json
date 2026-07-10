@@ -1,0 +1,43 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "base-ten",
+  "name": "Base Ten 5th",
+  "grade": "G5",
+  "order": 2,
+  "description": "Decimal place value, powers of ten, and operations with multi-digit numbers and decimals",
+  "standards": [
+    "5.NBT.A.1",
+    "5.NBT.A.2",
+    "5.NBT.A.3",
+    "5.NBT.A.4",
+    "5.NBT.B.5",
+    "5.NBT.B.6",
+    "5.NBT.B.7"
+  ],
+  "subtopics": [
+    "decimal place value",
+    "powers of ten",
+    "comparing decimals",
+    "rounding decimals",
+    "multi-digit multiplication",
+    "division with two-digit divisors",
+    "decimal operations"
+  ],
+  "objectives": [
+    "Understand that a digit is worth 10 times the place to its right and 1/10 the place to its left",
+    "Multiply and divide numbers by powers of 10",
+    "Read, write, and compare decimals to thousandths",
+    "Round decimals to any place",
+    "Fluently multiply multi-digit whole numbers",
+    "Divide whole numbers with up to four-digit dividends and two-digit divisors",
+    "Add, subtract, multiply, and divide decimals to hundredths"
+  ],
+  "ui": { "icon": "🔢", "theme": "indigo" },
+  "ai": {
+    "guidelines": "Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly."
+  },
+  "legacyExplanationHtml": null,
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

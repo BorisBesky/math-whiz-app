@@ -1,0 +1,31 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "operations-algebraic-thinking",
+  "name": "Operations & Algebraic Thinking 5th",
+  "grade": "G5",
+  "order": 1,
+  "description": "Numerical expressions with parentheses, prime factorization, and paired number patterns",
+  "standards": ["5.OA.A.1", "5.OA.A.2", "5.OA.A.2.1", "5.OA.B.3"],
+  "subtopics": [
+    "order of operations",
+    "writing expressions",
+    "interpreting expressions",
+    "prime factorization",
+    "numerical patterns"
+  ],
+  "objectives": [
+    "Evaluate numerical expressions containing parentheses and brackets",
+    "Write simple expressions that record calculations described in words",
+    "Interpret and compare numerical expressions without evaluating them",
+    "Express a whole number from 2 to 50 as a product of its prime factors",
+    "Generate two numerical patterns from rules and relate their corresponding terms"
+  ],
+  "ui": { "icon": "🧮", "theme": "purple" },
+  "ai": {
+    "guidelines": "Focus on evaluating numerical expressions with parentheses and brackets (order of operations), writing simple expressions from verbal descriptions (like \"add 8 and 7, then multiply by 2\" as 2 × (8 + 7)), comparing expressions without evaluating them, expressing whole numbers from 2 to 50 as products of prime factors, and generating two numerical patterns from rules to compare corresponding terms. Keep all values whole numbers and results within 0-1000."
+  },
+  "legacyExplanationHtml": null,
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

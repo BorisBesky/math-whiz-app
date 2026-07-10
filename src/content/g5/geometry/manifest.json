@@ -1,0 +1,30 @@
+{
+  "$schema": "../../manifest.schema.json",
+  "id": "geometry",
+  "name": "Geometry 5th",
+  "grade": "G5",
+  "order": 5,
+  "description": "The coordinate plane and classifying two-dimensional figures in a hierarchy",
+  "standards": ["5.G.A.1", "5.G.A.2", "5.G.B.3", "5.G.B.4"],
+  "subtopics": [
+    "coordinate plane",
+    "distances on a grid",
+    "classifying shapes",
+    "shape hierarchy"
+  ],
+  "objectives": [
+    "Use ordered pairs to name and locate points in the first quadrant",
+    "Understand that the coordinates tell distances from the axes",
+    "Solve real-world problems using points on a coordinate grid",
+    "Classify two-dimensional figures by their properties",
+    "Understand that properties of a category apply to all its subcategories"
+  ],
+  "ui": { "icon": "🗺️", "theme": "emerald" },
+  "ai": {
+    "guidelines": "Focus on the first quadrant of the coordinate plane: naming points with ordered pairs (x, y), understanding that the first coordinate is the distance along the x-axis and the second along the y-axis, finding horizontal or vertical distances between points that share a coordinate, and classifying two-dimensional figures in a hierarchy (every square is a rectangle and a rhombus, every rectangle is a parallelogram, a trapezoid has exactly one pair of parallel sides). Keep coordinates whole numbers from 0 to 12."
+  },
+  "legacyExplanationHtml": null,
+  "aliases": [],
+  "enabled": true,
+  "version": 1
+}

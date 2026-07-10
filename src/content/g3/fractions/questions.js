@@ -1,6 +1,6 @@
 // Question generation for 3rd Grade Fractions topic
 import { generateUniqueOptions, shuffle } from '../../../utils/question-helpers.js';
-import { QUESTION_TYPES } from '../../../constants/shared-constants.js';
+import { QUESTION_TYPES } from '../../../constants/topics.js';
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
