@@ -23,9 +23,17 @@ const draw = (subtopic, count = 60) => {
   return questions;
 };
 
+const decodeSvg = (image) => decodeURIComponent(image.data.split(',')[1]);
+
 describe('Geometry 5th correctness', () => {
   test('coordinate plane: ordered pairs and axis distances are right', () => {
     for (const q of draw('coordinate plane')) {
+      expect(q.images).toHaveLength(1);
+      const svg = decodeSvg(q.images[0]);
+      expect(svg).toContain('Coordinate grid');
+      expect(svg).toContain('>x</text>');
+      expect(svg).toContain('>y</text>');
+      expect(svg).toContain('>P</text>');
       let m;
       if (
         (m = q.question.match(
@@ -34,11 +42,15 @@ describe('Geometry 5th correctness', () => {
       ) {
         expect(q.correctAnswer).toBe(`(${m[1]}, ${m[2]})`);
         expect(m[1]).not.toBe(m[2]); // (x, y) and (y, x) options stay distinct
+        expect(Number(m[1])).toBeLessThanOrEqual(12);
+        expect(Number(m[2])).toBeLessThanOrEqual(12);
       } else if (
         (m = q.question.match(/^Point P is at \((\d+), (\d+)\)\. How many units is P from the ([xy])-axis\?$/))
       ) {
         // Distance from the y-axis is x; from the x-axis is y.
         expect(q.correctAnswer).toBe(m[3] === 'y' ? m[1] : m[2]);
+        expect(Number(m[1])).toBeLessThanOrEqual(12);
+        expect(Number(m[2])).toBeLessThanOrEqual(12);
       } else {
         throw new Error(`unrecognized question: ${q.question}`);
       }
@@ -47,6 +59,11 @@ describe('Geometry 5th correctness', () => {
 
   test('distances on a grid: shared-coordinate distances and axis points', () => {
     for (const q of draw('distances on a grid')) {
+      expect(q.images).toHaveLength(1);
+      const svg = decodeSvg(q.images[0]);
+      expect(svg).toContain('Coordinate grid');
+      expect(svg).toContain('>x</text>');
+      expect(svg).toContain('>y</text>');
       let m;
       if (
         (m = q.question.match(
@@ -58,11 +75,15 @@ describe('Geometry 5th correctness', () => {
         const expected = x1 === x2 ? Math.abs(y2 - y1) : Math.abs(x2 - x1);
         expect(Number(q.correctAnswer)).toBe(expected);
         expect(expected).toBeGreaterThan(0);
+        [x1, y1, x2, y2].forEach((coordinate) => expect(coordinate).toBeLessThanOrEqual(12));
+        expect(svg).toContain(`>${m[0].match(/the ([\w ]+) is at/)[1]}</text>`);
       } else if ((m = q.question.match(/^Which of these points lies on the ([xy])-axis\?$/))) {
         const pair = q.correctAnswer.match(/^\((\d+), (\d+)\)$/);
         expect(pair).not.toBeNull();
         if (m[1] === 'x') expect(pair[2]).toBe('0');
         else expect(pair[1]).toBe('0');
+        expect(new Set(q.options).size).toBe(q.options.length);
+        q.options.forEach((option) => expect(svg).toContain(`>${option}</text>`));
       } else {
         throw new Error(`unrecognized question: ${q.question}`);
       }
