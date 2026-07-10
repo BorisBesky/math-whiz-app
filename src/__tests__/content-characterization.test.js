@@ -18,8 +18,14 @@
 import { getTopicsForGrade } from '../utils/common_utils';
 import {
   GRADES,
+  TOPICS,
   VALID_TOPICS_BY_GRADE,
   SUBTOPICS_BY_GRADE_TOPIC,
+  APP_STATES,
+  QUESTION_TYPES,
+  ALL_QUESTION_TYPES,
+  ALL_TOPICS,
+  ALL_APP_STATES,
 } from '../constants/topics';
 import {
   quizTopicsByGrade,
@@ -29,6 +35,8 @@ import {
 import { sanitizeTopicName } from '../utils/firebaseHelpers';
 import content from '../content';
 import { getTopicNamesForGrade } from '../content/registry';
+
+const sharedConstants = require('../constants/shared-constants');
 
 // Canonical topic lists as of Phase 0. Order matters: quizTopicsByGrade order
 // is what students see in TopicSelection, and VALID_TOPICS_BY_GRADE[grade][0]
@@ -61,6 +69,20 @@ const ALL_CANONICAL_TOPICS = [
 describe('grade keys', () => {
   test('GRADES contains exactly G3, G4, and G5', () => {
     expect(GRADES).toEqual({ G3: 'G3', G4: 'G4', G5: 'G5' });
+  });
+
+  test('browser facade matches the CommonJS server constants', () => {
+    expect({
+      GRADES,
+      TOPICS,
+      VALID_TOPICS_BY_GRADE,
+      SUBTOPICS_BY_GRADE_TOPIC,
+      APP_STATES,
+      QUESTION_TYPES,
+      ALL_QUESTION_TYPES,
+      ALL_TOPICS,
+      ALL_APP_STATES,
+    }).toEqual(sharedConstants);
   });
 });
 
