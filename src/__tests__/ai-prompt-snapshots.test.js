@@ -81,12 +81,12 @@ describe('gemini-proxy', () => {
   test('invalid-topic error message embeds the exact G4 topic list', () => {
     let message;
     try {
-      validateAndEnhancePrompt('p', 'Algebra', 'G4');
+      validateAndEnhancePrompt('p', 'Calculus', 'G4');
     } catch (err) {
       message = err.message;
     }
     expect(message).toBe(
-      'Invalid topic: Algebra for 4th grade. Valid topics are: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations'
+      'Invalid topic: Calculus for 4th grade. Valid topics are: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations, Algebra'
     );
   });
 
