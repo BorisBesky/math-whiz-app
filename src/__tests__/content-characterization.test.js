@@ -42,6 +42,7 @@ const CANONICAL_TOPICS = {
     'Measurement & Data 4th',
     'Geometry',
     'Binary Operations',
+    'Algebra',
   ],
 };
 const ALL_CANONICAL_TOPICS = [...CANONICAL_TOPICS.G3, ...CANONICAL_TOPICS.G4];
@@ -149,7 +150,7 @@ describe('legacy explanation fallbacks', () => {
   // TOPIC_CONTENT_MAP serves it a React explanation first, so the iframe
   // fallback is unreachable. Frozen as-is; Phase 1 moves these paths into
   // manifests without changing coverage.
-  const TOPICS_WITHOUT_LEGACY_IFRAME = ['Measurement & Data'];
+  const TOPICS_WITHOUT_LEGACY_IFRAME = ['Measurement & Data', 'Algebra'];
 
   test('every topic outside the exception list has an iframe entry', () => {
     ALL_CANONICAL_TOPICS

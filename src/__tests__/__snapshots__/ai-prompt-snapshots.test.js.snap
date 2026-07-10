@@ -13,7 +13,8 @@ Object {
 - Fractions 4th: Focus on equivalent fractions, comparing fractions with different denominators, adding/subtracting fractions with like denominators, multiplying fractions by whole numbers, converting between mixed numbers and improper fractions, decimal notation for fractions (including placing decimals on a number line), decimal operations (adding, subtracting, multiplying, and dividing decimals)
 - Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
-- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.",
+- Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.
+- Algebra: Focus on using a letter as a variable for an unknown number, evaluating simple expressions for a given whole-number value (like 3 × n + 2 when n = 4), solving one-step addition, subtraction, multiplication, and division equations, applying input-output rules, and extending growing number patterns. Keep numbers within 0-100 and all answers whole numbers.",
 }
 `;
 
@@ -78,6 +79,7 @@ Topic Guidelines for 4th Grade:
 - Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
 - Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.
+- Algebra: Focus on using a letter as a variable for an unknown number, evaluating simple expressions for a given whole-number value (like 3 × n + 2 when n = 4), solving one-step addition, subtraction, multiplication, and division equations, applying input-output rules, and extending growing number patterns. Keep numbers within 0-100 and all answers whole numbers.
 
 Question types to generate: multiple-choice, numeric, fill-in-the-blanks
 Distribute questions roughly equally across the requested types.
@@ -208,6 +210,7 @@ Topic Guidelines:
 - Measurement & Data 4th: Focus on unit conversions (metric and customary), area and perimeter formulas, line plots with fractions, angles and angle measurement, solving problems involving measurement
 - Geometry: Focus on points/lines/rays/angles, classifying triangles and quadrilaterals by their properties, line symmetry, parallel and perpendicular lines
 - Binary Operations: Focus on converting between binary and decimal, adding binary numbers, subtracting binary numbers (no negative results), multiplying small binary numbers, and dividing binary numbers (clean division, no remainders). Keep all numbers in the 1-15 decimal range.
+- Algebra: Focus on using a letter as a variable for an unknown number, evaluating simple expressions for a given whole-number value (like 3 × n + 2 when n = 4), solving one-step addition, subtraction, multiplication, and division equations, applying input-output rules, and extending growing number patterns. Keep numbers within 0-100 and all answers whole numbers.
 
 Requirements:
 - Keep the story age-appropriate for 4th graders (ages 9-10)
@@ -230,7 +233,7 @@ Student context:
 {\\"grade\\":\\"G4\\",\\"startDate\\":\\"2026-06-01\\",\\"endDate\\":\\"2026-06-30\\"}
 
 Known curriculum subtopics:
-{\\"G3\\":{\\"Multiplication\\":[\\"basic multiplication\\",\\"skip counting\\",\\"arrays and groups\\",\\"word problems\\",\\"fact families\\"],\\"Division\\":[\\"basic division\\",\\"equal sharing\\",\\"grouping\\",\\"fact families\\",\\"remainders\\",\\"arrays\\"],\\"Fractions\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"simplification\\"],\\"Measurement & Data\\":[\\"area\\",\\"perimeter\\",\\"volume\\"]},\\"G4\\":{\\"Operations & Algebraic Thinking\\":[\\"multiplicative comparison\\",\\"prime vs composite\\",\\"factors\\",\\"multiples\\",\\"number patterns\\",\\"multiplication word problems\\",\\"division word problems\\",\\"multi-digit multiplication\\",\\"long division\\",\\"long division with remainder\\"],\\"Base Ten\\":[\\"place value\\",\\"rounding\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"division\\",\\"comparison\\",\\"decimal place value\\",\\"multi-step word problems\\"],\\"Fractions 4th\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"decimal notation\\",\\"decimal operations\\",\\"mixed numbers\\",\\"decimal number line\\"],\\"Measurement & Data 4th\\":[\\"length conversion\\",\\"weight and capacity conversion\\",\\"time conversion\\",\\"clock reading\\",\\"area\\",\\"perimeter\\",\\"angles\\",\\"data interpretation\\",\\"line plots\\"],\\"Geometry\\":[\\"lines and angles\\",\\"points lines rays\\",\\"classify shapes\\",\\"symmetry\\",\\"triangles\\",\\"quadrilaterals\\",\\"angle measurement\\",\\"find missing side\\",\\"composite shapes\\",\\"rectangle to square\\",\\"photo collage\\"],\\"Binary Operations\\":[\\"binary to decimal conversion\\",\\"decimal to binary conversion\\",\\"binary addition\\",\\"binary subtraction\\",\\"binary multiplication\\",\\"binary division\\",\\"place value in binary\\",\\"comparing binary numbers\\"]}}
+{\\"G3\\":{\\"Multiplication\\":[\\"basic multiplication\\",\\"skip counting\\",\\"arrays and groups\\",\\"word problems\\",\\"fact families\\"],\\"Division\\":[\\"basic division\\",\\"equal sharing\\",\\"grouping\\",\\"fact families\\",\\"remainders\\",\\"arrays\\"],\\"Fractions\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"simplification\\"],\\"Measurement & Data\\":[\\"area\\",\\"perimeter\\",\\"volume\\"]},\\"G4\\":{\\"Operations & Algebraic Thinking\\":[\\"multiplicative comparison\\",\\"prime vs composite\\",\\"factors\\",\\"multiples\\",\\"number patterns\\",\\"multiplication word problems\\",\\"division word problems\\",\\"multi-digit multiplication\\",\\"long division\\",\\"long division with remainder\\"],\\"Base Ten\\":[\\"place value\\",\\"rounding\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"division\\",\\"comparison\\",\\"decimal place value\\",\\"multi-step word problems\\"],\\"Fractions 4th\\":[\\"equivalent fractions\\",\\"comparison\\",\\"addition\\",\\"subtraction\\",\\"multiplication\\",\\"decimal notation\\",\\"decimal operations\\",\\"mixed numbers\\",\\"decimal number line\\"],\\"Measurement & Data 4th\\":[\\"length conversion\\",\\"weight and capacity conversion\\",\\"time conversion\\",\\"clock reading\\",\\"area\\",\\"perimeter\\",\\"angles\\",\\"data interpretation\\",\\"line plots\\"],\\"Geometry\\":[\\"lines and angles\\",\\"points lines rays\\",\\"classify shapes\\",\\"symmetry\\",\\"triangles\\",\\"quadrilaterals\\",\\"angle measurement\\",\\"find missing side\\",\\"composite shapes\\",\\"rectangle to square\\",\\"photo collage\\"],\\"Binary Operations\\":[\\"binary to decimal conversion\\",\\"decimal to binary conversion\\",\\"binary addition\\",\\"binary subtraction\\",\\"binary multiplication\\",\\"binary division\\",\\"place value in binary\\",\\"comparing binary numbers\\"],\\"Algebra\\":[\\"variables\\",\\"evaluating expressions\\",\\"one-step equations\\",\\"input output tables\\",\\"growing patterns\\"]}}
 
 Aggregate performance by topic/subtopic:
 {\\"Geometry\\":{\\"symmetry\\":{\\"attempts\\":4,\\"correct\\":1}}}
@@ -334,10 +337,10 @@ Analyze this PDF and extract all math questions you find. If a question consists
 4. Multiple choice options (REQUIRED for 'multiple-choice', empty array for others)
    - Must provide exactly 4 options for multiple-choice questions
 5. A helpful hint (if available)
-6. The math topic (choose ONLY from these Grade 4 topics: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations)
+6. The math topic (choose ONLY from these Grade 4 topics: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations, Algebra)
 
 IMPORTANT: 
-- The topic MUST be one of these exact values: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations
+- The topic MUST be one of these exact values: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations, Algebra
 - Question type MUST be exactly one of: 'multiple-choice', 'numeric', 'drawing', 'fill-in-the-blanks', 'write-in', 'drawing-with-text' (lowercase, with hyphen)
 - For 'fill-in-the-blanks': Use __ (two underscores) for blanks, separate answers with ;; in correctAnswer
 
