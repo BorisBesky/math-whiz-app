@@ -263,6 +263,30 @@ const MeasurementDataExplanation = () => {
         <span style={styles.emoji}>🧠</span><strong>Conversion Tip:</strong> Multiply when going from bigger to smaller units, divide when going from smaller to bigger!
       </div>
 
+      <h2 style={styles.h2}>🕰️ Reading an Analog Clock</h2>
+      <p>An analog clock has two hands. The <strong>short</strong> hand points to the <strong>hour</strong>. The <strong>long</strong> hand points to the <strong>minutes</strong>.</p>
+
+      <div style={styles.example}>
+        <strong>How the minute hand works:</strong>
+        <br/>• Each of the 12 numbers on the face is worth <strong>5 minutes</strong>.
+        <br/>• Minute hand on 12 → :00 &nbsp; on 1 → :05 &nbsp; on 2 → :10 &nbsp; on 3 → :15
+        <br/>• On 6 → :30 &nbsp; on 9 → :45 &nbsp; on 11 → :55
+      </div>
+
+      <div style={styles.example}>
+        <strong>Reading a time step-by-step:</strong>
+        <br/>1. Look at the short (hour) hand. Which number did it PASS most recently? That's the hour.
+        <br/>2. Look at the long (minute) hand. Count by 5s from the 12 to find the minutes.
+        <br/>3. Write the time as <em>hour</em>:<em>minutes</em>.
+        <br/><br/>
+        <em>Example:</em> Short hand between 3 and 4, long hand on the 4.
+        <br/>→ Hour = 3, minutes = 4 × 5 = 20 → <strong>3:20</strong>.
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>⏱️</span><strong>Careful:</strong> The hour hand moves slowly — if it's <em>close</em> to the next number but hasn't reached it yet, keep the earlier hour!
+      </div>
+
       <h2 style={styles.h2}>📐 Area and Perimeter</h2>
       <p>Area tells us how much space is inside a shape. Perimeter tells us the distance around a shape.</p>
       
@@ -363,6 +387,27 @@ const MeasurementDataExplanation = () => {
       
       <div style={styles.tip}>
         <span style={styles.emoji}>🔄</span><strong>Angle Tip:</strong> Use a protractor to measure angles accurately!
+      </div>
+
+      <h2 style={styles.h2}>📊 Reading Bar Graphs & Pictographs</h2>
+      <p>Bar graphs and pictographs turn a table of numbers into a picture. To read one, always check the <strong>title</strong>, the <strong>labels</strong>, and (for a pictograph) the <strong>key</strong> that says what one picture stands for.</p>
+
+      <div style={styles.example}>
+        <strong>Bar graph — "Books read this month":</strong>
+        <br/>Alex: 8 &nbsp;·&nbsp; Bella: 12 &nbsp;·&nbsp; Chen: 5 &nbsp;·&nbsp; Dana: 9
+        <br/><br/>
+        Common questions and how to answer them:
+        <br/>• <em>Who read the most?</em> → Find the <strong>tallest</strong> bar. (Bella, 12)
+        <br/>• <em>How many more did Bella read than Chen?</em> → <strong>Subtract</strong>: 12 − 5 = 7.
+        <br/>• <em>How many books total?</em> → <strong>Add</strong> the heights: 8 + 12 + 5 + 9 = 34.
+      </div>
+
+      <div style={styles.example}>
+        <strong>Pictograph:</strong> if 🍎 stands for <strong>4 apples</strong> and Ms. Lee's basket shows 🍎🍎🍎, then she has <strong>3 × 4 = 12 apples</strong>. A half-picture usually means half the key value (2 apples for 🍎½).
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🔎</span><strong>Data-question checklist:</strong> Am I looking for the <em>biggest</em>, <em>smallest</em>, a <em>difference</em>, or a <em>total</em>? Highest/lowest → compare; "how many more" → subtract; "in all" → add.
       </div>
 
       <div style={styles.conversionChart}>

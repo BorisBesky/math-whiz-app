@@ -7,6 +7,32 @@ import {
 } from '../questions.js';
 import { QUESTION_TYPES } from '../../../../constants/shared-constants.js';
 
+describe('G3 fractions: addition and subtraction only use LIKE denominators', () => {
+  // Adding/subtracting fractions with UNLIKE denominators is 5.NF.A.1, not
+  // 3rd grade. The G3 addition/subtraction generators must present the same
+  // denominator on both operands, matching what the Explanation teaches.
+  it('addition operands always share a denominator', () => {
+    for (let i = 0; i < 300; i += 1) {
+      const q = generateFractionAdditionQuestion(Math.random());
+      const match = q.question.match(/^What is (\d+)\/(\d+) \+ (\d+)\/(\d+)\?$/);
+      expect(match).not.toBeNull();
+      const [, , den1, , den2] = match;
+      expect(den1).toBe(den2);
+    }
+  });
+
+  it('subtraction operands always share a denominator and never produce a negative answer', () => {
+    for (let i = 0; i < 300; i += 1) {
+      const q = generateFractionSubtractionQuestion(Math.random());
+      const match = q.question.match(/^What is (\d+)\/(\d+) - (\d+)\/(\d+)\?$/);
+      expect(match).not.toBeNull();
+      const [, num1, den1, num2, den2] = match;
+      expect(den1).toBe(den2);
+      expect(Number(num1)).toBeGreaterThanOrEqual(Number(num2));
+    }
+  });
+});
+
 describe('G3 fractions: CCSS standards are 3rd-grade', () => {
   it('addition uses a 3.NF.* standard, not 4.NF.*', () => {
     for (let i = 0; i < 50; i += 1) {

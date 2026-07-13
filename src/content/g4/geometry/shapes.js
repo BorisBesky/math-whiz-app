@@ -1175,10 +1175,11 @@ export function createClassifiedTriangleSVG(
       },${centerY + 25}`;
       break;
     case "obtuse":
-      // Obtuse triangle (one angle > 90°)
-      points = `${centerX - 10},${centerY - 20} ${centerX - 55},${
-        centerY + 35
-      } ${centerX + 45},${centerY + 35}`;
+      // Obtuse triangle (one angle > 90°). Apex sits left of center; the
+      // interior angle at the apex opens to about 112°.
+      points = `${centerX - 15},${centerY - 5} ${centerX - 55},${
+        centerY + 30
+      } ${centerX + 55},${centerY + 30}`;
       break;
     default:
       points = `${centerX},${centerY - 40} ${centerX - 35},${centerY + 25} ${

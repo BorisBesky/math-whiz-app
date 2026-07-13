@@ -148,6 +148,29 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
     }
   });
 
+  test('prime factorization MC always ships four unique options', () => {
+    // The two-prime-composite branch (e.g. n=6) used to collapse to a
+    // 3-option MC because its non-prime split ("2 × 3") equaled the correct
+    // answer and dropped out after the collision filter.
+    for (const q of draw('prime factorization', 200)) {
+      if (q.questionType !== 'multiple-choice') continue;
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
+    }
+  });
+
+  test('numerical patterns ordered-pair MC never duplicates the correct option', () => {
+    // At index=4 the old distractor `(termsA[4], termsB[Math.min(index+1, 4)])`
+    // collapsed onto `(termsA[4], termsB[4])` — the correct answer.
+    for (const q of draw('numerical patterns', 300)) {
+      if (!/Which ordered pair/.test(q.question)) continue;
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
+    }
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'order of operations',

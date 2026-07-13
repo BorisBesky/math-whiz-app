@@ -154,28 +154,31 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
 }
 
 export function generateFractionAdditionQuestion(difficulty = 0.5) {
-  const add_den1 = getRandomInt(2, 5);
-  let add_den2 = getRandomInt(2, 6);
-  while (add_den1 === add_den2) {
-    add_den2 = getRandomInt(2, 6);
-  }
-  const add_num1 = getRandomInt(1, add_den1 - 1 > 0 ? add_den1 - 1 : 1);
-  const add_num2 = getRandomInt(1, add_den2 - 1 > 0 ? add_den2 - 1 : 1);
-  const common_add_den = add_den1 * add_den2;
-  const add_sum_num = add_num1 * add_den2 + add_num2 * add_den1;
-  const add_answer = getSimplifiedFraction(add_sum_num, common_add_den);
+  // 3rd grade only handles like denominators (adding unlike denominators is
+  // 5.NF.A.1). Pick a shared denominator and two numerators that sum to no
+  // more than the denominator so the answer stays a proper fraction.
+  const denominator = getRandomInt(3, 3 + Math.floor(6 * difficulty));
+  const add_num1 = getRandomInt(1, denominator - 2);
+  const add_num2 = getRandomInt(1, denominator - add_num1);
+  const sumNum = add_num1 + add_num2;
+  const add_answer = getSimplifiedFraction(sumNum, denominator);
   const potentialDistractors = [
-    getSimplifiedFraction(add_num1 + add_num2, add_den1 + add_den2),
-    getSimplifiedFraction(add_sum_num + 1, common_add_den),
-    getSimplifiedFraction(add_sum_num, common_add_den + 1),
+    // Common wrong step: add both tops AND both bottoms.
+    getSimplifiedFraction(sumNum, denominator + denominator),
+    // Off-by-one on the numerator.
+    getSimplifiedFraction(sumNum + 1, denominator),
+    // Forgot to add — kept only the first numerator.
+    getSimplifiedFraction(add_num1, denominator),
+    // Product of the numerators instead of the sum.
+    getSimplifiedFraction(add_num1 * add_num2, denominator),
   ];
 
   return {
-    question: `What is ${add_num1}/${add_den1} + ${add_num2}/${add_den2}?`,
+    question: `What is ${add_num1}/${denominator} + ${add_num2}/${denominator}?`,
     correctAnswer: add_answer,
     options: shuffle(generateUniqueOptions(add_answer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: "To add fractions with different denominators, first find a common denominator. Then add the top numbers and keep the common denominator. Finally, simplify if you can.",
+    hint: "When the denominators (bottom numbers) are the same, add the numerators (top numbers) and keep the denominator. Simplify if you can.",
     standard: "3.NF.A.3",
     concept: "Fractions",
     grade: "G3",
@@ -184,38 +187,31 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
 }
 
 export function generateFractionSubtractionQuestion(difficulty = 0.5) {
-  const maxDen = 6 + Math.floor(4 * difficulty);
-  const minDen = 2 + Math.floor(2 * difficulty);
-  let den1 = getRandomInt(minDen, maxDen);
-  let den2 = getRandomInt(minDen, maxDen);
-  if (den1 === den2) {
-    den2 = den1 + 1 <= maxDen ? den1 + 1 : den1 - 1;
-  }
-  let num1 = getRandomInt(1, den1 - 1);
-  let num2 = getRandomInt(1, den2 - 1);
-
-  // G3 students should never see a negative-fraction answer. If the larger
-  // fraction is on the right, swap the two operands so the minuend is bigger.
-  if (num1 * den2 < num2 * den1) {
-    [num1, num2] = [num2, num1];
-    [den1, den2] = [den2, den1];
-  }
-
-  const common_den = den1 * den2;
-  const diff_num = num1 * den2 - num2 * den1;
-  const answer = getSimplifiedFraction(diff_num, common_den);
+  // 3rd grade only handles like denominators (subtracting unlike denominators
+  // is 5.NF.A.1). Pick a shared denominator, then pick numerators so the
+  // minuend is at least as large as the subtrahend (no negative results).
+  const denominator = getRandomInt(3, 3 + Math.floor(6 * difficulty));
+  let num1 = getRandomInt(2, denominator - 1);
+  let num2 = getRandomInt(1, num1 - 1);
+  const diff = num1 - num2;
+  const answer = getSimplifiedFraction(diff, denominator);
   const potentialDistractors = [
-    getSimplifiedFraction(Math.abs(num1 - num2), Math.abs(den1 - den2)),
-    getSimplifiedFraction(diff_num + 1, common_den),
-    getSimplifiedFraction(diff_num, common_den + 1),
+    // Common wrong step: subtract both tops AND both bottoms.
+    getSimplifiedFraction(diff, denominator - denominator + 1),
+    // Off-by-one on the numerator.
+    getSimplifiedFraction(diff + 1, denominator),
+    // Kept the wrong numerator alone.
+    getSimplifiedFraction(num1, denominator),
+    // Added instead of subtracted.
+    getSimplifiedFraction(num1 + num2, denominator),
   ];
 
   return {
-    question: `What is ${num1}/${den1} - ${num2}/${den2}?`,
+    question: `What is ${num1}/${denominator} - ${num2}/${denominator}?`,
     correctAnswer: answer,
     options: shuffle(generateUniqueOptions(answer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: "Find a common denominator before subtracting the fractions. Make sure your answer is simplified!",
+    hint: "When the denominators (bottom numbers) are the same, subtract the numerators (top numbers) and keep the denominator. Simplify if you can.",
     standard: "3.NF.A.3",
     concept: "Fractions",
     grade: "G3",

@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import {
   ANGLE_TYPES,
   generateAngleMeasurementQuestion,
@@ -258,5 +260,59 @@ describe('geometry quadrilateral properties: hierarchy-driven multiple correct a
       expect(q.options).toContain(q.correctAnswer);
       expect(new Set(q.options).size).toBe(q.options.length);
     }
+  });
+
+  it('always ships four options even for parallelogram (the smallest in-hierarchy distractor pool)', () => {
+    // Only "trapezoid" survives the hierarchy filter for target=parallelogram
+    // — the generator must pad with fallback distractors to reach four.
+    let parallelogramSeen = 0;
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateQuadrilateralPropertiesQuestion();
+      if (q.correctAnswer === 'parallelogram') parallelogramSeen += 1;
+      expect(q.options.length).toBe(4);
+    }
+    expect(parallelogramSeen).toBeGreaterThan(0);
+  });
+});
+
+describe('geometry shapes.js: the "obtuse" classified triangle actually has an obtuse angle', () => {
+  const shapesSrc = fs.readFileSync(
+    path.join(__dirname, '..', 'shapes.js'),
+    'utf8'
+  );
+
+  it('renders a triangle whose largest interior angle is > 90°', () => {
+    // Extract the `points` string emitted by the obtuse branch. It follows
+    // the template `${centerX + dx1},${centerY + dy1} …` — parse the six
+    // offsets and compute interior angles at each vertex.
+    const obtuseBlock = shapesSrc.match(
+      /case\s+"obtuse"[^]*?points\s*=\s*`([^`]+)`/
+    );
+    expect(obtuseBlock).not.toBeNull();
+    // Collapse the template's internal whitespace so multi-line
+    // `${centerY + 30}` fragments (which the file breaks across lines) still
+    // parse as a single offset.
+    const template = obtuseBlock[1].replace(/\s+/g, ' ');
+    // ${centerX + N} / ${centerX - N} / ${centerX} — extract signed offsets.
+    const offsetPattern = /\$\{ *centerX(?: *([+-]) *(\d+))? *\}, *\$\{ *centerY(?: *([+-]) *(\d+))? *\}/g;
+    const vertices = [];
+    let match;
+    while ((match = offsetPattern.exec(template)) !== null) {
+      const dx = match[2] ? (match[1] === '-' ? -Number(match[2]) : Number(match[2])) : 0;
+      const dy = match[4] ? (match[3] === '-' ? -Number(match[4]) : Number(match[4])) : 0;
+      vertices.push([dx, dy]);
+    }
+    expect(vertices.length).toBe(3);
+    const dist = (a, b) => Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2);
+    const [A, B, C] = vertices;
+    const a = dist(B, C);
+    const b = dist(A, C);
+    const c = dist(A, B);
+    const deg = (cos) => (Math.acos(cos) * 180) / Math.PI;
+    const angA = deg((b * b + c * c - a * a) / (2 * b * c));
+    const angB = deg((a * a + c * c - b * b) / (2 * a * c));
+    const angC = deg((a * a + b * b - c * c) / (2 * a * b));
+    const maxAngle = Math.max(angA, angB, angC);
+    expect(maxAngle).toBeGreaterThan(90);
   });
 });

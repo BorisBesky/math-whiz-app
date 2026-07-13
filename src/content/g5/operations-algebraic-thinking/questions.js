@@ -235,18 +235,28 @@ const generatePrimeFactorizationQuestion = (difficulty) => {
 
   const correct = factors.join(' × ');
   // Distractors: swap one prime, drop a factor, or use a non-prime split.
+  // For two-prime composites the naive "n / factors[0]" split collides with
+  // the correct answer (e.g., 6 = 2 × 3, and "2 × 3" is also the split). Use
+  // a distinctly non-prime split there instead.
   const swapped = [...factors];
   swapped[0] = swapped[0] === 2 ? 3 : 2;
+  const nonPrimeSplit = factors.length > 2
+    ? (n % 2 === 0 ? `2 × ${n / 2}` : `${factors[0]} × ${n / factors[0]}`)
+    : `${factors[0] * factors[1] === n ? 1 : factors[0]} × ${n}`;
   const distractors = [
     swapped.join(' × '),
     factors.length > 2 ? factors.slice(1).join(' × ') : `1 × ${n}`,
-    n % 2 === 0 ? `2 × ${n / 2}` : `${factors[0]} × ${n / factors[0]}`,
+    nonPrimeSplit,
+    // Always-safe padding distractor: the number itself, unfactored, which is
+    // wrong for every composite by definition.
+    `${n}`,
   ].filter((option) => option !== correct);
 
+  const unique = Array.from(new Set(distractors));
   return {
     question: `Which of these is the prime factorization of ${n}?`,
     correctAnswer: correct,
-    options: shuffle([correct, ...new Set(distractors)].slice(0, 4)),
+    options: shuffle([correct, ...unique.slice(0, 3)]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: 'Every factor must be prime, and the factors must multiply back to the number.',
     ...baseFields('prime factorization', '5.OA.A.2.1'),
@@ -297,14 +307,19 @@ const generateNumericalPatternsQuestion = (difficulty) => {
 
   const index = randomInt(1, 4);
   const correct = `(${termsA[index]}, ${termsB[index]})`;
+  // Pick a nearby-but-distinct index for the "wrong term" distractors so the
+  // options are always four unique strings — at index=4, clamping to `index`
+  // itself collapsed the distractor into the correct answer.
+  const shiftedIndex = index === 4 ? index - 1 : index + 1;
+  const backIndex = index === 1 ? index + 1 : index - 1;
   return {
     question: `Pattern A is 0, ${termsA[1]}, ${termsA[2]}, ${termsA[3]}, ${termsA[4]}. Pattern B is 0, ${termsB[1]}, ${termsB[2]}, ${termsB[3]}, ${termsB[4]}. Which ordered pair matches the ${ORDINALS[index]} terms (A, B)?`,
     correctAnswer: correct,
     options: shuffle([
       correct,
       `(${termsB[index]}, ${termsA[index]})`,
-      `(${termsA[index]}, ${termsB[Math.min(index + 1, 4)]})`,
-      `(${termsA[Math.max(index - 1, 0)]}, ${termsB[index]})`,
+      `(${termsA[index]}, ${termsB[shiftedIndex]})`,
+      `(${termsA[backIndex]}, ${termsB[index]})`,
     ]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: 'The first number comes from Pattern A, the second from Pattern B — same position in each.',

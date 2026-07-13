@@ -716,10 +716,15 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
   // Exclude any shape that is a subclass of the target — e.g. a square would
   // otherwise be a defensible answer for the "parallelogram" question.
   const excludedNames = new Set([quad.name, ...quad.subclassOf]);
-  const wrongQuads = quadrilaterals
+  const inHierarchyDistractors = quadrilaterals
     .filter(q => !excludedNames.has(q.name))
-    .map(q => q.name)
-    .slice(0, 3);
+    .map(q => q.name);
+  // For a target like "parallelogram" the hierarchy leaves us only one usable
+  // distractor (trapezoid), which would ship a 2-option MC. Pad with named
+  // shapes outside the parallelogram hierarchy so students always get four.
+  const fallbackDistractors = ['kite', 'pentagon', 'hexagon']
+    .filter(name => !excludedNames.has(name));
+  const wrongQuads = [...inHierarchyDistractors, ...fallbackDistractors].slice(0, 3);
   
   return {
     question: `Which quadrilateral has ALL of these properties: "${properties.join(", ")}"?`,

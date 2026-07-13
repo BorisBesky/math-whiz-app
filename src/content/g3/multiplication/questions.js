@@ -16,10 +16,15 @@ function generateBasicMultiplicationQuestion(difficulty = 0.5) {
   const m2 = getRandomInt(2, 2 + Math.floor(7 * difficulty));
   const mAnswer = m1 * m2;
   const correctAnswer = mAnswer.toString();
+  // Pick an offset that will not collide with m1*(m2+1) = mAnswer + m1,
+  // otherwise generateUniqueOptions silently ships a 3-option MC.
+  const offsets = [1, 2, 3, 4, 5].filter((n) => n !== m1);
+  const offset = offsets[getRandomInt(0, offsets.length - 1)];
   const potentialDistractors = [
-    (mAnswer + getRandomInt(1, 5)).toString(),
+    (mAnswer + offset).toString(),
     (m1 * (m2 + 1)).toString(),
     ((m1 - 1) * m2).toString(),
+    (m1 + m2).toString(),
   ];
 
   return {

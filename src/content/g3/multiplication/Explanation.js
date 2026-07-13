@@ -119,12 +119,29 @@ const MultiplicationExplanation = () => {
 
       <h2 style={styles.h2}>🔄 The Commutative Property</h2>
       <p>The order doesn't matter! 3 × 4 is the same as 4 × 3.</p>
-      
+
       <div style={styles.example}>
         <strong>Same Answer, Different Ways:</strong>
         <br/>• 3 × 4 = 12 (3 groups of 4)
         <br/>• 4 × 3 = 12 (4 groups of 3)
         <br/>• Both equal 12!
+      </div>
+
+      <h2 style={styles.h2}>👨‍👩‍👧‍👦 Fact Families</h2>
+      <p>Multiplication and division are <strong>opposite operations</strong>. Any three related numbers make a whole "fact family" — four different facts you can build from the same trio.</p>
+
+      <div style={styles.example}>
+        <strong>Fact family for 3, 4, and 12:</strong>
+        <br/>• 3 × 4 = 12
+        <br/>• 4 × 3 = 12
+        <br/>• 12 ÷ 3 = 4
+        <br/>• 12 ÷ 4 = 3
+        <br/><br/>
+        Notice how the SAME three numbers show up in every fact.
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span><strong>Why this helps:</strong> If you know 6 × 7 = 42, you already know 42 ÷ 6 = 7 and 42 ÷ 7 = 6 — no need to memorize them separately!
       </div>
 
       <h2 style={styles.h2}>👥 Real Life Examples</h2>
