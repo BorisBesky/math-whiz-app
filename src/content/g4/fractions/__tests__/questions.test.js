@@ -5,6 +5,20 @@ import {
   generateMixedNumbersQuestion,
 } from '../questions.js';
 
+describe('G4 fractions: mixed-number "toMixed" distractors are never malformed', () => {
+  it('never emits a "0 R/D" distractor when the whole part would go to zero', () => {
+    // Before the fix, `${wholeNumber - 1} ${remainder}/${denominator}` produced
+    // "0 3/4" whenever wholeNumber === 1 — malformed mixed-number notation.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateMixedNumbersQuestion(0.5);
+      if (!/Convert \d+\/\d+ to a mixed number\./.test(q.question)) continue;
+      q.options.forEach((opt) => {
+        expect(opt).not.toMatch(/^0 \d+\/\d+$/);
+      });
+    }
+  });
+});
+
 describe('G4 fractions: subtraction hint matches the question setup', () => {
   it('does not tell students the denominators are "the same" (the generator always uses different ones)', () => {
     for (let i = 0; i < 100; i += 1) {

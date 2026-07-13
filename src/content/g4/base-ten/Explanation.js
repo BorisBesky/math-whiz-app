@@ -184,6 +184,69 @@ const BaseTenExplanation = () => {
         <span style={styles.emoji}>🎲</span><strong>Rounding Rule:</strong> 5 or more, round up the floor! 4 or less, let it rest!
       </div>
 
+      <h2 style={styles.h2}>⚖️ Comparing Multi-Digit Numbers</h2>
+      <p>To compare big numbers, always start from the <strong>leftmost</strong> place (the biggest place). Whichever number has the bigger digit there is greater — you don't have to look any further.</p>
+
+      <div style={styles.example}>
+        <strong>Compare 45,872 and 45,910:</strong>
+        <br/>• Ten thousands: 4 = 4 (tie, keep going)
+        <br/>• Thousands: 5 = 5 (tie, keep going)
+        <br/>• Hundreds: 8 &lt; 9 → 45,872 &lt; 45,910 ✓
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🐊</span><strong>Reminder:</strong> The alligator eats the bigger number: 45,910 &gt; 45,872. If two numbers have a different number of digits (like 8,000 vs 12,000), the one with MORE digits is bigger.
+      </div>
+
+      <h2 style={styles.h2}>➕➖ Adding &amp; Subtracting Big Numbers</h2>
+      <p>Line up the numbers by <strong>place value</strong> (ones under ones, tens under tens, …). Then work column by column from right to left, carrying or borrowing whenever a column overflows or under-flows.</p>
+
+      <div style={styles.example}>
+        <strong>Add 3,458 + 2,791:</strong>
+        <pre style={styles.preformatted}>
+{`   1 1 1
+    3,458
+  + 2,791
+   ------
+    6,249`}
+        </pre>
+        Ones: 8+1=9. Tens: 5+9=14 (write 4, carry 1). Hundreds: 4+7+1=12 (write 2, carry 1). Thousands: 3+2+1=6.
+      </div>
+
+      <div style={styles.example}>
+        <strong>Subtract 6,032 − 1,875:</strong>
+        <pre style={styles.preformatted}>
+{`    5 9 12 12
+    6,0 3 2
+  − 1, 8 7 5
+   ---------
+    4, 1 5 7`}
+        </pre>
+        You may need to borrow across a zero — regroup 6,000 as 5,900 + 100 first.
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>✅</span><strong>Check trick:</strong> A subtraction answer plus what you subtracted should equal the original number (4,157 + 1,875 = 6,032). ✓
+      </div>
+
+      <h2 style={styles.h2}>🧩 Multi-Step Word Problems</h2>
+      <p>Real problems often need <strong>two or more steps</strong>. Slow down and use a plan:</p>
+
+      <div style={styles.example}>
+        <strong>Plan the steps:</strong>
+        <br/>1. <strong>Underline</strong> what the question is asking.
+        <br/>2. <strong>Circle</strong> the important numbers.
+        <br/>3. Decide what to do first (usually a hidden step you have to compute before the real question).
+        <br/>4. Do the second step using the answer from step 3.
+        <br/>5. <strong>Check</strong>: does the answer make sense?
+      </div>
+
+      <div style={styles.example}>
+        <strong>Example:</strong> A theater has 24 rows of 18 seats. Tonight 372 seats are sold. How many seats are still empty?
+        <br/>• Step 1 (hidden): total seats = 24 × 18 = <strong>432</strong>.
+        <br/>• Step 2 (real question): empty = 432 − 372 = <strong>60 seats</strong>. ✓
+      </div>
+
       <h2 style={styles.h2}>✖️ Multi-Digit Multiplication</h2>
       <p>Multiply larger numbers using what you know about place value!</p>
       

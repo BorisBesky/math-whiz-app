@@ -315,12 +315,14 @@ export function generateBinaryComparisonQuestion(difficulty = 0.5) {
     wrongAnswers = [
       `${binary1} < ${binary2}`,
       `${binary1} = ${binary2}`,
+      `${binary2} > ${binary1}`,
     ];
   } else {
     correctAnswer = `${binary1} < ${binary2}`;
     wrongAnswers = [
       `${binary1} > ${binary2}`,
       `${binary1} = ${binary2}`,
+      `${binary2} < ${binary1}`,
     ];
   }
 

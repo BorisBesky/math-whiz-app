@@ -92,6 +92,25 @@ const DivisionExplanation = () => {
         <br/><strong>We can make 5 bags! 20 ÷ 4 = 5</strong>
       </div>
 
+      <h2 style={styles.h2}>🔢 Arrays: Rows &amp; Columns</h2>
+      <p>An <strong>array</strong> is a rectangle of dots or objects lined up in equal rows. Every array gives you TWO division facts.</p>
+
+      <div style={styles.example}>
+        <strong>Example:</strong> This array has 24 dots.
+        <br/>⚫⚫⚫⚫⚫⚫
+        <br/>⚫⚫⚫⚫⚫⚫
+        <br/>⚫⚫⚫⚫⚫⚫
+        <br/>⚫⚫⚫⚫⚫⚫
+        <br/><br/>
+        4 rows with 6 dots in each row:
+        <br/>• 24 ÷ 4 rows = <strong>6 dots per row</strong>
+        <br/>• 24 ÷ 6 columns = <strong>4 dots per column</strong>
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🧠</span><strong>Two facts, one array:</strong> If you know the total and one side, dividing gives you the other side. Arrays make sharing and grouping the SAME question!
+      </div>
+
       <h2 style={styles.h2}>🔄 Division and Multiplication are Partners!</h2>
       <p>Division and multiplication work together like best friends!</p>
       

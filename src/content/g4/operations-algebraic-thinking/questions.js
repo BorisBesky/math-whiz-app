@@ -177,17 +177,27 @@ export function generateFactorsQuestion(difficulty = 0.5) {
 
   const base = COMPOSITES[getRandomInt(0, COMPOSITES.length - 1)];
   const factors = COMPOSITES_FNF.find(item => item.number === base).factors;
-  
+
   const correctFactor = factors[getRandomInt(1, factors.length - 2)]; // Skip 1 and the number itself
   const correctAnswer = correctFactor.toString();
   const getNonFactors = COMPOSITES_FNF.find(item => item.number === base).nonFactors;
-  const potentialDistractors = getNonFactors.map(n => n.toString());
+  // Small composites like 4 only have one non-factor in [1..n] (just 3), which
+  // shipped a 2-option MC. Pad with numbers just beyond n so we always land
+  // at four options.
+  const factorSet = new Set(factors);
+  const extraNonFactors = [];
+  for (let candidate = base + 1; extraNonFactors.length < 4 && candidate <= base + 12; candidate += 1) {
+    if (base % candidate !== 0 && !factorSet.has(candidate)) {
+      extraNonFactors.push(candidate);
+    }
+  }
+  const potentialDistractors = [...getNonFactors, ...extraNonFactors].map(n => n.toString());
 
 
   return {
     question: `Which of these is a factor of ${base}?`,
     correctAnswer: correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors, Math.min(3, potentialDistractors.length) + 1)),
+    options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors, 4)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `A factor of ${base} divides evenly into ${base} with no remainder.`,
     standard: "4.OA.B.4",

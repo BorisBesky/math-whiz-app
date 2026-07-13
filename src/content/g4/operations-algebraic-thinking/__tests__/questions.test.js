@@ -103,6 +103,27 @@ describe('generateNumberPatternQuestion question text', () => {
   });
 });
 
+describe('generateFactorsQuestion always produces 4 options', () => {
+  it('never ships fewer than 4 options even for small composites like 4 (only 1 non-factor in [1..n])', () => {
+    const results = [];
+    for (let i = 0; i < 1500 && results.length < 400; i += 1) {
+      const result = questions.generateFactorsQuestion();
+      if (typeof result.question === 'string' && result.question.startsWith('Which of these is a factor of')) {
+        results.push(result);
+      }
+    }
+    expect(results.length).toBeGreaterThan(0);
+    const tooFew = results
+      .filter(r => !Array.isArray(r.options) || r.options.length < 4)
+      .map(r => ({ question: r.question, optionCount: r.options ? r.options.length : 'missing' }));
+    expect(tooFew).toEqual([]);
+    // Also make sure the correct answer is always among the options.
+    results.forEach((r) => {
+      expect(r.options).toContain(r.correctAnswer);
+    });
+  });
+});
+
 describe('generateMultiplesQuestion identify-form distractor count', () => {
   it('always produces at least 3 distractors so the student sees at least 4 options', () => {
     // Collect every "Which of these is a multiple of N?" question over many

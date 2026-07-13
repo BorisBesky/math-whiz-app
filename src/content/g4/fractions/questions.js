@@ -444,11 +444,17 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
     const improperNumerator = wholeNumber * denominator + remainder;
     
     const correctAnswer = `${wholeNumber} ${remainder}/${denominator}`;
-    
+
+    // Never emit "0 R/D" as a distractor — that's malformed mixed-number
+    // notation. When the "one whole fewer" distractor would land on 0, drop
+    // the whole part and just show the fraction instead.
+    const oneFewerWhole = wholeNumber - 1 === 0
+      ? `${remainder}/${denominator}`
+      : `${wholeNumber - 1} ${remainder}/${denominator}`;
     const potentialDistractors = [
       `${wholeNumber + 1} ${remainder}/${denominator}`,
       `${wholeNumber} ${remainder + 1}/${denominator}`,
-      `${wholeNumber - 1} ${remainder}/${denominator}`,
+      oneFewerWhole,
     ];
     
     return {
