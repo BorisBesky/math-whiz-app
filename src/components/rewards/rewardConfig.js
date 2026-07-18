@@ -91,6 +91,14 @@ export const REWARD_CHARACTERS = [
     summary: "A cool 3D penguin straight from the snow.",
     model: "/models/pinguin.glb",
   },
+  {
+    id: "willow-wizard",
+    name: "Willow",
+    title: "Wizard Girl",
+    accent: "#7c3aed",
+    summary: "A magical 3D wizard with separately colorable parts.",
+    model: "/models/wizard_parts.glb",
+  },
 ];
 
 // Characters whose look is hand-built from primitives (and therefore support
@@ -183,6 +191,120 @@ export const CHARACTER_COLOR_REGIONS = {
     { id: "hair", label: "Hair", default: "#4a044e" },
     { id: "shirt", label: "Shirt", default: "#ec4899" },
     { id: "pants", label: "Pants", default: "#7c3aed" },
+  ],
+  "max-boy": [
+    { id: "skin", label: "Skin", default: "#f2c7a0" },
+    { id: "hair", label: "Hair", default: "#7c2d12" },
+    {
+      id: "shirt",
+      label: "Shirt",
+      default: "#2563eb",
+      materialNames: ["shirt_front", "shirt_back"],
+    },
+    {
+      id: "pants",
+      label: "Pants",
+      default: "#0f766e",
+      materialNames: ["pants_front", "pants_back"],
+    },
+  ],
+  "ava-girl": [
+    { id: "skin", label: "Skin", default: "#f2c7a0" },
+    { id: "hair", label: "Hair", default: "#4a044e" },
+    {
+      id: "shirt",
+      label: "Shirt",
+      default: "#ec4899",
+      materialNames: ["shirt_front", "shirt_back"],
+    },
+    {
+      id: "skirt",
+      label: "Skirt",
+      default: "#7c3aed",
+      materialNames: ["pants_front", "pants_back"],
+    },
+  ],
+  "rover-dog": [
+    {
+      id: "fur",
+      label: "Fur",
+      default: "#d97706",
+      materialNames: ["fur", "fur_dark"],
+    },
+    { id: "muzzle", label: "Muzzle", default: "#fed7aa" },
+    { id: "belly_front", label: "Belly", default: "#ffedd5" },
+  ],
+  "ollie-owl": [
+    {
+      id: "feather",
+      label: "Feathers",
+      default: "#8b5cf6",
+      materialNames: ["feather", "feather_dark"],
+    },
+    { id: "belly_front", label: "Belly", default: "#fef3c7" },
+    { id: "face", label: "Face", default: "#faf5ff" },
+    { id: "beak", label: "Beak", default: "#fb923c" },
+  ],
+  "frost-penguin": [
+    {
+      id: "body",
+      label: "Body",
+      default: "#334155",
+      materialNames: ["body", "body_dark"],
+    },
+    { id: "belly_front", label: "Belly", default: "#f8fafc" },
+    { id: "beak", label: "Beak", default: "#fb923c" },
+    { id: "foot", label: "Feet", default: "#f59e0b" },
+  ],
+  "willow-wizard": [
+    {
+      id: "head",
+      label: "Head",
+      default: "#f2c7a0",
+      materialNames: ["part_0_head"],
+    },
+    {
+      id: "feather",
+      label: "Feather",
+      default: "#f87171",
+      materialNames: ["part_1_feather"],
+    },
+    {
+      id: "hat",
+      label: "Hat",
+      default: "#bef264",
+      materialNames: ["part_2_hat"],
+    },
+    {
+      id: "torso",
+      label: "Torso",
+      default: "#86efac",
+      materialNames: ["part_3_torso body"],
+    },
+    {
+      id: "cloak",
+      label: "Cloak",
+      default: "#67e8f9",
+      materialNames: ["part_4_cloak"],
+    },
+    {
+      id: "hands",
+      label: "Hands",
+      default: "#818cf8",
+      materialNames: ["part_5_hands"],
+    },
+    {
+      id: "staff",
+      label: "Staff",
+      default: "#a78bfa",
+      materialNames: ["part_6_magic staff"],
+    },
+    {
+      id: "orb",
+      label: "Orb",
+      default: "#f472b6",
+      materialNames: ["part_7_orb"],
+    },
   ],
 };
 

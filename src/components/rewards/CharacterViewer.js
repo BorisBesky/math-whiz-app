@@ -6,6 +6,7 @@ import {
   DEFAULT_CHARACTER_ID,
   getAccessoryById,
   getCharacterById,
+  getColorRegions,
 } from "./rewardConfig";
 
 // Loads a GLB once per URL and normalizes it: scaled to a consistent height,
@@ -39,6 +40,54 @@ const loadCharacterModel = (url) => {
     modelCache.set(url, promise);
   }
   return modelCache.get(url);
+};
+
+const cloneCharacterModel = (source) => {
+  const clone = source.clone(true);
+  clone.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    child.material = Array.isArray(child.material)
+      ? child.material.map((material) => material.clone())
+      : child.material.clone();
+  });
+  return clone;
+};
+
+const colorLookupKeys = (name) => {
+  if (!name) return [];
+  return [
+    name,
+    name.replace(/\s+/g, "_"),
+    name.replace(/_+/g, " "),
+  ];
+};
+
+const applyModelColors = (root, characterId, colors = {}) => {
+  const colorableRegions = getColorRegions(characterId);
+  if (!colorableRegions.length) return;
+  const colorByMaterial = colorableRegions.reduce((acc, region) => {
+    const color = colors[region.id] || region.default;
+    const materialNames = region.materialNames || [region.id];
+    materialNames.forEach((materialName) => {
+      colorLookupKeys(materialName).forEach((key) => {
+        acc[key] = color;
+      });
+    });
+    return acc;
+  }, {});
+
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      const materialKey = colorLookupKeys(material.name).find((key) => colorByMaterial[key]);
+      const childKey = colorLookupKeys(child.name).find((key) => colorByMaterial[key]);
+      const color = colorByMaterial[materialKey] || colorByMaterial[childKey];
+      if (!color || !material.color) return;
+      material.color.set(color);
+      material.needsUpdate = true;
+    });
+  });
 };
 
 const makeMat = (color, options = {}) =>
@@ -856,9 +905,9 @@ const addAccessory = (group, item, rig) => {
   if (item.category === "prop") addProp(group, item, rig);
 };
 
-const disposeObject = (object) => {
+const disposeObject = (object, { disposeGeometry = true } = {}) => {
   object.traverse((child) => {
-    if (child.geometry) child.geometry.dispose();
+    if (disposeGeometry && child.geometry) child.geometry.dispose();
     if (child.material) {
       if (Array.isArray(child.material)) {
         child.material.forEach((material) => material.dispose());
@@ -943,8 +992,11 @@ const CharacterViewer = ({
       loadCharacterModel(character.model)
         .then((root) => {
           if (cancelled) return;
-          modelObject = root;
-          group.add(root);
+          const modelRoot = cloneCharacterModel(root);
+          applyModelColors(modelRoot, character.id, colors);
+          modelObject = new THREE.Group();
+          modelObject.add(modelRoot);
+          group.add(modelObject);
         })
         .catch((error) => {
           // eslint-disable-next-line no-console
@@ -1035,9 +1087,12 @@ const CharacterViewer = ({
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.domElement.removeEventListener("pointercancel", onPointerUp);
-      // Detach the cached model so it survives for reuse; only dispose the
-      // procedurally built meshes.
-      if (modelObject) group.remove(modelObject);
+      // Detach model instances before disposing the scene so shared cached
+      // geometry survives for reuse; cloned instance materials can be released.
+      if (modelObject) {
+        group.remove(modelObject);
+        disposeObject(modelObject, { disposeGeometry: false });
+      }
       disposeObject(scene);
       if (envTexture) {
         scene.environment = null;
