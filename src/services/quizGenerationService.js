@@ -94,7 +94,8 @@ export const generateQuizQuestions = async (
     classId,
     answeredQuestionIds,
     appId,
-    allowedSubtopicsByTopic
+    allowedSubtopicsByTopic,
+    numQuestions * 3
   );
   let firestoreQuestionIndex = 0;
   const forceQuestionBankOnly = questionBankProbability >= 1;

@@ -72,12 +72,15 @@ export const retryWithBackoff = async (fn, options = {}) => {
   throw lastError;
 };
 
-export const getQuestionHistory = async (userId) => {
+export const getQuestionHistory = async (userId, topic = null, legacyHistory = null) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
   const attemptsRef = getUserAttemptsCollectionRef(userId);
   try {
-    const attemptsSnapshot = attemptsRef ? await getDocs(attemptsRef) : null;
+    const attemptsQuery = attemptsRef && topic
+      ? query(attemptsRef, where('topic', '==', topic))
+      : attemptsRef;
+    const attemptsSnapshot = attemptsQuery ? await getDocs(attemptsQuery) : null;
     if (attemptsSnapshot && !attemptsSnapshot.empty) {
       return attemptsSnapshot.docs
         .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
@@ -90,10 +93,19 @@ export const getQuestionHistory = async (userId) => {
     console.warn('[questionService] Attempt history unavailable offline; falling back to cached profile history.', error);
   }
 
+  if (Array.isArray(legacyHistory)) {
+    return topic
+      ? legacyHistory.filter((attempt) => attempt.topic === topic)
+      : legacyHistory;
+  }
+
   try {
     const userDoc = await getDoc(userDocRef);
     if (userDoc.exists() && userDoc.data().answeredQuestions) {
-      return userDoc.data().answeredQuestions;
+      const profileLegacyHistory = userDoc.data().answeredQuestions;
+      return topic
+        ? profileLegacyHistory.filter((attempt) => attempt.topic === topic)
+        : profileLegacyHistory;
     }
   } catch (error) {
     if (!isLikelyOfflineError(error)) {
@@ -160,29 +172,34 @@ const canHydrateQuestionRefInClient = (path) => (
 );
 
 const hydrateMissingClassQuestionMetadata = async (candidateQuestions) => {
-  const hydrateable = candidateQuestions.filter((question) => (
-    (!question.subtopic || !question.operation || !question.tags) &&
-    canHydrateQuestionRefInClient(question.questionBankRef)
-  ));
+  const hydrateableByRef = new Map();
+  candidateQuestions.forEach((question) => {
+    if (
+      (!question.subtopic || !question.operation || !question.tags) &&
+      canHydrateQuestionRefInClient(question.questionBankRef) &&
+      !hydrateableByRef.has(question.questionBankRef)
+    ) {
+      hydrateableByRef.set(question.questionBankRef, question);
+    }
+  });
 
-  if (hydrateable.length === 0) {
+  if (hydrateableByRef.size === 0) {
     return candidateQuestions;
   }
 
   const hydratedByRef = new Map();
-  await Promise.all(hydrateable.map(async (question) => {
-    if (hydratedByRef.has(question.questionBankRef)) return;
-    const questionRef = getQuestionRefFromPath(question.questionBankRef);
+  await Promise.all(Array.from(hydrateableByRef.keys()).map(async (questionBankRef) => {
+    const questionRef = getQuestionRefFromPath(questionBankRef);
     if (!questionRef) return;
 
     try {
       const snap = await getDoc(questionRef);
       if (snap.exists()) {
-        hydratedByRef.set(question.questionBankRef, snap.data());
+        hydratedByRef.set(questionBankRef, snap.data());
       }
     } catch (error) {
       console.warn('[fetchQuestionsFromFirestore] Could not hydrate class question metadata:', {
-        questionBankRef: question.questionBankRef,
+        questionBankRef,
         error,
       });
     }
@@ -209,7 +226,16 @@ const hydrateMissingClassQuestionMetadata = async (candidateQuestions) => {
 // Note: Class questions are stored as reference documents that contain both:
 //   1. Reference info (questionBankRef, teacherId) pointing to the original question
 //   2. Full question data for efficient querying by topic/grade
-export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId, answeredQuestionIds, appId, allowedSubtopicsByTopic = null) => {
+export const fetchQuestionsFromFirestore = async (
+  topic,
+  grade,
+  userId,
+  classId,
+  answeredQuestionIds,
+  appId,
+  allowedSubtopicsByTopic = null,
+  minimumQuestionCount = 0
+) => {
   const questions = [];
   const classQuestions = [];
   const currentAppId = appId || (typeof __app_id !== "undefined" ? __app_id : "default-app-id");
@@ -292,7 +318,10 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
       totalCandidates: candidateQuestions.length,
     });
 
-    return questionsToAdd.length;
+    return {
+      addedCount: questionsToAdd.length,
+      hydratedCandidates,
+    };
   };
 
   try {
@@ -306,10 +335,12 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
           if (cachedQuestions && cachedQuestions.length > 0) {
             console.log(`[fetchQuestionsFromFirestore] Using cached class questions for classId: ${selectedClassId}, topic: ${topic}, grade: ${grade}`);
 
-            const classQuestionsCount = await addClassQuestions(cachedQuestions, selectedClassId, 'Used cached');
+            const {
+              addedCount: classQuestionsCount,
+              hydratedCandidates,
+            } = await addClassQuestions(cachedQuestions, selectedClassId, 'Used cached');
             if (classQuestionsCount > 0) {
-              const hydratedCachedQuestions = await hydrateMissingClassQuestionMetadata(cachedQuestions);
-              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedCachedQuestions);
+              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedCandidates);
             }
           } else {
             // Cache miss - fetch from Firestore
@@ -372,7 +403,10 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
               );
             }
 
-            const classQuestionsCount = await addClassQuestions(
+            const {
+              addedCount: classQuestionsCount,
+              hydratedCandidates,
+            } = await addClassQuestions(
               allFetchedQuestions,
               selectedClassId,
               'Fetched'
@@ -380,8 +414,7 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
 
             // Cache after metadata hydration/filtering has had a chance to run.
             if (allFetchedQuestions.length > 0) {
-              const hydratedFetchedQuestions = await hydrateMissingClassQuestionMetadata(allFetchedQuestions);
-              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedFetchedQuestions);
+              setCachedClassQuestions(selectedClassId, topic, grade, currentAppId, hydratedCandidates);
             }
 
             console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${classQuestionsCount} class questions for classId ${selectedClassId} (${allFetchedQuestions.length} topic/grade matched, ${allFetchedQuestions.length - classQuestionsCount} filtered out)`);
@@ -423,48 +456,87 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
       questions.push(...(classIds.length > 1 ? shuffleQuestions(classQuestions) : classQuestions));
     }
 
-    // 2. Fetch user's own questionBank
-    if (userId) {
-      try {
-        console.log(`[fetchQuestionsFromFirestore] Fetching user questionBank for userId: ${userId}, topic: ${topic}, grade: ${grade}`);
+    const hasEnoughClassQuestions = minimumQuestionCount > 0 && questions.length >= minimumQuestionCount;
+    if (hasEnoughClassQuestions) {
+      console.log(
+        `[fetchQuestionsFromFirestore] Class questions satisfied the requested pool size (${questions.length}/${minimumQuestionCount}); skipping additional question banks.`
+      );
+    }
 
-        const fetchUserQuestions = async () => {
-          const userQuestionBankRef = collection(db, 'artifacts', currentAppId, 'users', userId, 'questionBank');
-          const userQuestionBankQuery = query(
-            userQuestionBankRef,
-            where('topic', '==', topic),
-            where('grade', '==', grade)
-          );
-          return await getDocs(userQuestionBankQuery);
-        };
+    // 2-4. Personal and shared banks are independent. Start both reads together
+    // so an empty or slow bank does not serially delay the first quiz question.
+    if (!hasEnoughClassQuestions) {
+      const settleRequest = async (request) => {
+        try {
+          return { snapshot: await request() };
+        } catch (error) {
+          return { error };
+        }
+      };
 
-        // Use retry logic but with fewer attempts than class questions
-        const userQuestionBankSnapshot = await retryWithBackoff(fetchUserQuestions, {
-          maxRetries: 2,
-          initialDelay: 500
-        });
+      const userQuestionsRequest = userId
+        ? (() => {
+            console.log(`[fetchQuestionsFromFirestore] Fetching user questionBank for userId: ${userId}, topic: ${topic}, grade: ${grade}`);
+            const userQuestionBankRef = collection(db, 'artifacts', currentAppId, 'users', userId, 'questionBank');
+            const userQuestionBankQuery = query(
+              userQuestionBankRef,
+              where('topic', '==', topic),
+              where('grade', '==', grade)
+            );
+            return settleRequest(() => retryWithBackoff(
+              () => getDocs(userQuestionBankQuery),
+              { maxRetries: 2, initialDelay: 500 }
+            ));
+          })()
+        : Promise.resolve(null);
 
-        let userQuestionsCount = 0;
-        userQuestionBankSnapshot.forEach(doc => {
+      console.log(`[fetchQuestionsFromFirestore] Fetching shared questionBank for topic: ${topic}, grade: ${grade}`);
+      const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
+      const sharedQuery = query(
+        sharedRef,
+        where('topic', '==', topic),
+        where('grade', '==', grade)
+      );
+      const sharedQuestionsRequest = settleRequest(() => retryWithBackoff(
+        () => getDocs(sharedQuery),
+        { maxRetries: 2, initialDelay: 500 }
+      ));
+
+      const [userResult, sharedResult] = await Promise.all([
+        userQuestionsRequest,
+        sharedQuestionsRequest,
+      ]);
+
+      const addQuestionBankSnapshot = (snapshot, source, collectionName) => {
+        let addedCount = 0;
+        snapshot.forEach(doc => {
           const questionData = doc.data();
-          // Check subtopic restrictions
           if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
-            return; // Skip this question
+            return;
           }
           if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
             seenQuestionIds.add(doc.id);
             questions.push({
               ...questionData,
               questionId: doc.id,
-              source: 'questionBank',
-              collection: 'questionBank'
+              source,
+              collection: collectionName,
             });
-            userQuestionsCount++;
+            addedCount++;
           }
         });
+        return addedCount;
+      };
 
-        console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${userQuestionsCount} user questions (${userQuestionBankSnapshot.size} total)`);
-      } catch (err) {
+      if (userResult?.snapshot) {
+        const userQuestionsCount = addQuestionBankSnapshot(
+          userResult.snapshot,
+          'questionBank',
+          'questionBank'
+        );
+        console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${userQuestionsCount} user questions (${userResult.snapshot.size} total)`);
+      } else if (userResult?.error) {
+        const err = userResult.error;
         const errorMessage = err?.message || err?.toString() || 'Unknown error';
         console.error('[fetchQuestionsFromFirestore] Error fetching user questionBank:', {
           error: err,
@@ -474,74 +546,36 @@ export const fetchQuestionsFromFirestore = async (topic, grade, userId, classId,
           topic,
           grade
         });
-
         errors.userQuestions = {
           type: isLikelyOfflineError(err) ? 'offline' : (errorMessage.toLowerCase().includes('index') ? 'index' : 'query'),
           message: `Failed to load personal questions: ${errorMessage}`,
           details: errorMessage
         };
       }
-    }
 
-    // 3. Fetch teacher's questionBank (if student has a teacher)
-    // Note: This would require checking if student has a teacher assigned
-    // For now, we'll skip this as it requires additional logic to determine teacher
-
-    // 4. Fetch shared questionBank (all students can access)
-    try {
-      console.log(`[fetchQuestionsFromFirestore] Fetching shared questionBank for topic: ${topic}, grade: ${grade}`);
-
-      const fetchSharedQuestions = async () => {
-        const sharedRef = collection(db, 'artifacts', currentAppId, 'sharedQuestionBank');
-        const sharedQuery = query(
-          sharedRef,
-          where('topic', '==', topic),
-          where('grade', '==', grade)
+      if (sharedResult.snapshot) {
+        const sharedQuestionsCount = addQuestionBankSnapshot(
+          sharedResult.snapshot,
+          'sharedQuestionBank',
+          'sharedQuestionBank'
         );
-        return await getDocs(sharedQuery);
-      };
-
-      // Use retry logic for shared questions
-      const sharedSnapshot = await retryWithBackoff(fetchSharedQuestions, {
-        maxRetries: 2,
-        initialDelay: 500
-      });
-
-      let sharedQuestionsCount = 0;
-      sharedSnapshot.forEach(doc => {
-        const questionData = doc.data();
-        // Check subtopic restrictions
-        if (!isSubtopicAllowed(questionData, topic, allowedSubtopicsByTopic)) {
-          return; // Skip this question
-        }
-        if (!answeredSet.has(doc.id) && !seenQuestionIds.has(doc.id)) {
-          seenQuestionIds.add(doc.id);
-          questions.push({
-            ...questionData,
-            questionId: doc.id,
-            source: 'sharedQuestionBank',
-            collection: 'sharedQuestionBank'
-          });
-          sharedQuestionsCount++;
-        }
-      });
-
-      console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${sharedQuestionsCount} shared questions (${sharedSnapshot.size} total)`);
-    } catch (err) {
-      const errorMessage = err?.message || err?.toString() || 'Unknown error';
-      console.error('[fetchQuestionsFromFirestore] Error fetching shared questions:', {
-        error: err,
-        code: err?.code,
-        message: errorMessage,
-        topic,
-        grade
-      });
-
-      errors.sharedQuestions = {
-        type: isLikelyOfflineError(err) ? 'offline' : (errorMessage.toLowerCase().includes('index') ? 'index' : 'query'),
-        message: `Failed to load shared questions: ${errorMessage}`,
-        details: errorMessage
-      };
+        console.log(`[fetchQuestionsFromFirestore] Successfully fetched ${sharedQuestionsCount} shared questions (${sharedResult.snapshot.size} total)`);
+      } else if (sharedResult.error) {
+        const err = sharedResult.error;
+        const errorMessage = err?.message || err?.toString() || 'Unknown error';
+        console.error('[fetchQuestionsFromFirestore] Error fetching shared questions:', {
+          error: err,
+          code: err?.code,
+          message: errorMessage,
+          topic,
+          grade
+        });
+        errors.sharedQuestions = {
+          type: isLikelyOfflineError(err) ? 'offline' : (errorMessage.toLowerCase().includes('index') ? 'index' : 'query'),
+          message: `Failed to load shared questions: ${errorMessage}`,
+          details: errorMessage
+        };
+      }
     }
 
   } catch (error) {

@@ -74,7 +74,7 @@ import TopicSelection from './components/TopicSelection';
 import StudentProfile from './components/StudentProfile';
 import Dashboard from './components/Dashboard';
 import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
-import { getQuestionHistory, getAnsweredQuestionBankQuestions } from "./services/questionService";
+import { getQuestionHistory } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getQuestionMasteryKey } from "./utils/questionKey";
 import { getTopicAvailability } from "./services/topicAvailability";
@@ -1182,8 +1182,14 @@ const MainAppContent = () => {
     }
     
     console.log('[startNewQuiz] Fetching history');
-    const answered = await getQuestionHistory(user.uid);
-    const answeredQuestionIds = await getAnsweredQuestionBankQuestions(user.uid);
+    // Quiz adaptation only uses history for the selected topic. Avoid loading a
+    // student's entire attempts collection before showing the first question.
+    const answered = await getQuestionHistory(
+      user.uid,
+      topic,
+      userData?.answeredQuestions || []
+    );
+    const answeredQuestionIds = userData?.answeredQuestionBankQuestions || [];
     
     // Get selected classIds, merged class configuration, and enrollment subtopic restrictions
     const selectedClasses = enrolledClasses.filter((classItem) =>
