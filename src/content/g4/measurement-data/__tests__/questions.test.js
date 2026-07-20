@@ -4,6 +4,7 @@ import {
   generateTimeConversionQuestion,
   generateClockReadingQuestion,
   generateAreaPerimeterQuestion,
+  generateDataInterpretationQuestion,
 } from '../questions.js';
 
 // Mock the clock SVG generator so the tests don't depend on its output.
@@ -154,6 +155,29 @@ describe('generateAreaPerimeterQuestion: avoids l*w === 2*(l+w) collision', () =
       const w = Number(widthStr);
       expect(l * w).not.toBe(2 * (l + w));
     }
+  });
+});
+
+describe('generateDataInterpretationQuestion "how many more" distractor', () => {
+  // The "how many more" branch built its 4th distractor as
+  // (highest - lowest) - 2. When the randomly-sampled highest and lowest
+  // values were close (e.g. 17 and 16), this produced a negative number and
+  // students saw "-1" as an answer choice on a "how many more" question,
+  // which is meaningless.
+  it('never surfaces zero or negative option values on the "how many more" question', () => {
+    let howManyMoreSeen = 0;
+    for (let i = 0; i < 1000 && howManyMoreSeen < 200; i += 1) {
+      const q = generateDataInterpretationQuestion(0.5);
+      if (!q.question.includes('How many more ')) continue;
+      howManyMoreSeen += 1;
+      for (const opt of q.options) {
+        // Every option should parse to a positive integer.
+        expect(opt).toMatch(/^\d+$/);
+        expect(Number(opt)).toBeGreaterThanOrEqual(1);
+      }
+    }
+    // Sanity check that we actually exercised the branch.
+    expect(howManyMoreSeen).toBeGreaterThan(0);
   });
 });
 

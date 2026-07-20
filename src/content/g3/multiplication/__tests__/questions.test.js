@@ -1,6 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { generateFactFamilyQuestion, generateQuestion } from '../questions.js';
+import multiplicationQuestions, {
+  generateFactFamilyQuestion,
+  generateQuestion,
+} from '../questions.js';
+import manifest from '../manifest.json';
 
 describe('G3 multiplication basic MC: distractors are always four unique options', () => {
   // The old generator picked a random offset in [1..5] for one distractor. If
@@ -32,6 +36,27 @@ describe('G3 multiplication Explanation: covers every declared subtopic', () => 
     // The fact-families generator asks division questions (12 ÷ 4 = ?).
     // Without an explicit fact-families section students hit those cold.
     expect(explanationSrc).toMatch(/Fact Famil/i);
+  });
+});
+
+describe('G3 multiplication: every question generator emits a subtopic that the manifest declares', () => {
+  // The manifest is the source of truth for which subtopics a topic advertises;
+  // AI prompts, portal subtopic pickers, and analytics all read it. An emitted
+  // subtopic that isn't in the manifest silently escapes those systems.
+  it('every generator in the module\'s default export produces a manifest subtopic', () => {
+    const declared = new Set(manifest.subtopics.map((s) => s.toLowerCase()));
+    for (const [name, gen] of Object.entries(multiplicationQuestions)) {
+      if (typeof gen !== 'function') continue;
+      if (name === 'generateQuestion') continue;
+      // Every generator is deterministic on its own random seed, so a few
+      // rolls exercise its full subtopic domain — all current generators
+      // emit exactly one subtopic each.
+      for (let i = 0; i < 25; i += 1) {
+        const q = gen(0.5);
+        if (!q || !q.subtopic) continue;
+        expect(declared).toContain(q.subtopic.toLowerCase());
+      }
+    }
   });
 });
 
