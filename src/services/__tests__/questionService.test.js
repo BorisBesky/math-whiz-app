@@ -2,6 +2,8 @@ const mockGetDocs = jest.fn();
 const mockGetDoc = jest.fn();
 const mockQuery = jest.fn((reference, ...constraints) => ({ reference, constraints }));
 const mockWhere = jest.fn((field, operator, value) => ({ field, operator, value }));
+const mockOrderBy = jest.fn((field, direction) => ({ orderBy: field, direction }));
+const mockLimit = jest.fn((count) => ({ limit: count }));
 const mockCollection = jest.fn((...segments) => ({ segments }));
 const mockDoc = jest.fn((...segments) => ({ segments }));
 const mockGetUserAttemptsCollectionRef = jest.fn();
@@ -14,6 +16,8 @@ jest.mock('firebase/firestore', () => ({
   collection: (...args) => mockCollection(...args),
   query: (...args) => mockQuery(...args),
   where: (...args) => mockWhere(...args),
+  orderBy: (...args) => mockOrderBy(...args),
+  limit: (...args) => mockLimit(...args),
   getDocs: (...args) => mockGetDocs(...args),
   getDoc: (...args) => mockGetDoc(...args),
   doc: (...args) => mockDoc(...args),
@@ -62,6 +66,8 @@ describe('questionService quiz-loading performance', () => {
     jest.clearAllMocks();
     mockQuery.mockImplementation((reference, ...constraints) => ({ reference, constraints }));
     mockWhere.mockImplementation((field, operator, value) => ({ field, operator, value }));
+    mockOrderBy.mockImplementation((field, direction) => ({ orderBy: field, direction }));
+    mockLimit.mockImplementation((count) => ({ limit: count }));
     mockCollection.mockImplementation((...segments) => ({ segments }));
     mockDoc.mockImplementation((...segments) => ({ segments }));
     mockGetUserAttemptsCollectionRef.mockReturnValue({ path: 'attempts' });
@@ -79,12 +85,31 @@ describe('questionService quiz-loading performance', () => {
     const history = await getQuestionHistory('student-1', 'Base Ten');
 
     expect(mockWhere).toHaveBeenCalledWith('topic', '==', 'Base Ten');
+    expect(mockOrderBy).toHaveBeenCalledWith('timestamp', 'desc');
+    expect(mockLimit).toHaveBeenCalledWith(300);
     expect(mockQuery).toHaveBeenCalledWith(
       { path: 'attempts' },
-      { field: 'topic', operator: '==', value: 'Base Ten' }
+      { field: 'topic', operator: '==', value: 'Base Ten' },
+      { orderBy: 'timestamp', direction: 'desc' },
+      { limit: 300 }
     );
     expect(history.map((attempt) => attempt.id)).toEqual(['attempt-1', 'attempt-2']);
     expect(mockGetDoc).not.toHaveBeenCalled();
+  });
+
+  test('bounds the unfiltered history read used by the dashboard fallback', async () => {
+    mockGetDocs.mockResolvedValueOnce(makeSnapshot([
+      makeDocument('attempt-1', { topic: 'Base Ten', timestamp: '2026-07-01T00:00:00Z' }),
+    ]));
+
+    await getQuestionHistory('student-1');
+
+    expect(mockWhere).not.toHaveBeenCalled();
+    expect(mockQuery).toHaveBeenCalledWith(
+      { path: 'attempts' },
+      { orderBy: 'timestamp', direction: 'desc' },
+      { limit: 300 }
+    );
   });
 
   test('uses the already-loaded legacy history without another profile read', async () => {

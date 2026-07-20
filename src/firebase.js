@@ -8,6 +8,8 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  getPersistentCacheIndexManager,
+  enablePersistentCacheIndexAutoCreation,
   connectFirestoreEmulator,
 } from "firebase/firestore";
 // Storage is loaded lazily — only needed for admin image uploads
@@ -43,6 +45,14 @@ const db = initializeFirestore(app, {
     tabManager: persistentMultipleTabManager(),
   }),
 });
+
+// Without client-side cache indexes, filtered queries (e.g. attempts by topic)
+// full-scan the persisted cache via an IndexedDB cursor, which can stall the
+// SDK's async queue for tens of seconds on Safari.
+const cacheIndexManager = getPersistentCacheIndexManager(db);
+if (cacheIndexManager) {
+  enablePersistentCacheIndexAutoCreation(cacheIndexManager);
+}
 let _storage = null;
 const getStorageLazy = async () => {
   if (!_storage) {

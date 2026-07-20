@@ -3,6 +3,8 @@ import {
   collection,
   query,
   where,
+  orderBy,
+  limit,
   getDocs,
   getDoc,
   doc,
@@ -72,14 +74,28 @@ export const retryWithBackoff = async (fn, options = {}) => {
   throw lastError;
 };
 
-export const getQuestionHistory = async (userId, topic = null, legacyHistory = null) => {
+// Cap attempt-history reads: quiz adaptation and the dashboard only need
+// recent attempts, and unbounded reads bloat the persistent Firestore cache.
+export const ATTEMPT_HISTORY_LIMIT = 300;
+
+export const getQuestionHistory = async (
+  userId,
+  topic = null,
+  legacyHistory = null,
+  maxAttempts = ATTEMPT_HISTORY_LIMIT
+) => {
   if (!userId) return [];
   const userDocRef = getUserDocRef(userId);
   const attemptsRef = getUserAttemptsCollectionRef(userId);
   try {
-    const attemptsQuery = attemptsRef && topic
-      ? query(attemptsRef, where('topic', '==', topic))
-      : attemptsRef;
+    const attemptsQuery = attemptsRef
+      ? query(
+          attemptsRef,
+          ...(topic ? [where('topic', '==', topic)] : []),
+          orderBy('timestamp', 'desc'),
+          limit(maxAttempts)
+        )
+      : null;
     const attemptsSnapshot = attemptsQuery ? await getDocs(attemptsQuery) : null;
     if (attemptsSnapshot && !attemptsSnapshot.empty) {
       return attemptsSnapshot.docs
