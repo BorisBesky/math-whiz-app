@@ -119,11 +119,14 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
       let m;
       if (
         (m = q.question.match(
-          /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. Pattern B is 0, \d+, \d+, … What is the (\w+) term of Pattern B\?$/
+          /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. The (\w+) term of Pattern A is (\d+)\. What is the matching \w+ term of Pattern B\?$/
         ))
       ) {
+        const a = Number(m[1]);
         const b = Number(m[2]);
-        expect(Number(q.correctAnswer)).toBe(ordinals[m[3]] * b);
+        const index = ordinals[m[3]];
+        expect(Number(m[4])).toBe(index * a);
+        expect(Number(q.correctAnswer)).toBe(index * b);
       } else if (
         (m = q.question.match(
           /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. Each term of Pattern B is how many times its matching term in Pattern A\?$/

@@ -266,8 +266,8 @@ const generatePrimeFactorizationQuestion = (difficulty) => {
 /* ------------------------------------------------------------------ */
 /* numerical patterns — two rules, corresponding terms (5.OA.B.3)      */
 /* Formats:                                                            */
-/*   "Pattern A starts at 0 and adds <a> ... what is term <i+1> of     */
-/*    Pattern B?"                                                      */
+/*   "... The <ord> term of Pattern A is <n>. What is the matching     */
+/*    <ord> term of Pattern B?"                                        */
 /*   "... Each term of Pattern B is how many times its matching term   */
 /*    in Pattern A?"                                                   */
 /*   "... Which ordered pair matches the <ord> terms (A, B)?"          */
@@ -285,11 +285,11 @@ const generateNumericalPatternsQuestion = (difficulty) => {
   if (variant === 0) {
     const index = randomInt(3, 4);
     return {
-      question: `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. Pattern B is 0, ${termsB[1]}, ${termsB[2]}, … What is the ${ORDINALS[index]} term of Pattern B?`,
+      question: `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. The ${ORDINALS[index]} term of Pattern A is ${termsA[index]}. What is the matching ${ORDINALS[index]} term of Pattern B?`,
       correctAnswer: String(termsB[index]),
       options: [],
       questionType: QUESTION_TYPES.NUMERIC,
-      hint: `Keep adding ${b}: each term of Pattern B is ${b} more than the one before.`,
+      hint: `Each term of Pattern B is ${k} times the matching term of Pattern A — or keep adding ${b} from 0.`,
       ...baseFields('numerical patterns', '5.OA.B.3'),
     };
   }
