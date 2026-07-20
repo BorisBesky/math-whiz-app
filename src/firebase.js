@@ -46,6 +46,11 @@ const db = initializeFirestore(app, {
   }),
 });
 
+if (process.env.REACT_APP_USE_EMULATOR === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
+
 // Without client-side cache indexes, filtered queries (e.g. attempts by topic)
 // full-scan the persisted cache via an IndexedDB cursor, which can stall the
 // SDK's async queue for tens of seconds on Safari.
@@ -61,10 +66,5 @@ const getStorageLazy = async () => {
   }
   return _storage;
 };
-
-if (process.env.REACT_APP_USE_EMULATOR === 'true') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-}
 
 export { app, auth, db, getStorageLazy };

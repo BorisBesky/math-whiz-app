@@ -4,7 +4,7 @@
 
 ### Option 1: Use React Dev Server (Default)
 
-By default, Playwright will start `npm start` (React dev server on port 3000):
+By default, Playwright will start `npm start` (React dev server on port 3003):
 
 ```bash
 npx playwright test
@@ -47,7 +47,7 @@ If tests timeout while waiting for the server to start:
 
 1. **Check if the server is actually starting:**
    - Look for output from the webServer command
-   - Check if the port is already in use: `lsof -i :3000` or `lsof -i :8888`
+   - Check if the port is already in use: `lsof -i :3003` or `lsof -i :8888`
 
 2. **Increase server startup timeout:**
    - Edit `playwright.config.js` (in project root)
@@ -84,8 +84,8 @@ If you get "port already in use" errors:
 
 1. **Kill the process using the port:**
    ```bash
-   # Find process using port 3000
-   lsof -ti:3000 | xargs kill -9
+   # Find process using port 3003
+   lsof -ti:3003 | xargs kill -9
    
    # Or for port 8888
    lsof -ti:8888 | xargs kill -9

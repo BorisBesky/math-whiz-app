@@ -112,7 +112,7 @@ Curriculum content is a plug-in system — **the folder is the registration**
 ## Running things
 
 ```bash
-npm start                   # CRA dev server (port 3000)
+npm start                   # CRA dev server (port 3003)
 npm run dev                 # Netlify dev — runs functions locally (port 8888)
 npm run emulators           # Start Firebase Auth (9099) + Firestore (8080) emulators
 npm run build               # Production build + inline-critical-css.js post-step
@@ -344,7 +344,7 @@ Cache strategy: hashed JS/CSS assets are immutable (1 year), HTML is no-cache, i
 
 ## E2E tests
 
-Playwright tests in `tests/e2e/`. Run against port 3000 (`npm start`) or port 8888 (`npm run dev` with `PLAYWRIGHT_USE_NETLIFY_DEV=true`). Two shared helper files:
+Playwright tests in `tests/e2e/`. Run against port 3003 (`npm start`) or port 8888 (`npm run dev` with `PLAYWRIGHT_USE_NETLIFY_DEV=true`). Two shared helper files:
 - `auth-helpers.js` — `navigateAndWaitForAuth`, inter-test delays
 - `quiz-helpers.js` — `detectQuestionType`, `provideAnswer`, `completeQuiz`
 

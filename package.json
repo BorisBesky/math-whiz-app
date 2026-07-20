@@ -27,7 +27,7 @@
     "new:topic": "node scripts/new-topic.js",
     "new:grade": "node scripts/new-grade.js",
     "prestart": "npm run generate:content",
-    "start": "react-scripts start",
+    "start": "PORT=3003 react-scripts start",
     "prebuild": "npm run generate:content",
     "build": "react-scripts build && node scripts/inline-critical-css.js",
     "test": "react-scripts test",

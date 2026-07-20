@@ -72,7 +72,7 @@ test.describe('Class join flow (full E2E)', () => {
 
   // Skip when Netlify Dev is not running — these tests require Netlify Functions
   // (set-teacher-claims) which are only available via `netlify dev` (port 8888).
-  // CI runs CRA directly (port 3000), so teacher custom claims can't be set.
+  // CI runs CRA directly (port 3003), so teacher custom claims can't be set.
   test.skip(
     () => process.env.PLAYWRIGHT_USE_NETLIFY_DEV !== 'true',
     'Requires Netlify Dev for serverless functions (set PLAYWRIGHT_USE_NETLIFY_DEV=true)'

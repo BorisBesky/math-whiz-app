@@ -89,7 +89,7 @@ jobs:
             echo "REACT_APP_FIREBASE_API_KEY set: ${REACT_APP_FIREBASE_API_KEY:+yes}"
             echo "REACT_APP_FIREBASE_PROJECT_ID: ${REACT_APP_FIREBASE_PROJECT_ID}"
           fi
-          npx playwright test --project=chromium --workers=2 --retries=1 --reporter=list,json
+          npx playwright test --project=chromium --reporter=list,json
         timeout-minutes: 30
         env:
           REACT_APP_USE_EMULATOR: 'true'

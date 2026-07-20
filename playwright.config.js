@@ -19,10 +19,10 @@ export default defineConfig({
 
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    /* Will use port 8888 if PLAYWRIGHT_USE_NETLIFY_DEV=true, otherwise 3000 */
+    /* Will use port 8888 if PLAYWRIGHT_USE_NETLIFY_DEV=true, otherwise 3003 */
     baseURL: process.env.PLAYWRIGHT_USE_NETLIFY_DEV === 'true' 
       ? 'http://localhost:8888' 
-      : 'http://localhost:3000',
+      : 'http://localhost:3003',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -62,7 +62,7 @@ export default defineConfig({
     const command = useNetlifyDev
       ? 'npm run dev'
       : (useEmulator ? 'REACT_APP_USE_EMULATOR=true npm start' : 'npm start');
-    const url = useNetlifyDev ? 'http://localhost:8888' : 'http://localhost:3000';
+    const url = useNetlifyDev ? 'http://localhost:8888' : 'http://localhost:3003';
     
     return {
       command,

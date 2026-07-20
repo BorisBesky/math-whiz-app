@@ -18,7 +18,7 @@ const path = require('path');
       }
     });
 
-    const appUrl = 'http://127.0.0.1:3000'; // Using explicit IP
+    const appUrl = 'http://127.0.0.1:3003'; // Using explicit IP
     console.log(`🌍 Navigating to ${appUrl}...`);
     await page.goto(appUrl, { waitUntil: 'load', timeout: 60000 }); // Changed to 'load'
     console.log("✅ Page loaded.");
