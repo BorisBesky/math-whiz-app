@@ -148,6 +148,27 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
         // rules themselves, leaving nothing to generate.
         expect(index).toBeGreaterThanOrEqual(2);
         expect(q.correctAnswer).toBe(`(${index * a}, ${index * b})`);
+      } else if (
+        (m = q.question.match(
+          /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. Pattern C takes its 1st, 3rd, and 5th terms from Pattern A and its 2nd and 4th terms from Pattern B\. What is the (\w+) term of Pattern C\?$/
+        ))
+      ) {
+        const a = Number(m[1]);
+        const b = Number(m[2]);
+        const index = ordinals[m[3]];
+        // Never the 1st term — it is 0 in every pattern, so it tests nothing.
+        expect(index).toBeGreaterThanOrEqual(1);
+        // Odd positions (index 0, 2, 4) come from A, even positions from B.
+        expect(Number(q.correctAnswer)).toBe(index % 2 === 0 ? index * a : index * b);
+      } else if (
+        (m = q.question.match(
+          /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. Pattern C takes its 1st, 3rd, and 5th terms from Pattern A and its 2nd and 4th terms from Pattern B\. Which list shows the first five terms of Pattern C\?$/
+        ))
+      ) {
+        const a = Number(m[1]);
+        const b = Number(m[2]);
+        const expected = [0, 1, 2, 3, 4].map((i) => (i % 2 === 0 ? i * a : i * b));
+        expect(q.correctAnswer).toBe(expected.join(', '));
       } else {
         throw new Error(`unrecognized question: ${q.question}`);
       }
@@ -174,6 +195,28 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
       expect(q.options.length).toBe(4);
       expect(new Set(q.options).size).toBe(4);
       expect(q.options).toContain(q.correctAnswer);
+    }
+  });
+
+  test('numerical patterns: Pattern C appears only at high difficulty, in both forms', () => {
+    const forms = new Set();
+    for (let i = 0; i < 400; i++) {
+      const difficulty = i % 2 === 0 ? 0.75 : 1;
+      const q = generateQuestion(difficulty, ['numerical patterns']);
+      if (!/Pattern C/.test(q.question)) continue;
+      forms.add(/Which list/.test(q.question) ? 'list' : 'term');
+      if (q.questionType === 'multiple-choice') {
+        expect(q.options.length).toBe(4);
+        expect(new Set(q.options).size).toBe(4);
+        expect(q.options).toContain(q.correctAnswer);
+      }
+    }
+    expect([...forms].sort()).toEqual(['list', 'term']);
+
+    // Pattern C is the hardest form; easier quizzes must never draw it.
+    for (let i = 0; i < 400; i++) {
+      const q = generateQuestion([0, 0.25, 0.5, 0.69][i % 4], ['numerical patterns']);
+      expect(q.question).not.toMatch(/Pattern C/);
     }
   });
 

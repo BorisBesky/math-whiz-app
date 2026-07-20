@@ -272,6 +272,9 @@ const generatePrimeFactorizationQuestion = (difficulty) => {
 /*    in Pattern A?"                                                   */
 /*   "... Extend both patterns. Which ordered pair matches the <ord>   */
 /*    terms (A, B)?"                                                   */
+/*   "... Pattern C takes its 1st/3rd/5th terms from A and its         */
+/*    2nd/4th from B. What is the <ord> term of C? / Which list        */
+/*    shows the first five terms of C?"                                */
 /* ------------------------------------------------------------------ */
 const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth'];
 
@@ -281,7 +284,9 @@ const generateNumericalPatternsQuestion = (difficulty) => {
   const b = a * k; // Pattern B's step is a clean multiple of Pattern A's
   const termsA = [0, 1, 2, 3, 4].map((i) => i * a);
   const termsB = [0, 1, 2, 3, 4].map((i) => i * b);
-  const variant = difficulty < 0.35 ? 0 : randomInt(0, 2);
+  // Variant 3 builds a third pattern out of both rules — the hardest form
+  // here, so it is held back for the top of the difficulty range.
+  const variant = difficulty < 0.35 ? 0 : randomInt(0, difficulty >= 0.7 ? 3 : 2);
 
   if (variant === 0) {
     const index = randomInt(3, 4);
@@ -306,27 +311,68 @@ const generateNumericalPatternsQuestion = (difficulty) => {
     };
   }
 
-  // Only ask about the third term onward: the student has to generate the
-  // terms from the two rules before pairing them, which is the point of
-  // 5.OA.B.3. Printing both finished sequences turned this into a lookup.
-  const index = randomInt(2, 4);
-  const correct = `(${termsA[index]}, ${termsB[index]})`;
-  // Pick a nearby-but-distinct index for the "wrong term" distractors so the
-  // options are always four unique strings — at index=4, clamping to `index`
-  // itself collapsed the distractor into the correct answer.
-  const shiftedIndex = index === 4 ? index - 1 : index + 1;
-  const backIndex = index - 1;
+  if (variant === 2) {
+    // Only ask about the third term onward: the student has to generate the
+    // terms from the two rules before pairing them, which is the point of
+    // 5.OA.B.3. Printing both finished sequences turned this into a lookup.
+    const index = randomInt(2, 4);
+    const correct = `(${termsA[index]}, ${termsB[index]})`;
+    // Pick a nearby-but-distinct index for the "wrong term" distractors so the
+    // options are always four unique strings — at index=4, clamping to `index`
+    // itself collapsed the distractor into the correct answer.
+    const shiftedIndex = index === 4 ? index - 1 : index + 1;
+    const backIndex = index - 1;
+    return {
+      question: `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. Extend both patterns. Which ordered pair matches the ${ORDINALS[index]} terms (A, B)?`,
+      correctAnswer: correct,
+      options: shuffle([
+        correct,
+        `(${termsB[index]}, ${termsA[index]})`,
+        `(${termsA[index]}, ${termsB[shiftedIndex]})`,
+        `(${termsA[backIndex]}, ${termsB[index]})`,
+      ]),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: `Write out both patterns: A goes 0, ${termsA[1]}, ${termsA[2]}, … and B goes 0, ${termsB[1]}, ${termsB[2]}, … Then pair the ${ORDINALS[index]} terms.`,
+      ...baseFields('numerical patterns', '5.OA.B.3'),
+    };
+  }
+
+  // Pattern C is woven out of BOTH rules: odd positions (1st, 3rd, 5th) come
+  // from A, even positions (2nd, 4th) from B. The student has to generate A
+  // and B and then track which one owns each position.
+  const setupC =
+    `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. ` +
+    'Pattern C takes its 1st, 3rd, and 5th terms from Pattern A and its 2nd and 4th terms from Pattern B.';
+  const termsC = [0, 1, 2, 3, 4].map((i) => (i % 2 === 0 ? termsA[i] : termsB[i]));
+  const hintC = `A goes 0, ${termsA[1]}, ${termsA[2]}, ${termsA[3]}, ${termsA[4]} and B goes 0, ${termsB[1]}, ${termsB[2]}, ${termsB[3]}, ${termsB[4]}. Take positions 1, 3, 5 from A and positions 2, 4 from B.`;
+
+  if (randomInt(0, 1) === 0) {
+    // Skip the 1st term — it is 0 in every pattern, so it tests nothing.
+    const index = randomInt(1, 4);
+    return {
+      question: `${setupC} What is the ${ORDINALS[index]} term of Pattern C?`,
+      correctAnswer: String(termsC[index]),
+      options: [],
+      questionType: QUESTION_TYPES.NUMERIC,
+      hint: hintC,
+      ...baseFields('numerical patterns', '5.OA.B.3'),
+    };
+  }
+
+  const asList = (terms) => terms.join(', ');
   return {
-    question: `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. Extend both patterns. Which ordered pair matches the ${ORDINALS[index]} terms (A, B)?`,
-    correctAnswer: correct,
+    question: `${setupC} Which list shows the first five terms of Pattern C?`,
+    correctAnswer: asList(termsC),
+    // Distractors are the three ways this goes wrong: use A throughout, use B
+    // throughout, or swap which positions each pattern owns.
     options: shuffle([
-      correct,
-      `(${termsB[index]}, ${termsA[index]})`,
-      `(${termsA[index]}, ${termsB[shiftedIndex]})`,
-      `(${termsA[backIndex]}, ${termsB[index]})`,
+      asList(termsC),
+      asList(termsA),
+      asList(termsB),
+      asList([0, 1, 2, 3, 4].map((i) => (i % 2 === 0 ? termsB[i] : termsA[i]))),
     ]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Write out both patterns: A goes 0, ${termsA[1]}, ${termsA[2]}, … and B goes 0, ${termsB[1]}, ${termsB[2]}, … Then pair the ${ORDINALS[index]} terms.`,
+    hint: hintC,
     ...baseFields('numerical patterns', '5.OA.B.3'),
   };
 };
