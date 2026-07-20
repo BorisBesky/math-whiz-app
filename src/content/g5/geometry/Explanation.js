@@ -99,6 +99,36 @@ const Geometry5thExplanation = () => {
         <strong>Square:</strong> a rectangle AND a rhombus at once!
       </div>
 
+      <h2 style={styles.h2}>🔺 Classifying triangles</h2>
+      <p>
+        Triangles get names two different ways — by their <strong>sides</strong> and by
+        their <strong>angles</strong>.
+      </p>
+      <div style={styles.visual}>
+        <strong>By sides:</strong>
+        <br />
+        <strong>Equilateral triangle:</strong> all three sides equal (and all three
+        angles equal too!)
+        <br />
+        <strong>Isosceles triangle:</strong> exactly two sides equal
+        <br />
+        <strong>Scalene triangle:</strong> no equal sides — every side a different length
+      </div>
+      <div style={styles.visual}>
+        <strong>By angles:</strong>
+        <br />
+        <strong>Right triangle:</strong> has one right angle (exactly 90°)
+        <br />
+        <strong>Acute triangle:</strong> all three angles less than 90°
+        <br />
+        <strong>Obtuse triangle:</strong> has one angle greater than 90°
+      </div>
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span>
+        <strong>Tip:</strong> a triangle can pick a name from each list — for example,
+        the same triangle can be both <em>isosceles</em> and <em>right</em>.
+      </div>
+
       <h2 style={styles.h2}>👨‍👩‍👧 The shape family tree</h2>
       <p>
         Shape categories <strong>nest inside each other</strong> — and properties pass{' '}

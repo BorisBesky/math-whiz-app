@@ -948,6 +948,56 @@ const GeometryExplanation = () => {
           <br/>• Flat table = 180° (straight angle)
         </div>
 
+        <h2 style={styles.h2}>🧩 Finding a Missing Side</h2>
+        <p>
+          When you know the <strong>area</strong> or <strong>perimeter</strong> of a
+          square or rectangle, you can work backwards to find a missing side. Pick the
+          right formula, then <strong>undo it</strong>.
+        </p>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Squares — one side length, one formula each way</h3>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>Given the perimeter → divide by 4.</strong>
+              <br/>Perimeter = 4 × side, so side = perimeter ÷ 4.
+              <br/>Perimeter of 36 units → 36 ÷ 4 = <strong>9 units</strong>.
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>Given the area → find the side that squares to it.</strong>
+              <br/>Area = side × side, so ask "what number times itself gives the area?"
+              <br/>Area of 49 sq units → 7 × 7 = 49 → <strong>7 units</strong>.
+            </div>
+          </div>
+          <p style={{fontSize: '0.95em', color: '#555', marginTop: '10px'}}>
+            <em>Handy squares to know:</em> 1×1=1, 2×2=4, 3×3=9, 4×4=16, 5×5=25,
+            6×6=36, 7×7=49, 8×8=64, 9×9=81, 10×10=100, 11×11=121, 12×12=144.
+          </p>
+        </div>
+
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Rectangles — one side is given, find the other</h3>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>Given the area and one side → divide.</strong>
+              <br/>Area = length × width, so width = area ÷ length.
+              <br/>Area 48 sq units, length 6 → 48 ÷ 6 = <strong>width 8 units</strong>.
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>Given the perimeter and one side → halve, then subtract.</strong>
+              <br/>Perimeter = 2 × (length + width), so length + width = perimeter ÷ 2.
+              <br/>Perimeter 30, length 9 → 30 ÷ 2 = 15, then 15 − 9 = <strong>width 6 units</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.tip}>
+          <span style={styles.emoji}>✅</span>
+          <strong>Check your answer:</strong> plug the missing side back into the
+          formula. For area, does length × width give the number in the question? For
+          perimeter, does 2 × (length + width) match? If yes, you found the right side.
+        </div>
+
         <h2 style={styles.h2}>🔄 From Rectangle to Square</h2>
         <p>
           Sometimes a rectangle can be changed into a square by making its long side

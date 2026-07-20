@@ -164,7 +164,7 @@ const FractionsExplanation = () => {
 
       <h2 style={styles.h2}>➖ Subtracting Fractions with Like Denominators</h2>
       <p>Just like addition, but subtract the top numbers instead!</p>
-      
+
       <div style={styles.example}>
         <div style={styles.centeredText}>
           <strong>⁶⁄₉ - ²⁄₉ = ⁴⁄₉</strong>
@@ -174,6 +174,35 @@ const FractionsExplanation = () => {
         <br/>• Subtract numerators: 6 - 2 = 4
         <br/>• Keep the same denominator: 9
         <br/>• Answer: ⁴⁄₉
+      </div>
+
+      <h2 style={styles.h2}>🧭 Adding or Subtracting Fractions with UNLIKE Denominators</h2>
+      <p>
+        If the two fractions have <strong>different</strong> denominators (bottom
+        numbers), you can't add or subtract them right away — the pieces are different
+        sizes! First rewrite each fraction so they share a <strong>common denominator</strong>,
+        then add or subtract the top numbers. This is the same trick you already use for
+        comparing fractions.
+      </p>
+
+      <div style={styles.example}>
+        <strong>Example: ¹⁄₃ + ¹⁄₄ = ?</strong>
+        <br/>• Pick a common denominator (3 × 4 = <strong>12</strong> always works).
+        <br/>• Rewrite: ¹⁄₃ = ⁴⁄₁₂ &nbsp;and&nbsp; ¹⁄₄ = ³⁄₁₂
+        <br/>• Now the denominators match: ⁴⁄₁₂ + ³⁄₁₂ = <strong>⁷⁄₁₂</strong>
+      </div>
+
+      <div style={styles.example}>
+        <strong>Example: ³⁄₄ - ¹⁄₆ = ?</strong>
+        <br/>• Common denominator: 4 × 6 = <strong>24</strong> (or the smaller 12 works too).
+        <br/>• Rewrite: ³⁄₄ = ¹⁸⁄₂₄ &nbsp;and&nbsp; ¹⁄₆ = ⁴⁄₂₄
+        <br/>• Subtract: ¹⁸⁄₂₄ − ⁴⁄₂₄ = ¹⁴⁄₂₄ = <strong>⁷⁄₁₂</strong> (simplified)
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>⚠️</span>
+        <strong>Never add straight across:</strong> ¹⁄₂ + ¹⁄₃ is NOT ²⁄₅! You have to
+        rewrite them first — the correct answer is ³⁄₆ + ²⁄₆ = <strong>⁵⁄₆</strong>.
       </div>
 
       <h2 style={styles.h2}>✖️ Multiplying Fractions by Whole Numbers</h2>
