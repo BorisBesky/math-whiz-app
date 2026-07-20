@@ -333,11 +333,13 @@ export function generateDataInterpretationQuestion(difficulty = 0.5) {
     {
       question: `How many more ${highest.category.toLowerCase()} were sold than ${lowest.category.toLowerCase()}?`,
       answer: (highest.value - lowest.value).toString(),
+      // Clamp the "-2" distractor at 1 so a "how many more" question can't
+      // surface 0 or a negative choice when highest and lowest are close.
       options: [
         highest.value - lowest.value,
         highest.value + lowest.value,
         highest.value - lowest.value + 3,
-        highest.value - lowest.value - 2
+        Math.max(1, highest.value - lowest.value - 2),
       ].map(n => n.toString())
     }
   ];

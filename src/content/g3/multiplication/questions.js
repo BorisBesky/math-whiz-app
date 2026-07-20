@@ -266,7 +266,7 @@ function generateFillInTheBlanksQuestion(difficulty = 0.5) {
     standard: "3.OA.C.7",
     concept: "Multiplication",
     grade: "G3",
-    subtopic: "fill in blanks",
+    subtopic: "basic multiplication",
   };
 }
 

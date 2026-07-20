@@ -442,6 +442,60 @@ const BinaryOperationsExplanation = () => {
         </div>
       </div>
 
+      {/* ===== COMPARING ===== */}
+
+      <h2 style={styles.h2}>
+        <span style={styles.emoji}>⚖️</span>
+        Comparing Binary Numbers
+      </h2>
+
+      <p>
+        To decide if one binary number is <strong>greater than</strong>,{' '}
+        <strong>less than</strong>, or <strong>equal to</strong> another, you can use
+        either of these two tricks:
+      </p>
+
+      <div style={styles.conversionTable}>
+        <h3 style={styles.h3}>Trick 1: Convert to decimal first</h3>
+        <p>
+          Turn each binary number into a familiar decimal number using the place-value
+          method above, then compare like you already know how.
+        </p>
+        <p><span style={styles.code}>1011</span> = 11 and <span style={styles.code}>1001</span> = 9.</p>
+        <p>Since 11 &gt; 9, that means <span style={styles.code}>1011 &gt; 1001</span>. ✅</p>
+      </div>
+
+      <div style={styles.additionExample}>
+        <h3 style={styles.h3}>Trick 2: Compare place-by-place from the LEFT</h3>
+        <p>
+          Line the numbers up on the right, then look at each column from the{' '}
+          <strong>biggest place</strong>. The first column where the digits differ tells
+          you which number is bigger — a 1 always beats a 0 in the same place.
+        </p>
+        <div style={styles.stepByStep}>
+          <p><strong>Compare 1101 and 1011:</strong></p>
+          <pre style={{ fontSize: '1.2em', textAlign: 'center' }}>
+{`   1 1 0 1
+   1 0 1 1`}
+          </pre>
+          <p>
+            8s place: both have 1 (tie). 4s place: <span style={styles.code}>1 &gt; 0</span>{' '}
+            — stop! <span style={styles.code}>1101 &gt; 1011</span>. ✅
+          </p>
+        </div>
+      </div>
+
+      <div style={styles.tip}>
+        <p>
+          <span style={styles.emoji}>💡</span>
+          <strong>Length shortcut:</strong> if the two binary numbers have the same
+          leading 1 and different lengths, the <em>longer</em> one is bigger — extra
+          places mean bigger place values. For example,{' '}
+          <span style={styles.code}>100</span> (4) &gt; <span style={styles.code}>11</span>{' '}
+          (3), even though 11 <em>looks</em> like the larger number!
+        </p>
+      </div>
+
       {/* ===== PRACTICE & REFERENCE ===== */}
 
       <h2 style={styles.h2}>
