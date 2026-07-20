@@ -270,7 +270,8 @@ const generatePrimeFactorizationQuestion = (difficulty) => {
 /*    <ord> term of Pattern B?"                                        */
 /*   "... Each term of Pattern B is how many times its matching term   */
 /*    in Pattern A?"                                                   */
-/*   "... Which ordered pair matches the <ord> terms (A, B)?"          */
+/*   "... Extend both patterns. Which ordered pair matches the <ord>   */
+/*    terms (A, B)?"                                                   */
 /* ------------------------------------------------------------------ */
 const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth'];
 
@@ -305,15 +306,18 @@ const generateNumericalPatternsQuestion = (difficulty) => {
     };
   }
 
-  const index = randomInt(1, 4);
+  // Only ask about the third term onward: the student has to generate the
+  // terms from the two rules before pairing them, which is the point of
+  // 5.OA.B.3. Printing both finished sequences turned this into a lookup.
+  const index = randomInt(2, 4);
   const correct = `(${termsA[index]}, ${termsB[index]})`;
   // Pick a nearby-but-distinct index for the "wrong term" distractors so the
   // options are always four unique strings — at index=4, clamping to `index`
   // itself collapsed the distractor into the correct answer.
   const shiftedIndex = index === 4 ? index - 1 : index + 1;
-  const backIndex = index === 1 ? index + 1 : index - 1;
+  const backIndex = index - 1;
   return {
-    question: `Pattern A is 0, ${termsA[1]}, ${termsA[2]}, ${termsA[3]}, ${termsA[4]}. Pattern B is 0, ${termsB[1]}, ${termsB[2]}, ${termsB[3]}, ${termsB[4]}. Which ordered pair matches the ${ORDINALS[index]} terms (A, B)?`,
+    question: `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time. Extend both patterns. Which ordered pair matches the ${ORDINALS[index]} terms (A, B)?`,
     correctAnswer: correct,
     options: shuffle([
       correct,
@@ -322,7 +326,7 @@ const generateNumericalPatternsQuestion = (difficulty) => {
       `(${termsA[backIndex]}, ${termsB[index]})`,
     ]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: 'The first number comes from Pattern A, the second from Pattern B — same position in each.',
+    hint: `Write out both patterns: A goes 0, ${termsA[1]}, ${termsA[2]}, … and B goes 0, ${termsB[1]}, ${termsB[2]}, … Then pair the ${ORDINALS[index]} terms.`,
     ...baseFields('numerical patterns', '5.OA.B.3'),
   };
 };

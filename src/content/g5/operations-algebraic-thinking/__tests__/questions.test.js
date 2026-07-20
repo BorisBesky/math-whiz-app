@@ -138,13 +138,16 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
         expect(Number(q.correctAnswer)).toBe(b / a);
       } else if (
         (m = q.question.match(
-          /^Pattern A is ([\d, ]+)\. Pattern B is ([\d, ]+)\. Which ordered pair matches the (\w+) terms \(A, B\)\?$/
+          /^Pattern A starts at 0 and adds (\d+) each time\. Pattern B starts at 0 and adds (\d+) each time\. Extend both patterns\. Which ordered pair matches the (\w+) terms \(A, B\)\?$/
         ))
       ) {
-        const termsA = m[1].split(', ').map(Number);
-        const termsB = m[2].split(', ').map(Number);
+        const a = Number(m[1]);
+        const b = Number(m[2]);
         const index = ordinals[m[3]];
-        expect(q.correctAnswer).toBe(`(${termsA[index]}, ${termsB[index]})`);
+        // Third term onward only — the earlier terms are given away by the
+        // rules themselves, leaving nothing to generate.
+        expect(index).toBeGreaterThanOrEqual(2);
+        expect(q.correctAnswer).toBe(`(${index * a}, ${index * b})`);
       } else {
         throw new Error(`unrecognized question: ${q.question}`);
       }
