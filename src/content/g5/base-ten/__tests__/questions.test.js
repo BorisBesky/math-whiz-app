@@ -128,6 +128,29 @@ describe('Base Ten 5th correctness', () => {
     }
   });
 
+  test('decimal operations × and ÷ always show at least one decimal operand', () => {
+    // Regression: generateDecimalOperationsQuestion used
+    // randomInt(11, 99) * 10, which sometimes produced multiples of 100
+    // (e.g., 200, 500) that fromHundredths renders as bare integers,
+    // yielding items like "What is 5 × 3?" — pure integer arithmetic tagged
+    // as a decimal-operations question. Verify both operands, the answer,
+    // and cover a large sample to catch the ~10% bug branch.
+    const problems = [];
+    for (let i = 0; i < 400; i++) {
+      const q = generateQuestion(0.8, ['decimal operations']);
+      if (!q) continue;
+      const m = q.question.match(/^What is ([\d.]+) ([+−×÷]) ([\d.]+)\?$/);
+      expect(m).not.toBeNull();
+      const [, aText, op, bText] = m;
+      if (op !== '×' && op !== '÷') continue;
+      const hasDecimal = aText.includes('.') || bText.includes('.') || q.correctAnswer.includes('.');
+      if (!hasDecimal) {
+        problems.push(`"What is ${aText} ${op} ${bText}?" → ${q.correctAnswer}`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'decimal place value',

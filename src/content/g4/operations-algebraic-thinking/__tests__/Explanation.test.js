@@ -30,4 +30,23 @@ describe('OperationsAlgebraicThinkingExplanation', () => {
     expect(screen.getByRole('heading', { name: /Factors and Multiples/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Number Patterns/i })).toBeInTheDocument();
   });
+
+  // The manifest declares `multiplication word problems` and `division word
+  // problems` as subtopics, and questions.js emits questions with those
+  // subtopic tags. Both must have dedicated instruction sections; without them
+  // students who click "Explain" on a word-problem question get no coverage of
+  // the specific reading/parsing skill being asked.
+  it('has a dedicated section for multiplication word problems', () => {
+    render(<Explanation />);
+    expect(
+      screen.getByRole('heading', { name: /Multiplication Word Problems/i })
+    ).toBeInTheDocument();
+  });
+
+  it('has a dedicated section for division word problems', () => {
+    render(<Explanation />);
+    expect(
+      screen.getByRole('heading', { name: /Division Word Problems/i })
+    ).toBeInTheDocument();
+  });
 });

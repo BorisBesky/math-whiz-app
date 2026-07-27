@@ -298,6 +298,17 @@ const generateTwoDigitDivisorQuestion = (difficulty) => {
 /* decimal operations — +, −, ×, ÷ to hundredths (5.NBT.B.7)           */
 /* Format: "What is <a> <op> <b>?"                                     */
 /* ------------------------------------------------------------------ */
+
+// Pick a non-integer decimal magnitude in hundredths.
+// Range: 0.11–0.99 (hundredths) or 1.1–9.9 (tenths), never a whole number.
+// Prevents "decimal operations" questions from rendering as "5 × 3" etc.
+const pickHundredthsMagnitude = () => {
+  if (randomInt(0, 1) === 0) return randomInt(11, 99); // 0.11 – 0.99
+  let tenthsVal = randomInt(11, 99); // aiming for 1.1 – 9.9
+  if (tenthsVal % 10 === 0) tenthsVal += 1; // avoid whole numbers like 20 → "2"
+  return tenthsVal * 10;
+};
+
 const generateDecimalOperationsQuestion = (difficulty) => {
   const operation = difficulty < 0.35 ? pick(['+', '−']) : pick(['+', '−', '×', '÷']);
 
@@ -320,7 +331,7 @@ const generateDecimalOperationsQuestion = (difficulty) => {
     bText = fromHundredths(bH);
     hint = 'Line up the decimal points, then subtract place by place.';
   } else if (operation === '×') {
-    aH = randomInt(11, 99) * (randomInt(0, 1) ? 10 : 1); // e.g. 0.25 or 2.5
+    aH = pickHundredthsMagnitude(); // e.g. 0.25 or 2.5, never a whole number
     const whole = randomInt(2, 9);
     bH = whole * 100;
     resultH = aH * whole;
@@ -328,7 +339,7 @@ const generateDecimalOperationsQuestion = (difficulty) => {
     hint = 'Multiply as if there were no decimal point, then place it back.';
   } else {
     const whole = randomInt(2, 9);
-    resultH = randomInt(11, 99) * (randomInt(0, 1) ? 10 : 1);
+    resultH = pickHundredthsMagnitude();
     aH = resultH * whole;
     bH = whole * 100;
     bText = String(whole);
