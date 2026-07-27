@@ -223,9 +223,34 @@ const OperationsAlgebraicThinkingExplanation = () => {
         </div>
         <strong>Answer: 64 × 8 = 512</strong>
       </div>
-      
+
       <div style={styles.tip}>
         <span style={styles.emoji}>📝</span><strong>Multiplication Tip:</strong> Always start with the ones place and remember to carry over!
+      </div>
+
+      <h2 style={styles.h2}>📖 Multiplication Word Problems</h2>
+      <p>Word problems tell a story — your job is to figure out which numbers to multiply. Look for equal groups!</p>
+
+      <div style={styles.example}>
+        <strong>Example:</strong> A library has 24 shelves with 6 books on each shelf. How many books are there in total?
+        <br/><br/>
+        <strong>Step 1 — Find the groups:</strong> 24 shelves (that's the number of groups).
+        <br/><strong>Step 2 — Find how many in each group:</strong> 6 books per shelf.
+        <br/><strong>Step 3 — Multiply:</strong> 24 × 6 = 144 books.
+        <br/><br/>
+        <strong>Answer: 144 books</strong>
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🔑</span><strong>Key words that mean multiply:</strong> "in each," "per," "every," "rows of," "groups of," "times as many," "altogether" (when equal groups are involved).
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🧠</span><strong>4-Step Plan:</strong>
+        <br/>1. <strong>Read</strong> the whole problem — twice if you need to.
+        <br/>2. <strong>Ask:</strong> "Are there equal groups?" If yes, it's probably multiplication.
+        <br/>3. <strong>Write</strong> the number sentence: groups × amount in each group.
+        <br/>4. <strong>Check:</strong> Does your answer make sense in the story?
       </div>
 
       <h2 style={styles.h2}>➗ Long Division</h2>
@@ -253,6 +278,27 @@ const OperationsAlgebraicThinkingExplanation = () => {
       
       <div style={styles.tip}>
         <span style={styles.emoji}>🎯</span><strong>Division Tip:</strong> Think "How many times does this number fit?" and always check your work by multiplying back!
+      </div>
+
+      <h2 style={styles.h2}>📖 Division Word Problems</h2>
+      <p>Division word problems ask you to <em>share equally</em> or <em>make equal groups</em>. Sometimes there's a leftover — that's the <strong>remainder</strong>.</p>
+
+      <div style={styles.example}>
+        <strong>Example:</strong> 29 students are divided equally into 4 groups. How many students are in each group, and how many students are left over?
+        <br/><br/>
+        <strong>Step 1 — Find the total:</strong> 29 students.
+        <br/><strong>Step 2 — Find the number of groups:</strong> 4 groups.
+        <br/><strong>Step 3 — Divide:</strong> 29 ÷ 4 = 7 remainder 1.
+        <br/><br/>
+        <strong>Answer: 7 students in each group with 1 student left over.</strong>
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🔑</span><strong>Key words that mean divide:</strong> "shared equally," "split into," "divided into," "each group gets," "how many in each," "left over."
+      </div>
+
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🤔</span><strong>What does the remainder mean?</strong> The remainder is what's left when things don't share evenly. Always ask: "Does the story want the number in each group, the number of groups, or the leftovers?"
       </div>
 
       <div style={styles.funFact}>
