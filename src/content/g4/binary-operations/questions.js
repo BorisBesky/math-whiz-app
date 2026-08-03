@@ -111,6 +111,7 @@ export function generateBinaryToDecimalQuestion(difficulty = 0.5) {
     hint: `In binary, each position represents a power of 2. From right to left: 1, 2, 4, 8, 16... Add up the positions where you see a 1.`,
     standard: '4.NBT.A.1',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'binary to decimal conversion'
   };
 }
@@ -132,6 +133,7 @@ export function generateDecimalToBinaryQuestion(difficulty = 0.5) {
     hint: `To convert to binary, keep dividing by 2 and write down the remainders from bottom to top. Or think: what powers of 2 add up to ${decimal}?`,
     standard: '4.NBT.A.1',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'decimal to binary conversion'
   };
 }
@@ -168,6 +170,7 @@ export function generateBinaryAdditionQuestion(difficulty = 0.5) {
     hint: `Remember binary addition rules: 0+0=0, 0+1=1, 1+0=1, 1+1=10 (which means write 0 and carry 1). You can also convert to decimal, add, then convert back!`,
     standard: '4.OA.A.3',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'binary addition'
   };
 }
@@ -203,6 +206,7 @@ export function generateBinarySubtractionQuestion(difficulty = 0.5) {
     hint: `You can convert both numbers to decimal, subtract, then convert back to binary! Or use binary borrowing: when you need to subtract 1 from 0, borrow from the next column (just like in decimal).`,
     standard: '4.NBT.B.4',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'binary subtraction'
   };
 }
@@ -245,6 +249,7 @@ export function generateBinaryMultiplicationQuestion(difficulty = 0.5) {
     hint: `Try converting to decimal first: ${binary1} = ${num1} and ${binary2} = ${num2}. Multiply in decimal, then convert back to binary!`,
     standard: '4.NBT.B.5',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'binary multiplication'
   };
 }
@@ -289,6 +294,7 @@ export function generateBinaryDivisionQuestion(difficulty = 0.5) {
     hint: `Convert to decimal first: ${binaryDividend} = ${dividend} and ${binaryDivisor} = ${divisor}. Divide in decimal, then convert back to binary!`,
     standard: '4.NBT.B.6',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'binary division'
   };
 }
@@ -334,6 +340,7 @@ export function generateBinaryComparisonQuestion(difficulty = 0.5) {
     hint: `You can compare binary numbers by converting them to decimal first, or by comparing from left to right just like decimal numbers!`,
     standard: '4.NBT.A.2',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'comparing binary numbers'
   };
 }
@@ -366,6 +373,7 @@ export function generateBinaryPlaceValueQuestion(difficulty = 0.5) {
     hint: `In binary, place values from right to left are: 1 (2⁰), 2 (2¹), 4 (2²), 8 (2³), and so on. Each place is worth twice the place to its right!`,
     standard: '4.NBT.A.1',
     concept: 'Binary Operations',
+    grade: 'G4',
     subtopic: 'place value in binary'
   };
 }

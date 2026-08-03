@@ -138,6 +138,18 @@ describe('Measurement & Data 5th correctness', () => {
     }
   });
 
+  test('unit-conversion hints singularize "feet" and "inches" correctly', () => {
+    // Regression: the previous `unit.from.replace(/s$/, '')` turned "feet"
+    // into "feet" (unchanged — "1 feet = 12 inches" is not English) and would
+    // turn "inches" into "inche" if it ever became a `from` unit. Every hint
+    // should read "1 <singular>".
+    for (const q of draw('unit conversions', 200)) {
+      expect(q.hint).not.toMatch(/\b1 feet\b/);
+      expect(q.hint).not.toMatch(/\binche\b/);
+      expect(q.hint).not.toMatch(/\b1 [a-z]+s\b/); // never "1 <plural>"
+    }
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'unit conversions',

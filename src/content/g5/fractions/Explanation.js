@@ -72,10 +72,29 @@ const Fractions5thExplanation = () => {
         <strong>Never</strong> add straight across: 1/2 + 1/3 is NOT 2/5 — it's 3/6 + 2/6 ={' '}
         <strong>5/6</strong>.
       </div>
+      <h2 style={styles.h2}>🔢 Mixed numbers</h2>
       <p>
-        Mixed numbers work the same way — turn them into fractions first, then convert back:
-        2 1/3 + 1 1/2 = 7/3 + 3/2 = 14/6 + 9/6 = 23/6 = <strong>3 5/6</strong>.
+        A <strong>mixed number</strong> is a whole plus a fraction — like <strong>2 1/3</strong>{' '}
+        (two <em>and</em> a third). To add or subtract mixed numbers, the cleanest move is to turn
+        each one into a single fraction, work with a common denominator, then convert back.
       </p>
+      <div style={styles.visual}>
+        2 1/3 + 1 1/2
+        <br />
+        = 7/3 + 3/2 &nbsp;·&nbsp; both over 6 → 14/6 + 9/6
+        <br />
+        = 23/6 = <strong>3 5/6</strong> 🎉
+      </div>
+      <div style={styles.example}>
+        <span style={styles.emoji}>🥧</span>
+        <strong>Subtraction:</strong> 3 1/4 − 1 2/3 = 13/4 − 5/3 = 39/12 − 20/12 = 19/12 ={' '}
+        <strong>1 7/12</strong>.
+      </div>
+      <div style={styles.tip}>
+        <span style={styles.emoji}>💡</span>
+        <strong>Tip:</strong> "improper" fraction just means the top is bigger than the bottom.
+        23/6 and 3 5/6 are the same number in two outfits — pick whichever the problem asks for.
+      </div>
 
       <h2 style={styles.h2}>🍕 A fraction IS division</h2>
       <p>

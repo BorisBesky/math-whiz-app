@@ -144,7 +144,8 @@ const MultiplicationExplanation = () => {
         <span style={styles.emoji}>💡</span><strong>Why this helps:</strong> If you know 6 × 7 = 42, you already know 42 ÷ 6 = 7 and 42 ÷ 7 = 6 — no need to memorize them separately!
       </div>
 
-      <h2 style={styles.h2}>👥 Real Life Examples</h2>
+      <h2 style={styles.h2}>📖 Word Problems (Real Life Examples)</h2>
+      <p>A word problem tells a story with numbers hiding inside. Look for <strong>equal groups</strong> — that's your clue to multiply!</p>
       <div style={styles.example}>
         <strong>🍕 Pizza Party:</strong> If you have 5 tables with 6 people at each table, how many people total?
         <br/>Answer: 5 × 6 = 30 people!

@@ -300,6 +300,9 @@ export function generateMultiDigitArithmeticQuestion(difficulty = 0.5, forceOper
   }
 
   const correctAnswer = answer.toString();
+  // Never show a negative or zero distractor: subtractions like 1000-999=1
+  // would otherwise yield "-99" as an option (mirrors the same guard already
+  // used in the file's multiplication generators).
   const potentialDistractors = [
     (answer + 100).toString(),
     (answer - 100).toString(),
@@ -307,7 +310,7 @@ export function generateMultiDigitArithmeticQuestion(difficulty = 0.5, forceOper
     (answer + 10000).toString(),
     (answer + 100000).toString(),
     (answer + 1000000).toString(),
-  ];
+  ].filter(value => Number(value) > 0);
 
   return {
     question,
