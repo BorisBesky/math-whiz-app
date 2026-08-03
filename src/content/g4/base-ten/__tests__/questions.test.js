@@ -1,6 +1,7 @@
 import {
   generateRoundingQuestion,
   generateAdditionWordProblemQuestion,
+  generateMultiDigitArithmeticQuestion,
 } from '../questions.js';
 
 describe('G4 base-ten: rounding never shows negative multiple-choice options', () => {
@@ -60,5 +61,28 @@ describe('G4 base-ten: addition word problem — library scenario mentions the c
       return !closeRegex.test(question);
     });
     expect(closingMismatches).toEqual([]);
+  });
+});
+
+describe('G4 base-ten: multi-digit arithmetic never emits non-positive options', () => {
+  // Regression: `generateMultiDigitArithmeticQuestion` built distractors as
+  // `answer + 100`, `answer - 100`, ... without a positivity filter, so a
+  // subtraction whose result is small (e.g. 1000 − 999 = 1) could ship "-99"
+  // as one of the choices. Every option must be a positive number.
+  it('every option parses as a positive integer', () => {
+    const difficulties = [0.4, 0.5, 0.7, 1.0];
+    for (const d of difficulties) {
+      for (let i = 0; i < 400; i += 1) {
+        // Force a small-difference subtraction path by letting the generator
+        // run its own subtractions randomly.
+        const q = generateMultiDigitArithmeticQuestion(d, 'subtraction');
+        for (const opt of q.options) {
+          const value = Number(opt);
+          expect(Number.isFinite(value)).toBe(true);
+          expect(value).toBeGreaterThan(0);
+        }
+        expect(q.options).toContain(q.correctAnswer);
+      }
+    }
   });
 });

@@ -178,13 +178,21 @@ const generateFractionAsDivisionQuestion = (difficulty) => {
   }
 
   if (variant === 1) {
-    const items = pick(['pizzas', 'sandwiches', 'watermelons', 'pans of brownies']);
+    // Item pairs: [singular, plural]. Every item must singularize correctly so
+    // "1 pizzas" / "1 pans of brownies" never leaks into the question text.
+    const itemPair = pick([
+      ['pizza', 'pizzas'],
+      ['sandwich', 'sandwiches'],
+      ['watermelon', 'watermelons'],
+      ['pan of brownies', 'pans of brownies'],
+    ]);
     let m = randomInt(1, 7);
     let n = randomInt(2, 8);
     while (gcd(m, n) !== 1 || m >= n) {
       m = randomInt(1, 7);
       n = randomInt(2, 8);
     }
+    const items = m === 1 ? itemPair[0] : itemPair[1];
     const correct = `${m}/${n}`;
     return {
       question: `${n} friends share ${m} ${items} equally. How much does each friend get?`,

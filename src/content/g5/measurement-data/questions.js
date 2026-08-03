@@ -18,6 +18,19 @@ const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + mi
 
 const pick = (items) => items[randomInt(0, items.length - 1)];
 
+// Plural-to-singular map for units whose singular isn't just plural-minus-"s"
+// ("feet".slice(0,-1) → "fee"; "inches".slice(0,-1) → "inche"). Any unit that
+// gets referenced in a "1 <unit>" hint should be spelled correctly.
+const UNIT_SINGULAR = {
+  feet: 'foot',
+  inches: 'inch',
+};
+
+const singularize = (unit) => {
+  if (UNIT_SINGULAR[unit]) return UNIT_SINGULAR[unit];
+  return unit.endsWith('s') ? unit.slice(0, -1) : unit;
+};
+
 const shuffle = (items) => {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i--) {
@@ -93,7 +106,7 @@ const generateUnitConversionsQuestion = (difficulty) => {
         correctAnswer: String(amount * unit.factor),
         options: [],
         questionType: QUESTION_TYPES.NUMERIC,
-        hint: `1 ${unit.from.replace(/s$/, '')} = ${unit.factor} ${unit.to}. Multiply by ${unit.factor}.`,
+        hint: `1 ${singularize(unit.from)} = ${unit.factor} ${unit.to}. Multiply by ${unit.factor}.`,
         ...baseFields('unit conversions', '5.MD.A.1'),
       };
     }
@@ -103,7 +116,7 @@ const generateUnitConversionsQuestion = (difficulty) => {
       correctAnswer: String(count),
       options: [],
       questionType: QUESTION_TYPES.NUMERIC,
-      hint: `${unit.factor} ${unit.to} make 1 ${unit.from.replace(/s$/, '')}. Divide by ${unit.factor}.`,
+      hint: `${unit.factor} ${unit.to} make 1 ${singularize(unit.from)}. Divide by ${unit.factor}.`,
       ...baseFields('unit conversions', '5.MD.A.1'),
     };
   }
@@ -125,7 +138,7 @@ const generateUnitConversionsQuestion = (difficulty) => {
       String(small * unit.factor),
     ]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `1 ${unit.to.replace(/s$/, '')} = ${unit.factor} ${unit.from}, so divide by ${unit.factor} — the decimal point moves left.`,
+    hint: `1 ${singularize(unit.to)} = ${unit.factor} ${unit.from}, so divide by ${unit.factor} — the decimal point moves left.`,
     ...baseFields('unit conversions', '5.MD.A.1'),
   };
 };

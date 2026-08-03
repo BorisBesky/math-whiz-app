@@ -139,6 +139,35 @@ describe('Fractions 5th correctness', () => {
     }
   });
 
+  test('fraction as division: sharing-story item names agree with the count', () => {
+    // Regression: the story variant of "fraction as division" always used the
+    // plural item name ("2 friends share 1 pizzas equally.") — grammatical
+    // noise that undermines a language-heavy word problem. Ensure "1 X" uses
+    // a singular X across every rendered story.
+    for (const q of draw('fraction as division', 200)) {
+      const m = q.question.match(
+        /^(\d+) friends share (\d+) (.+) equally\. How much does each friend get\?$/
+      );
+      if (!m) continue; // other variants of the subtopic
+      const count = Number(m[2]);
+      const items = m[3];
+      if (count === 1) {
+        // Singular forms only. "pans of brownies" plural must become "pan of
+        // brownies"; "watermelons" -> "watermelon", etc.
+        expect(items).not.toMatch(/^pizzas$/);
+        expect(items).not.toMatch(/^sandwiches$/);
+        expect(items).not.toMatch(/^watermelons$/);
+        expect(items).not.toMatch(/^pans of brownies$/);
+      } else {
+        // count >= 2 uses plural forms only.
+        expect(items).not.toMatch(/^pizza$/);
+        expect(items).not.toMatch(/^sandwich$/);
+        expect(items).not.toMatch(/^watermelon$/);
+        expect(items).not.toMatch(/^pan of brownies$/);
+      }
+    }
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'add and subtract unlike denominators',
