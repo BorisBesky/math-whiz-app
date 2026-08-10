@@ -93,22 +93,24 @@ const BaseTenExplanation = () => {
       <div style={styles.placeValue}>
         <div style={styles.bigNumber}>756,429</div>
         <table style={styles.table}>
-          <tr style={{background: '#3498db', color: 'white'}}>
-            <td style={styles.tableHeader}>Hundred Thousands</td>
-            <td style={styles.tableHeader}>Ten Thousands</td>
-            <td style={styles.tableHeader}>Thousands</td>
-            <td style={styles.tableHeader}>Hundreds</td>
-            <td style={styles.tableHeader}>Tens</td>
-            <td style={styles.tableHeader}>Ones</td>
-          </tr>
-          <tr>
-            <td style={styles.tableCell}>7</td>
-            <td style={styles.tableCell}>5</td>
-            <td style={styles.tableCell}>6</td>
-            <td style={styles.tableCell}>4</td>
-            <td style={styles.tableCell}>2</td>
-            <td style={styles.tableCell}>9</td>
-          </tr>
+          <tbody>
+            <tr>
+              <td style={styles.tableHeader}>Hundred Thousands</td>
+              <td style={styles.tableHeader}>Ten Thousands</td>
+              <td style={styles.tableHeader}>Thousands</td>
+              <td style={styles.tableHeader}>Hundreds</td>
+              <td style={styles.tableHeader}>Tens</td>
+              <td style={styles.tableHeader}>Ones</td>
+            </tr>
+            <tr>
+              <td style={styles.tableCell}>7</td>
+              <td style={styles.tableCell}>5</td>
+              <td style={styles.tableCell}>6</td>
+              <td style={styles.tableCell}>4</td>
+              <td style={styles.tableCell}>2</td>
+              <td style={styles.tableCell}>9</td>
+            </tr>
+          </tbody>
         </table>
         <p><strong>Seven hundred fifty-six thousand, four hundred twenty-nine</strong></p>
       </div>

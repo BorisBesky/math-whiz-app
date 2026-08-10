@@ -3,6 +3,7 @@ import path from 'path';
 import {
   ANGLE_TYPES,
   generateAngleMeasurementQuestion,
+  generateLineSymmetryQuestion,
   generateLinesAndAnglesQuestion,
   generatePointsLinesRaysQuestion,
   generateShapeClassificationQuestion,
@@ -349,6 +350,43 @@ describe('generateLinesAndAnglesQuestion subtopic scope', () => {
       const q = generateLinesAndAnglesQuestion();
       expect(q.options).toContain(q.correctAnswer);
       expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+});
+
+describe('line symmetry: no hierarchy-driven ambiguity', () => {
+  // A square is a rectangle in the shape hierarchy the app teaches
+  // (g5/geometry/Explanation.js, g5 hierarchy statements). If the question
+  // asks "How many lines of symmetry does a rectangle have?" a student who
+  // reasons "a square is a rectangle, so it can have 4" is mathematically
+  // correct but would be marked wrong. Same for "isosceles triangle" — an
+  // equilateral triangle is isosceles too, so it can have 3 lines instead
+  // of 1. The generator must qualify these shape names.
+  it('never asks about "a rectangle" or "an isosceles triangle" without a hierarchy qualifier', () => {
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateLineSymmetryQuestion();
+      // Extract the shape phrase between "a " and " have?"
+      const match = q.question.match(/^How many lines of symmetry does an? (.+) have\?$/);
+      expect(match).not.toBeNull();
+      const shape = match[1];
+      // The specific ambiguous phrases must never appear on their own.
+      expect(shape).not.toBe('rectangle');
+      expect(shape).not.toBe('isosceles triangle');
+    }
+  });
+
+  it('always includes the correct answer in options, all distinct', () => {
+    for (let i = 0; i < 200; i += 1) {
+      const q = generateLineSymmetryQuestion();
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+
+  it('emits subtopic "symmetry"', () => {
+    for (let i = 0; i < 50; i += 1) {
+      const q = generateLineSymmetryQuestion();
+      expect(q.subtopic).toBe('symmetry');
     }
   });
 });

@@ -762,6 +762,10 @@ export function generateQuadrilateralPropertiesQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateLineSymmetryQuestion(difficulty = 0.5) {
+  // NOTE: A square is a special rectangle, so "rectangle" alone is ambiguous
+  // (2 lines for a non-square rectangle, 4 for a square). We say
+  // "non-square rectangle" so the answer is unique for students who have
+  // learned the quadrilateral hierarchy.
   const symmetryExamples = [
     {
       shape: "circle",
@@ -770,11 +774,11 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
     },
     {
       shape: "square",
-      lines: "4 lines of symmetry", 
+      lines: "4 lines of symmetry",
       explanation: "2 diagonal lines and 2 lines through opposite sides",
     },
     {
-      shape: "rectangle",
+      shape: "non-square rectangle",
       lines: "2 lines of symmetry",
       explanation: "one vertical and one horizontal through the center",
     },
@@ -784,7 +788,7 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
       explanation: "from each vertex to the middle of the opposite side",
     },
     {
-      shape: "isosceles triangle",
+      shape: "isosceles triangle (not equilateral)",
       lines: "1 line of symmetry",
       explanation: "from the vertex between equal sides to the middle of the base",
     },
