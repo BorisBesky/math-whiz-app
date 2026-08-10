@@ -199,7 +199,13 @@ export function generateGroupingQuestion() {
  */
 export function generateFactFamilyQuestion() {
   const factor1 = getRandomInt(2, 9);
-  const factor2 = getRandomInt(2, 9);
+  // factor2 must differ from factor1: when they're equal the fact family
+  // collapses (the two divisions are the same expression), and the blank-
+  // form questions like "4 × __ = 16" no longer test the family relationship.
+  let factor2 = getRandomInt(2, 9);
+  while (factor2 === factor1) {
+    factor2 = getRandomInt(2, 9);
+  }
   const product = factor1 * factor2;
   
   const questionTypes = [

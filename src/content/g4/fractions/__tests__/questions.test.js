@@ -3,6 +3,7 @@ import {
   generateFractionComparisonQuestion,
   generateFractionMultiplicationQuestion,
   generateMixedNumbersQuestion,
+  generateDecimalNotationQuestion,
 } from '../questions.js';
 
 describe('G4 fractions: mixed-number "toMixed" distractors are never malformed', () => {
@@ -121,6 +122,48 @@ describe('G4 fractions: mixed-number addition options stay distinct (no-carry ca
       const correctOccurrences = q.options.filter((o) => o === q.correctAnswer).length;
       expect(correctOccurrences).toBe(1);
       expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+});
+
+describe('G4 fractions: decimal notation correct-answer text', () => {
+  // The correctAnswer is echoed back in "The correct answer is X." when
+  // the student is wrong. Trailing zeros ("0.30") read as unnatural next
+  // to what a student would type ("0.3"). String(numerator/n) is the
+  // shortest exact decimal representation.
+  it('never ships a trailing-zero form like "0.30" for the hundredths branch', () => {
+    let sawHundredths = 0;
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateDecimalNotationQuestion(0.9); // bias toward hundredths
+      if (!/Write \d+\/100 as a decimal/.test(q.question)) continue;
+      sawHundredths += 1;
+      // No trailing zero in the fractional part.
+      expect(q.correctAnswer).not.toMatch(/\.\d*0$/);
+    }
+    expect(sawHundredths).toBeGreaterThan(0);
+  });
+
+  it('for the hundredths branch, the numerator is never a multiple of 10 (reduces to tenths)', () => {
+    // 10/100, 20/100, ... reduce to 0.1, 0.2 — that's a tenths test, not a
+    // hundredths test. Skip them so the question type actually exercises
+    // the standard (4.NF.C.6).
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateDecimalNotationQuestion(0.9);
+      const match = q.question.match(/Write (\d+)\/100 as a decimal/);
+      if (!match) continue;
+      const numerator = Number(match[1]);
+      expect(numerator % 10).not.toBe(0);
+    }
+  });
+
+  it('correctAnswer parsed as float equals numerator / denominator', () => {
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateDecimalNotationQuestion(0.5);
+      const match = q.question.match(/Write (\d+)\/(\d+) as a decimal/);
+      expect(match).not.toBeNull();
+      const num = Number(match[1]);
+      const den = Number(match[2]);
+      expect(parseFloat(q.correctAnswer)).toBeCloseTo(num / den, 10);
     }
   });
 });

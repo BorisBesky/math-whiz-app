@@ -305,11 +305,20 @@ export function generateDecimalNotationQuestion(difficulty = 0.5) {
   const isHundredths = difficulty > 0.5 ? Math.random() < 0.7 : Math.random() < 0.4;
   
   if (isHundredths) {
-    // Scale numerator range by difficulty
+    // Skip multiples of 10 so the answer is genuinely a hundredths value —
+    // `10/100 as a decimal` reduces to tenths (0.1) and is a weaker test of
+    // the standard than `23/100 → 0.23`.
     const maxNum = Math.floor(20 + difficulty * 79);
-    const numerator = getRandomInt(1, maxNum);
-    const decimal = (numerator / 100).toFixed(2);
-    
+    let numerator = getRandomInt(1, maxNum);
+    while (numerator % 10 === 0) {
+      numerator = getRandomInt(1, maxNum);
+    }
+    // Use String(number) so we don't ship trailing-zero forms like "0.30"
+    // in the correctAnswer text (the check still passes via
+    // normalizeNumericAnswer, but the feedback message would read
+    // "The correct answer is 0.30" which looks off next to a student's 0.3).
+    const decimal = String(numerator / 100);
+
     return {
       question: `Write ${numerator}/100 as a decimal.`,
       correctAnswer: decimal,
@@ -324,7 +333,7 @@ export function generateDecimalNotationQuestion(difficulty = 0.5) {
     };
   } else {
     const numerator = getRandomInt(1, 9);
-    const decimal = (numerator / 10).toFixed(1);
+    const decimal = String(numerator / 10);
     
     return {
       question: `Write ${numerator}/10 as a decimal.`,
