@@ -316,19 +316,25 @@ export function generateBinaryComparisonQuestion(difficulty = 0.5) {
 
   let correctAnswer, wrongAnswers;
 
+  // Comparing two distinct positive integers yields only three distinct claims
+  // (greater, less, equal). The former reversed-operand distractor was the same
+  // claim as the wrong-direction one written the other way — a student saw two
+  // options that meant the same thing and one was arbitrarily "correct". Use
+  // "Cannot be determined" as a clearly-wrong fourth so all four options are
+  // semantically distinct.
   if (num1 > num2) {
     correctAnswer = `${binary1} > ${binary2}`;
     wrongAnswers = [
       `${binary1} < ${binary2}`,
       `${binary1} = ${binary2}`,
-      `${binary2} > ${binary1}`,
+      `Cannot be determined`,
     ];
   } else {
     correctAnswer = `${binary1} < ${binary2}`;
     wrongAnswers = [
       `${binary1} > ${binary2}`,
       `${binary1} = ${binary2}`,
-      `${binary2} < ${binary1}`,
+      `Cannot be determined`,
     ];
   }
 

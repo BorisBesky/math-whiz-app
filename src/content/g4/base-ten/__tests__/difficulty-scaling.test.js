@@ -244,9 +244,9 @@ describe('Grade 4 Difficulty Scaling', () => {
       for (let i = 0; i < 500; i += 1) {
         const difficulty = Math.random();
         const q = generatePlaceValueQuestion(difficulty);
-        const numberMatch = q.question.match(/In the number (\d+),/);
+        const numberMatch = q.question.match(/In the number ([\d,]+),/);
         expect(numberMatch).not.toBeNull();
-        const numStr = numberMatch[1];
+        const numStr = numberMatch[1].replace(/,/g, '');
         expect(numStr[0]).not.toBe('0');
       }
     });
@@ -254,9 +254,9 @@ describe('Grade 4 Difficulty Scaling', () => {
     test('digit referenced in the question text actually appears in the number', () => {
       for (let i = 0; i < 200; i += 1) {
         const q = generatePlaceValueQuestion(Math.random());
-        const m = q.question.match(/In the number (\d+), what is the place value of the digit (\d)\?/);
+        const m = q.question.match(/In the number ([\d,]+), what is the place value of the digit (\d)\?/);
         expect(m).not.toBeNull();
-        const numStr = m[1];
+        const numStr = m[1].replace(/,/g, '');
         const digit = m[2];
         expect(numStr.includes(digit)).toBe(true);
       }

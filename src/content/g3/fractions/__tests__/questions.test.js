@@ -113,3 +113,22 @@ describe('generateFractionSimplificationQuestion: avoids degenerate / colliding 
     }
   });
 });
+
+describe('generateFractionSubtractionQuestion: never emits a bare-integer distractor', () => {
+  // Regression: the "subtract straight across" distractor used
+  // getSimplifiedFraction(diff, denominator - denominator + 1) — always
+  // simplifies to a bare integer like "2", which stands out next to fraction
+  // options and doesn't reflect a real student misconception. The distractor
+  // should still read as a fraction (or as "0" for a genuinely zero result).
+  it('non-zero distractors keep a fractional form', () => {
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateFractionSubtractionQuestion(Math.random());
+      const wrongs = q.options.filter((o) => o !== q.correctAnswer);
+      for (const opt of wrongs) {
+        // Simplified 0 is allowed. Anything else must contain a "/".
+        if (opt === '0') continue;
+        expect(opt).toMatch(/\//);
+      }
+    }
+  });
+});

@@ -1274,7 +1274,7 @@ const GeometryExplanation = () => {
               <small style={{color: '#666', fontStyle: 'italic'}}>Perfectly round</small>
             </div>
             <div style={styles.shapeBox20}>
-              <strong>🔷 Pentagon</strong><br/>
+              <strong>🔷 Regular Pentagon</strong><br/>
               • 5 equal sides<br/>
               • 5 equal angles<br/>
               • 5 lines of symmetry<br/>
@@ -1283,7 +1283,7 @@ const GeometryExplanation = () => {
               <small style={{color: '#666', fontStyle: 'italic'}}>Like home plate</small>
             </div>
             <div style={styles.shapeBox20}>
-              <strong>⬡ Hexagon</strong><br/>
+              <strong>⬡ Regular Hexagon</strong><br/>
               • 6 equal sides<br/>
               • 6 equal angles<br/>
               • 6 lines of symmetry<br/>
