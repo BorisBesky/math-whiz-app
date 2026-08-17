@@ -49,3 +49,24 @@ describe('G4 geometry Explanation: parallelogram does not falsely exclude right 
     expect(explanationSrc).not.toMatch(/Parallelogram[\s\S]{0,400}No right angles/);
   });
 });
+
+describe('G4 geometry Explanation: pentagon/hexagon gallery cards qualify "regular"', () => {
+  // The gallery cards for these shapes list properties that only hold for the
+  // regular variant ("5 equal sides", "sum of angles = 720°" for a hexagon —
+  // the sum is 720° for any hexagon but the *equal* sides/angles are
+  // regular-only). The card headers must say "Regular Pentagon" / "Regular
+  // Hexagon" so the properties match the pictured shape. The popup detail-view
+  // (`'pentagon-demo'` / `'hexagon-demo'` objects) already qualifies them.
+  it('gallery card headers say "Regular Pentagon" and "Regular Hexagon"', () => {
+    const pentagonCard = explanationSrc.match(
+      /<strong>[^<]*Pentagon<\/strong>[\s\S]{0,300}?pentagon-demo/
+    );
+    expect(pentagonCard).not.toBeNull();
+    expect(pentagonCard[0]).toMatch(/Regular Pentagon/);
+    const hexagonCard = explanationSrc.match(
+      /<strong>[^<]*Hexagon<\/strong>[\s\S]{0,300}?hexagon-demo/
+    );
+    expect(hexagonCard).not.toBeNull();
+    expect(hexagonCard[0]).toMatch(/Regular Hexagon/);
+  });
+});

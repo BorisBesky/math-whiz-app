@@ -195,15 +195,26 @@ export function generateFractionSubtractionQuestion(difficulty = 0.5) {
   let num2 = getRandomInt(1, num1 - 1);
   const diff = num1 - num2;
   const answer = getSimplifiedFraction(diff, denominator);
+  // Wrap the distractor helper so it never emits a bare-integer option that
+  // looks out of place next to fractional choices (e.g. `getSimplifiedFraction`
+  // returns "1" when the numerator equals the denominator). Fall back to a
+  // clearly-different fractional form when that happens.
+  const fractionOrFallback = (n, d, fallbackDen) => {
+    const val = getSimplifiedFraction(n, d);
+    if (/\//.test(val) || val === '0') return val;
+    return `${n}/${fallbackDen}`;
+  };
   const potentialDistractors = [
-    // Common wrong step: subtract both tops AND both bottoms.
-    getSimplifiedFraction(diff, denominator - denominator + 1),
+    // "Subtract straight across" — subtract the numerators AND the denominators.
+    // Since denominator-denominator = 0 (undefined), use a nearby non-zero denom
+    // so the distractor still reads as a fraction.
+    fractionOrFallback(diff, Math.max(2, denominator - 1), denominator + 1),
     // Off-by-one on the numerator.
-    getSimplifiedFraction(diff + 1, denominator),
+    fractionOrFallback(diff + 1, denominator, denominator + 1),
     // Kept the wrong numerator alone.
-    getSimplifiedFraction(num1, denominator),
+    fractionOrFallback(num1, denominator, denominator + 1),
     // Added instead of subtracted.
-    getSimplifiedFraction(num1 + num2, denominator),
+    fractionOrFallback(num1 + num2, denominator, denominator + 1),
   ];
 
   return {

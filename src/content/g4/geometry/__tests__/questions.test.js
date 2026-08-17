@@ -190,6 +190,28 @@ describe('points / lines / rays questions', () => {
     expect(endpointQuestions.length).toBeGreaterThan(0); // the form does occur
     endpointQuestions.forEach((q) => expect(q.question).not.toMatch(/does a point have/));
   });
+
+  it('never marks a mathematically-true statement as False in the notation T/F form', () => {
+    // Regression: the T/F builder borrows another concept's notation to build
+    // the false variant. "A point has no endpoints." (borrowed from line's
+    // "has no endpoints") is TRUE — a point has zero endpoints — but was being
+    // labeled False. The borrow must skip concepts with the same endpoint count.
+    const trueStatements = new Set([
+      'A point has no endpoints.',
+      'A line has no endpoints.',
+      'A ray has exactly one endpoint.',
+      'A line segment has two endpoints.',
+    ]);
+    for (let i = 0; i < 1000; i += 1) {
+      const q = generatePointsLinesRaysQuestion(0.5);
+      const tfMatch = q.question.match(/^True or False: (.+)$/);
+      if (!tfMatch) continue;
+      const stmt = tfMatch[1];
+      if (trueStatements.has(stmt)) {
+        expect(q.correctAnswer).toBe('True');
+      }
+    }
+  });
 });
 
 describe('geometry angle "measure" question grammar', () => {

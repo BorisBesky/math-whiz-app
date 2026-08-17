@@ -2,6 +2,7 @@ import {
   generateRoundingQuestion,
   generateAdditionWordProblemQuestion,
   generateMultiDigitArithmeticQuestion,
+  generatePlaceValueQuestion,
 } from '../questions.js';
 
 describe('G4 base-ten: rounding never shows negative multiple-choice options', () => {
@@ -61,6 +62,30 @@ describe('G4 base-ten: addition word problem — library scenario mentions the c
       return !closeRegex.test(question);
     });
     expect(closingMismatches).toEqual([]);
+  });
+});
+
+describe('G4 base-ten: place-value question renders large numbers with commas', () => {
+  // Regression: `generatePlaceValueQuestion` interpolated `${number}` raw, so
+  // a 7-digit number rendered as "1234567" — every other generator in this
+  // file uses `addCommas()` for readability. A 3rd/4th grader shouldn't have
+  // to count digits by hand to answer a place-value question.
+  it('any 4+ digit number in the question text uses comma separators', () => {
+    const difficulties = [0.3, 0.5, 0.7, 1.0];
+    for (const d of difficulties) {
+      for (let i = 0; i < 100; i += 1) {
+        const q = generatePlaceValueQuestion(d);
+        const numMatch = q.question.match(/In the number ([\d,]+),/);
+        expect(numMatch).not.toBeNull();
+        const numStr = numMatch[1];
+        const digitCount = numStr.replace(/,/g, '').length;
+        if (digitCount >= 4) {
+          expect(numStr).toContain(',');
+          // And commas must be well-placed (groups of 3 from the right).
+          expect(numStr).toMatch(/^\d{1,3}(,\d{3})+$/);
+        }
+      }
+    }
   });
 });
 

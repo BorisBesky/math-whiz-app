@@ -1050,11 +1050,14 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
       correctAnswer: c.example,
       distractors: shuffle(otherConcepts(c).map((x) => x.example)).slice(0, 3),
     }),
-    // Notation true/false. A false variant borrows another concept's notation; within
-    // this concept set every notation is unique, so a borrowed statement is reliably false.
+    // Notation true/false. A false variant borrows another concept's notation.
+    // Restrict the borrow to concepts with a different endpoint count — otherwise
+    // "A point has no endpoints." (borrowed from line) is TRUE (a point has 0
+    // endpoints) even though the builder would label it False.
     (c) => {
-      if (Math.random() < 0.5) {
-        const other = pick(otherConcepts(c));
+      const eligible = otherConcepts(c).filter((x) => x.endpoints !== c.endpoints);
+      if (eligible.length > 0 && Math.random() < 0.5) {
+        const other = pick(eligible);
         return {
           question: `True or False: ${c.Phrase} ${other.notation}.`,
           correctAnswer: "False",

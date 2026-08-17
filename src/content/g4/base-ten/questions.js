@@ -202,7 +202,7 @@ export function generatePlaceValueQuestion(difficulty = 0.5) {
   const potentialDistractors = positions.filter((p) => p !== correctPosition).slice(0, 3);
 
   return {
-    question: `In the number ${number}, what is the place value of the digit ${digit}?`,
+    question: `In the number ${addCommas(Number(number))}, what is the place value of the digit ${digit}?`,
     correctAnswer: correctPosition,
     options: shuffle(generateUniqueOptions(correctPosition, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
