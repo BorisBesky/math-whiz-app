@@ -154,6 +154,7 @@ const RewardsStore = ({
   handleEquipAccessory,
   handleUnequipAccessory,
   handleSetCharacterColor,
+  handleSetCharacterLook,
 }) => {
   const [storeMode, setStoreMode] = useState("characters");
 
@@ -215,6 +216,7 @@ const RewardsStore = ({
           handleEquipAccessory={handleEquipAccessory}
           handleUnequipAccessory={handleUnequipAccessory}
           handleSetCharacterColor={handleSetCharacterColor}
+          handleSetCharacterLook={handleSetCharacterLook}
         />
       ) : (
         <BackgroundStore

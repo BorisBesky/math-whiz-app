@@ -88,7 +88,7 @@ import { getPortalMessagesPath } from "./utils/userRoles";
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-wizard-rollback-v21" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-willow-tint-v35" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -2136,12 +2136,12 @@ const MainAppContent = () => {
     setTimeout(() => setPurchaseFeedback(""), 3000);
   };
 
-  const handlePurchaseAccessory = async (item) => {
+  const handlePurchaseAccessory = async (item, characterId) => {
     if (!user || !item) return;
 
     const alreadyOwned = userData?.ownedAccessories?.includes(item.id);
     if (alreadyOwned) {
-      await handleEquipAccessory(item);
+      await handleEquipAccessory(item, characterId);
       return;
     }
 
@@ -2151,18 +2151,18 @@ const MainAppContent = () => {
       return;
     }
 
-    const selectedCharacterId =
-      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const targetCharacterId =
+      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
     const purchaseUpdates = {
       coins: increment(-item.price),
       ownedAccessories: arrayUnion(item.id),
-      [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+      [`equippedAccessories.${targetCharacterId}.${item.category}`]: item.id,
     };
     getConflictingCategories(item.category).forEach((category) => {
-      purchaseUpdates[`equippedAccessories.${selectedCharacterId}.${category}`] = null;
+      purchaseUpdates[`equippedAccessories.${targetCharacterId}.${category}`] = null;
     });
     await updateDoc(userDocRef, purchaseUpdates);
 
@@ -2173,52 +2173,65 @@ const MainAppContent = () => {
     setTimeout(() => setPurchaseFeedback(""), 3000);
   };
 
-  const handleEquipAccessory = async (item) => {
+  const handleEquipAccessory = async (item, characterId) => {
     if (!user || !item) return;
     if (!userData?.ownedAccessories?.includes(item.id)) return;
 
-    const selectedCharacterId =
-      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const targetCharacterId =
+      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
     const equipUpdates = {
-      [`equippedAccessories.${selectedCharacterId}.${item.category}`]: item.id,
+      [`equippedAccessories.${targetCharacterId}.${item.category}`]: item.id,
     };
     getConflictingCategories(item.category).forEach((category) => {
-      equipUpdates[`equippedAccessories.${selectedCharacterId}.${category}`] = null;
+      equipUpdates[`equippedAccessories.${targetCharacterId}.${category}`] = null;
     });
     await updateDoc(userDocRef, equipUpdates);
   };
 
-  const handleUnequipAccessory = async (category) => {
+  const handleUnequipAccessory = async (category, characterId) => {
     if (!user || !category) return;
 
-    const selectedCharacterId =
-      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const targetCharacterId =
+      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
     await updateDoc(userDocRef, {
-      [`equippedAccessories.${selectedCharacterId}.${category}`]: null,
+      [`equippedAccessories.${targetCharacterId}.${category}`]: null,
     });
   };
 
-  const handleSetCharacterColor = async (regionIds, color) => {
+  const handleSetCharacterColor = async (regionIds, color, characterId) => {
     if (!user || !color || !Array.isArray(regionIds) || regionIds.length === 0) {
       return;
     }
 
-    const selectedCharacterId =
-      userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const targetCharacterId =
+      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
     const updates = {};
     regionIds.forEach((regionId) => {
-      updates[`characterColors.${selectedCharacterId}.${regionId}`] = color;
+      updates[`characterColors.${targetCharacterId}.${regionId}`] = color;
     });
     await updateDoc(userDocRef, updates);
+  };
+
+  const handleSetCharacterLook = async (slot, styleId, characterId) => {
+    if (!user || !slot || !styleId) return;
+
+    const targetCharacterId =
+      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+
+    await updateDoc(userDocRef, {
+      [`characterLooks.${targetCharacterId}.${slot}`]: styleId,
+    });
   };
 
   // --- Gemini API Call via Netlify Function ---
@@ -2513,6 +2526,7 @@ Answer: [The answer]`;
                   handleEquipAccessory={handleEquipAccessory}
                   handleUnequipAccessory={handleUnequipAccessory}
                   handleSetCharacterColor={handleSetCharacterColor}
+                  handleSetCharacterLook={handleSetCharacterLook}
                 />
               } />
               <Route path="messages" element={

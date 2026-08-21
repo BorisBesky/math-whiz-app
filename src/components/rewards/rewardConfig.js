@@ -99,6 +99,38 @@ export const REWARD_CHARACTERS = [
     summary: "A magical 3D wizard with separately colorable parts.",
     model: "/models/wizard_parts.glb",
   },
+  {
+    id: "nico-kid",
+    name: "Nico",
+    title: "Hoodie Kid",
+    accent: "#2563eb",
+    summary: "A 3D kid ready for hoodies, caps, and backpack adventures.",
+    model: "/models/kid1_parts.glb",
+  },
+  {
+    id: "quinn-kid",
+    name: "Quinn",
+    title: "Street Kid",
+    accent: "#f97316",
+    summary: "A 3D kid with street style and separately colorable gear.",
+    model: "/models/kid2_parts.glb",
+  },
+  {
+    id: "felix-fox",
+    name: "Felix",
+    title: "Clever Fox",
+    accent: "#e8935a",
+    summary: "A 3D fox in a hoodie with a cap and backpack — recolor every piece.",
+    model: "/models/fox_parts.glb",
+  },
+  {
+    id: "bruno-bear",
+    name: "Bruno",
+    title: "Big Bear",
+    accent: "#a16207",
+    summary: "A cuddly 3D bear ready for hoodie, pants, shoes, cap, and backpack colors.",
+    model: "/models/bear_parts.glb",
+  },
 ];
 
 // Characters whose look is hand-built from primitives (and therefore support
@@ -259,63 +291,186 @@ export const CHARACTER_COLOR_REGIONS = {
   "willow-wizard": [
     {
       id: "head",
-      label: "Head",
+      label: "Skin",
       default: "#f2c7a0",
+      group: "body",
       materialNames: ["part_0_head"],
     },
     {
       id: "feather",
       label: "Feather",
       default: "#f87171",
+      group: "body",
       materialNames: ["part_1_feather"],
     },
     {
       id: "hat",
       label: "Hat",
       default: "#bef264",
+      group: "body",
       materialNames: ["part_2_hat"],
     },
     {
       id: "torso",
       label: "Torso",
       default: "#86efac",
+      group: "body",
       materialNames: ["part_3_torso body"],
     },
     {
       id: "cloak",
       label: "Cloak",
       default: "#67e8f9",
+      group: "body",
       materialNames: ["part_4_cloak"],
     },
     {
       id: "hands",
       label: "Hands",
       default: "#818cf8",
+      group: "body",
       materialNames: ["part_5_hands"],
     },
     {
       id: "staff",
       label: "Staff",
       default: "#a78bfa",
+      group: "body",
       materialNames: ["part_6_magic staff"],
     },
     {
       id: "orb",
       label: "Orb",
       default: "#f472b6",
+      group: "body",
       materialNames: ["part_7_orb"],
     },
+    { id: "eyes", label: "Eyes", default: "#2563eb", group: "face" },
+    { id: "brows", label: "Brows", default: "#4a044e", group: "face" },
+    { id: "lips", label: "Lips", default: "#db2777", group: "face" },
+    { id: "blush", label: "Blush", default: "#fb7185", group: "face" },
+    { id: "eyeshadow", label: "Shadow", default: "#a78bfa", group: "face" },
+  ],
+  // Nico base body only. Cap, backpack and sneakers are detachable accessories
+  // (see MODEL_PART_ACCESSORIES), so they are not permanent color regions.
+  "nico-kid": [
+    { id: "head", label: "Skin", default: "#f2c7a0", materialNames: ["part_0_head"] },
+    { id: "hair", label: "Hair", default: "#1f2937", materialNames: ["part_1_hair"] },
+    { id: "torso", label: "Torso", default: "#f2c7a0", materialNames: ["part_2_torso_body"] },
+    { id: "hoodie", label: "Hoodie", default: "#2563eb", materialNames: ["part_3_hoodie"] },
+    { id: "pants", label: "Pants", default: "#1e3a8a", materialNames: ["part_4_pants"] },
+  ],
+  // Quinn base body only. Cap, backpack and sneakers are detachable accessories.
+  "quinn-kid": [
+    { id: "head", label: "Skin", default: "#e8b48a", materialNames: ["part_0_head"] },
+    { id: "hair", label: "Hair", default: "#7c2d12", materialNames: ["part_1_hair"] },
+    { id: "torso", label: "Torso", default: "#e8b48a", materialNames: ["part_2_torso_body"] },
+    { id: "hoodie", label: "Hoodie", default: "#f97316", materialNames: ["part_3_hoodie"] },
+    { id: "pants", label: "Pants", default: "#0f766e", materialNames: ["part_4_pants"] },
+  ],
+  // Felix Fox base body only. Cap and backpack are detachable accessories (see
+  // MODEL_PART_ACCESSORIES), so they are not permanent color regions. The fox's
+  // small ears/tail meshes are folded into "Fur" so they take the fur color
+  // instead of rendering as untinted default material.
+  "felix-fox": [
+    {
+      id: "fur",
+      label: "Fur",
+      default: "#e8935a",
+      materialNames: ["part_0_head", "part_1_ears", "part_2_body", "part_3_tail"],
+    },
+    { id: "hoodie", label: "Hoodie", default: "#2563eb", materialNames: ["part_4_hoodie"] },
+    { id: "pants", label: "Pants", default: "#1e3a8a", materialNames: ["part_5_pants"] },
+  ],
+  // Bruno Bear base body only. Cap, backpack and shoes are detachable
+  // accessories. The chunky bear's head merged into the body mesh during part
+  // extraction, so "Fur" covers both and there is no separate head control.
+  "bruno-bear": [
+    {
+      id: "fur",
+      label: "Fur",
+      default: "#a16207",
+      materialNames: ["part_0_head", "part_1_body"],
+    },
+    { id: "hoodie", label: "Hoodie", default: "#16a34a", materialNames: ["part_2_hoodie"] },
+    { id: "pants", label: "Pants", default: "#ea580c", materialNames: ["part_3_pants"] },
   ],
 };
+
+// Detachable parts baked into a model character's GLB that are surfaced as
+// equippable accessories instead of always-on geometry. Maps
+// characterId -> { accessoryCategory: meshName }. CharacterViewer hides these
+// meshes unless the matching accessory (same category, same characterId) is
+// equipped, in which case it shows the mesh and tints it to the accessory color.
+export const MODEL_PART_ACCESSORIES = {
+  "felix-fox": { hat: "part_6_cap", back: "part_7_backpack" },
+  "bruno-bear": { hat: "part_5_cap", back: "part_6_backpack", feet: "part_4_shoes" },
+  "nico-kid": { hat: "part_7_cap", back: "part_6_backpack", feet: "part_5_sneakers" },
+  "quinn-kid": { hat: "part_7_cap", back: "part_6_backpack", feet: "part_5_sneakers" },
+};
+
+export const getModelPartAccessories = (characterId) =>
+  MODEL_PART_ACCESSORIES[characterId] || null;
 
 export const getColorRegions = (characterId) =>
   CHARACTER_COLOR_REGIONS[characterId] || [];
 
 const ALL_CHARACTER_IDS = PROCEDURAL_CHARACTER_IDS;
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
+const WILLOW_ID = "willow-wizard";
+const withWillow = (ids) => (ids.includes(WILLOW_ID) ? ids : [...ids, WILLOW_ID]);
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;
-const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl"];
+const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl", WILLOW_ID];
 const KID_CHARACTER_IDS = ["leo-boy", "mia-girl"];
+const WILLOW_WARDROBE_IDS = withWillow(SOFT_CHARACTER_IDS);
+
+export const FACE_FEATURE_SLOTS = [
+  { id: "eyes", label: "Eyes" },
+  { id: "brows", label: "Brows" },
+  { id: "makeup", label: "Makeup" },
+];
+
+export const FACE_LOOK_OPTIONS = {
+  [WILLOW_ID]: {
+    eyes: [
+      { id: "round", label: "Round" },
+      { id: "almond", label: "Almond" },
+      { id: "sparkle", label: "Sparkle" },
+      { id: "sleepy", label: "Sleepy" },
+      { id: "cat", label: "Cat" },
+    ],
+    brows: [
+      { id: "soft", label: "Soft" },
+      { id: "arched", label: "Arched" },
+      { id: "bold", label: "Bold" },
+      { id: "none", label: "None" },
+    ],
+    makeup: [
+      { id: "none", label: "None" },
+      { id: "natural", label: "Natural" },
+      { id: "glam", label: "Glam" },
+      { id: "witch", label: "Witch" },
+    ],
+  },
+};
+
+export const DEFAULT_FACE_LOOKS = {
+  [WILLOW_ID]: { eyes: "round", brows: "soft", makeup: "natural" },
+};
+
+export const getFaceLookOptions = (characterId) =>
+  FACE_LOOK_OPTIONS[characterId] || null;
+
+export const getDefaultFaceLooks = (characterId) =>
+  DEFAULT_FACE_LOOKS[characterId] || {};
+
+export const getResolvedFaceLooks = (characterId, savedLooks = {}) => ({
+  ...getDefaultFaceLooks(characterId),
+  ...savedLooks,
+});
+
+export const getColorRegionsByGroup = (characterId, group) =>
+  getColorRegions(characterId).filter((region) => (region.group || "body") === group);
 
 export const REWARD_ACCESSORIES = [
   {
@@ -326,7 +481,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ef4444",
     accentColor: "#f97316",
     shape: "cap",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "star-wizard-hat",
@@ -336,7 +491,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#f6c844",
     shape: "wizardHat",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "gold-crown",
@@ -346,7 +501,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f6c844",
     accentColor: "#fb923c",
     shape: "crown",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "robot-antenna",
@@ -366,7 +521,7 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#dbeafe",
     shape: "roundGlasses",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "star-spark-glasses",
@@ -376,7 +531,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#fef08a",
     shape: "starGlasses",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "snow-goggles",
@@ -386,7 +541,7 @@ export const REWARD_ACCESSORIES = [
     color: "#0f766e",
     accentColor: "#a7f3d0",
     shape: "goggles",
-    characterIds: ["milo-robot", "pip-penguin", "sunny-bird", ...KID_CHARACTER_IDS],
+    characterIds: ["milo-robot", "pip-penguin", "sunny-bird", WILLOW_ID, ...KID_CHARACTER_IDS],
   },
   {
     id: "party-dress",
@@ -456,7 +611,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#f6c844",
     shape: "heartNecklace",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "friendship-bracelet",
@@ -466,7 +621,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#48d1a5",
     shape: "friendshipBracelet",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "sparkle-ring",
@@ -476,7 +631,7 @@ export const REWARD_ACCESSORIES = [
     color: "#38bdf8",
     accentColor: "#f6c844",
     shape: "sparkleRing",
-    characterIds: [...SOFT_CHARACTER_IDS, "milo-robot"],
+    characterIds: withWillow([...SOFT_CHARACTER_IDS, "milo-robot"]),
   },
   {
     id: "rainbow-scarf",
@@ -486,7 +641,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f56565",
     accentColor: "#48d1a5",
     shape: "scarf",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "bright-bow-tie",
@@ -496,7 +651,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#fdf2f8",
     shape: "bowTie",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "math-medal",
@@ -506,7 +661,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f6c844",
     accentColor: "#2563eb",
     shape: "medal",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "hero-cape",
@@ -516,7 +671,7 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#ef4444",
     shape: "cape",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "rocket-pack",
@@ -536,7 +691,7 @@ export const REWARD_ACCESSORIES = [
     color: "#16a34a",
     accentColor: "#fbbf24",
     shape: "backpack",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "mint-sneakers",
@@ -546,7 +701,7 @@ export const REWARD_ACCESSORIES = [
     color: "#48d1a5",
     accentColor: "#ffffff",
     shape: "sneakers",
-    characterIds: ["buddy-bear", "milo-robot", "cora-cat", ...KID_CHARACTER_IDS],
+    characterIds: ["buddy-bear", "milo-robot", "cora-cat", WILLOW_ID, ...KID_CHARACTER_IDS],
   },
   {
     id: "polar-skates",
@@ -566,7 +721,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#c4b5fd",
     shape: "boots",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
   },
   {
     id: "sparkle-wand",
@@ -576,7 +731,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#f6c844",
     shape: "wand",
-    characterIds: SOFT_CHARACTER_IDS,
+    characterIds: WILLOW_WARDROBE_IDS,
   },
   {
     id: "quiz-book",
@@ -586,7 +741,133 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#f6c844",
     shape: "book",
-    characterIds: ALL_CHARACTER_IDS,
+    characterIds: withWillow(ALL_CHARACTER_IDS),
+  },
+  // Detachable parts of the fox/bear GLBs, surfaced as equippable accessories.
+  // `modelPart` names the mesh CharacterViewer shows (and tints to `color`) when
+  // the item is equipped; `shape` is only used for the 2D store-card icon.
+  {
+    id: "felix-cap",
+    name: "Fox Cap",
+    category: "hat",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#f97316",
+    shape: "cap",
+    modelPart: "part_6_cap",
+    characterIds: ["felix-fox"],
+  },
+  {
+    id: "felix-backpack",
+    name: "Fox Backpack",
+    category: "back",
+    price: 10,
+    color: "#16a34a",
+    accentColor: "#fbbf24",
+    shape: "backpack",
+    modelPart: "part_7_backpack",
+    characterIds: ["felix-fox"],
+  },
+  {
+    id: "bruno-cap",
+    name: "Bear Cap",
+    category: "hat",
+    price: 10,
+    color: "#7c3aed",
+    accentColor: "#c4b5fd",
+    shape: "cap",
+    modelPart: "part_5_cap",
+    characterIds: ["bruno-bear"],
+  },
+  {
+    id: "bruno-backpack",
+    name: "Bear Backpack",
+    category: "back",
+    price: 10,
+    color: "#dc2626",
+    accentColor: "#fbbf24",
+    shape: "backpack",
+    modelPart: "part_6_backpack",
+    characterIds: ["bruno-bear"],
+  },
+  {
+    id: "bruno-shoes",
+    name: "Bear Shoes",
+    category: "feet",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#e0f2fe",
+    shape: "sneakers",
+    modelPart: "part_4_shoes",
+    characterIds: ["bruno-bear"],
+  },
+  // Nico's detachable cap / backpack / sneakers (colors match his base look).
+  {
+    id: "nico-cap",
+    name: "Nico Cap",
+    category: "hat",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#f97316",
+    shape: "cap",
+    modelPart: "part_7_cap",
+    characterIds: ["nico-kid"],
+  },
+  {
+    id: "nico-backpack",
+    name: "Nico Backpack",
+    category: "back",
+    price: 10,
+    color: "#f6c844",
+    accentColor: "#2563eb",
+    shape: "backpack",
+    modelPart: "part_6_backpack",
+    characterIds: ["nico-kid"],
+  },
+  {
+    id: "nico-sneakers",
+    name: "Nico Sneakers",
+    category: "feet",
+    price: 10,
+    color: "#f8fafc",
+    accentColor: "#2563eb",
+    shape: "sneakers",
+    modelPart: "part_5_sneakers",
+    characterIds: ["nico-kid"],
+  },
+  // Quinn's detachable cap / backpack / sneakers (colors match her base look).
+  {
+    id: "quinn-cap",
+    name: "Quinn Cap",
+    category: "hat",
+    price: 10,
+    color: "#38bdf8",
+    accentColor: "#f6c844",
+    shape: "cap",
+    modelPart: "part_7_cap",
+    characterIds: ["quinn-kid"],
+  },
+  {
+    id: "quinn-backpack",
+    name: "Quinn Backpack",
+    category: "back",
+    price: 10,
+    color: "#7c3aed",
+    accentColor: "#f6c844",
+    shape: "backpack",
+    modelPart: "part_6_backpack",
+    characterIds: ["quinn-kid"],
+  },
+  {
+    id: "quinn-sneakers",
+    name: "Quinn Sneakers",
+    category: "feet",
+    price: 10,
+    color: "#111827",
+    accentColor: "#38bdf8",
+    shape: "sneakers",
+    modelPart: "part_5_sneakers",
+    characterIds: ["quinn-kid"],
   },
 ];
 

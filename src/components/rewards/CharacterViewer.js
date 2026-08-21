@@ -7,7 +7,16 @@ import {
   getAccessoryById,
   getCharacterById,
   getColorRegions,
+  getModelPartAccessories,
 } from "./rewardConfig";
+import {
+  WILLOW_CHARACTER_ID,
+  WILLOW_RIG,
+  applyWillowHeadTexture,
+  applyWillowPartVisibility,
+  decorateWillowCharacter,
+  improveWillowMaterials,
+} from "./willowAppearance";
 
 // Loads a GLB once per URL and normalizes it: scaled to a consistent height,
 // horizontally centered, and resting on the floor (y = 0). The cached, ready
@@ -33,6 +42,9 @@ const loadCharacterModel = (url) => {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+          if (child.geometry && !child.geometry.attributes.normal) {
+            child.geometry.computeVertexNormals();
+          }
         }
       });
       return root;
@@ -85,6 +97,42 @@ const applyModelColors = (root, characterId, colors = {}) => {
       const color = colorByMaterial[materialKey] || colorByMaterial[childKey];
       if (!color || !material.color) return;
       material.color.set(color);
+      if (material.userData.glow) {
+        material.emissive.set(color);
+      }
+      material.needsUpdate = true;
+    });
+  });
+};
+
+// Detachable GLB parts (e.g. the fox/bear cap, backpack, shoes) are hidden by
+// default and only shown when the matching accessory is equipped. Maps a mesh
+// name -> equipped accessory via MODEL_PART_ACCESSORIES; a shown part is tinted
+// to the accessory's color so it does not render as untinted default material.
+const applyModelPartAccessories = (root, characterId, equippedItems = {}) => {
+  const partMap = getModelPartAccessories(characterId);
+  if (!partMap) return;
+  const detachable = new Set(Object.values(partMap));
+  const shownColor = new Map();
+  Object.entries(partMap).forEach(([category, meshName]) => {
+    const item = getAccessoryById(equippedItems[category]);
+    if (item && item.modelPart === meshName && (item.characterIds || []).includes(characterId)) {
+      shownColor.set(meshName, item.color || null);
+    }
+  });
+  root.traverse((child) => {
+    if (!child.isMesh || !detachable.has(child.name)) return;
+    if (!shownColor.has(child.name)) {
+      child.visible = false;
+      return;
+    }
+    child.visible = true;
+    const tint = shownColor.get(child.name);
+    if (!tint) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (!material.color) return;
+      material.color.set(tint);
       material.needsUpdate = true;
     });
   });
@@ -97,6 +145,8 @@ const makeMat = (color, options = {}) =>
     metalness: options.metalness ?? 0.05,
     emissive: options.emissive ?? 0x000000,
     emissiveIntensity: options.emissiveIntensity ?? 0,
+    transparent: options.transparent ?? false,
+    opacity: options.opacity ?? 1,
   });
 
 const addMesh = (group, geometry, material, position, scale, rotation) => {
@@ -367,6 +417,9 @@ const getRig = (characterId) => {
       fit: "human",
     };
   }
+  if (characterId === WILLOW_CHARACTER_ID) {
+    return WILLOW_RIG;
+  }
   if (characterId === "cora-cat") {
     return {
       topY: 2.0,
@@ -424,22 +477,23 @@ const getRig = (characterId) => {
 const addHat = (group, item, rig) => {
   const color = makeMat(item.color);
   const accent = makeMat(item.accentColor);
+  const faceX = rig.faceX || 0;
   if (item.shape === "wizardHat") {
-    addMesh(group, new THREE.ConeGeometry(0.26, 0.58, 28), color, [0, rig.topY + 0.22, 0], null, [0.07, 0, -0.06]);
-    addMesh(group, new THREE.TorusGeometry(0.25, 0.045, 14, 40), accent, [0, rig.topY - 0.06, 0.01], [1, 0.35, 1], [Math.PI / 2, 0, 0]);
-    addMesh(group, new THREE.SphereGeometry(0.055, 16, 12), accent, [0.03, rig.topY + 0.55, 0]);
+    addMesh(group, new THREE.ConeGeometry(0.26, 0.58, 28), color, [faceX, rig.topY + 0.22, 0], null, [0.07, 0, -0.06]);
+    addMesh(group, new THREE.TorusGeometry(0.25, 0.045, 14, 40), accent, [faceX, rig.topY - 0.06, 0.01], [1, 0.35, 1], [Math.PI / 2, 0, 0]);
+    addMesh(group, new THREE.SphereGeometry(0.055, 16, 12), accent, [faceX + 0.03, rig.topY + 0.55, 0]);
     return;
   }
   if (item.shape === "crown") {
-    addMesh(group, new THREE.CylinderGeometry(0.25, 0.28, 0.18, 6, 1, true), color, [0, rig.topY + 0.03, 0]);
+    addMesh(group, new THREE.CylinderGeometry(0.25, 0.28, 0.18, 6, 1, true), color, [faceX, rig.topY + 0.03, 0]);
     [-0.16, 0, 0.16].forEach((x, index) => {
-      addMesh(group, new THREE.ConeGeometry(0.07, 0.18, 4), accent, [x, rig.topY + 0.2 + (index === 1 ? 0.04 : 0), 0.02], null, [0, Math.PI / 4, 0]);
+      addMesh(group, new THREE.ConeGeometry(0.07, 0.18, 4), accent, [faceX + x, rig.topY + 0.2 + (index === 1 ? 0.04 : 0), 0.02], null, [0, Math.PI / 4, 0]);
     });
     return;
   }
   if (item.shape === "antenna") {
-    addMesh(group, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 14), color, [0, rig.topY + 0.28, 0]);
-    addMesh(group, new THREE.SphereGeometry(0.095, 18, 14), accent, [0, rig.topY + 0.58, 0]);
+    addMesh(group, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 14), color, [faceX, rig.topY + 0.28, 0]);
+    addMesh(group, new THREE.SphereGeometry(0.095, 18, 14), accent, [faceX, rig.topY + 0.58, 0]);
     return;
   }
   // Characters with hair: conform the cap to the hair crown so it sits cleanly
@@ -500,23 +554,24 @@ const addHat = (group, item, rig) => {
 const addEyewear = (group, item, rig) => {
   const mat = makeMat(item.color);
   const glass = makeMat(item.accentColor, { metalness: 0.15 });
+  const x = rig.faceX || 0;
   const y = rig.eyeY;
   const z = rig.faceZ;
   if (item.shape === "goggles") {
-    addMesh(group, new THREE.BoxGeometry(0.25, 0.14, 0.035), glass, [-0.15, y, z]);
-    addMesh(group, new THREE.BoxGeometry(0.25, 0.14, 0.035), glass, [0.15, y, z]);
-    addMesh(group, new THREE.BoxGeometry(0.7, 0.045, 0.045), mat, [0, y, z + 0.01]);
+    addMesh(group, new THREE.BoxGeometry(0.25, 0.14, 0.035), glass, [x - 0.15, y, z]);
+    addMesh(group, new THREE.BoxGeometry(0.25, 0.14, 0.035), glass, [x + 0.15, y, z]);
+    addMesh(group, new THREE.BoxGeometry(0.7, 0.045, 0.045), mat, [x, y, z + 0.01]);
     return;
   }
   if (item.shape === "starGlasses") {
-    addMesh(group, new THREE.TetrahedronGeometry(0.14), mat, [-0.15, y, z + 0.02], [1, 0.65, 0.18], [0, 0, 0.75]);
-    addMesh(group, new THREE.TetrahedronGeometry(0.14), mat, [0.15, y, z + 0.02], [1, 0.65, 0.18], [0, 0, -0.75]);
-    addMesh(group, new THREE.BoxGeometry(0.18, 0.025, 0.025), mat, [0, y, z + 0.02]);
+    addMesh(group, new THREE.TetrahedronGeometry(0.14), mat, [x - 0.15, y, z + 0.02], [1, 0.65, 0.18], [0, 0, 0.75]);
+    addMesh(group, new THREE.TetrahedronGeometry(0.14), mat, [x + 0.15, y, z + 0.02], [1, 0.65, 0.18], [0, 0, -0.75]);
+    addMesh(group, new THREE.BoxGeometry(0.18, 0.025, 0.025), mat, [x, y, z + 0.02]);
     return;
   }
-  addMesh(group, new THREE.TorusGeometry(0.105, 0.016, 12, 28), mat, [-0.15, y, z], [1, 1, 0.18]);
-  addMesh(group, new THREE.TorusGeometry(0.105, 0.016, 12, 28), mat, [0.15, y, z], [1, 1, 0.18]);
-  addMesh(group, new THREE.BoxGeometry(0.12, 0.022, 0.022), mat, [0, y, z]);
+  addMesh(group, new THREE.TorusGeometry(0.105, 0.016, 12, 28), mat, [x - 0.15, y, z], [1, 1, 0.18]);
+  addMesh(group, new THREE.TorusGeometry(0.105, 0.016, 12, 28), mat, [x + 0.15, y, z], [1, 1, 0.18]);
+  addMesh(group, new THREE.BoxGeometry(0.12, 0.022, 0.022), mat, [x, y, z]);
 };
 
 // The group is rendered with a constant base Y offset (see CharacterViewer).
@@ -905,14 +960,21 @@ const addAccessory = (group, item, rig) => {
   if (item.category === "prop") addProp(group, item, rig);
 };
 
+const disposeMaterial = (material) => {
+  if (material.userData?.willowFaceMap && material.map) {
+    material.map.dispose();
+  }
+  material.dispose();
+};
+
 const disposeObject = (object, { disposeGeometry = true } = {}) => {
   object.traverse((child) => {
     if (disposeGeometry && child.geometry) child.geometry.dispose();
     if (child.material) {
       if (Array.isArray(child.material)) {
-        child.material.forEach((material) => material.dispose());
+        child.material.forEach((material) => disposeMaterial(material));
       } else {
-        child.material.dispose();
+        disposeMaterial(child.material);
       }
     }
   });
@@ -922,9 +984,14 @@ const CharacterViewer = ({
   characterId = DEFAULT_CHARACTER_ID,
   equippedItems = {},
   colors = {},
+  looks = {},
+  focus = "full",
   className = "",
 }) => {
   const containerRef = useRef(null);
+  const equippedKey = JSON.stringify(equippedItems);
+  const colorKey = JSON.stringify(colors);
+  const looksKey = JSON.stringify(looks);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -946,8 +1013,13 @@ const CharacterViewer = ({
     container.appendChild(renderer.domElement);
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-    camera.position.set(0, 1.25, 5.2);
-    camera.lookAt(0, 1, 0);
+    if (focus === "face" && characterId === WILLOW_CHARACTER_ID) {
+      camera.position.set(WILLOW_RIG.faceX, 1.34, 1.85);
+      camera.lookAt(WILLOW_RIG.faceX, 1.32, 0.05);
+    } else {
+      camera.position.set(0, 1.25, 5.2);
+      camera.lookAt(0, 1, 0);
+    }
 
     const ambient = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 2.2);
     scene.add(ambient);
@@ -988,15 +1060,32 @@ const CharacterViewer = ({
       envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = envTexture;
 
-      // Load the mesh, no dress-up accessories yet.
       loadCharacterModel(character.model)
         .then((root) => {
           if (cancelled) return;
           const modelRoot = cloneCharacterModel(root);
+          if (character.id === WILLOW_CHARACTER_ID) {
+            improveWillowMaterials(modelRoot);
+            applyWillowPartVisibility(modelRoot, equippedItems);
+          }
           applyModelColors(modelRoot, character.id, colors);
+          // Show/hide detachable parts (fox & bear cap/backpack/shoes) per the
+          // equipped accessories; no-op for characters without a part map.
+          applyModelPartAccessories(modelRoot, character.id, equippedItems);
+          if (character.id === WILLOW_CHARACTER_ID) {
+            applyWillowHeadTexture(modelRoot, colors);
+          }
           modelObject = new THREE.Group();
           modelObject.add(modelRoot);
           group.add(modelObject);
+          if (character.id === WILLOW_CHARACTER_ID) {
+            decorateWillowCharacter(group);
+            const rig = getRig(character.id);
+            Object.values(equippedItems || {})
+              .map(getAccessoryById)
+              .filter(Boolean)
+              .forEach((item) => addAccessory(group, item, rig));
+          }
         })
         .catch((error) => {
           // eslint-disable-next-line no-console
@@ -1102,12 +1191,15 @@ const CharacterViewer = ({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [characterId, equippedItems, colors]);
+    // Rebuild only when the serialized look/loadout actually changes. The
+    // parent often passes fresh object identities for the same values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterId, equippedKey, colorKey, looksKey, focus]);
 
   return (
     <div
       ref={containerRef}
-      className={`min-h-[320px] w-full cursor-grab active:cursor-grabbing ${className}`}
+      className={`min-h-[250px] w-full cursor-grab active:cursor-grabbing ${className}`}
       aria-label={`${getCharacterById(characterId).name} 3D character preview`}
       role="img"
     />

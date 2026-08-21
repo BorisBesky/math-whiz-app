@@ -285,6 +285,63 @@ const renderCharacter = (characterId, color) => {
       </>
     );
   }
+  if (characterId === "nico-kid" || characterId === "quinn-kid") {
+    // Base look is bare (no cap) — the cap is a detachable accessory now.
+    const hoodie = characterId === "nico-kid" ? "#2563eb" : "#f97316";
+    const hair = characterId === "nico-kid" ? "#1f2937" : "#7c2d12";
+    return (
+      <>
+        <path d="M18 36h28l4 22H14z" fill={hoodie} />
+        <circle cx="32" cy="22" r="11" fill="#f2c7a0" />
+        <path d="M21 18c2-11 22-13 24 1-8-3-15-2-24-1z" fill={hair} />
+        <circle cx="28" cy="23" r="1.6" fill="#111827" />
+        <circle cx="36" cy="23" r="1.6" fill="#111827" />
+      </>
+    );
+  }
+  if (characterId === "willow-wizard") {
+    return (
+      <>
+        <path d="M32 4 18 28h28z" fill="#bef264" />
+        <rect x="17" y="27" width="30" height="5" rx="2" fill="#86efac" />
+        <path d="M14 10 8 22l10-3z" fill="#f87171" />
+        <circle cx="32" cy="24" r="10" fill="#f2c7a0" />
+        <circle cx="28" cy="23" r="1.8" fill="#2563eb" />
+        <circle cx="36" cy="23" r="1.8" fill="#2563eb" />
+        <path d="M28 29c2 2 6 2 8 0" fill="none" stroke="#db2777" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M20 36h24l6 20H14z" fill="#67e8f9" />
+      </>
+    );
+  }
+  if (characterId === "felix-fox") {
+    return (
+      <>
+        <path d="M18 14 24 27 15 26z" fill={color} />
+        <path d="M46 14 40 27 49 26z" fill={color} />
+        <path d="M46 40c8-3 12 2 14 8-6 1-10 0-13-3z" fill="#f8fafc" />
+        <ellipse cx="32" cy="40" rx="17" ry="18" fill="#2563eb" />
+        <circle cx="32" cy="24" r="13" fill={color} />
+        <path d="M24 30c4 4 12 4 16 0-3 5-13 5-16 0z" fill="#f8fafc" />
+        <circle cx="27" cy="22" r="2" fill="#111827" />
+        <circle cx="37" cy="22" r="2" fill="#111827" />
+        <path d="M30 27h4l-2 2z" fill="#111827" />
+      </>
+    );
+  }
+  if (characterId === "bruno-bear") {
+    return (
+      <>
+        <circle cx="22" cy="16" r="6" fill={color} />
+        <circle cx="42" cy="16" r="6" fill={color} />
+        <path d="M16 38h32l3 20H13z" fill="#16a34a" />
+        <circle cx="32" cy="24" r="14" fill={color} />
+        <ellipse cx="32" cy="28" rx="7" ry="5" fill="#f5d0a9" />
+        <circle cx="27" cy="22" r="2" fill="#111827" />
+        <circle cx="37" cy="22" r="2" fill="#111827" />
+        <circle cx="32" cy="26" r="1.8" fill="#111827" />
+      </>
+    );
+  }
   if (characterId === "leo-boy" || characterId === "mia-girl") {
     const hair = characterId === "leo-boy" ? "#7c2d12" : "#4a044e";
     return (

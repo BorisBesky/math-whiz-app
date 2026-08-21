@@ -27,7 +27,9 @@ const CharacterStore = ({
   handleUnequipAccessory,
   handleSetCharacterColor,
 }) => {
-  const selectedCharacterId = userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+  const persistedCharacterId = userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+  const [stagedCharacterId, setStagedCharacterId] = useState(null);
+  const selectedCharacterId = stagedCharacterId || persistedCharacterId;
   const selectedCharacter = getCharacterById(selectedCharacterId);
   const ownedCharacterIds = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
   const ownedAccessoryIds = userData?.ownedAccessories || [];
@@ -36,8 +38,10 @@ const CharacterStore = ({
   const [activeCategory, setActiveCategory] = useState(ACCESSORY_CATEGORIES[0].id);
   const [previewItem, setPreviewItem] = useState(null);
   const [selectedRegions, setSelectedRegions] = useState([]);
-
   const colorRegions = getColorRegions(selectedCharacterId);
+  const hasFaceColors = colorRegions.some((region) => region.group === "face");
+  const [stylePanel, setStylePanel] = useState(hasFaceColors ? "face" : "body");
+
   const savedColors = userData?.characterColors?.[selectedCharacterId] || {};
   // Region list with the currently applied color (saved override or default).
   const regionsWithColor = colorRegions.map((region) => ({
@@ -49,12 +53,27 @@ const CharacterStore = ({
     acc[region.id] = region.color;
     return acc;
   }, {});
+  const visibleColorRegions = regionsWithColor.filter((region) =>
+    hasFaceColors ? (region.group || "body") === stylePanel : true
+  );
 
-  // When the character changes, preselect its first region for the picker.
+  // When the character or style panel changes, preselect the first visible region.
   useEffect(() => {
-    const regions = getColorRegions(selectedCharacterId);
+    const regions = hasFaceColors
+      ? getColorRegions(selectedCharacterId).filter(
+          (region) => (region.group || "body") === stylePanel
+        )
+      : getColorRegions(selectedCharacterId);
     setSelectedRegions(regions.length ? [regions[0].id] : []);
-  }, [selectedCharacterId]);
+  }, [selectedCharacterId, stylePanel, hasFaceColors]);
+
+  useEffect(() => {
+    setStylePanel(hasFaceColors ? "face" : "body");
+  }, [selectedCharacterId, hasFaceColors]);
+
+  useEffect(() => {
+    setStagedCharacterId(null);
+  }, [persistedCharacterId]);
 
   const toggleRegion = (regionId) => {
     setSelectedRegions((current) =>
@@ -66,7 +85,7 @@ const CharacterStore = ({
 
   const applyColor = (color) => {
     if (!selectedRegions.length) return;
-    handleSetCharacterColor?.(selectedRegions, color);
+    handleSetCharacterColor?.(selectedRegions, color, selectedCharacterId);
   };
 
   const availableCategories = useMemo(
@@ -133,11 +152,10 @@ const CharacterStore = ({
               <button
                 key={character.id}
                 type="button"
-                onClick={() =>
-                  isOwned
-                    ? handleSelectCharacter(character.id)
-                    : handlePurchaseCharacter(character)
-                }
+                onClick={() => {
+                  setStagedCharacterId(character.id);
+                  if (isOwned) handleSelectCharacter(character.id);
+                }}
                 aria-pressed={isSelected}
                 className={`relative w-[4.5rem] shrink-0 snap-start rounded-lg border px-1 py-1.5 text-center transition active:scale-95 ${
                   isSelected
@@ -155,7 +173,22 @@ const CharacterStore = ({
                   </span>
                 )}
                 {!isOwned && (
-                  <span className="absolute left-0.5 top-0.5 inline-flex items-center gap-0.5 rounded-full bg-brand-purple px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handlePurchaseCharacter(character);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        handlePurchaseCharacter(character);
+                      }
+                    }}
+                    className="absolute left-0.5 top-0.5 inline-flex items-center gap-0.5 rounded-full bg-brand-purple px-1 py-0.5 text-[10px] font-bold leading-none text-white"
+                  >
                     <Coins size={9} />
                     {CHARACTER_PRICE}
                   </span>
@@ -171,6 +204,7 @@ const CharacterStore = ({
             characterId={selectedCharacterId}
             equippedItems={previewEquippedItems}
             colors={characterColorMap}
+            focus={hasFaceColors && stylePanel === "face" ? "face" : "full"}
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent px-4 pb-3 pt-10">
             <h3 className="font-display text-2xl font-bold leading-tight text-white drop-shadow">
@@ -180,16 +214,52 @@ const CharacterStore = ({
               {selectedCharacter.title}
             </p>
           </div>
+          {!ownedCharacterIds.includes(selectedCharacterId) && (
+            <button
+              type="button"
+              onClick={() => handlePurchaseCharacter(selectedCharacter)}
+              className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-brand-purple px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95"
+            >
+              <Coins size={12} /> Buy {selectedCharacter.name} · {CHARACTER_PRICE}
+            </button>
+          )}
         </div>
 
-        {/* Color customizer: pick region(s), then a color to recolor them */}
+        {/* Face styles + color customizer */}
         {regionsWithColor.length > 0 && (
           <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+            {hasFaceColors && (
+              <div className="mb-3 inline-flex rounded-lg bg-white p-1 ring-1 ring-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setStylePanel("face")}
+                  className={`rounded-md px-3 py-1 text-xs font-bold transition ${
+                    stylePanel === "face"
+                      ? "bg-brand-blue text-white shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Face
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStylePanel("body")}
+                  className={`rounded-md px-3 py-1 text-xs font-bold transition ${
+                    stylePanel === "body"
+                      ? "bg-brand-blue text-white shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Clothes
+                </button>
+              </div>
+            )}
+
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">
               Colors
             </p>
             <div className="mb-3 flex flex-wrap gap-1.5">
-              {regionsWithColor.map((region) => {
+              {visibleColorRegions.map((region) => {
                 const isSelected = selectedRegions.includes(region.id);
                 return (
                   <button
@@ -307,7 +377,7 @@ const CharacterStore = ({
                   {isOwned ? (
                     <button
                       type="button"
-                      onClick={() => handleEquipAccessory(item)}
+                      onClick={() => handleEquipAccessory(item, selectedCharacterId)}
                       disabled={isEquipped}
                       className={`inline-flex min-w-[104px] items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition active:scale-95 ${
                         isEquipped
@@ -328,7 +398,7 @@ const CharacterStore = ({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handlePurchaseAccessory(item)}
+                      onClick={() => handlePurchaseAccessory(item, selectedCharacterId)}
                       className="inline-flex min-w-[104px] items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-3 py-2 text-sm font-bold text-white transition hover:opacity-90 active:scale-95"
                     >
                       <Coins size={16} /> Buy
@@ -346,7 +416,9 @@ const CharacterStore = ({
               Character Shop
             </h3>
             <p className="text-sm text-gray-500">
-              Buy and equip accessories for {selectedCharacter.name}.
+              {hasFaceColors
+                ? `Change ${selectedCharacter.name}'s face, clothes, and accessories.`
+                : `Buy and equip accessories for ${selectedCharacter.name}.`}
             </p>
           </div>
           {equippedForCharacter[activeCategory] && (
@@ -354,7 +426,7 @@ const CharacterStore = ({
               type="button"
               onClick={() => {
                 setPreviewItem(null);
-                handleUnequipAccessory(activeCategory);
+                handleUnequipAccessory(activeCategory, selectedCharacterId);
               }}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 transition hover:bg-gray-50 active:scale-95"
             >
