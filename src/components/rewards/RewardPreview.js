@@ -328,6 +328,23 @@ const renderCharacter = (characterId, color) => {
       </>
     );
   }
+  if (characterId === "koko-monkey") {
+    return (
+      <>
+        <path d="M48 44c9 2 12 9 9 15-5 3-9-1-9-6z" fill="none" stroke={color} strokeWidth="3" />
+        <circle cx="19" cy="24" r="7" fill={color} />
+        <circle cx="45" cy="24" r="7" fill={color} />
+        <circle cx="19" cy="24" r="3.5" fill="#d9a066" />
+        <circle cx="45" cy="24" r="3.5" fill="#d9a066" />
+        <ellipse cx="32" cy="44" rx="13" ry="15" fill={color} />
+        <circle cx="32" cy="24" r="13" fill={color} />
+        <ellipse cx="32" cy="27" rx="9" ry="8" fill="#e8b48a" />
+        <circle cx="28" cy="22" r="2" fill="#111827" />
+        <circle cx="36" cy="22" r="2" fill="#111827" />
+        <path d="M29 29c2 2 4 2 6 0" fill="none" stroke="#111827" strokeWidth="1.4" strokeLinecap="round" />
+      </>
+    );
+  }
   if (characterId === "bruno-bear") {
     return (
       <>

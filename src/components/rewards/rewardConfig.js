@@ -131,6 +131,14 @@ export const REWARD_CHARACTERS = [
     summary: "A cuddly 3D bear ready for hoodie, pants, shoes, cap, and backpack colors.",
     model: "/models/bear_parts.glb",
   },
+  {
+    id: "koko-monkey",
+    name: "Koko",
+    title: "Cheeky Monkey",
+    accent: "#8b5a2b",
+    summary: "A playful 3D monkey with a swingy tail and separately colorable fur, face, and ears.",
+    model: "/models/monkey_parts.glb",
+  },
 ];
 
 // Characters whose look is hand-built from primitives (and therefore support
@@ -394,6 +402,21 @@ export const CHARACTER_COLOR_REGIONS = {
     },
     { id: "hoodie", label: "Hoodie", default: "#16a34a", materialNames: ["part_2_hoodie"] },
     { id: "pants", label: "Pants", default: "#ea580c", materialNames: ["part_3_pants"] },
+  ],
+  // Koko Monkey is pure anatomy — the model has no clothing or gear meshes, so
+  // there are no detachable accessories. Every part is substantial geometry, so
+  // the body/arms/legs share one "Fur" control while face, ears and tail get
+  // their own accent colors.
+  "koko-monkey": [
+    {
+      id: "fur",
+      label: "Fur",
+      default: "#8b5a2b",
+      materialNames: ["part_2_body", "part_3_arms", "part_4_legs"],
+    },
+    { id: "face", label: "Face", default: "#e8b48a", materialNames: ["part_0_head"] },
+    { id: "ears", label: "Ears", default: "#d9a066", materialNames: ["part_1_ears"] },
+    { id: "tail", label: "Tail", default: "#8b5a2b", materialNames: ["part_5_tail"] },
   ],
 };
 
