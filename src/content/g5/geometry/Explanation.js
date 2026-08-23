@@ -1,7 +1,16 @@
 import React from 'react';
+import {
+  CoordinateGrid,
+  QuadrilateralGallery,
+  TrianglesBySides,
+  TrianglesByAngles,
+  ShapeHierarchyTree,
+} from './visuals';
 
 // Shown when a student taps "Explain" on a Geometry 5th question.
 // Follows the kid-friendly inline-style pattern of the other Explanations.
+// The SVG figures live in ./visuals.js — coordinate work is hard to learn from
+// prose alone, so every idea here is paired with a picture of itself.
 const Geometry5thExplanation = () => {
   const styles = {
     container: {
@@ -48,6 +57,19 @@ const Geometry5thExplanation = () => {
       textAlign: 'center',
       fontSize: '1.2em',
     },
+    figure: {
+      background: '#ffffff',
+      padding: '16px',
+      borderRadius: '15px',
+      margin: '20px 0',
+      border: '3px solid #3498db',
+      textAlign: 'center',
+    },
+    caption: {
+      fontSize: '0.95em',
+      color: '#475569',
+      marginTop: '10px',
+    },
     emoji: {
       fontSize: '1.5em',
       marginRight: '10px',
@@ -64,6 +86,18 @@ const Geometry5thExplanation = () => {
         goes right, the <strong>y-axis</strong> goes up. Every point gets an address called an{' '}
         <strong>ordered pair</strong>.
       </p>
+      <div style={styles.figure}>
+        <CoordinateGrid
+          max={6}
+          guides={[{ x: 3, y: 4, runLabel: '3 right →', climbLabel: '4 up ↑' }]}
+          points={[{ x: 3, y: 4, label: 'P (3, 4)' }]}
+          title="Grid showing the point (3, 4) reached by moving 3 right then 4 up"
+        />
+        <div style={styles.caption}>
+          Start at the origin, <strong>run 3 across</strong>, then <strong>climb 4 up</strong>. You
+          land on <strong>P (3, 4)</strong>.
+        </div>
+      </div>
       <div style={styles.visual}>
         (3, 4) means: go <strong>3 right</strong>, then <strong>4 up</strong>
         <br />
@@ -74,12 +108,41 @@ const Geometry5thExplanation = () => {
         <strong>Bonus:</strong> the first coordinate is also the distance from the y-axis, and the
         second is the distance from the x-axis. Points like (5, 0) sit right ON the x-axis.
       </div>
+      <div style={styles.figure}>
+        <CoordinateGrid
+          max={6}
+          points={[
+            { x: 2, y: 5, label: 'A (2, 5)' },
+            { x: 5, y: 2, label: 'B (5, 2)', color: '#dc2626' },
+          ]}
+          title="Grid comparing the point (2, 5) with the point (5, 2)"
+        />
+        <div style={styles.caption}>
+          ⚠️ Order matters! <strong>(2, 5)</strong> and <strong>(5, 2)</strong> are two{' '}
+          <em>different</em> places.
+        </div>
+      </div>
 
       <h2 style={styles.h2}>🏙️ Distances on a map</h2>
       <p>
         When two points share a coordinate, they sit on the same street — the distance is just the{' '}
         <strong>difference</strong> of the other coordinates.
       </p>
+      <div style={styles.figure}>
+        <CoordinateGrid
+          max={9}
+          width={380}
+          points={[
+            { x: 2, y: 3, label: '📚 (2, 3)' },
+            { x: 2, y: 8, label: '🏊 (2, 8)', color: '#dc2626' },
+          ]}
+          segments={[{ from: { x: 2, y: 3 }, to: { x: 2, y: 8 }, label: '5 blocks' }]}
+          title="Grid showing the library at (2, 3) and the pool at (2, 8), five units apart"
+        />
+        <div style={styles.caption}>
+          Same x, so just count up the y-values: 8 − 3 = <strong>5 blocks</strong>.
+        </div>
+      </div>
       <div style={styles.example}>
         <span style={styles.emoji}>📚</span>
         Library at (2, 3), pool at (2, 8): same x, so they are 8 − 3 = <strong>5 blocks</strong>{' '}
@@ -87,6 +150,13 @@ const Geometry5thExplanation = () => {
       </div>
 
       <h2 style={styles.h2}>🔷 Naming quadrilaterals</h2>
+      <div style={styles.figure}>
+        <QuadrilateralGallery />
+        <div style={styles.caption}>
+          Matching arrow marks ➤ mean <strong>parallel</strong>; matching tick marks ǀ mean{' '}
+          <strong>equal length</strong>; a corner box ⌐ means a <strong>right angle</strong>.
+        </div>
+      </div>
       <div style={styles.visual}>
         <strong>Trapezoid:</strong> exactly one pair of parallel sides
         <br />
@@ -104,6 +174,12 @@ const Geometry5thExplanation = () => {
         Triangles get names two different ways — by their <strong>sides</strong> and by
         their <strong>angles</strong>.
       </p>
+      <div style={styles.figure}>
+        <TrianglesBySides />
+        <div style={styles.caption}>
+          <strong>By sides:</strong> count the matching tick marks.
+        </div>
+      </div>
       <div style={styles.visual}>
         <strong>By sides:</strong>
         <br />
@@ -113,6 +189,12 @@ const Geometry5thExplanation = () => {
         <strong>Isosceles triangle:</strong> exactly two sides equal
         <br />
         <strong>Scalene triangle:</strong> no equal sides — every side a different length
+      </div>
+      <div style={styles.figure}>
+        <TrianglesByAngles />
+        <div style={styles.caption}>
+          <strong>By angles:</strong> look for the corner box (90°) or the wide-open corner.
+        </div>
       </div>
       <div style={styles.visual}>
         <strong>By angles:</strong>
@@ -134,6 +216,13 @@ const Geometry5thExplanation = () => {
         Shape categories <strong>nest inside each other</strong> — and properties pass{' '}
         <strong>down</strong> the family tree, never up.
       </p>
+      <div style={styles.figure}>
+        <ShapeHierarchyTree />
+        <div style={styles.caption}>
+          Every arrow means "is always a kind of". Trace <strong>Square → Rectangle →
+          Parallelogram → Quadrilateral</strong> — a square is all four!
+        </div>
+      </div>
       <div style={styles.example}>
         <span style={styles.emoji}>✅</span>
         Every <strong>square is a rectangle</strong> (it has four right angles) — but not every

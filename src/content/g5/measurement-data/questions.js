@@ -5,14 +5,26 @@
 // question object — or null when the restriction can't be satisfied.
 //
 // Metric conversions are computed in integer thousandths so decimal results
-// are exact. Line plots are described in words (counts of 1/4, 1/2, 3/4
-// measurements) since questions are text-only.
+// are exact. Line plots and volume questions ship an SVG figure alongside the
+// text (see ./visuals.js): 5.MD.B.2 and 5.MD.C.3-C.5 are about reading a
+// picture, so the words alone leave out half the skill. The text still fully
+// describes the data, so a question stays answerable without the image.
 //
 // Question-text formats are deterministic per family so the topic tests can
 // decode a question and independently verify its answer — keep the wording
 // in sync with __tests__/questions.test.js if you change it.
 import { QUESTION_TYPES } from '../../../constants/topics.js';
 import manifest from './manifest.json';
+import {
+  createUnitCubePrismImage,
+  createLabeledPrismImage,
+  createCompositePrismImage,
+  createLinePlotImage,
+} from './visuals';
+
+// Wraps a builder's { data, description } into the question `images` shape
+// that QuizView renders.
+const questionImage = ({ data, description }) => [{ type: 'question', data, description }];
 
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -154,6 +166,17 @@ const generateLinePlotsQuestion = (difficulty) => {
   const counts = shuffle([randomInt(1, 3), randomInt(4, 5), randomInt(6, 8)]);
   const [c1, c2, c3] = counts;
   const data = `A line plot shows the lengths of some ribbons: ${c1} ribbons of 1/4 foot, ${c2} ribbons of 1/2 foot, and ${c3} ribbons of 3/4 foot.`;
+  const images = questionImage(createLinePlotImage({
+    ticks: [
+      { label: '0' },
+      { label: '1/4', count: c1 },
+      { label: '1/2', count: c2 },
+      { label: '3/4', count: c3 },
+      { label: '1' },
+    ],
+    axisLabel: 'Ribbon length (feet)',
+    title: 'Line plot of ribbon lengths',
+  }));
   const variant = difficulty < 0.35 ? randomInt(0, 1) : randomInt(1, 2);
 
   if (variant === 0) {
@@ -161,8 +184,9 @@ const generateLinePlotsQuestion = (difficulty) => {
       question: `${data} How many ribbons are on the line plot?`,
       correctAnswer: String(c1 + c2 + c3),
       options: [],
+      images,
       questionType: QUESTION_TYPES.NUMERIC,
-      hint: 'Add up how many ribbons there are of each length.',
+      hint: 'Count all the ✕ marks — add up how many ribbons there are of each length.',
       ...baseFields('line plots', '5.MD.B.2'),
     };
   }
@@ -174,8 +198,9 @@ const generateLinePlotsQuestion = (difficulty) => {
       question: `${data} Which length appears most often?`,
       correctAnswer: winner,
       options: shuffle([...lengths, 'They all appear equally often']),
+      images,
       questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-      hint: 'Compare the three counts — the biggest count wins.',
+      hint: 'Compare the three stacks of ✕ marks — the tallest stack wins.',
       ...baseFields('line plots', '5.MD.B.2'),
     };
   }
@@ -191,6 +216,7 @@ const generateLinePlotsQuestion = (difficulty) => {
       totalHalves % 2 === 0 ? `${totalHalves / 2} 1/2` : String((totalHalves + 1) / 2),
       String(c1 + c2 + c3),
     ]),
+    images,
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `${c2} ribbons × 1/2 foot each — every 2 ribbons make a whole foot.`,
     ...baseFields('line plots', '5.MD.B.2'),
@@ -211,6 +237,12 @@ const generateVolumeConceptsQuestion = (difficulty) => {
       question: `A rectangular prism is built from unit cubes. It is ${l} cubes long, ${w} cubes wide, and ${h} layers tall. How many unit cubes does it use?`,
       correctAnswer: String(l * w * h),
       options: [],
+      images: questionImage(createUnitCubePrismImage({
+        length: l,
+        width: w,
+        height: h,
+        highlightBottomLayer: true,
+      })),
       questionType: QUESTION_TYPES.NUMERIC,
       hint: `One layer has ${l} × ${w} cubes; there are ${h} layers.`,
       ...baseFields('volume concepts', '5.MD.C.4'),
@@ -251,6 +283,7 @@ const generatePrismVolumeQuestion = (difficulty) => {
       question: `A rectangular prism is ${l} ${unit} long, ${w} ${unit} wide, and ${h} ${unit} tall. What is its volume in cubic ${unit}?`,
       correctAnswer: String(l * w * h),
       options: [],
+      images: questionImage(createLabeledPrismImage({ length: l, width: w, height: h, unit })),
       questionType: QUESTION_TYPES.NUMERIC,
       hint: `Volume = length × width × height = ${l} × ${w} × ${h}.`,
       ...baseFields('volume of rectangular prisms', '5.MD.C.5'),
@@ -284,6 +317,7 @@ const generateAdditiveVolumeQuestion = (difficulty) => {
     question: `A figure is made of two rectangular prisms. One is ${dims1[0]} × ${dims1[1]} × ${dims1[2]} units and the other is ${dims2[0]} × ${dims2[1]} × ${dims2[2]} units. What is the total volume of the figure in cubic units?`,
     correctAnswer: String(volume),
     options: [],
+    images: questionImage(createCompositePrismImage({ first: dims1, second: dims2 })),
     questionType: QUESTION_TYPES.NUMERIC,
     hint: 'Find each prism\'s volume separately, then add them together.',
     ...baseFields('additive volume', '5.MD.C.5'),

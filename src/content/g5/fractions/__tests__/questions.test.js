@@ -4,6 +4,7 @@
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
 import { generateQuestion } from '../questions';
+import { QUESTION_TYPES } from '../../../../constants/topics.js';
 
 const DIFFICULTIES = [0, 0.25, 0.5, 0.75, 1];
 
@@ -168,9 +169,82 @@ describe('Fractions 5th correctness', () => {
     }
   });
 
+  // --- benchmark estimation (5.NF.A.2) -------------------------------
+  // Verified with exact integer arithmetic (cross-multiplication), never the
+  // floating-point value the generator reasons about.
+  const BENCHMARK_THIRDS = { '0': [0, 1], '1/2': [1, 2], '1': [1, 1], '1 1/2': [3, 2], '2': [2, 1] };
+
+  // |a/b - c/d| as an exact fraction, returned as a comparable [num, den].
+  const distanceTo = (numerator, denominator, [bn, bd]) => [
+    Math.abs(numerator * bd - bn * denominator),
+    denominator * bd,
+  ];
+  const lessThan = ([n1, d1], [n2, d2]) => n1 * d2 < n2 * d1;
+
+  const closestBenchmark = (numerator, denominator, labels) => {
+    const ranked = labels
+      .map((label) => ({ label, distance: distanceTo(numerator, denominator, BENCHMARK_THIRDS[label]) }))
+      .sort((a, b) => (lessThan(a.distance, b.distance) ? -1 : 1));
+    return ranked[0].label;
+  };
+
+  test('benchmark estimation: the named benchmark really is the closest', () => {
+    for (const q of draw('benchmark estimation', 150)) {
+      expect(q.questionType).toBe(QUESTION_TYPES.MULTIPLE_CHOICE);
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+
+      let m;
+      if ((m = q.question.match(/^Which benchmark is (\d+)\/(\d+) closest to\?$/))) {
+        const [, n, d] = m.map(Number);
+        expect(q.correctAnswer).toBe(closestBenchmark(n, d, ['0', '1/2', '1']));
+        expect(q.options.slice().sort()).toEqual(['0', '1', '1/2']);
+      } else if ((m = q.question.match(/^Estimate (\d+)\/(\d+) \+ (\d+)\/(\d+)\. Which benchmark is the sum closest to\?$/))) {
+        const [, n1, d1, n2, d2] = m.map(Number);
+        // sum as one exact fraction
+        const numerator = n1 * d2 + n2 * d1;
+        const denominator = d1 * d2;
+        expect(q.correctAnswer).toBe(
+          closestBenchmark(numerator, denominator, ['0', '1/2', '1', '1 1/2', '2'])
+        );
+      } else if ((m = q.question.match(/^Without adding, is (\d+)\/(\d+) \+ (\d+)\/(\d+) greater than 1, less than 1, or equal to 1\?$/))) {
+        const [, n1, d1, n2, d2] = m.map(Number);
+        const numerator = n1 * d2 + n2 * d1;
+        const denominator = d1 * d2;
+        const expected =
+          numerator === denominator ? 'equal to 1' : numerator > denominator ? 'greater than 1' : 'less than 1';
+        expect(q.correctAnswer).toBe(expected);
+        expect(q.options.slice().sort()).toEqual(['equal to 1', 'greater than 1', 'less than 1']);
+      } else {
+        throw new Error(`unrecognized question: ${q.question}`);
+      }
+    }
+  });
+
+  test('benchmark estimation: no question sits on the fence between benchmarks', () => {
+    // A fraction exactly halfway between two benchmarks (like 1/4, or a sum
+    // of 3/4) would have two equally right answers. The generator rejects
+    // those draws; this locks that in.
+    for (const q of draw('benchmark estimation', 150)) {
+      let m;
+      if ((m = q.question.match(/^Which benchmark is (\d+)\/(\d+) closest to\?$/))) {
+        const [, n, d] = m.map(Number);
+        expect(Math.abs(n / d - 0.25)).toBeGreaterThan(0.03);
+        expect(Math.abs(n / d - 0.75)).toBeGreaterThan(0.03);
+      } else if ((m = q.question.match(/^Estimate (\d+)\/(\d+) \+ (\d+)\/(\d+)\./))) {
+        const [, n1, d1, n2, d2] = m.map(Number);
+        const sum = n1 / d1 + n2 / d2;
+        // the fences sit at 0.25, 0.75, 1.25, 1.75 — halfway between benchmarks
+        const offset = (((sum - 0.25) % 0.5) + 0.5) % 0.5;
+        expect(Math.min(offset, 0.5 - offset)).toBeGreaterThan(0.03);
+      }
+    }
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'add and subtract unlike denominators',
+      'benchmark estimation',
       'mixed numbers',
       'fraction as division',
       'multiplying fractions',

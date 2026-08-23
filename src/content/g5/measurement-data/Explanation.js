@@ -1,7 +1,35 @@
 import React from 'react';
+import {
+  createUnitCubePrismImage,
+  createLabeledPrismImage,
+  createCompositePrismImage,
+  createLinePlotImage,
+  createMetricLadderImage,
+} from './visuals';
 
 // Shown when a student taps "Explain" on a Measurement & Data 5th question.
 // Follows the kid-friendly inline-style pattern of the other Explanations.
+// The figures come from the same ./visuals.js builders the question generator
+// uses, so what a student studies here looks exactly like what they're asked.
+
+const Figure = ({ built, children }) => (
+  <div
+    style={{
+      background: '#ffffff',
+      padding: '16px',
+      borderRadius: '15px',
+      margin: '20px 0',
+      border: '3px solid #3498db',
+      textAlign: 'center',
+    }}
+  >
+    <img src={built.data} alt={built.description} style={{ maxWidth: '100%', height: 'auto' }} />
+    {children && (
+      <div style={{ fontSize: '0.95em', color: '#475569', marginTop: '10px' }}>{children}</div>
+    )}
+  </div>
+);
+
 const MeasurementData5thExplanation = () => {
   const styles = {
     container: {
@@ -68,6 +96,10 @@ const MeasurementData5thExplanation = () => {
         <br />
         In metric, the decimal point just slides: 5 cm = 5 ÷ 100 = <strong>0.05 m</strong> ✨
       </div>
+      <Figure built={createMetricLadderImage()}>
+        Every step down the ladder is <strong>× 10</strong>, <strong>× 100</strong>, or{' '}
+        <strong>× 1000</strong>. Going back up? Do the opposite and <strong>divide</strong>.
+      </Figure>
       <div style={styles.tip}>
         <span style={styles.emoji}>💡</span>
         <strong>Tip:</strong> smaller units mean MORE of them — 36 inches is the same length as 3
@@ -79,6 +111,22 @@ const MeasurementData5thExplanation = () => {
         A line plot stacks an ✕ for every measurement. In 5th grade the measurements are often
         fractions like 1/4, 1/2, and 3/4.
       </p>
+      <Figure
+        built={createLinePlotImage({
+          ticks: [
+            { label: '0' },
+            { label: '1/4', count: 2 },
+            { label: '1/2', count: 5 },
+            { label: '3/4', count: 3 },
+            { label: '1' },
+          ],
+          axisLabel: 'Ribbon length (feet)',
+          title: 'Line plot of ribbon lengths',
+        })}
+      >
+        Each <strong>✕</strong> is one ribbon. Count the marks in a stack to see how many ribbons
+        share that length.
+      </Figure>
       <div style={styles.example}>
         <span style={styles.emoji}>🎀</span>
         Say 2 ribbons measure 1/4 ft, 5 measure 1/2 ft, and 3 measure 3/4 ft. That's{' '}
@@ -92,6 +140,18 @@ const MeasurementData5thExplanation = () => {
         <strong>unit cubes</strong> fit with no gaps or overlaps. That's why volume always uses{' '}
         <strong>cubic</strong> units!
       </p>
+      <Figure
+        built={createUnitCubePrismImage({
+          length: 4,
+          width: 3,
+          height: 2,
+          highlightBottomLayer: true,
+          label: 'one layer = 4 × 3 = 12 cubes',
+        })}
+      >
+        The <strong>shaded bottom layer</strong> holds 4 × 3 = <strong>12 cubes</strong>. Stack{' '}
+        <strong>2 layers</strong> and you get 12 × 2 = <strong>24 cubic units</strong>.
+      </Figure>
       <div style={styles.visual}>
         A prism 4 cubes long, 3 wide, 2 tall:
         <br />
@@ -102,6 +162,10 @@ const MeasurementData5thExplanation = () => {
       <div style={styles.visual}>
         V = length × width × height (or V = base area × height)
       </div>
+      <Figure built={createLabeledPrismImage({ length: 5, width: 4, height: 3, unit: 'centimeters' })}>
+        5 × 4 × 3 = <strong>60 cubic centimeters</strong>. The base (5 × 4 = 20 sq cm) is one
+        layer, and it repeats 3 times.
+      </Figure>
       <div style={styles.example}>
         <span style={styles.emoji}>📏</span>A box 5 cm × 4 cm × 3 cm holds 5 × 4 × 3 ={' '}
         <strong>60 cubic centimeters</strong>. And if you know V = 60 and the base is 20 square
@@ -113,6 +177,9 @@ const MeasurementData5thExplanation = () => {
         An L-shaped figure is just <strong>two boxes glued together</strong> — find each volume
         and add.
       </p>
+      <Figure built={createCompositePrismImage({ first: [4, 2, 3], second: [2, 2, 2] })}>
+        Split the figure, find each volume, then add: 24 + 8 = <strong>32 cubic units</strong>.
+      </Figure>
       <div style={styles.example}>
         <span style={styles.emoji}>🧱</span>A 4 × 2 × 3 prism (24) plus a 2 × 2 × 2 prism (8) make{' '}
         <strong>32 cubic units</strong> in all.
