@@ -151,9 +151,98 @@ describe('Base Ten 5th correctness', () => {
     expect(problems).toEqual([]);
   });
 
+  // --- expanded form & number names (5.NBT.A.3.a) --------------------
+  // Independent decoders: words are parsed back into a number and expanded
+  // forms are summed in exact thousandths, so the generator's own helpers
+  // are never trusted.
+  const ONES_VALUES = {
+    zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+    nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+    sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  };
+  const TENS_VALUES = {
+    twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+  };
+  const PLACE_DIGITS = { tenth: 1, tenths: 1, hundredth: 2, hundredths: 2, thousandth: 3, thousandths: 3 };
+
+  const wordsToNumber = (text) => {
+    let total = 0;
+    for (const chunk of text.split(' ')) {
+      if (chunk === 'hundred') {
+        total *= 100;
+      } else if (chunk.includes('-')) {
+        const [tens, ones] = chunk.split('-');
+        total += TENS_VALUES[tens] + ONES_VALUES[ones];
+      } else if (chunk in TENS_VALUES) {
+        total += TENS_VALUES[chunk];
+      } else if (chunk in ONES_VALUES) {
+        total += ONES_VALUES[chunk];
+      } else {
+        throw new Error(`unrecognized number word: ${chunk} (in "${text}")`);
+      }
+    }
+    return total;
+  };
+
+  // "sixty-three and seven hundred eighty-four thousandths" → "63.784"
+  const nameToDecimal = (text) => {
+    const [first, second] = text.split(' and ');
+    const fractionText = second === undefined ? first : second;
+    const words = fractionText.split(' ');
+    const places = PLACE_DIGITS[words[words.length - 1]];
+    expect(places).toBeDefined();
+    const fraction = wordsToNumber(words.slice(0, -1).join(' '));
+    const whole = second === undefined ? 0 : wordsToNumber(first);
+    return `${whole}.${String(fraction).padStart(places, '0')}`;
+  };
+
+  // "9 × 10 + 2 × 1 + 5 × (1/10)" → 92500 thousandths
+  const expandedToThousandths = (text) =>
+    text.split(' + ').reduce((sum, term) => {
+      const m = term.match(/^(\d) × (?:(\d+)|\(1\/(\d+)\))$/);
+      expect(m).not.toBeNull();
+      const digit = Number(m[1]);
+      return sum + (m[2] ? digit * Number(m[2]) * 1000 : (digit * 1000) / Number(m[3]));
+    }, 0);
+
+  test('expanded form: numerals, number names and expanded form all agree', () => {
+    for (const q of draw('expanded form', 120)) {
+      expect(q.questionType).toBe(QUESTION_TYPES.MULTIPLE_CHOICE);
+      expect(q.options).toContain(q.correctAnswer);
+      let m;
+      if ((m = q.question.match(/^Which number is written as (.+)\?$/))) {
+        expect(expandedToThousandths(m[1])).toBe(toThousandths(q.correctAnswer));
+      } else if ((m = q.question.match(/^Which expanded form shows ([\d.]+)\?$/))) {
+        expect(expandedToThousandths(q.correctAnswer)).toBe(toThousandths(m[1]));
+      } else if ((m = q.question.match(/^How do you read ([\d.]+)\?$/))) {
+        expect(nameToDecimal(q.correctAnswer)).toBe(m[1]);
+      } else if ((m = q.question.match(/^Which number is "(.+)"\?$/))) {
+        expect(nameToDecimal(m[1])).toBe(q.correctAnswer);
+      } else {
+        throw new Error(`unrecognized question: ${q.question}`);
+      }
+    }
+  });
+
+  test('expanded form: every option is a distinct, plausible answer', () => {
+    for (const q of draw('expanded form', 120)) {
+      expect(new Set(q.options).size).toBe(q.options.length);
+      // No "option 1" filler leaking in from buildOptions.
+      q.options.forEach((option) => expect(option).not.toMatch(/^option \d+$/));
+      // Decimal options never carry a padded whole part or a trailing zero.
+      q.options
+        .filter((option) => /^\d+\.\d+$/.test(option))
+        .forEach((option) => {
+          expect(option).not.toMatch(/^0\d/);
+          expect(option).not.toMatch(/0$/);
+        });
+    }
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'decimal place value',
+      'expanded form',
       'powers of ten',
       'comparing decimals',
       'rounding decimals',

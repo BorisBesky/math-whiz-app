@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrderOfOperationsSteps, FactorTree, PatternPairsGraph } from './visuals';
 
 // Shown when a student taps "Explain" on an Operations & Algebraic Thinking 5th question.
 // Follows the kid-friendly inline-style pattern of the other Explanations.
@@ -48,6 +49,19 @@ const OperationsAlgebraicThinking5thExplanation = () => {
       textAlign: 'center',
       fontSize: '1.2em',
     },
+    figure: {
+      background: '#ffffff',
+      padding: '16px',
+      borderRadius: '15px',
+      margin: '20px 0',
+      border: '3px solid #3498db',
+      textAlign: 'center',
+    },
+    caption: {
+      fontSize: '0.95em',
+      color: '#475569',
+      marginTop: '10px',
+    },
     emoji: {
       fontSize: '1.5em',
       marginRight: '10px',
@@ -64,6 +78,13 @@ const OperationsAlgebraicThinking5thExplanation = () => {
         always work from the <strong>inside out</strong>: parentheses first, then brackets, then
         multiply or divide, and finally add or subtract.
       </p>
+      <div style={styles.figure}>
+        <OrderOfOperationsSteps />
+        <div style={styles.caption}>
+          Each step <strong>peels off the innermost grouping</strong> — the highlighted part is
+          the only thing you work out on that line.
+        </div>
+      </div>
       <div style={styles.visual}>
         [4 + (10 − 7)] × 5
         <br />
@@ -99,6 +120,13 @@ const OperationsAlgebraicThinking5thExplanation = () => {
         Every whole number can be broken down into <strong>prime</strong> building blocks (2, 3,
         5, 7, 11, …). Keep splitting until every piece is prime.
       </p>
+      <div style={styles.figure}>
+        <FactorTree />
+        <div style={styles.caption}>
+          Split, then split again. Stop a branch when it reaches a <strong>prime</strong> — the
+          filled circles at the bottom are your answer.
+        </div>
+      </div>
       <div style={styles.visual}>
         24 = 4 × 6
         <br />
@@ -124,6 +152,13 @@ const OperationsAlgebraicThinking5thExplanation = () => {
         <br />
         Every term of B is <strong>2 times</strong> its matching term in A. As ordered pairs:
         (0, 0), (3, 6), (6, 12), (9, 18) — ready to graph!
+      </div>
+      <div style={styles.figure}>
+        <PatternPairsGraph />
+        <div style={styles.caption}>
+          Graphing the matching terms makes the relationship obvious: each point sits{' '}
+          <strong>twice as high as it is far right</strong>.
+        </div>
       </div>
       <div style={styles.tip}>
         <span style={styles.emoji}>🌟</span>

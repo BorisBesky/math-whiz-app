@@ -108,6 +108,15 @@ Curriculum content is a plug-in system — **the folder is the registration**
 - AI prompt text lives in manifests (`ai.guidelines`, grade `ai.storyRequirements`);
   changes surface in `src/__tests__/ai-prompt-snapshots.test.js` — review the diff,
   then update snapshots deliberately.
+- **Visuals live in the topic folder as `visuals.js`** (every G5 topic has one;
+  g4/geometry predates the name with `shapes.js` / `composite-shapes.js`). Two
+  flavours: React SVG components when only `Explanation.js` needs the figure, and
+  string builders returning `{ data, description }` SVG data URIs when the
+  question generator needs it too (g5 measurement-data and g5 geometry do — a
+  generator attaches one as `images: [{ type: 'question', data, description }]`).
+  Give every figure `role="img"` plus an `aria-label`/`<title>`, or an `alt` on
+  the `<img>`: `src/content/g5/__tests__/Explanations.smoke.test.js` renders each
+  Explanation and fails on a figure with an empty accessible name.
 
 ## Running things
 

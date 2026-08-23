@@ -16,6 +16,7 @@
   ],
   "subtopics": [
     "decimal place value",
+    "expanded form",
     "powers of ten",
     "comparing decimals",
     "rounding decimals",
@@ -25,6 +26,7 @@
   ],
   "objectives": [
     "Understand that a digit is worth 10 times the place to its right and 1/10 the place to its left",
+    "Read and write decimals to thousandths using numerals, number names, and expanded form",
     "Multiply and divide numbers by powers of 10",
     "Read, write, and compare decimals to thousandths",
     "Round decimals to any place",
@@ -34,7 +36,7 @@
   ],
   "ui": { "icon": "🔢", "theme": "indigo" },
   "ai": {
-    "guidelines": "Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly."
+    "guidelines": "Focus on decimal place value to thousandths (a digit is worth 10 times the place to its right), reading and writing decimals three ways — base-ten numerals, number names like \"three hundred forty-seven and nine hundred sixteen thousandths\", and expanded form like 3 × 100 + 4 × 10 + 7 × 1 + 9 × (1/10) — multiplying and dividing by powers of 10, comparing decimals with >, <, and =, rounding decimals to any place, fluent multi-digit whole-number multiplication, division with two-digit divisors and up to four-digit dividends, and adding, subtracting, multiplying, and dividing decimals to hundredths. Prefer clean values that work out exactly."
   },
   "legacyExplanationHtml": null,
   "aliases": [],

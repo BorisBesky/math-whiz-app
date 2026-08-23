@@ -114,6 +114,100 @@ const generateUnlikeDenominatorsQuestion = (difficulty) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* benchmark estimation (5.NF.A.2)                                     */
+/* Estimating with 0, 1/2 and 1 — and judging whether an answer is even */
+/* reasonable — before doing any exact arithmetic.                     */
+/* Formats:                                                            */
+/*   "Which benchmark is <a>/<b> closest to?"                          */
+/*   "Estimate <a>/<b> + <c>/<d>. Which benchmark is the sum closest   */
+/*    to?"                                                             */
+/*   "Without adding, is <a>/<b> + <c>/<d> greater than 1, less than   */
+/*    1, or equal to 1?"                                               */
+/* ------------------------------------------------------------------ */
+const BENCHMARKS = [
+  { label: '0', value: 0 },
+  { label: '1/2', value: 0.5 },
+  { label: '1', value: 1 },
+];
+const SUM_BENCHMARKS = [
+  { label: '0', value: 0 },
+  { label: '1/2', value: 0.5 },
+  { label: '1', value: 1 },
+  { label: '1 1/2', value: 1.5 },
+  { label: '2', value: 2 },
+];
+
+// The nearest benchmark, but only when it wins clearly — a value sitting on
+// the fence between two benchmarks has no single right answer.
+const nearestBenchmark = (value, benchmarks, minMargin) => {
+  const ranked = benchmarks
+    .map((benchmark) => ({ ...benchmark, distance: Math.abs(value - benchmark.value) }))
+    .sort((a, b) => a.distance - b.distance);
+  if (ranked[1].distance - ranked[0].distance < minMargin) return null;
+  return ranked[0];
+};
+
+const generateBenchmarkEstimationQuestion = (difficulty) => {
+  const variant = difficulty < 0.35 ? 0 : randomInt(0, 2);
+
+  // Bounded retries: every guard below rejects only ambiguous draws, so a
+  // fresh draw almost always passes.
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (variant === 0) {
+      const d = pick(DENOMINATORS.filter((value) => value >= 3));
+      const n = randomInt(1, d - 1);
+      const nearest = nearestBenchmark(n / d, BENCHMARKS, 0.08);
+      if (!nearest) continue;
+      return {
+        question: `Which benchmark is ${n}/${d} closest to?`,
+        correctAnswer: nearest.label,
+        options: shuffle(BENCHMARKS.map((benchmark) => benchmark.label)),
+        questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+        hint: `Half of ${d} is ${d / 2}. Is the top number near 0, near ${d / 2}, or near ${d}?`,
+        ...baseFields('benchmark estimation', '5.NF.A.2'),
+      };
+    }
+
+    const [d1, d2] = pickDenominators(difficulty);
+    const n1 = randomInt(1, d1 - 1);
+    const n2 = randomInt(1, d2 - 1);
+    const exact = n1 / d1 + n2 / d2;
+
+    if (variant === 1) {
+      const nearest = nearestBenchmark(exact, SUM_BENCHMARKS, 0.12);
+      if (!nearest) continue;
+      const others = SUM_BENCHMARKS
+        .filter((benchmark) => benchmark.label !== nearest.label)
+        .map((benchmark) => benchmark.label);
+      return {
+        question: `Estimate ${n1}/${d1} + ${n2}/${d2}. Which benchmark is the sum closest to?`,
+        correctAnswer: nearest.label,
+        options: buildOptions(nearest.label, shuffle(others)),
+        questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+        hint: 'Round each fraction to 0, 1/2, or 1 first, then add the rounded values.',
+        ...baseFields('benchmark estimation', '5.NF.A.2'),
+      };
+    }
+
+    // Reasonableness: is the sum over, under, or exactly 1? Near-misses are
+    // excluded so the judgement stays safely mental.
+    const isExactlyOne = n1 * d2 + n2 * d1 === d1 * d2;
+    if (!isExactlyOne && Math.abs(exact - 1) < 0.09) continue;
+    const correct = isExactlyOne ? 'equal to 1' : exact > 1 ? 'greater than 1' : 'less than 1';
+    return {
+      question: `Without adding, is ${n1}/${d1} + ${n2}/${d2} greater than 1, less than 1, or equal to 1?`,
+      correctAnswer: correct,
+      options: shuffle(['greater than 1', 'less than 1', 'equal to 1']),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: 'Compare each fraction to 1/2. Two fractions that are both more than 1/2 must add to more than 1.',
+      ...baseFields('benchmark estimation', '5.NF.A.2'),
+    };
+  }
+
+  return null;
+};
+
+/* ------------------------------------------------------------------ */
 /* mixed numbers — add/subtract with unlike denominators (5.NF.A.1)    */
 /* Format: "What is <w> <n>/<d> + <w2> <n2>/<d2>?" (or −)              */
 /* ------------------------------------------------------------------ */
@@ -360,6 +454,7 @@ const generateDividingUnitFractionsQuestion = (difficulty) => {
 
 const GENERATORS_BY_SUBTOPIC = {
   'add and subtract unlike denominators': generateUnlikeDenominatorsQuestion,
+  'benchmark estimation': generateBenchmarkEstimationQuestion,
   'mixed numbers': generateMixedNumbersQuestion,
   'fraction as division': generateFractionAsDivisionQuestion,
   'multiplying fractions': generateMultiplyingFractionsQuestion,

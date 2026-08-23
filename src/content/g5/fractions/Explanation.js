@@ -1,7 +1,17 @@
 import React from 'react';
+import {
+  BenchmarkNumberLine,
+  UnlikeDenominatorsDemo,
+  MultiplicationAreaModel,
+  ScalingNumberLine,
+  UnitFractionSharedDemo,
+  UnitFractionFitDemo,
+} from './visuals';
 
 // Shown when a student taps "Explain" on a Fractions 5th question.
 // Follows the kid-friendly inline-style pattern of the other Explanations.
+// The SVG models live in ./visuals.js — 5.NF is a modeling standard, so every
+// rule here is paired with the bar or area picture it comes from.
 const Fractions5thExplanation = () => {
   const styles = {
     container: {
@@ -48,6 +58,19 @@ const Fractions5thExplanation = () => {
       textAlign: 'center',
       fontSize: '1.2em',
     },
+    figure: {
+      background: '#ffffff',
+      padding: '16px',
+      borderRadius: '15px',
+      margin: '20px 0',
+      border: '3px solid #3498db',
+      textAlign: 'center',
+    },
+    caption: {
+      fontSize: '0.95em',
+      color: '#475569',
+      marginTop: '10px',
+    },
     emoji: {
       fontSize: '1.5em',
       marginRight: '10px',
@@ -64,6 +87,13 @@ const Fractions5thExplanation = () => {
         <strong>same size</strong>. Different denominators? Rewrite both fractions with a{' '}
         <strong>common denominator</strong> first.
       </p>
+      <div style={styles.figure}>
+        <UnlikeDenominatorsDemo />
+        <div style={styles.caption}>
+          Halves and thirds are <em>different sizes</em>. Re-cut both into <strong>sixths</strong>{' '}
+          and the pieces finally match — then you can add them.
+        </div>
+      </div>
       <div style={styles.visual}>
         2/3 + 5/4 → twelfths! → 8/12 + 15/12 = <strong>23/12</strong>
       </div>
@@ -72,6 +102,30 @@ const Fractions5thExplanation = () => {
         <strong>Never</strong> add straight across: 1/2 + 1/3 is NOT 2/5 — it's 3/6 + 2/6 ={' '}
         <strong>5/6</strong>.
       </div>
+      <h2 style={styles.h2}>🎯 Estimate first with benchmarks</h2>
+      <p>
+        Before you compute, ask: is each fraction closest to <strong>0</strong>,{' '}
+        <strong>1/2</strong>, or <strong>1</strong>? Compare the top number to{' '}
+        <em>half the bottom number</em>.
+      </p>
+      <div style={styles.figure}>
+        <BenchmarkNumberLine />
+        <div style={styles.caption}>
+          1/8 is barely above 0 · 5/9 is a hair over 1/2 · 7/8 is nearly a whole.
+        </div>
+      </div>
+      <div style={styles.example}>
+        <span style={styles.emoji}>🧠</span>
+        <strong>Estimate:</strong> 7/8 + 1/12 ≈ 1 + 0 = <strong>about 1</strong>. So an answer of
+        23/24 makes sense — but an answer of 8/20 would not!
+      </div>
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🚨</span>
+        <strong>Reasonableness check:</strong> a student writes 2/5 + 1/2 = 3/7. Adding{' '}
+        <em>something</em> to 1/2 has to give <strong>more</strong> than 1/2 — and 3/7 is{' '}
+        <em>less</em> than 1/2. So the answer must be wrong, and you knew it without computing.
+      </div>
+
       <h2 style={styles.h2}>🔢 Mixed numbers</h2>
       <p>
         A <strong>mixed number</strong> is a whole plus a fraction — like <strong>2 1/3</strong>{' '}
@@ -112,6 +166,13 @@ const Fractions5thExplanation = () => {
         Multiply the <strong>tops</strong> together and the <strong>bottoms</strong> together —
         then simplify.
       </p>
+      <div style={styles.figure}>
+        <MultiplicationAreaModel numerator1={2} denominator1={3} numerator2={4} denominator2={5} />
+        <div style={styles.caption}>
+          Shade <strong>4 of the 5 columns</strong> blue and <strong>2 of the 3 rows</strong> pink.
+          The <strong>purple overlap</strong> is the answer: 8 of the 15 little squares.
+        </div>
+      </div>
       <div style={styles.visual}>
         2/3 × 4/5 = <strong>8/15</strong> · 3/4 of 20 = <strong>15</strong>
       </div>
@@ -122,6 +183,13 @@ const Fractions5thExplanation = () => {
 
       <h2 style={styles.h2}>🔮 Scaling: predict without computing</h2>
       <p>Compare the fraction to 1 and you instantly know how the product compares:</p>
+      <div style={styles.figure}>
+        <ScalingNumberLine start={60} max={100} />
+        <div style={styles.caption}>
+          Multiplying by <strong>less than 1</strong> slides you <strong>left</strong>; by{' '}
+          <strong>more than 1</strong> slides you <strong>right</strong>. No computing needed!
+        </div>
+      </div>
       <div style={styles.example}>
         <span style={styles.emoji}>📉</span> 4/5 × 60 is <strong>less than 60</strong> (4/5 &lt; 1
         shrinks it)
@@ -134,6 +202,19 @@ const Fractions5thExplanation = () => {
       </div>
 
       <h2 style={styles.h2}>➗ Dividing with unit fractions</h2>
+      <div style={styles.figure}>
+        <UnitFractionSharedDemo />
+        <div style={styles.caption}>
+          A <strong>unit fraction ÷ a whole number</strong> makes an even smaller piece.
+        </div>
+      </div>
+      <div style={styles.figure}>
+        <UnitFractionFitDemo />
+        <div style={styles.caption}>
+          A <strong>whole number ÷ a unit fraction</strong> asks "how many fit?" — so the answer is{' '}
+          <strong>bigger</strong> than you started with.
+        </div>
+      </div>
       <div style={styles.visual}>
         1/3 ÷ 4 = <strong>1/12</strong> (splitting a third into 4 parts makes twelfths)
         <br />

@@ -127,6 +127,179 @@ const generateDecimalPlaceValueQuestion = (difficulty) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* expanded form & number names — 5.NBT.A.3.a                          */
+/* Reading and writing decimals three ways: base-ten numerals, number  */
+/* names, and expanded form.                                           */
+/* Formats:                                                            */
+/*   "Which number is written as <expanded form>?"                     */
+/*   "Which expanded form shows <decimal>?"                            */
+/*   "How do you read <decimal>?"                                      */
+/*   "Which number is \"<number name>\"?"                               */
+/* ------------------------------------------------------------------ */
+const ONES_WORDS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+  'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+  'seventeen', 'eighteen', 'nineteen',
+];
+const TENS_WORDS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const FRACTION_PLACES = ['tenth', 'hundredth', 'thousandth'];
+
+const wholeToWords = (value) => {
+  if (value < 20) return ONES_WORDS[value];
+  if (value < 100) {
+    const tens = TENS_WORDS[Math.floor(value / 10)];
+    const ones = value % 10;
+    return ones ? `${tens}-${ONES_WORDS[ones]}` : tens;
+  }
+  const hundreds = `${ONES_WORDS[Math.floor(value / 100)]} hundred`;
+  const rest = value % 100;
+  return rest ? `${hundreds} ${wholeToWords(rest)}` : hundreds;
+};
+
+// "347.916" → "three hundred forty-seven and nine hundred sixteen thousandths".
+// The word "and" marks the decimal point, which is why the whole-number part
+// never uses it.
+const decimalToWords = (text) => {
+  const [whole, frac = ''] = text.split('.');
+  const wholeValue = Number(whole);
+  if (!frac) return wholeToWords(wholeValue);
+  const fracValue = Number(frac);
+  const place = FRACTION_PLACES[frac.length - 1];
+  const fracWords = `${wholeToWords(fracValue)} ${place}${fracValue === 1 ? '' : 's'}`;
+  return wholeValue === 0 ? fracWords : `${wholeToWords(wholeValue)} and ${fracWords}`;
+};
+
+// "347.916" → "3 × 100 + 4 × 10 + 7 × 1 + 9 × (1/10) + 1 × (1/100) + 6 × (1/1000)"
+const toExpandedForm = (text) => {
+  const [whole, frac = ''] = text.split('.');
+  const wholeTerms = whole
+    .split('')
+    .map((digit, index) => (digit === '0' ? null : `${digit} × ${10 ** (whole.length - 1 - index)}`))
+    .filter(Boolean);
+  const fracTerms = frac
+    .split('')
+    .map((digit, index) => (digit === '0' ? null : `${digit} × (1/${10 ** (index + 1)})`))
+    .filter(Boolean);
+  return [...wholeTerms, ...fracTerms].join(' + ');
+};
+
+// A decimal with all-distinct non-zero digits, so every expanded-form term is
+// present and a digit names its place unambiguously.
+const buildExpandableNumber = (wholeDigits, fracDigits) => {
+  const digits = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, wholeDigits + fracDigits);
+  const whole = digits.slice(0, wholeDigits).join('');
+  const frac = digits.slice(wholeDigits).join('');
+  return frac ? `${whole}.${frac}` : whole;
+};
+
+// Reject twins a student would never see written that way: a padded whole
+// part (05.31) or a trailing zero in the fraction (6.770).
+const isTidyDecimal = (text) => {
+  const [whole, frac = ''] = text.split('.');
+  if (whole.length > 1 && whole.startsWith('0')) return false;
+  return !frac.endsWith('0');
+};
+
+// Swap two digits of a decimal to make a plausible-but-wrong twin.
+const swapDigits = (text, seed) => {
+  const positions = [...text].map((char, index) => (char === '.' ? null : index)).filter((i) => i !== null);
+  const first = positions[seed % positions.length];
+  const second = positions[(seed + 1 + (seed % (positions.length - 1))) % positions.length];
+  if (first === second) return null;
+  const characters = [...text];
+  [characters[first], characters[second]] = [characters[second], characters[first]];
+  const swapped = characters.join('');
+  if (swapped === text || !isTidyDecimal(swapped)) return null;
+  return swapped;
+};
+
+// Distinct digit-swapped twins of a decimal, for building distractors.
+const twinsOf = (text) => [
+  ...new Set([1, 2, 3, 4, 5, 6].map((seed) => swapDigits(text, seed)).filter(Boolean)),
+].filter((twin) => twin !== text);
+
+const generateExpandedFormQuestion = (difficulty) => {
+  const fracDigits = difficulty < 0.4 ? 2 : 3;
+  const wholeDigits = difficulty < 0.7 ? 2 : 3;
+  const variant = randomInt(0, 3);
+
+  if (variant === 0 || variant === 1) {
+    const text = buildExpandableNumber(wholeDigits, fracDigits);
+    const twins = twinsOf(text);
+
+    if (variant === 0) {
+      return {
+        question: `Which number is written as ${toExpandedForm(text)}?`,
+        correctAnswer: text,
+        options: buildOptions(text, twins),
+        questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+        hint: 'Each term names one place: × 10 is tens, × (1/10) is tenths, × (1/100) is hundredths.',
+        ...baseFields('expanded form', '5.NBT.A.3'),
+      };
+    }
+
+    const correct = toExpandedForm(text);
+    return {
+      question: `Which expanded form shows ${text}?`,
+      correctAnswer: correct,
+      options: buildOptions(correct, twins.map(toExpandedForm)),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: 'Write one term per digit, using the value of the place that digit sits in.',
+      ...baseFields('expanded form', '5.NBT.A.3'),
+    };
+  }
+
+  // Number-name variants. Zeros are allowed here — reading 0.407 as "four
+  // hundred seven thousandths" is exactly the skill.
+  const whole = randomInt(0, 1) === 0 ? 0 : randomInt(1, 10 ** wholeDigits - 1);
+  let frac = String(randomInt(1, 10 ** fracDigits - 1)).padStart(fracDigits, '0');
+  if (frac.endsWith('0')) frac = `${frac.slice(0, -1)}${randomInt(1, 9)}`; // no trailing zero
+  const text = `${whole}.${frac}`;
+  const correctWords = decimalToWords(text);
+
+  // Distractors in teaching order: naming the wrong place is the misconception
+  // worth confronting, so those come first; dropping a placeholder zero next;
+  // then digit-swapped twins and scaled readings as guaranteed filler, because
+  // a number like 0.03 has too few distinct digits to swap.
+  const fracValue = Number(frac);
+  const strippedFrac = frac.replace(/^0+/, '');
+  const readAs = (value, placeIndex) =>
+    `${whole === 0 ? '' : `${wholeToWords(whole)} and `}` +
+    `${wholeToWords(value)} ${FRACTION_PLACES[placeIndex]}${value === 1 ? '' : 's'}`;
+
+  const wordDistractors = [
+    ...new Set([
+      // same digits, wrong place name
+      ...[0, 1, 2].filter((index) => index !== frac.length - 1).map((index) => readAs(fracValue, index)),
+      // "0.407 → forty-seven thousandths": the placeholder zero got dropped
+      strippedFrac && strippedFrac !== frac ? decimalToWords(`${whole}.${strippedFrac}`) : null,
+      ...twinsOf(text).map(decimalToWords),
+      ...[0, 1, 2].map((index) => readAs(fracValue * 10, index)),
+    ].filter(Boolean)),
+  ].filter((option) => option !== correctWords);
+
+  if (variant === 2) {
+    return {
+      question: `How do you read ${text}?`,
+      correctAnswer: correctWords,
+      options: buildOptions(correctWords, wordDistractors),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: 'Read the whole number, say "and" for the decimal point, then name the last place you reach.',
+      ...baseFields('expanded form', '5.NBT.A.3'),
+    };
+  }
+
+  return {
+    question: `Which number is "${correctWords}"?`,
+    correctAnswer: text,
+    options: buildOptions(text, twinsOf(text)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint: 'The last place named tells you how many digits go after the decimal point.',
+    ...baseFields('expanded form', '5.NBT.A.3'),
+  };
+};
+
+/* ------------------------------------------------------------------ */
 /* powers of ten — shift the decimal point (5.NBT.A.2)                 */
 /* Format: "What is <x> × <p>?" or "What is <x> ÷ <p>?" with p in      */
 /* {10, 100, 1000}                                                     */
@@ -367,6 +540,7 @@ const generateDecimalOperationsQuestion = (difficulty) => {
 
 const GENERATORS_BY_SUBTOPIC = {
   'decimal place value': generateDecimalPlaceValueQuestion,
+  'expanded form': generateExpandedFormQuestion,
   'powers of ten': generatePowersOfTenQuestion,
   'comparing decimals': generateComparingDecimalsQuestion,
   'rounding decimals': generateRoundingDecimalsQuestion,

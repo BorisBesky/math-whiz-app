@@ -16,6 +16,7 @@
   ],
   "subtopics": [
     "add and subtract unlike denominators",
+    "benchmark estimation",
     "mixed numbers",
     "fraction as division",
     "multiplying fractions",
@@ -24,6 +25,7 @@
   ],
   "objectives": [
     "Add and subtract fractions with unlike denominators using equivalent fractions",
+    "Use benchmark fractions (0, 1/2, 1) to estimate sums mentally and judge whether an answer is reasonable",
     "Add and subtract mixed numbers with unlike denominators",
     "Interpret a fraction as division of the numerator by the denominator",
     "Multiply fractions by whole numbers and by other fractions",
@@ -32,7 +34,7 @@
   ],
   "ui": { "icon": "½", "theme": "rose" },
   "ai": {
-    "guidelines": "Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form."
+    "guidelines": "Focus on adding and subtracting fractions with unlike denominators (including mixed numbers) by finding equivalent fractions, using benchmark fractions (0, 1/2, 1) to estimate sums mentally and to judge whether an answer is reasonable (for example, spotting that 2/5 + 1/2 cannot be 3/7 because the sum must exceed 1/2), interpreting a fraction as division of the numerator by the denominator, multiplying a fraction by a whole number or another fraction, multiplication as scaling (predicting whether a product is larger or smaller than a factor without calculating), and dividing unit fractions by whole numbers or whole numbers by unit fractions. Use denominators up to 12 and give answers in simplest form."
   },
   "legacyExplanationHtml": null,
   "aliases": [],
