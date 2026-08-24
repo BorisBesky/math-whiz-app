@@ -315,6 +315,17 @@ export function generateDataInterpretationQuestion(difficulty = 0.5) {
   ];
   
   data.sort((a, b) => b.value - a.value);
+
+  // Both questions below need one category to be strictly ahead of the rest.
+  // A tie for first makes "which fruit was sold the most" have two correct
+  // choices (every category is an option), and four tied bars make "how many
+  // more" answer 0 — a meaningless question with a 0 answer choice. Nudging
+  // the leader by one keeps the sampled shape of the chart while guaranteeing
+  // a unique winner, and a unique winner also guarantees highest > lowest.
+  if (data[0].value === data[1].value) {
+    data[0].value += 1;
+  }
+
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const highest = data[0];
   const lowest = data[data.length - 1];
