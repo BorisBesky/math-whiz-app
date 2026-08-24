@@ -72,6 +72,10 @@ describe('G4 base-ten: place-value question renders large numbers with commas', 
   // to count digits by hand to answer a place-value question.
   it('any 4+ digit number in the question text uses comma separators', () => {
     const difficulties = [0.3, 0.5, 0.7, 1.0];
+    // Collect violations instead of asserting inside the loop, so the test
+    // cannot quietly pass by never drawing a 4-digit number.
+    const badlyGrouped = [];
+    let longNumbersSeen = 0;
     for (const d of difficulties) {
       for (let i = 0; i < 100; i += 1) {
         const q = generatePlaceValueQuestion(d);
@@ -79,13 +83,14 @@ describe('G4 base-ten: place-value question renders large numbers with commas', 
         expect(numMatch).not.toBeNull();
         const numStr = numMatch[1];
         const digitCount = numStr.replace(/,/g, '').length;
-        if (digitCount >= 4) {
-          expect(numStr).toContain(',');
-          // And commas must be well-placed (groups of 3 from the right).
-          expect(numStr).toMatch(/^\d{1,3}(,\d{3})+$/);
-        }
+        if (digitCount < 4) continue;
+        longNumbersSeen += 1;
+        // Commas must be present and grouped in threes from the right.
+        if (!/^\d{1,3}(,\d{3})+$/.test(numStr)) badlyGrouped.push(numStr);
       }
     }
+    expect(badlyGrouped).toEqual([]);
+    expect(longNumbersSeen).toBeGreaterThan(0);
   });
 });
 

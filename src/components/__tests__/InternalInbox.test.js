@@ -117,7 +117,7 @@ describe('InternalInbox', () => {
       />
     );
 
-    const messageRow = screen.getByText('Awesome blossom!!').closest('button');
+    const messageRow = screen.getByRole('button', { name: /Awesome blossom!!/ });
     expect(messageRow).toHaveTextContent('You to Margo');
     expect(messageRow).not.toHaveTextContent('You to Unknown');
   });

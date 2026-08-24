@@ -292,12 +292,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           startDate,
           endDate,
         });
-	        if (!cancelled) {
-	          setViewingStudent((current) => (
-	            current?.id === viewingStudent.id
-	              ? { ...current, answeredQuestions, historyLoaded: true, historyRequestKey: requestKey }
-	              : current
-	          ));
+        if (!cancelled) {
+          setViewingStudent((current) => (
+            current?.id === viewingStudent.id
+              ? { ...current, answeredQuestions, historyLoaded: true, historyRequestKey: requestKey }
+              : current
+          ));
         }
       } catch (err) {
         if (!cancelled) {
@@ -625,33 +625,35 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
              <div className="flex items-center space-x-2 bg-white border rounded-md px-3 py-1">
                 <span className="text-sm text-gray-600">Range:</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
+                  aria-label="Start date"
                   value={startDate}
                   onChange={handleDateRangeChange(setStartDate)}
                   className="text-sm border-none focus:ring-0"
                 />
                 <span className="text-gray-400">-</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
+                  aria-label="End date"
                   value={endDate}
                   onChange={handleDateRangeChange(setEndDate)}
                   className="text-sm border-none focus:ring-0"
                 />
              </div>
-	             <button
-	               type="button"
-	               onClick={analyzeAiFocus}
-	               disabled={aiFocusLoading || !appId}
+             <button
+               type="button"
+               onClick={analyzeAiFocus}
+               disabled={aiFocusLoading || !appId}
                className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
              >
-	               {aiFocusLoading ? (
-	                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-	               ) : (
+               {aiFocusLoading ? (
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+               ) : (
                  <Sparkles className="w-4 h-4 mr-2" />
                )}
-	               AI Focus
-	             </button>
+               AI Focus
+             </button>
           </div>
         </div>
 
@@ -1025,21 +1027,21 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
             }
           ) || [];
           
-	          return (
-	            <div className="bg-white border border-gray-200 rounded-lg p-6">
+          return (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h4 className="text-xl font-bold text-gray-700">
                   Questions {startDate === endDate ? `for ${formatDate(startDate)}` : `from ${formatDate(startDate)} to ${formatDate(endDate)}`}:
                 </h4>
               </div>
-	              {historyLoading ? (
-	                <div className="flex items-center text-sm text-gray-500 py-6">
-	                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-	                  Loading question history...
-	                </div>
-	              ) : historyError ? (
-	                <div className="text-sm text-red-600 py-6">{historyError}</div>
-	              ) : questionsInRange.length > 0 ? (
+              {historyLoading ? (
+                <div className="flex items-center text-sm text-gray-500 py-6">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading question history...
+                </div>
+              ) : historyError ? (
+                <div className="text-sm text-red-600 py-6">{historyError}</div>
+              ) : questionsInRange.length > 0 ? (
                 <div className="max-h-96 overflow-y-auto">
                   {(() => {
                     // Group questions by date

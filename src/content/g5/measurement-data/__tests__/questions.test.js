@@ -3,6 +3,14 @@
 // allowedSubtopics, variety) already runs via
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
+// jest/no-conditional-expect is disabled for this file. These tests decode a
+// question's deterministic text format to pick which assertions apply, and
+// every decoder chain ends in `else { throw new Error(...) }`. A question that
+// matches no branch therefore fails loudly instead of silently skipping its
+// assertions, so the vacuous-pass hole the rule guards against cannot happen
+// here. Keep the terminating throw on any new branch you add.
+/* eslint-disable jest/no-conditional-expect */
+
 import { generateQuestion } from '../questions';
 
 const DIFFICULTIES = [0, 0.25, 0.5, 0.75, 1];

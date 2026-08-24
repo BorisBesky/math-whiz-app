@@ -3,6 +3,14 @@
 // allowedSubtopics, variety) already runs via
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
+// jest/no-conditional-expect is disabled for this file. These tests decode a
+// question's deterministic text format to pick which assertions apply, and
+// every decoder chain ends in `else { throw new Error(...) }`. A question that
+// matches no branch therefore fails loudly instead of silently skipping its
+// assertions, so the vacuous-pass hole the rule guards against cannot happen
+// here. Keep the terminating throw on any new branch you add.
+/* eslint-disable jest/no-conditional-expect */
+
 import { generateQuestion } from '../questions';
 import { QUESTION_TYPES } from '../../../../constants/topics.js';
 
@@ -57,11 +65,9 @@ describe('Base Ten 5th correctness', () => {
       const x = toThousandths(m[1]);
       const power = Number(m[3]);
       const result = toThousandths(q.correctAnswer);
-      if (m[2] === '×') {
-        expect(result).toBe(x * power);
-      } else {
-        expect(result * power).toBe(x);
-      }
+      // Compare as integers in both directions so division stays exact.
+      const [actual, expected] = m[2] === '×' ? [result, x * power] : [result * power, x];
+      expect(actual).toBe(expected);
     }
   });
 
@@ -120,10 +126,17 @@ describe('Base Ten 5th correctness', () => {
       const a = toThousandths(m[1]);
       const b = toThousandths(m[3]);
       const result = toThousandths(q.correctAnswer);
-      if (m[2] === '+') expect(result).toBe(a + b);
-      else if (m[2] === '−') expect(result).toBe(a - b);
-      else if (m[2] === '×') expect(result * 1000).toBe(a * b);
-      else expect(result * b).toBe(a * 1000);
+      // Each operator gets an exact integer identity; look it up rather than
+      // branching, so every question is checked by an unconditional assertion.
+      const EXACT = {
+        '+': () => [result, a + b],
+        '−': () => [result, a - b],
+        '×': () => [result * 1000, a * b],
+        '÷': () => [result * b, a * 1000],
+      };
+      expect(Object.keys(EXACT)).toContain(m[2]);
+      const [actual, expected] = EXACT[m[2]]();
+      expect(actual).toBe(expected);
       expect(result).toBeGreaterThanOrEqual(0);
     }
   });

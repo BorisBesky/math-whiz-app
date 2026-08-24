@@ -3,6 +3,14 @@
 // allowedSubtopics, variety) already runs via
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
+// jest/no-conditional-expect is disabled for this file. These tests decode a
+// question's deterministic text format to pick which assertions apply, and
+// every decoder chain ends in `else { throw new Error(...) }`. A question that
+// matches no branch therefore fails loudly instead of silently skipping its
+// assertions, so the vacuous-pass hole the rule guards against cannot happen
+// here. Keep the terminating throw on any new branch you add.
+/* eslint-disable jest/no-conditional-expect */
+
 import { generateQuestion } from '../questions';
 
 const DIFFICULTIES = [0, 0.25, 0.5, 0.75, 1];
@@ -200,17 +208,22 @@ describe('Operations & Algebraic Thinking 5th correctness', () => {
 
   test('numerical patterns: Pattern C appears only at high difficulty, in both forms', () => {
     const forms = new Set();
+    // Collected rather than asserted in-loop so every drawn question is
+    // checked by one unconditional assertion after the sweep.
+    const badOptions = [];
     for (let i = 0; i < 400; i++) {
       const difficulty = i % 2 === 0 ? 0.75 : 1;
       const q = generateQuestion(difficulty, ['numerical patterns']);
       if (!/Pattern C/.test(q.question)) continue;
       forms.add(/Which list/.test(q.question) ? 'list' : 'term');
-      if (q.questionType === 'multiple-choice') {
-        expect(q.options.length).toBe(4);
-        expect(new Set(q.options).size).toBe(4);
-        expect(q.options).toContain(q.correctAnswer);
-      }
+      if (q.questionType !== 'multiple-choice') continue;
+      const optionsOk =
+        q.options.length === 4 &&
+        new Set(q.options).size === 4 &&
+        q.options.includes(q.correctAnswer);
+      if (!optionsOk) badOptions.push(q.question);
     }
+    expect(badOptions).toEqual([]);
     expect([...forms].sort()).toEqual(['list', 'term']);
 
     // Pattern C is the hardest form; easier quizzes must never draw it.

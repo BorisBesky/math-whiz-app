@@ -71,7 +71,7 @@ describe('StudentInbox', () => {
 
   it('leaves room above the inbox for the fixed app header', () => {
     render(<StudentInbox user={baseUser} userData={baseUserData} />);
-    expect(screen.getByTestId('internal-inbox').parentElement).toHaveClass('mt-16');
+    expect(screen.getByTestId('student-inbox-shell')).toHaveClass('mt-16');
   });
 
   it('sets recipientRole to teacher', () => {

@@ -267,10 +267,11 @@ describe('StudentsSection - Focus integration', () => {
   });
 
   test('sends the selected date range to the AI focus function', async () => {
-    const { container } = renderSection();
+    renderSection();
     fireEvent.click(screen.getByTitle('View details'));
 
-    const [startInput, endInput] = container.querySelectorAll('input[type="date"]');
+    const startInput = screen.getByLabelText('Start date');
+    const endInput = screen.getByLabelText('End date');
     fireEvent.change(startInput, { target: { value: '2026-01-10' } });
     fireEvent.change(endInput, { target: { value: '2026-01-12' } });
     fireEvent.click(screen.getByRole('button', { name: /ai focus/i }));
