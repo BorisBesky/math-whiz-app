@@ -247,19 +247,25 @@ const FractionsExplanation = () => {
       <p>You can show decimals on a number line! This helps you see how big or small they are.</p>
 
       <div style={styles.fractionVisual}>
-        <p><strong>A number line from 0 to 1:</strong></p>
+        <p><strong>A number line from 0 to 1, split into 10 equal parts:</strong></p>
         <div style={{fontFamily: 'monospace', fontSize: '1.1em'}}>
           0 ---|---|---|---|---|---|---|---|---|---| 1
         </div>
-        <p style={{fontSize: '0.9em'}}>Each big mark = 0.1 (one tenth)</p>
-        <p style={{fontSize: '0.9em'}}>Each tiny mark = 0.01 (one hundredth)</p>
+        <p style={{fontSize: '0.9em'}}>Each mark between 0 and 1 = 0.1 (one tenth)</p>
+        <p style={{fontSize: '0.9em'}}>To show hundredths, split each tenth into 10 even smaller pieces — each of those = 0.01.</p>
       </div>
 
       <div style={styles.example}>
-        <strong>Placing 0.75 on the number line:</strong>
+        <strong>Placing 0.7 on the number line:</strong>
         <br/>• Start at 0
-        <br/>• Count 7 big marks to reach 0.7
-        <br/>• Count 5 more small marks to reach 0.75
+        <br/>• Count 7 tenths marks to the right
+        <br/>• You land on 0.7 — that is 7/10 of the way from 0 to 1!
+      </div>
+
+      <div style={styles.example}>
+        <strong>Placing 0.75 (a hundredth) on the number line:</strong>
+        <br/>• First find 0.7 (7 tenths from 0)
+        <br/>• 0.75 is halfway between 0.7 and 0.8
         <br/>• That is three-quarters of the way from 0 to 1!
       </div>
 

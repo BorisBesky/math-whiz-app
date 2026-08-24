@@ -403,4 +403,75 @@ describe('ClassDetailPanel', () => {
       expect(screen.queryByText('Other')).not.toBeInTheDocument();
     });
   });
+
+  describe('admin Assign Student dropdown labels', () => {
+    it('marks a student enrolled only via classIds as "Assigned", not "Unassigned"', () => {
+      const enrolledElsewhere = makeStudent({
+        id: 'student-elsewhere',
+        name: 'Elsie',
+        classId: undefined,
+        classIds: ['class-9'],
+        className: 'Room 9',
+      });
+      render(
+        <ClassDetailPanel
+          {...defaultProps}
+          userRole="admin"
+          students={[makeStudent(), enrolledElsewhere]}
+        />
+      );
+
+      const dropdown = screen.getByRole('combobox');
+      const options = Array.from(dropdown.querySelectorAll('option'));
+      const elsieOption = options.find((opt) => opt.textContent.includes('Elsie'));
+      expect(elsieOption).toBeTruthy();
+      expect(elsieOption.textContent).toMatch(/Room 9|Assigned/);
+      expect(elsieOption.textContent).not.toMatch(/Unassigned/);
+    });
+
+    it('labels a student with no class assignment as "Unassigned"', () => {
+      const noClassStudent = makeStudent({
+        id: 'student-none',
+        name: 'None',
+        classId: undefined,
+        classIds: undefined,
+        className: undefined,
+      });
+      render(
+        <ClassDetailPanel
+          {...defaultProps}
+          userRole="admin"
+          students={[makeStudent(), noClassStudent]}
+        />
+      );
+      const dropdown = screen.getByRole('combobox');
+      const options = Array.from(dropdown.querySelectorAll('option'));
+      const noneOption = options.find((opt) => opt.textContent.includes('None'));
+      expect(noneOption).toBeTruthy();
+      expect(noneOption.textContent).toMatch(/Unassigned/);
+    });
+
+    it('labels a student assigned via legacy scalar classId as "Assigned"', () => {
+      const legacyStudent = makeStudent({
+        id: 'student-legacy',
+        name: 'Legacy',
+        classId: 'class-legacy',
+        classIds: undefined,
+        className: 'Old Room',
+      });
+      render(
+        <ClassDetailPanel
+          {...defaultProps}
+          userRole="admin"
+          students={[makeStudent(), legacyStudent]}
+        />
+      );
+      const dropdown = screen.getByRole('combobox');
+      const options = Array.from(dropdown.querySelectorAll('option'));
+      const legacyOption = options.find((opt) => opt.textContent.includes('Legacy'));
+      expect(legacyOption).toBeTruthy();
+      expect(legacyOption.textContent).toMatch(/Old Room|Assigned/);
+      expect(legacyOption.textContent).not.toMatch(/Unassigned/);
+    });
+  });
 });

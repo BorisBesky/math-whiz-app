@@ -651,12 +651,20 @@ const ClassDetailPanel = ({
                     onChange={(event) => setSelectedStudentId(event.target.value)}
                   >
                     <option value="">Select student</option>
-                    {availableStudents.map((student) => (
-                      <option key={student.id} value={student.id}>
+                    {availableStudents.map((student) => {
+                      const studentClassIds = Array.isArray(student.classIds)
+                        ? student.classIds
+                        : student.classId
+                          ? [student.classId]
+                          : [];
+                      const hasClass = studentClassIds.length > 0;
+                      return (
+                        <option key={student.id} value={student.id}>
                           {getStudentDisplayName(student)}
-                        {student.classId ? ` • ${student.className || 'Assigned'}` : ' • Unassigned'}
-                      </option>
-                    ))}
+                          {hasClass ? ` • ${student.className || 'Assigned'}` : ' • Unassigned'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <button

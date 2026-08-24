@@ -422,7 +422,7 @@ const BinaryOperationsExplanation = () => {
       <div style={styles.tip}>
         <p>
           <span style={styles.emoji}>💡</span>
-          <strong>Cool Pattern:</strong> Dividing by binary 10 (which is 2) removes the last digit — just like dividing by 10 in decimal removes the last digit! So 1100 ÷ 10 = 110 (just drop the last 0).
+          <strong>Cool Pattern:</strong> When a binary number ends in 0, dividing by binary 10 (which is 2) is the same as dropping that last 0 — just like 250 ÷ 10 = 25 in decimal! So 1100 ÷ 10 = 110. If the last binary digit is 1, the number is odd: you can still drop the last digit, but you will have a remainder of 1 (like 25 ÷ 10 = 2 remainder 5 in decimal).
         </p>
       </div>
 
