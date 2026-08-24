@@ -48,4 +48,5 @@ export const downloadCsv = (csvContent, filename) => {
   URL.revokeObjectURL(url);
 };
 
-export default { escapeCsvCell, buildCsvContent, downloadCsv };
+const csvExport = { escapeCsvCell, buildCsvContent, downloadCsv };
+export default csvExport;
