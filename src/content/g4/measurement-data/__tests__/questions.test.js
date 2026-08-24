@@ -181,3 +181,45 @@ describe('generateDataInterpretationQuestion "how many more" distractor', () => 
   });
 });
 
+describe('generateDataInterpretationQuestion chart data', () => {
+  // The four bar values are sampled from overlapping ranges, so they can tie.
+  // A tie for first made "which fruit was sold the most" ambiguous (every
+  // category is an answer option, so two of them were correct), and four tied
+  // bars made "How many more X than Y?" answer 0. Both were rare enough to
+  // show up as an intermittent CI failure rather than a reproducible one, so
+  // these assert the invariant directly off the rendered chart.
+  const readChart = (question) =>
+    [...question.matchAll(/^(\w+): (\d+)$/gm)].map(([, category, value]) => ({
+      category,
+      value: Number(value),
+    }));
+
+  it('always has a single clear leader', () => {
+    for (let i = 0; i < 3000; i += 1) {
+      const q = generateDataInterpretationQuestion(0.5);
+      const chart = readChart(q.question);
+      expect(chart).toHaveLength(4);
+      const values = chart.map((row) => row.value);
+      const highest = Math.max(...values);
+      expect(values.filter((value) => value === highest)).toHaveLength(1);
+      // A unique leader also means the gap to the smallest bar is positive.
+      expect(highest).toBeGreaterThan(Math.min(...values));
+    }
+  });
+
+  it('answers "sold the most" with the category that really is highest', () => {
+    let seen = 0;
+    for (let i = 0; i < 3000 && seen < 200; i += 1) {
+      const q = generateDataInterpretationQuestion(0.5);
+      if (!q.question.includes('sold the most')) continue;
+      seen += 1;
+      const chart = readChart(q.question);
+      const highest = Math.max(...chart.map((row) => row.value));
+      const winners = chart.filter((row) => row.value === highest);
+      expect(winners).toHaveLength(1);
+      expect(q.correctAnswer).toBe(winners[0].category);
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});
+
