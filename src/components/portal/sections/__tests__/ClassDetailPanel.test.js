@@ -421,8 +421,7 @@ describe('ClassDetailPanel', () => {
         />
       );
 
-      const dropdown = screen.getByRole('combobox');
-      const options = Array.from(dropdown.querySelectorAll('option'));
+      const options = screen.getAllByRole('option');
       const elsieOption = options.find((opt) => opt.textContent.includes('Elsie'));
       expect(elsieOption).toBeTruthy();
       expect(elsieOption.textContent).toMatch(/Room 9|Assigned/);
@@ -444,8 +443,7 @@ describe('ClassDetailPanel', () => {
           students={[makeStudent(), noClassStudent]}
         />
       );
-      const dropdown = screen.getByRole('combobox');
-      const options = Array.from(dropdown.querySelectorAll('option'));
+      const options = screen.getAllByRole('option');
       const noneOption = options.find((opt) => opt.textContent.includes('None'));
       expect(noneOption).toBeTruthy();
       expect(noneOption.textContent).toMatch(/Unassigned/);
@@ -466,8 +464,7 @@ describe('ClassDetailPanel', () => {
           students={[makeStudent(), legacyStudent]}
         />
       );
-      const dropdown = screen.getByRole('combobox');
-      const options = Array.from(dropdown.querySelectorAll('option'));
+      const options = screen.getAllByRole('option');
       const legacyOption = options.find((opt) => opt.textContent.includes('Legacy'));
       expect(legacyOption).toBeTruthy();
       expect(legacyOption.textContent).toMatch(/Old Room|Assigned/);

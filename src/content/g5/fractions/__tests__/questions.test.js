@@ -3,6 +3,14 @@
 // allowedSubtopics, variety) already runs via
 // src/content/__tests__/topicContracts.test.js — these tests decode the
 // deterministic question formats and verify the MATH is right.
+// jest/no-conditional-expect is disabled for this file. These tests decode a
+// question's deterministic text format to pick which assertions apply, and
+// every decoder chain ends in `else { throw new Error(...) }`. A question that
+// matches no branch therefore fails loudly instead of silently skipping its
+// assertions, so the vacuous-pass hole the rule guards against cannot happen
+// here. Keep the terminating throw on any new branch you add.
+/* eslint-disable jest/no-conditional-expect */
+
 import { generateQuestion } from '../questions';
 import { QUESTION_TYPES } from '../../../../constants/topics.js';
 
@@ -72,7 +80,8 @@ describe('Fractions 5th correctness', () => {
       expect(expectedN).toBeGreaterThan(0);
       // Mixed form never hides an improper fraction part
       const mixedPart = q.correctAnswer.match(/^(\d+) (\d+)\/(\d+)$/);
-      if (mixedPart) expect(Number(mixedPart[2])).toBeLessThan(Number(mixedPart[3]));
+      const properFractionPart = !mixedPart || Number(mixedPart[2]) < Number(mixedPart[3]);
+      expect(properFractionPart).toBe(true);
     }
   });
 
@@ -145,28 +154,28 @@ describe('Fractions 5th correctness', () => {
     // plural item name ("2 friends share 1 pizzas equally.") — grammatical
     // noise that undermines a language-heavy word problem. Ensure "1 X" uses
     // a singular X across every rendered story.
+    // A count of 1 must use the singular item name, 2+ the plural. Collect
+    // mismatches and assert on the list, with a seen-counter so a run that
+    // draws no story variants fails loudly instead of passing empty.
+    const PLURAL_WITH_ONE = [/^pizzas$/, /^sandwiches$/, /^watermelons$/, /^pans of brownies$/];
+    const SINGULAR_WITH_MANY = [/^pizza$/, /^sandwich$/, /^watermelon$/, /^pan of brownies$/];
+    const mismatches = [];
+    let storiesSeen = 0;
     for (const q of draw('fraction as division', 200)) {
       const m = q.question.match(
         /^(\d+) friends share (\d+) (.+) equally\. How much does each friend get\?$/
       );
       if (!m) continue; // other variants of the subtopic
+      storiesSeen += 1;
       const count = Number(m[2]);
       const items = m[3];
-      if (count === 1) {
-        // Singular forms only. "pans of brownies" plural must become "pan of
-        // brownies"; "watermelons" -> "watermelon", etc.
-        expect(items).not.toMatch(/^pizzas$/);
-        expect(items).not.toMatch(/^sandwiches$/);
-        expect(items).not.toMatch(/^watermelons$/);
-        expect(items).not.toMatch(/^pans of brownies$/);
-      } else {
-        // count >= 2 uses plural forms only.
-        expect(items).not.toMatch(/^pizza$/);
-        expect(items).not.toMatch(/^sandwich$/);
-        expect(items).not.toMatch(/^watermelon$/);
-        expect(items).not.toMatch(/^pan of brownies$/);
+      const forbidden = count === 1 ? PLURAL_WITH_ONE : SINGULAR_WITH_MANY;
+      if (forbidden.some((pattern) => pattern.test(items))) {
+        mismatches.push(`${count} ${items}`);
       }
     }
+    expect(mismatches).toEqual([]);
+    expect(storiesSeen).toBeGreaterThan(0);
   });
 
   // --- benchmark estimation (5.NF.A.2) -------------------------------
@@ -225,20 +234,26 @@ describe('Fractions 5th correctness', () => {
     // A fraction exactly halfway between two benchmarks (like 1/4, or a sum
     // of 3/4) would have two equally right answers. The generator rejects
     // those draws; this locks that in.
+    // Collect each question's distance from the nearest fence, then assert on
+    // the list. If a format regex ever stops matching, the list goes empty and
+    // the length check fails rather than the test passing vacuously.
+    const fenceDistances = [];
     for (const q of draw('benchmark estimation', 150)) {
       let m;
       if ((m = q.question.match(/^Which benchmark is (\d+)\/(\d+) closest to\?$/))) {
         const [, n, d] = m.map(Number);
-        expect(Math.abs(n / d - 0.25)).toBeGreaterThan(0.03);
-        expect(Math.abs(n / d - 0.75)).toBeGreaterThan(0.03);
+        const value = n / d;
+        fenceDistances.push(Math.min(Math.abs(value - 0.25), Math.abs(value - 0.75)));
       } else if ((m = q.question.match(/^Estimate (\d+)\/(\d+) \+ (\d+)\/(\d+)\./))) {
         const [, n1, d1, n2, d2] = m.map(Number);
         const sum = n1 / d1 + n2 / d2;
         // the fences sit at 0.25, 0.75, 1.25, 1.75 — halfway between benchmarks
         const offset = (((sum - 0.25) % 0.5) + 0.5) % 0.5;
-        expect(Math.min(offset, 0.5 - offset)).toBeGreaterThan(0.03);
+        fenceDistances.push(Math.min(offset, 0.5 - offset));
       }
     }
+    expect(fenceDistances.length).toBeGreaterThan(0);
+    expect(fenceDistances.filter((distance) => distance <= 0.03)).toEqual([]);
   });
 
   test('every subtopic can be exclusively restricted', () => {

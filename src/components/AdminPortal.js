@@ -28,14 +28,13 @@ import { doc, deleteDoc, collection, getDocs, updateDoc, getFirestore, writeBatc
 import AdminQuestionBankManager from './AdminQuestionBankManager';
 import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
-import { formatDate, formatTime, getAppId, getTodayDateString } from '../utils/common_utils';
+import { formatDate, formatTime, getAppId, getTodayDateString, getTopicsForGrade } from '../utils/common_utils';
 import { getTeacherIds } from '../utils/classHelpers';
 import { fetchStudentHistory } from '../services/studentHistoryService';
 import { getAllGrades, getDefaultGradeKey } from '../content/registry';
 
 // Pre-grades data era: the top-level `progress` field belongs to G3 (see MainApp).
 const LEGACY_GRADE_KEY = 'G3';
-import { getTopicsForGrade } from '../utils/common_utils';
 
 const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
   const { user } = useAuth();
@@ -1502,16 +1501,16 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
           {view === 'students' && (
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-	                {studentHistoryLoading ? (
-	                  <div className="flex items-center text-sm text-gray-500 py-6">
-	                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-	                    Loading question history...
-	                  </div>
-	                ) : studentHistoryError ? (
-	                  <div className="text-sm text-red-600 py-6">{studentHistoryError}</div>
-	                ) : (
-	                <div className="overflow-x-auto">
-	                  <table className="min-w-full divide-y divide-gray-200">
+                {studentHistoryLoading ? (
+                  <div className="flex items-center text-sm text-gray-500 py-6">
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Loading question history...
+                  </div>
+                ) : studentHistoryError ? (
+                  <div className="text-sm text-red-600 py-6">{studentHistoryError}</div>
+                ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1701,6 +1700,7 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                     </tbody>
                   </table>
                 </div>
+                )}
                 {students.length === 0 && (
                   <div className="text-center py-12">
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -2175,9 +2175,9 @@ const AdminPortal = ({ db: initialDb, appId: initialAppId }) => {
                         ))}
                     </tbody>
                   </table>
-	                </div>
-	                )}
-	                {!studentHistoryLoading && !studentHistoryError && selectedStudent.answeredQuestions.length === 0 && (
+                </div>
+                )}
+                {!studentHistoryLoading && !studentHistoryError && selectedStudent.answeredQuestions.length === 0 && (
                   <div className="text-center py-12">
                     <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">No questions answered yet</p>

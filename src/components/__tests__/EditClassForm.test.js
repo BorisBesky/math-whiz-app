@@ -52,21 +52,21 @@ describe('EditClassForm', () => {
   it('shows a validation error when name is cleared and submitted', async () => {
     renderForm();
     fireEvent.change(screen.getByLabelText(/class name/i), { target: { value: '' } });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     expect(await screen.findByText('Class name is required')).toBeInTheDocument();
   });
 
   it('shows a validation error when grade level is cleared and submitted', async () => {
     renderForm();
     fireEvent.change(screen.getByLabelText(/grade level/i), { target: { value: '' } });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     expect(await screen.findByText('Grade level is required')).toBeInTheDocument();
   });
 
   it('clears the name validation error when the user types', async () => {
     renderForm();
     fireEvent.change(screen.getByLabelText(/class name/i), { target: { value: '' } });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     expect(await screen.findByText('Class name is required')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/class name/i), { target: { value: 'New Name' } });
     expect(screen.queryByText('Class name is required')).not.toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('EditClassForm', () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     renderForm({ onSubmit });
     fireEvent.change(screen.getByLabelText(/class name/i), { target: { value: 'Updated Name' } });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Updated Name', gradeLevel: 'G3' })
     ));
@@ -85,7 +85,7 @@ describe('EditClassForm', () => {
   it('includes updatedAt in the submitted data', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     renderForm({ onSubmit });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ updatedAt: expect.any(Date) })
     ));
@@ -95,7 +95,7 @@ describe('EditClassForm', () => {
     let resolveSubmit;
     const onSubmit = jest.fn(() => new Promise((res) => { resolveSubmit = res; }));
     renderForm({ onSubmit });
-    fireEvent.submit(screen.getByRole('button', { name: /update class/i }).closest('form'));
+    fireEvent.click(screen.getByRole('button', { name: /update class/i }));
     expect(screen.getByRole('button', { name: /updating/i })).toBeDisabled();
     resolveSubmit();
     await waitFor(() => expect(screen.getByRole('button', { name: /update class/i })).not.toBeDisabled());

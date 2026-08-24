@@ -202,15 +202,22 @@ describe('points / lines / rays questions', () => {
       'A ray has exactly one endpoint.',
       'A line segment has two endpoints.',
     ]);
+    // Gather mislabelled statements rather than asserting inside the loop —
+    // otherwise a run that happens to draw no true statements passes without
+    // checking anything.
+    const mislabelled = [];
+    let trueStatementsSeen = 0;
     for (let i = 0; i < 1000; i += 1) {
       const q = generatePointsLinesRaysQuestion(0.5);
       const tfMatch = q.question.match(/^True or False: (.+)$/);
       if (!tfMatch) continue;
       const stmt = tfMatch[1];
-      if (trueStatements.has(stmt)) {
-        expect(q.correctAnswer).toBe('True');
-      }
+      if (!trueStatements.has(stmt)) continue;
+      trueStatementsSeen += 1;
+      if (q.correctAnswer !== 'True') mislabelled.push(`${stmt} -> ${q.correctAnswer}`);
     }
+    expect(mislabelled).toEqual([]);
+    expect(trueStatementsSeen).toBeGreaterThan(0);
   });
 });
 

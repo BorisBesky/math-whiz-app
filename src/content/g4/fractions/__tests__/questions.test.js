@@ -84,12 +84,10 @@ describe('G4 fractions: comparison correctly handles equivalent-but-different-lo
       const [, a, b, c, d] = match.map(Number);
       // Cross-multiply to check equivalence without floating-point error.
       expect(a * d).not.toBe(c * b);
-      // The chosen comparator must agree with the real ordering.
-      if (q.correctAnswer === '>') {
-        expect(a * d).toBeGreaterThan(c * b);
-      } else if (q.correctAnswer === '<') {
-        expect(a * d).toBeLessThan(c * b);
-      }
+      // The chosen comparator must agree with the real ordering. Deriving the
+      // expected symbol and comparing directly also catches a correctAnswer
+      // that is neither '<' nor '>', which the old if/else silently allowed.
+      expect(q.correctAnswer).toBe(a * d > c * b ? '>' : '<');
     }
   });
 });

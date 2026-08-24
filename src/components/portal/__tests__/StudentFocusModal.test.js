@@ -1,5 +1,5 @@
 const React = require('react');
-const { render, screen, fireEvent, waitFor, act } = require('@testing-library/react');
+const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
 
 const mockGetDoc = jest.fn();
 const mockUpdateDoc = jest.fn(() => Promise.resolve());
@@ -80,11 +80,9 @@ describe('StudentFocusModal', () => {
       data: () => ({ allowedSubtopicsByTopic: {} }),
     });
 
-    await act(async () => {
-      renderModal();
-    });
+    renderModal();
 
-    expect(screen.getByText('Focus Areas')).toBeInTheDocument();
+    expect(await screen.findByText('Focus Areas')).toBeInTheDocument();
     expect(screen.getByText(/Ada Lovelace/)).toBeInTheDocument();
     expect(screen.getByText(/Room 101/)).toBeInTheDocument();
   });
@@ -99,9 +97,7 @@ describe('StudentFocusModal', () => {
       }),
     });
 
-    await act(async () => {
-      renderModal();
-    });
+    renderModal();
 
     await waitFor(() => {
       // The Multiplication topic button should show a count badge of 2
@@ -120,9 +116,7 @@ describe('StudentFocusModal', () => {
         data: () => ({ allowedSubtopicsByTopic: {} }),
       });
 
-    await act(async () => {
-      renderModal();
-    });
+    renderModal();
 
     // Click the first subtopic
     const subtopicLabel = await screen.findByText('One-digit');
@@ -143,41 +137,29 @@ describe('StudentFocusModal', () => {
       data: () => ({ allowedSubtopicsByTopic: {} }),
     });
 
-    await act(async () => {
-      renderModal();
-    });
+    renderModal();
 
     // Initially none selected
-    expect(
-      screen.getByText(/No subtopics selected/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No subtopics selected/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Select all/i }));
-    await waitFor(() =>
-      expect(screen.getByText(/3 subtopics focused/i)).toBeInTheDocument()
-    );
+    expect(await screen.findByText(/3 subtopics focused/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Clear/i }));
-    await waitFor(() =>
-      expect(screen.getByText(/No subtopics selected/i)).toBeInTheDocument()
-    );
+    expect(await screen.findByText(/No subtopics selected/i)).toBeInTheDocument();
   });
 
   test('shows a warning when student has no class', async () => {
-    await act(async () => {
-      render(
-        React.createElement(StudentFocusModal, {
-          isOpen: true,
-          onClose: jest.fn(),
-          student: { ...student, classId: null },
-          appId: 'test-app',
-        })
-      );
-    });
+    render(
+      React.createElement(StudentFocusModal, {
+        isOpen: true,
+        onClose: jest.fn(),
+        student: { ...student, classId: null },
+        appId: 'test-app',
+      })
+    );
 
-    expect(
-      screen.getByText(/isn't assigned to a class yet/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/isn't assigned to a class yet/i)).toBeInTheDocument();
 
     // Save button is disabled when there's no class
     expect(screen.getByRole('button', { name: /Save Focus/i })).toBeDisabled();
