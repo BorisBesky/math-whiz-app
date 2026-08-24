@@ -218,13 +218,13 @@ const BaseTenExplanation = () => {
       <div style={styles.example}>
         <strong>Subtract 6,032 − 1,875:</strong>
         <pre style={styles.preformatted}>
-{`    5 9 12 12
-    6,0 3 2
-  − 1, 8 7 5
-   ---------
-    4, 1 5 7`}
+{`     5    9   12   12   ← after borrowing
+     6,   0    3    2
+  −  1,   8    7    5
+    ────────────────────
+     4,   1    5    7`}
         </pre>
-        You may need to borrow across a zero — regroup 6,000 as 5,900 + 100 first.
+        You may need to borrow across a zero — regroup 6,000 as 5,900 + 100 first, then keep regrouping so ones and tens each have enough to subtract from.
       </div>
 
       <div style={styles.tip}>

@@ -14,6 +14,7 @@ import {
   getTopicNamesForGrade,
 } from '../../../content/registry';
 import { getStudentDisplayName, getStudentShortId } from '../../../utils/studentName';
+import { buildCsvContent, downloadCsv } from '../../../utils/csvExport';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
 import GoalsModal from '../GoalsModal';
@@ -132,22 +133,15 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       'Class': student.className,
       'Total Questions': student.totalQuestions,
       'Questions Today': student.questionsToday,
-      'Accuracy (%)': student.accuracy.toFixed(1),
+      'Accuracy (%)': (typeof student.accuracy === 'number' && Number.isFinite(student.accuracy))
+        ? student.accuracy.toFixed(1)
+        : '',
       'Coins': student.coins,
       'Latest Activity': student.latestActivity ? new Date(student.latestActivity).toLocaleDateString() : 'Never',
     }));
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + Object.keys(csvData[0]).join(",") + "\n"
-      + csvData.map(row => Object.values(row).join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_data_${getTodayDateString()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csvContent = buildCsvContent(csvData);
+    downloadCsv(csvContent, `student_data_${getTodayDateString()}.csv`);
   };
 
   const handleBulkDelete = async () => {
