@@ -42,7 +42,7 @@
     "test:lighthouse:collect": "lhci collect",
     "eject": "react-scripts eject",
     "dev": "netlify dev",
-    "lint": "eslint src",
+    "lint": "eslint src --max-warnings 0",
     "validate:preview": "node scripts/validate-user-profiles.js --dry-run",
     "validate:execute": "node scripts/validate-user-profiles.js --execute",
     "delete:preview": "node scripts/delete-users-without-math-whiz-data.js --dry-run",
