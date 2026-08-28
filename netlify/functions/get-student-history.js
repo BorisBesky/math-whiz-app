@@ -5,6 +5,7 @@ const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Cache-Control": "no-store, max-age=0",
 };
 
 const normalizeDate = (value) => {

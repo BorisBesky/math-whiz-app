@@ -8,6 +8,7 @@ import {
   getDocs,
   getDoc,
   doc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from '../firebase';
 import { getUserAttemptsCollectionRef, getUserDocRef } from "../utils/firebaseHelpers";
@@ -74,9 +75,48 @@ export const retryWithBackoff = async (fn, options = {}) => {
   throw lastError;
 };
 
-// Cap attempt-history reads: quiz adaptation and the dashboard only need
-// recent attempts, and unbounded reads bloat the persistent Firestore cache.
+// Cap client-cache reads: quiz adaptation and the dashboard's live tail only
+// need recent attempts. The dashboard merges this tail with complete history
+// from the server so all-time totals remain exact without a cache full-scan.
 export const ATTEMPT_HISTORY_LIMIT = 300;
+
+const mapAttemptSnapshot = (attemptsSnapshot) => (
+  attemptsSnapshot.docs
+    .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
+    .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')))
+);
+
+// Keep the student's own dashboard in sync with both acknowledged server data
+// and locally queued Firestore writes. The latter matters when a connection is
+// slow or briefly offline: a server-function read cannot see those writes yet,
+// but Firestore's local listener can.
+export const subscribeToQuestionHistory = (
+  userId,
+  onHistory,
+  onError,
+  maxAttempts = ATTEMPT_HISTORY_LIMIT
+) => {
+  const attemptsRef = getUserAttemptsCollectionRef(userId);
+  if (!attemptsRef || typeof onHistory !== 'function') return () => {};
+
+  const attemptsQuery = query(
+    attemptsRef,
+    orderBy('timestamp', 'desc'),
+    limit(maxAttempts)
+  );
+
+  return onSnapshot(
+    attemptsQuery,
+    { includeMetadataChanges: true },
+    (attemptsSnapshot) => {
+      onHistory(mapAttemptSnapshot(attemptsSnapshot), {
+        fromCache: Boolean(attemptsSnapshot.metadata?.fromCache),
+        hasPendingWrites: Boolean(attemptsSnapshot.metadata?.hasPendingWrites),
+      });
+    },
+    onError
+  );
+};
 
 export const getQuestionHistory = async (
   userId,
@@ -98,9 +138,7 @@ export const getQuestionHistory = async (
       : null;
     const attemptsSnapshot = attemptsQuery ? await getDocs(attemptsQuery) : null;
     if (attemptsSnapshot && !attemptsSnapshot.empty) {
-      return attemptsSnapshot.docs
-        .map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
-        .sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+      return mapAttemptSnapshot(attemptsSnapshot);
     }
   } catch (error) {
     if (!isLikelyOfflineError(error)) {

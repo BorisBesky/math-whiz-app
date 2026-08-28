@@ -32,6 +32,7 @@ const QuizView = ({
   numericInput,
   feedback,
   isAnswered,
+  answerSaveStatus,
   showHint,
   drawingImageBase64,
   isValidatingDrawing,
@@ -45,6 +46,7 @@ const QuizView = ({
   handleAnswer,
   checkAnswer,
   nextQuestion,
+  retryQuestionAttempt,
   handleExplainConcept,
   handleNumericChange,
   handleDrawingChange,
@@ -611,10 +613,20 @@ const QuizView = ({
             <div className="flex items-center justify-center w-full">
               {isAnswered ? (
                 <button
-                  onClick={nextQuestion}
-                  className="w-full bg-brand-blue text-white font-display font-bold py-2 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 text-sm min-h-[40px] shadow-sm"
+                  onClick={answerSaveStatus === 'error' ? retryQuestionAttempt : nextQuestion}
+                  disabled={answerSaveStatus === 'saving'}
+                  className="w-full bg-brand-blue text-white font-display font-bold py-2 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 text-sm min-h-[40px] shadow-sm disabled:bg-gray-400 disabled:cursor-wait disabled:active:scale-100"
                 >
-                  Next Question <ChevronsRight size={18} />
+                  {answerSaveStatus === 'saving' ? (
+                    <>
+                      <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving answer&hellip;
+                    </>
+                  ) : answerSaveStatus === 'error' ? (
+                    'Retry Save'
+                  ) : (
+                    <>Next Question <ChevronsRight size={18} /></>
+                  )}
                 </button>
               ) : (
                 <button
