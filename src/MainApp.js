@@ -223,6 +223,9 @@ const MainAppContent = () => {
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState(null); // Changed to null, will hold an object {message, type}
   const [isAnswered, setIsAnswered] = useState(false);
+  const [answerSaveStatus, setAnswerSaveStatus] = useState('idle');
+  const pendingQuestionAttemptRef = useRef(null);
+  const answerSubmissionInFlightRef = useRef(false);
   const [quizState, setQuizState] = useState(APP_STATES.TOPIC_SELECTION); // App states managed via constants
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -344,6 +347,25 @@ const MainAppContent = () => {
     }
   }, [enrolledClasses, selectedGrade, user]);
 
+  const commitQuestionAttempt = async ({ userDocRef, updates, attemptId, attemptRecord }) => {
+    const batch = writeBatch(db);
+    const attemptsRef = getUserAttemptsCollectionRef(user.uid);
+    if (!attemptsRef) {
+      throw new Error('Could not resolve attempt history collection.');
+    }
+    batch.set(doc(attemptsRef, attemptId), attemptRecord, { merge: true });
+    batch.update(userDocRef, updates);
+    await batch.commit();
+  };
+
+  const showAttemptSaveError = (error) => {
+    console.error('Failed to save question attempt:', error);
+    setFeedback({
+      type: 'error',
+      message: 'Your answer is not saved yet. Check your connection, then tap Retry Save.',
+    });
+  };
+
   const persistQuestionAttempt = async (userDocRef, updates, questionRecord) => {
     const attemptId = questionRecord.id || `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const attemptRecord = {
@@ -362,14 +384,50 @@ const MainAppContent = () => {
       updates[`questionStatsByDate.${date}.correct`] = increment(1);
     }
 
-    const batch = writeBatch(db);
-    const attemptsRef = getUserAttemptsCollectionRef(user.uid);
-    if (!attemptsRef) {
-      throw new Error('Could not resolve attempt history collection.');
+    const pendingAttempt = { userDocRef, updates, attemptId, attemptRecord };
+    pendingQuestionAttemptRef.current = pendingAttempt;
+    setIsAnswered(true);
+    setAnswerSaveStatus('saving');
+
+    try {
+      await commitQuestionAttempt(pendingAttempt);
+      if (pendingQuestionAttemptRef.current === pendingAttempt) {
+        pendingQuestionAttemptRef.current = null;
+        setAnswerSaveStatus('saved');
+      }
+      return true;
+    } catch (error) {
+      if (pendingQuestionAttemptRef.current === pendingAttempt) {
+        setAnswerSaveStatus('error');
+        showAttemptSaveError(error);
+      }
+      return false;
     }
-    batch.set(doc(attemptsRef, attemptId), attemptRecord, { merge: true });
-    batch.update(userDocRef, updates);
-    await batch.commit();
+  };
+
+  const retryQuestionAttempt = async () => {
+    const pendingAttempt = pendingQuestionAttemptRef.current;
+    if (!pendingAttempt || answerSaveStatus === 'saving') return;
+
+    setAnswerSaveStatus('saving');
+    try {
+      await commitQuestionAttempt(pendingAttempt);
+      if (pendingQuestionAttemptRef.current === pendingAttempt) {
+        pendingQuestionAttemptRef.current = null;
+        setAnswerSaveStatus('saved');
+        setFeedback({
+          type: pendingAttempt.attemptRecord.isCorrect ? 'success' : 'error',
+          message: pendingAttempt.attemptRecord.isCorrect
+            ? 'Answer saved! Great work!'
+            : 'Answer saved. Keep practicing!',
+        });
+      }
+    } catch (error) {
+      if (pendingQuestionAttemptRef.current === pendingAttempt) {
+        setAnswerSaveStatus('error');
+        showAttemptSaveError(error);
+      }
+    }
   };
 
   useEffect(() => {
@@ -531,7 +589,21 @@ const MainAppContent = () => {
       setDrawingFeedback,
       setShowHint,
     });
+    pendingQuestionAttemptRef.current = null;
+    answerSubmissionInFlightRef.current = false;
+    setAnswerSaveStatus('idle');
   }, [userData]);
+
+  useEffect(() => {
+    const warnAboutUnsavedAnswer = (event) => {
+      if (answerSaveStatus !== 'saving' && answerSaveStatus !== 'error') return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', warnAboutUnsavedAnswer);
+    return () => window.removeEventListener('beforeunload', warnAboutUnsavedAnswer);
+  }, [answerSaveStatus]);
 
   // Load store images from Firebase Storage on component mount
   // Skip or delay in test environments to speed up tests
@@ -1371,6 +1443,8 @@ const MainAppContent = () => {
   };
 
   const checkAnswer = async () => {
+    if (answerSubmissionInFlightRef.current) return;
+
     const currentQuestion = currentQuiz[currentQuestionIndex];
     
     // Handle AI-evaluated questions (drawing, write-in, drawing-with-text)
@@ -1388,6 +1462,7 @@ const MainAppContent = () => {
       if (needsWriteIn && !writeInAnswer.trim()) return;
       if (!user) return;
       
+      answerSubmissionInFlightRef.current = true;
       setIsValidatingDrawing(true);
       const timeTaken = (Date.now() - questionStartTime.current) / 1000;
       
@@ -1510,17 +1585,18 @@ const MainAppContent = () => {
           });
         }
         
-        await persistQuestionAttempt(userDocRef, updates, sanitizedQuestionRecord);
+        const saved = await persistQuestionAttempt(userDocRef, updates, sanitizedQuestionRecord);
         setIsValidatingDrawing(false);
-        setIsAnswered(true);
+        if (!saved) return;
         
       } catch (error) {
         console.error('Error validating AI answer:', {
           questionType: currentQuestion.questionType,
           error
         });
+        answerSubmissionInFlightRef.current = false;
         setIsValidatingDrawing(false);
-        setIsAnswered(true);
+        setIsAnswered(false);
         setFeedback({
           type: "error",
           message: error.message || "Failed to validate AI answer. Please try again."
@@ -1558,6 +1634,7 @@ const MainAppContent = () => {
         return;
       }
       
+      answerSubmissionInFlightRef.current = true;
       setIsAnswered(true);
       const timeTaken = (Date.now() - questionStartTime.current) / 1000;
       
@@ -1696,6 +1773,7 @@ const MainAppContent = () => {
     // Handle regular questions (multiple-choice and numeric)
     if (userAnswer === null || !user) return;
 
+    answerSubmissionInFlightRef.current = true;
     setIsAnswered(true);
     const timeTaken = (Date.now() - questionStartTime.current) / 1000; // in seconds
     
@@ -1973,6 +2051,8 @@ const MainAppContent = () => {
   };
 
   const nextQuestion = () => {
+    if (answerSaveStatus !== 'saved') return;
+
     if (currentQuestionIndex < currentQuiz.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       resetQuestionState();
@@ -1995,6 +2075,9 @@ const MainAppContent = () => {
   };
 
   const resetQuestionState = () => {
+    pendingQuestionAttemptRef.current = null;
+    answerSubmissionInFlightRef.current = false;
+    setAnswerSaveStatus('idle');
     setUserAnswer(null);
     setNumericInput(''); // Clear numeric input
     setWriteInAnswer(''); // Clear write-in answer
@@ -2564,6 +2647,7 @@ Answer: [The answer]`;
                   numericInput={numericInput}
                   feedback={feedback}
                   isAnswered={isAnswered}
+                  answerSaveStatus={answerSaveStatus}
                   showHint={showHint}
                   drawingImageBase64={drawingImageBase64}
                   isValidatingDrawing={isValidatingDrawing}
@@ -2577,6 +2661,7 @@ Answer: [The answer]`;
                   handleAnswer={handleAnswer}
                   checkAnswer={checkAnswer}
                   nextQuestion={nextQuestion}
+                  retryQuestionAttempt={retryQuestionAttempt}
                   handleExplainConcept={handleExplainConcept}
                   handleNumericChange={handleNumericChange}
                   handleDrawingChange={handleDrawingChange}

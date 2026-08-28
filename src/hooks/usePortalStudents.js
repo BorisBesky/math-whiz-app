@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { getStudentDisplayName } from '../utils/studentName';
@@ -15,6 +15,8 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
   const [stats, setStats] = useState(defaultStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const hasLoadedRef = useRef(false);
+  const refreshInFlightRef = useRef(false);
 
   const classMap = useMemo(() => {
     return classes.reduce((acc, cls) => {
@@ -24,6 +26,10 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
   }, [classes]);
 
   const fetchStudents = useCallback(async () => {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    const isInitialLoad = !hasLoadedRef.current;
+
     try {
       const auth = getAuth();
       const currentUser = auth.currentUser;
@@ -31,12 +37,13 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
         throw new Error('No authenticated user found');
       }
 
-      setLoading(true);
+      if (isInitialLoad) setLoading(true);
       setError(null);
 
       const token = await currentUser.getIdToken();
       const response = await fetch('/.netlify/functions/get-all-students', {
         method: 'POST',
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -120,16 +127,35 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       });
     } catch (err) {
       console.error('[usePortalStudents] Failed to load students', err);
-      setError(err?.message || 'Failed to load students');
-      setStudents([]);
-      setStats(defaultStats);
+      if (isInitialLoad) {
+        setError(err?.message || 'Failed to load students');
+        setStudents([]);
+        setStats(defaultStats);
+      }
     } finally {
-      setLoading(false);
+      hasLoadedRef.current = true;
+      refreshInFlightRef.current = false;
+      if (isInitialLoad) setLoading(false);
     }
   }, [appId, classMap, classes]);
 
   useEffect(() => {
     fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') fetchStudents();
+    };
+    const intervalId = window.setInterval(refreshWhenVisible, 30000);
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, [fetchStudents]);
 
   const classCounts = useMemo(() => {

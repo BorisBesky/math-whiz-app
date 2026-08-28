@@ -1,5 +1,6 @@
 const mockGetDocs = jest.fn();
 const mockGetDoc = jest.fn();
+const mockOnSnapshot = jest.fn();
 const mockQuery = jest.fn((reference, ...constraints) => ({ reference, constraints }));
 const mockWhere = jest.fn((field, operator, value) => ({ field, operator, value }));
 const mockOrderBy = jest.fn((field, direction) => ({ orderBy: field, direction }));
@@ -21,6 +22,7 @@ jest.mock('firebase/firestore', () => ({
   getDocs: (...args) => mockGetDocs(...args),
   getDoc: (...args) => mockGetDoc(...args),
   doc: (...args) => mockDoc(...args),
+  onSnapshot: (...args) => mockOnSnapshot(...args),
 }));
 
 jest.mock('../../firebase', () => ({ db: { name: 'test-db' } }));
@@ -47,6 +49,7 @@ jest.mock('../../content/registry', () => ({
 const {
   fetchQuestionsFromFirestore,
   getQuestionHistory,
+  subscribeToQuestionHistory,
 } = require('../questionService');
 
 const makeSnapshot = (documents) => ({
@@ -70,6 +73,7 @@ describe('questionService quiz-loading performance', () => {
     mockLimit.mockImplementation((count) => ({ limit: count }));
     mockCollection.mockImplementation((...segments) => ({ segments }));
     mockDoc.mockImplementation((...segments) => ({ segments }));
+    mockOnSnapshot.mockReset();
     mockGetUserAttemptsCollectionRef.mockReturnValue({ path: 'attempts' });
     mockGetUserDocRef.mockReturnValue({ path: 'profile' });
     mockGetCachedClassQuestions.mockReturnValue(null);
@@ -110,6 +114,44 @@ describe('questionService quiz-loading performance', () => {
       { orderBy: 'timestamp', direction: 'desc' },
       { limit: 300 }
     );
+  });
+
+  test('subscribes to local and server attempt updates, including pending-write metadata', () => {
+    const unsubscribe = jest.fn();
+    mockOnSnapshot.mockImplementation((attemptsQuery, options, onNext) => {
+      onNext({
+        docs: [
+          makeDocument('attempt-2', { timestamp: '2026-07-02T00:00:00Z' }),
+          makeDocument('attempt-1', { timestamp: '2026-07-01T00:00:00Z' }),
+        ],
+        metadata: { fromCache: true, hasPendingWrites: true },
+      });
+      return unsubscribe;
+    });
+    const onHistory = jest.fn();
+    const onError = jest.fn();
+
+    const stop = subscribeToQuestionHistory('student-1', onHistory, onError);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      { path: 'attempts' },
+      { orderBy: 'timestamp', direction: 'desc' },
+      { limit: 300 }
+    );
+    expect(mockOnSnapshot).toHaveBeenCalledWith(
+      expect.any(Object),
+      { includeMetadataChanges: true },
+      expect.any(Function),
+      onError
+    );
+    expect(onHistory).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({ id: 'attempt-1' }),
+        expect.objectContaining({ id: 'attempt-2' }),
+      ],
+      { fromCache: true, hasPendingWrites: true }
+    );
+    expect(stop).toBe(unsubscribe);
   });
 
   test('uses the already-loaded legacy history without another profile read', async () => {

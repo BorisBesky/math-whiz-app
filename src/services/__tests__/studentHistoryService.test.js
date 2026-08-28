@@ -4,7 +4,7 @@ jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(),
 }));
 
-const { fetchStudentHistory } = require('../studentHistoryService');
+const { fetchStudentHistory, mergeStudentHistory } = require('../studentHistoryService');
 const { getAuth } = require('firebase/auth');
 
 const okResponse = (body) =>
@@ -93,5 +93,23 @@ describe('fetchStudentHistory', () => {
     await fetchStudentHistory({ studentId: 's1' });
     const body = JSON.parse(global.fetch.mock.calls[0][1].body);
     expect(body.appId).toBe('default-app-id');
+  });
+});
+
+describe('mergeStudentHistory', () => {
+  it('keeps complete history while adding or replacing recent live attempts', () => {
+    const merged = mergeStudentHistory(
+      [
+        { id: 'old', timestamp: '2026-01-01T00:00:00Z' },
+        { id: 'recent', timestamp: '2026-01-02T00:00:00Z', source: 'server' },
+      ],
+      [
+        { id: 'recent', timestamp: '2026-01-02T00:00:00Z', source: 'live' },
+        { id: 'pending', timestamp: '2026-01-03T00:00:00Z' },
+      ]
+    );
+
+    expect(merged.map((attempt) => attempt.id)).toEqual(['old', 'recent', 'pending']);
+    expect(merged[1].source).toBe('live');
   });
 });

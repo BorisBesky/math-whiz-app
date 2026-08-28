@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { updateDoc } from "firebase/firestore";
 import { getTodayDateString, getUserDocRef } from "../utils/firebaseHelpers";
 import {
@@ -7,8 +7,14 @@ import {
   rankQuestionsByComplexity,
 } from "../utils/complexityEngine";
 import { USER_ROLES } from "../utils/userRoles";
-import { fetchStudentHistory } from "../services/studentHistoryService";
-import { getQuestionHistory } from "../services/questionService";
+import {
+  fetchStudentHistory,
+  mergeStudentHistory,
+} from "../services/studentHistoryService";
+import {
+  getQuestionHistory,
+  subscribeToQuestionHistory,
+} from "../services/questionService";
 import {
   DEFAULT_DAILY_GOAL,
   GOAL_RANGE_MIN,
@@ -33,8 +39,10 @@ const Dashboard = ({
   isEnrolled,
   returnToTopics,
 }) => {
-  const [attemptHistory, setAttemptHistory] = useState([]);
+  const [completeAttemptHistory, setCompleteAttemptHistory] = useState([]);
+  const [liveAttemptHistory, setLiveAttemptHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySyncPending, setHistorySyncPending] = useState(false);
   const today = getTodayDateString();
   const currentTopics = getTopicsForGrade(selectedGrade);
   const gradeShort =
@@ -45,42 +53,82 @@ const Dashboard = ({
     if (!user?.uid) return undefined;
 
     let cancelled = false;
-    const loadHistory = async () => {
-      setHistoryLoading(true);
+    let completeHistoryLoaded = false;
+    let completeLoadInFlight = false;
+    setCompleteAttemptHistory([]);
+    setLiveAttemptHistory([]);
+    setHistorySyncPending(false);
+    setHistoryLoading(true);
+
+    const loadCompleteHistory = async () => {
+      if (completeHistoryLoaded || completeLoadInFlight) return;
+      completeLoadInFlight = true;
       try {
         const history = await fetchStudentHistory({ studentId: user.uid });
+        completeHistoryLoaded = true;
         if (!cancelled) {
-          setAttemptHistory(history);
+          setCompleteAttemptHistory(history);
         }
       } catch (error) {
-        console.warn("[Dashboard] Failed to load attempt history:", error);
+        console.warn("[Dashboard] Failed to load complete attempt history:", error);
         try {
           const cachedHistory = await getQuestionHistory(user.uid);
           if (!cancelled) {
-            setAttemptHistory(cachedHistory);
+            setCompleteAttemptHistory(cachedHistory);
           }
         } catch (cachedError) {
           console.warn("[Dashboard] Failed to load cached attempt history:", cachedError);
           if (!cancelled) {
-            setAttemptHistory(userData?.answeredQuestions || []);
+            setCompleteAttemptHistory([]);
           }
         }
       } finally {
+        completeLoadInFlight = false;
         if (!cancelled) {
           setHistoryLoading(false);
         }
       }
     };
 
-    loadHistory();
+    loadCompleteHistory();
+
+    const unsubscribe = subscribeToQuestionHistory(
+      user.uid,
+      (history, metadata) => {
+        if (cancelled) return;
+        setLiveAttemptHistory(history);
+        setHistorySyncPending(metadata.hasPendingWrites);
+      },
+      (listenerError) => {
+        console.warn("[Dashboard] Live attempt history unavailable:", listenerError);
+        if (!cancelled) setHistorySyncPending(false);
+      }
+    );
+
+    const retryCompleteHistory = () => {
+      if (document.visibilityState === 'visible') loadCompleteHistory();
+    };
+    const retryIntervalId = window.setInterval(retryCompleteHistory, 30000);
+    window.addEventListener('online', retryCompleteHistory);
+    window.addEventListener('focus', retryCompleteHistory);
+
     return () => {
       cancelled = true;
+      unsubscribe();
+      window.clearInterval(retryIntervalId);
+      window.removeEventListener('online', retryCompleteHistory);
+      window.removeEventListener('focus', retryCompleteHistory);
     };
-  }, [user?.uid, userData?.answeredQuestions]);
+  }, [user?.uid]);
 
-  const answeredQuestions = attemptHistory.length > 0
-    ? attemptHistory
-    : (userData?.answeredQuestions || []);
+  const answeredQuestions = useMemo(
+    () => mergeStudentHistory(
+      userData?.answeredQuestions || [],
+      completeAttemptHistory,
+      liveAttemptHistory
+    ),
+    [completeAttemptHistory, liveAttemptHistory, userData?.answeredQuestions]
+  );
 
   // Determine permissions for editing goals
   const isTeacherOrAdmin =
@@ -188,6 +236,11 @@ const Dashboard = ({
       </h2>
       {historyLoading && (
         <p className="text-center text-sm text-gray-500 mb-4">Loading progress history...</p>
+      )}
+      {!historyLoading && historySyncPending && (
+        <p className="text-center text-sm text-amber-600 mb-4">
+          Saving recent answers&hellip;
+        </p>
       )}
 
       {/* Grade Selector */}

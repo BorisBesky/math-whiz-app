@@ -130,6 +130,7 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Origin": "*", // Or your specific domain
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Cache-Control": "no-store, max-age=0",
   };
 
   if (event.httpMethod === 'OPTIONS') {

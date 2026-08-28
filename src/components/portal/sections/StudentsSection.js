@@ -263,7 +263,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       ...student,
       answeredQuestions: student.answeredQuestions || [],
       historyLoaded: hasExistingHistory,
-      historyRequestKey: hasExistingHistory ? `${student.id}_${student.classId || ''}_${startDate}_${endDate}` : null,
+      // Always revalidate when details open. A history array carried by the
+      // table can be older than answers the student just submitted.
+      historyRequestKey: null,
     });
     setAiFocusResult(null);
     setAiFocusError(null);
@@ -282,7 +284,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
     let cancelled = false;
     const loadHistory = async () => {
-      setHistoryLoading(true);
+      if (!viewingStudent.historyLoaded) setHistoryLoading(true);
       setHistoryError(null);
       try {
         const answeredQuestions = await fetchStudentHistory({
@@ -314,7 +316,60 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     return () => {
       cancelled = true;
     };
-  }, [appId, viewingStudent?.id, viewingStudent?.classId, viewingStudent?.historyRequestKey, startDate, endDate]);
+  }, [appId, viewingStudent?.id, viewingStudent?.classId, viewingStudent?.historyLoaded, viewingStudent?.historyRequestKey, startDate, endDate]);
+
+  // Keep an open history panel fresh without making the teacher close and
+  // reopen it. Background refreshes retain the current list while revalidating.
+  useEffect(() => {
+    if (!viewingStudent?.id) return undefined;
+    const studentId = viewingStudent.id;
+    const invalidateHistory = () => {
+      if (document.visibilityState !== 'visible') return;
+      setViewingStudent((current) => {
+        if (current?.id !== studentId || current.historyRequestKey === null) return current;
+        return { ...current, historyRequestKey: null };
+      });
+    };
+
+    const intervalId = window.setInterval(invalidateHistory, 30000);
+    window.addEventListener('focus', invalidateHistory);
+    document.addEventListener('visibilitychange', invalidateHistory);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', invalidateHistory);
+      document.removeEventListener('visibilitychange', invalidateHistory);
+    };
+  }, [viewingStudent?.id]);
+
+  // The roster refresh carries compact totals/latest activity. Merge those
+  // into an open detail panel and immediately invalidate history when its
+  // summary proves a new answer exists.
+  useEffect(() => {
+    if (!viewingStudent?.id) return;
+    const latestStudent = students.find((student) => student.id === viewingStudent.id);
+    if (!latestStudent) return;
+
+    setViewingStudent((current) => {
+      if (!current || current.id !== latestStudent.id) return current;
+      const historyChanged =
+        current.totalQuestions !== latestStudent.totalQuestions ||
+        current.latestActivity !== latestStudent.latestActivity;
+      const detailsChanged = historyChanged ||
+        current.questionsToday !== latestStudent.questionsToday ||
+        current.accuracy !== latestStudent.accuracy ||
+        current.coins !== latestStudent.coins ||
+        current.className !== latestStudent.className;
+      if (!detailsChanged) return current;
+
+      return {
+        ...current,
+        ...latestStudent,
+        answeredQuestions: current.answeredQuestions,
+        historyLoaded: current.historyLoaded,
+        historyRequestKey: historyChanged ? null : current.historyRequestKey,
+      };
+    });
+  }, [students, viewingStudent?.id]);
 
   const handleDateRangeChange = (setter) => (event) => {
     setter(event.target.value);
