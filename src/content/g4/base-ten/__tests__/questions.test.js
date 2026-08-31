@@ -3,6 +3,7 @@ import {
   generateAdditionWordProblemQuestion,
   generateMultiDigitArithmeticQuestion,
   generatePlaceValueQuestion,
+  generateDecimalExpandedFormQuestion,
 } from '../questions.js';
 
 describe('G4 base-ten: rounding never shows negative multiple-choice options', () => {
@@ -91,6 +92,41 @@ describe('G4 base-ten: place-value question renders large numbers with commas', 
     }
     expect(badlyGrouped).toEqual([]);
     expect(longNumbersSeen).toBeGreaterThan(0);
+  });
+});
+
+describe('G4 base-ten: decimal expanded form — no distractor evaluates to the correct number', () => {
+  // Regression: Mistake 2 swapped two adjacent summands of the expanded form
+  // (e.g. "40 + 7 + 0.6 + 0.02" → "40 + 7 + 0.02 + 0.6"). Addition is
+  // commutative, so both expressions evaluated to the same number — a student
+  // who verified them arithmetically had no way to distinguish the "correct"
+  // answer from the distractor. Every distractor must now sum to a value
+  // different from the correct answer.
+  const evaluateExpandedForm = (expr) =>
+    expr
+      .split('+')
+      .map((piece) => parseFloat(piece.trim()))
+      .reduce((sum, v) => sum + v, 0);
+
+  it('every distractor evaluates to a different number than the correct answer', () => {
+    const difficulties = [0.4, 0.5, 0.7, 0.9, 1.0];
+    let seen = 0;
+    for (const d of difficulties) {
+      for (let i = 0; i < 300; i += 1) {
+        const q = generateDecimalExpandedFormQuestion(d);
+        const correctValue = evaluateExpandedForm(q.correctAnswer);
+        for (const opt of q.options) {
+          if (opt === q.correctAnswer) continue;
+          const optValue = evaluateExpandedForm(opt);
+          // Compare as fixed-precision strings to avoid float artefacts.
+          expect(optValue.toFixed(4)).not.toBe(correctValue.toFixed(4));
+          seen += 1;
+        }
+        expect(q.options).toContain(q.correctAnswer);
+        expect(new Set(q.options).size).toBe(q.options.length);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
   });
 });
 

@@ -76,17 +76,30 @@ const generateVariablesQuestion = (difficulty) => {
 
   if (variant === 1) {
     const a = randomInt(2, 9);
-    const b = randomInt(2, 20);
+    let b = randomInt(2, 20);
+    while (b === a) b = randomInt(2, 20);
+    // Every expression must have at least three non-letter tokens so we can
+    // build 4 unique multiple-choice options ALL drawn from what the student
+    // actually sees. The old code allowed short forms like "x + 5" and then
+    // padded options with tokens (a number `b`, an operator) that never
+    // appeared in the expression — confusing a student who was asked which
+    // "part of the expression" is the variable.
     const expression = pick([
       `${a} × ${letter} + ${b}`,
-      `${letter} + ${a}`,
-      `${a} × ${letter}`,
       `${letter} − ${a} + ${b}`,
+      `${b} + ${a} × ${letter}`,
+      `${letter} × ${a} + ${b}`,
     ]);
+    const tokens = expression.split(/\s+/).filter((t) => t.length > 0 && t !== letter);
+    const distractors = [];
+    for (const t of shuffle(tokens)) {
+      if (distractors.length >= 3) break;
+      if (!distractors.includes(t)) distractors.push(t);
+    }
     return {
       question: `Which part of the expression ${expression} is the variable?`,
       correctAnswer: letter,
-      options: shuffle([letter, String(a), String(a === b ? b + 1 : b), pick(['+', '×', '−'])]),
+      options: shuffle([letter, ...distractors]),
       questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: 'The variable is the letter that stands for an unknown number.',
       ...baseFields('variables', '4.OA.A.3'),
