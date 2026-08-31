@@ -82,6 +82,27 @@ describe('Base Ten 5th correctness', () => {
     }
   });
 
+  test('comparing decimals: equal-value questions render two visually distinct numbers', () => {
+    // Regression: the near-miss branch used `randomInt(10, 98)` and the
+    // "same value" branch's trailing-zero display was a 50/50 flip, so
+    // roughly 1 in 10 comparisons showed "0.4 __ 0.4" or "0.5 __ 0.5" with
+    // correct answer "=" — unanswerable by inspection. Guarantee that when
+    // the correct answer is "=" the two displayed forms differ in text.
+    let equalsSeen = 0;
+    for (let i = 0; i < 500; i += 1) {
+      const questions = draw('comparing decimals', 5);
+      for (const q of questions) {
+        const m = q.question.match(/^Which symbol makes this true\? ([\d.]+) __ ([\d.]+)$/);
+        expect(m).not.toBeNull();
+        if (q.correctAnswer === '=') {
+          equalsSeen += 1;
+          expect(m[1]).not.toBe(m[2]);
+        }
+      }
+    }
+    expect(equalsSeen).toBeGreaterThan(0);
+  });
+
   test('rounding decimals: answer is round-half-up to the target place', () => {
     const divisors = { 'whole number': 1000, tenth: 100, hundredth: 10 };
     for (const q of draw('rounding decimals')) {

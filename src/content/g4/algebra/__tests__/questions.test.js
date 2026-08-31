@@ -136,6 +136,30 @@ describe('Algebra correctness', () => {
     }
   });
 
+  test('variables: "which part is the variable?" only offers tokens that appear in the expression', () => {
+    // Regression: the old distractors included a second number `b` and an
+    // operator picked at random from `+ × −`, even when neither appeared in
+    // the shown expression. A "part of the expression" question that offers
+    // parts NOT in the expression is confusing at best.
+    let asked = 0;
+    for (const q of draw('variables', 200)) {
+      const match = q.question.match(/^Which part of the expression (.+) is the variable\?$/);
+      if (!match) continue;
+      asked += 1;
+      const expression = match[1];
+      const expressionTokens = new Set(
+        expression.split(/\s+/).filter((t) => t.length > 0)
+      );
+      expect(expressionTokens.has(q.correctAnswer)).toBe(true);
+      for (const opt of q.options) {
+        expect(expressionTokens.has(opt)).toBe(true);
+      }
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options.length).toBe(4);
+    }
+    expect(asked).toBeGreaterThan(0);
+  });
+
   test('every subtopic can be exclusively restricted', () => {
     for (const subtopic of [
       'variables',

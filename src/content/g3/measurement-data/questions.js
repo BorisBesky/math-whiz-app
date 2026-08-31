@@ -131,7 +131,7 @@ export function generateVolumeQuestion() {
   ];
 
   return {
-    question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} cubes high. How many cubes were used to build it?`,
+    question: `A box is built with unit cubes. It is ${vol_l} cubes long, ${vol_w} cubes wide, and ${vol_h} ${vol_h === 1 ? 'cube' : 'cubes'} high. How many cubes were used to build it?`,
     correctAnswer: correctAnswer,
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,

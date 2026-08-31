@@ -40,6 +40,21 @@ describe('G3 measurement-data: volume distractors never collide with the correct
       expect(q.options.length).toBe(4);
     }
   });
+
+  it('uses singular "cube" when a dimension equals 1', () => {
+    // vol_h is drawn from [1, 3]; when it lands on 1 the sentence used to read
+    // "1 cubes high", which is jarring for a 3rd grader learning units. The
+    // fix should render "1 cube high" instead. Run many iterations to
+    // guarantee the h=1 branch is exercised.
+    let sawHeightOne = false;
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateVolumeQuestion();
+      const bad = q.question.match(/\b1 cubes (long|wide|high)/);
+      expect(bad).toBeNull();
+      if (/\b1 cube (long|wide|high)/.test(q.question)) sawHeightOne = true;
+    }
+    expect(sawHeightOne).toBe(true);
+  });
 });
 
 describe('G3 measurement-data: perimeter question sanity', () => {

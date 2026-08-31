@@ -952,15 +952,53 @@ export function generateDecimalExpandedFormQuestion(difficulty = 0.5) {
   }
   distractors.push(wrongParts1.join(' + '));
 
-  // Mistake 2: swap two decimal values
-  const wrongParts2 = [...parts];
-  if (parts.length >= 2) {
-    const swapIdx = wrongParts2.length - 2;
-    [wrongParts2[swapIdx], wrongParts2[swapIdx + 1]] = [wrongParts2[swapIdx + 1], wrongParts2[swapIdx]];
-    distractors.push(wrongParts2.join(' + '));
-  } else {
-    distractors.push(parts.join(' + ') + ' + 0');
+  // Mistake 2: swap the DIGITS between two decimal positions (a real student
+  // error — putting the right digits in the wrong places). Swapping the parts
+  // themselves would be a no-op (addition is commutative), so we swap what
+  // digit sits in which place, keeping the place values fixed. Because
+  // generateDecimalNumber guarantees all digits are distinct, this always
+  // yields a different sum than the correct answer.
+  const nonZeroDecIdxs = [];
+  for (let i = 0; i < decimalDigits.length; i++) {
+    if (decimalDigits[i] !== 0) nonZeroDecIdxs.push(i);
   }
+  let mistake2 = null;
+  if (nonZeroDecIdxs.length >= 2) {
+    const iA = nonZeroDecIdxs[nonZeroDecIdxs.length - 2];
+    const iB = nonZeroDecIdxs[nonZeroDecIdxs.length - 1];
+    const swappedDecimals = [...decimalDigits];
+    [swappedDecimals[iA], swappedDecimals[iB]] = [swappedDecimals[iB], swappedDecimals[iA]];
+    const swappedParts = [];
+    for (let i = 0; i < wholeStr.length; i++) {
+      const d = parseInt(wholeStr[i]);
+      if (d !== 0) {
+        const placeVal = Math.pow(10, wholeStr.length - 1 - i);
+        swappedParts.push((d * placeVal).toString());
+      }
+    }
+    for (let i = 0; i < swappedDecimals.length; i++) {
+      if (swappedDecimals[i] !== 0) {
+        swappedParts.push(parseFloat((swappedDecimals[i] * decimalMultipliers[i]).toFixed(3)).toString());
+      }
+    }
+    mistake2 = swappedParts.join(' + ');
+  } else if (parts.length >= 2) {
+    // Only one non-zero decimal place. Shift the last WHOLE part by ×10 to
+    // produce a genuinely different sum (Mistake 1 already shifted the last
+    // decimal, so this stays distinct).
+    const wrongParts2 = [...parts];
+    const wholePartsCount = wrongParts2.filter((p) => parseFloat(p) >= 1).length;
+    if (wholePartsCount >= 1) {
+      const idx = wholePartsCount - 1;
+      const val = parseFloat(wrongParts2[idx]);
+      wrongParts2[idx] = (val * 10).toString();
+      mistake2 = wrongParts2.join(' + ');
+    }
+  }
+  if (!mistake2) {
+    mistake2 = parts.join(' + ') + ' + 0.001';
+  }
+  distractors.push(mistake2);
 
   // Mistake 3: omit a part
   if (parts.length > 2) {

@@ -350,17 +350,27 @@ const generateComparingDecimalsQuestion = (difficulty) => {
     aThousandths = randomInt(1, 9) * 100;
     bThousandths = aThousandths;
   } else {
-    // Tricky near-misses like 0.45 vs 0.405
-    const base = randomInt(10, 98);
+    // Tricky near-misses like 0.45 vs 0.405. Exclude base % 10 === 0: those
+    // reduce to identical values (e.g. base=40 → 0.4 vs 0.4) and the
+    // "different-looking numbers" premise of this branch collapses.
+    let base;
+    do {
+      base = randomInt(10, 98);
+    } while (base % 10 === 0);
     aThousandths = base * 10;
     bThousandths = Math.floor(base / 10) * 100 + (base % 10);
   }
 
   const correct = aThousandths > bThousandths ? '>' : aThousandths < bThousandths ? '<' : '=';
   const a = fromThousandths(aThousandths);
+  // When the two values coincide we ALWAYS append a trailing zero to `b` so
+  // the student sees two visually distinct forms (0.5 vs 0.50) and the "="
+  // answer teaches the intended concept — trailing zeros don't change value.
+  // The previous 50/50 coin flip left half of the "same value" draws rendered
+  // as identical text (e.g. "0.5 __ 0.5"), which is unanswerable by inspection.
   const b =
-    aThousandths === bThousandths && randomInt(0, 1) === 0
-      ? `${fromThousandths(bThousandths)}0` // show the trailing-zero twin (e.g. 0.50)
+    aThousandths === bThousandths
+      ? `${fromThousandths(bThousandths)}0`
       : fromThousandths(bThousandths);
 
   return {
