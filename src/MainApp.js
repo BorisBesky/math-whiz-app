@@ -89,7 +89,7 @@ import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreS
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-little-planet-v36" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-planet-details-v39" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -201,6 +201,8 @@ const MainAppContent = () => {
   const { user: authUser, logout: authLogout, userRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isPlanetStore = /(?:^|\/)store\/?$/.test(location.pathname)
+    && new URLSearchParams(location.search).get('tab') === 'planet';
 
   // Determine base app path once per mount; remains constant ("/app" or "").
   const appBasePathRef = useRef(location.pathname.startsWith('/app') ? '/app' : '');
@@ -2574,7 +2576,7 @@ Answer: [The answer]`;
           mainAppTutorial={mainAppTutorial}
         />
         <div className="flex justify-center p-4 pb-20">
-          <div className="w-full max-w-6xl">
+          <div className={`w-full ${isPlanetStore ? '' : 'max-w-6xl'}`}>
             <React.Suspense fallback={<div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" /></div>}>
             <Routes>
               <Route path="dashboard" element={

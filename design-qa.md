@@ -1,89 +1,74 @@
 # Little Planet store QA
 
-final result: passed
+Final result: passed — September 5, 2026.
 
-## Scope and visual reference
+## Design and layout
 
-This is an adaptation of the Little Planet globe into the existing Math Whiz
-rewards store: free starter scenery, purchasable additions, and persistent
-collections. The reference's walking character, discovery quests, audio, and
-field journal are outside this store-building feature. The scenery is original
-procedural Three.js geometry; no remote game code or runtime is embedded.
+Little Planet now uses Math Whiz's existing Baloo headings, Nunito body text,
+blue and purple controls, white cards, rounded corners, and pastel backgrounds.
+The dark stage and serif typography were replaced to match the rest of the app.
 
-- Reference: https://signals.forwardfuture.com/astra-review/demos/little-planet/index.html
-- Source capture: `test-results/little-planet/reference.png` (700 × 777).
-- Implementation: http://localhost:8888/store?tab=planet&v=little-planet-v36
-- Desktop capture: `test-results/little-planet/desktop-complete.png` (1280 × 1000).
-- Phone captures: `test-results/little-planet/mobile-complete.png` and
-  `test-results/little-planet/mobile-focused.png` (390 × 844).
-- Captures were displayed together for comparison. The reference is a full-screen
-  game and the implementation is a store panel, so comparison concerns the globe,
-  scenery, palette, and interaction clarity rather than pixel-identical chrome.
-  Source and implementation globe orientations differ. Captures use CSS-sized
-  screenshots; no density scaling was needed. Screenshot files are local QA
-  evidence in the ignored test-results directory.
+The globe occupies a full row above the scenery shop. Both page width caps are
+removed for the planet tab, retaining normal page gutters. At a 1440px viewport,
+the store is 1408px wide and the globe panel is 1358px wide. Switching to Characters
+restores its 1152px store width. The catalog flows into six, three, and two columns
+at the checked desktop, tablet, and phone widths. No inner catalog scrollbar.
 
-## Findings and iterations
+## Scenery
 
-1. Initial complete world was too sparse. Each purchase now includes surrounding
-   foliage, rocks, or paths. The final desktop comparison shows connected scenery
-   and clear differences between a starter and completed planet. Static scenery
-   is batched by material so the extra detail does not require a draw call per leaf.
-2. Item names and purchase details were too small. Catalog labels are now 13px,
-   details 12px, and the primary purchase control has a 44px minimum height.
-3. On phones, choosing an item could leave its preview above the viewport.
-   Selection now scrolls to the globe below the fixed app header, and a visible
-   details shortcut returns to the item's purchase controls. Verified at 390px.
-4. Focused previews needed an oblique camera angle and stronger header contrast.
-   The camera now moves toward the selected landmark, with orbit limits outside
-   the globe. Header labels have a dark backing. The waterfall stream was moved
-   in front of its rock face. The final focused phone capture verifies these fixes.
+All 18 rewards have more detail: tiered trees and ferns; flower petals and
+butterflies; tent seams, ropes, lanterns and embers; pond ripples and reeds;
+cottage roof tiles, shutters and planters; apple crates; windmill sail frames
+and hay; alpine ledges; faceted crystals; lighthouse railings and dock posts;
+palm leaflets and coconuts; fluted ruins and mosaic paving; spotted mushrooms
+and gills; layered waterfall cliffs, foam and a bridge; sailboat rigging and
+deck boards; observatory dome ribs and windows; village furniture; and balloon
+panels, suspension ropes and a woven basket. The starter campsite, coast, ocean
+waves, and clouds are also refined.
 
-No remaining actionable P0/P1/P2 issues in the new store section.
-
-## Required visual surfaces
-
-- Typography: serif globe headings and understated labels reflect the reference;
-  the surrounding store retains the existing app typography. Names and prices
-  wrap without truncating purchase information.
-- Layout: desktop globe/shop split; phone layout stacks them. The 390px and
-  1280px document widths equal their viewport widths, with no horizontal overflow.
-  Long catalogs scroll inside the shop; filters and item details remain available.
-- Colors: dark blue-green stage, muted green land, pale snow, sandy desert, and
-  warm accents follow the reference. Ownership, preview, disabled, and saving
-  states are explained with text as well as color.
-- Scenery: native 3D, faceted terrain and radial models remain sharp while
-  rotating or zooming. The complete preview includes all 18 catalog items.
-  The focused waterfall capture and desktop globe comparison provide closer
-  evidence beyond the overall layout check.
-- Copy: free starter, temporary previews, prices, insufficient coins, collection
-  ownership, and hide/show behavior are explicit. No preview implies a purchase.
+The catalog renders 18 thumbnails directly from the actual Three.js models.
+It reuses the viewer's renderer and caches the images; category icons remain
+available if image capture fails. Static geometry is batched by material.
+Focused camera framing brings rewards closer, with a camera floor above the
+planet's surface. Orbit, zoom, reset, rotation, and reduced-motion support remain.
 
 ## Verification
 
-- Production build passed. Store chunk:
-  `rewards-store-little-planet-v36.c1a63ed8.chunk.js`.
-- ESLint passed for new components, scene, catalog, service, and store integration.
-- 35 tests passed across six store/service suites, including the 14 new tests.
-  After the final UI changes, the 14 new tests were rerun successfully.
-- Tests cover exact/insufficient balances, duplicate purchases, missing profiles,
-  invalid items, errors/retry, free previews, ownership/visibility compatibility,
-  hide/show without repurchase, pending-button protection, and filters.
-- Browser checks: real rebuilt store tab/deep link; starter globe; full world;
-  category and collection filters; focused preview; insufficient funds; mobile
-  preview/details navigation; keyboard orbit; zoom; reset; and rotation/pause.
-- Canvas reported ready and all 18 item IDs in complete-world mode.
-- No new planet rendering errors were observed. The static preview server cannot
-  serve the existing Netlify store-background API, so the app logs an unrelated
-  background-image JSON fetch error. An earlier Three.js shadow deprecation
-  warning in the planet viewer was fixed by using PCFShadowMap.
-- Purchase/visibility writes were tested with mocked Firestore transactions;
-  no live student's coins were spent. No new Firestore paths/rules are needed:
-  the two new compact arrays use the existing profile document and permissions.
-- Production was not deployed.
+- `npm run build` passed. Final chunk:
+  `rewards-store-planet-details-v39.a476ed80.chunk.js`.
+- ESLint passed for all changed JavaScript files.
+- 35 tests passed across the six reward/store service suites, covering free
+  previews, purchases, balances, duplicate protection, errors, ownership,
+  hide/show, pending states, and filters.
+- Browser QA used the rebuilt production files at port 8888. Initial iterations
+  used `localhost:8888`; another Netlify server subsequently bound the IPv6 port,
+  so final QA used `http://127.0.0.1:8888/store?tab=planet&v=planet-details-v39`.
+  The final v39 stylesheet was verified in the rendered document.
+- Checked 1440 × 1000, 700 × 777, and 390 × 844. Document width equals viewport
+  width at each size. At 700px the globe panel is 618px wide; at 390px it is 324px.
+- All 18 individual previews were clicked on mobile and allowed to settle.
+  Each displayed the correct title and visible item ID, with a ready canvas
+  and no horizontal overflow. Full preview reported all 18 IDs.
+- Visually reviewed the complete globe front and rear, all 18 catalog images,
+  and mobile waterfall and balloon close-ups. Verified category and empty
+  collection filters, keyboard orbit, zoom, reset, and rotation/pause.
+- Switching tabs removes the planet canvas; returning creates one canvas and
+  restores all 18 cached thumbnails. The default viewport was restored.
+- No planet rendering errors observed. The static server cannot serve the
+  existing background-image Netlify API; its JSON fetch error is unrelated.
+  The existing character viewer also reports a Three.js shadow deprecation.
+- No live purchases were made. Purchase persistence and prices are unchanged.
+  These changes have not been committed, pushed, or deployed.
 
-## Follow-up polish
+## Local screenshots
 
-The globe is intentionally simpler than the reference's full exploration game.
-Additional scenery models and richer ambient animation can extend the catalog
-without changing the ownership or transaction format.
+Evidence is saved under the ignored `test-results/little-planet/` directory:
+`refined-complete-desktop.png`, `refined-complete-rear.png`,
+`refined-catalog-desktop.png`, `refined-complete-mobile.png`,
+`refined-waterfall-mobile.png`, `refined-balloon-mobile.png`, and
+`refined-complete-tablet.png`.
+
+The original reference remains
+https://signals.forwardfuture.com/astra-review/demos/little-planet/index.html.
+The world uses original procedural scenery; the reference game's walking,
+quests, audio, and journal remain outside this reward-store feature.

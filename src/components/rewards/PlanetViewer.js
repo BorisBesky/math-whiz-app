@@ -4,8 +4,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Minus, Plus, RotateCcw, Pause, Play } from 'lucide-react';
 import { buildPlanetWorld, planetNormal } from './planetScene';
 import { getPlanetItem } from './planetConfig';
+import { renderPlanetThumbnails } from './planetThumbnails';
 
-export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }) {
+export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, onThumbnailsReady }) {
   const containerRef = useRef(null);
   const apiRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -29,14 +30,14 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.1;
     const canvas = renderer.domElement;
     canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', 'Your 3D little planet. Drag to rotate. Use arrow keys to look around and plus or minus to zoom.');
     host.appendChild(canvas);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 80);
-    const home = new THREE.Vector3(0, 2.8, 13.5);
+    const home = new THREE.Vector3(0, 2.8, 15);
     camera.position.copy(home);
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
@@ -46,8 +47,8 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
     controls.maxDistance = 21;
     controls.rotateSpeed = 0.65;
     controls.autoRotateSpeed = 0.5;
-    scene.add(new THREE.HemisphereLight('#ecf1df', '#738d92', 2.6));
-    const sun = new THREE.DirectionalLight('#fff0cf', 3);
+    scene.add(new THREE.HemisphereLight('#f8fbff', '#7183a1', 2.2));
+    const sun = new THREE.DirectionalLight('#ffffff', 3);
     sun.position.set(-5, 10, 9);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -56,6 +57,10 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
     scene.add(sun);
     const planet = buildPlanetWorld();
     scene.add(planet.world);
+    if (onThumbnailsReady) {
+      try { onThumbnailsReady(renderPlanetThumbnails(renderer, planet.previewGroups)); }
+      catch (_) { /* The shop keeps its category icons if image capture is unavailable. */ }
+    }
     let targetPosition = null;
     let targetLookAt = null;
     let lost = false;
@@ -80,10 +85,10 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
         if (item) {
           const normal = planetNormal(item.position);
           const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal));
-          targetPosition = normal.clone().multiplyScalar(11).addScaledVector(forward, 4);
-          targetLookAt = normal.clone().multiplyScalar(3);
-          // Keep every orbit outside the globe, even with an off-center target.
-          controls.minDistance = 8.7;
+          const elevation = item.kind === 'balloon' ? 1.4 : 0.4;
+          targetLookAt = normal.clone().multiplyScalar(planet.radius + elevation);
+          targetPosition = targetLookAt.clone().addScaledVector(normal, 3.1).addScaledVector(forward, 3.2);
+          controls.minDistance = 3.2;
         } else {
           targetPosition = home.clone();
           targetLookAt = new THREE.Vector3();
@@ -145,6 +150,12 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
         if (camera.position.distanceTo(targetPosition) < 0.015 && controls.target.distanceTo(targetLookAt) < 0.015) targetPosition = targetLookAt = null;
       }
       controls.update(dt);
+      // Focused previews can zoom closer to a landmark. Keep the camera above
+      // the ground when students orbit around that off-center target.
+      if (camera.position.length() < planet.radius + 0.65) {
+        camera.position.setLength(planet.radius + 0.65);
+        camera.lookAt(controls.target);
+      }
       planet.update(time);
       renderer.render(scene, camera);
       if (!ready) { canvas.dataset.ready = 'true'; ready = true; }
@@ -164,7 +175,7 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0 }
       renderer.dispose();
       canvas.remove();
     };
-  }, [attempt]);
+  }, [attempt, onThumbnailsReady]);
 
   useEffect(() => { apiRef.current?.setVisible(visibleKey ? visibleKey.split(',') : []); }, [visibleKey, attempt]);
   useEffect(() => { apiRef.current?.focus(focusItemId); }, [focusItemId, resetKey, attempt]);

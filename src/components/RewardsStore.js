@@ -172,10 +172,10 @@ const RewardsStore = ({
   return (
     <div
       ref={storeContainerRef}
-      className="relative mx-auto mt-16 w-full max-w-6xl animate-fade-in rounded-card border border-white/60 bg-white/85 p-4 shadow-card backdrop-blur-md sm:p-6"
+      className={`relative mx-auto mt-16 w-full ${storeMode === 'planet' ? '' : 'max-w-6xl'} animate-fade-in rounded-card border border-white/60 bg-white/85 p-4 shadow-card backdrop-blur-md sm:p-6`}
       data-tutorial-id="store-container"
     >
-      <div className="mb-5 flex flex-col gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+      <div className="mb-5 flex flex-col gap-4 text-center lg:flex-row lg:items-end lg:justify-between lg:text-left">
         <div>
           <h2
             className="font-display text-3xl font-bold text-gray-800"
@@ -220,7 +220,7 @@ const RewardsStore = ({
             type="button"
             onClick={() => setStoreMode("planet")}
             aria-pressed={storeMode === "planet"}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition active:scale-95 ${storeMode === "planet" ? "bg-white text-emerald-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition active:scale-95 ${storeMode === "planet" ? "bg-white text-brand-blue shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
             <Globe2 size={16} /> Little Planet
           </button>
