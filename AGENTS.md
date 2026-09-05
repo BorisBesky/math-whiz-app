@@ -51,6 +51,8 @@
 - Cora intentionally has no tail; previous tail shapes looked detached or odd from side/rear angles.
 - Bow ties should use rounded flattened lobes plus a center knot, not diamond/rhombus cone shapes.
 - For character-fit work, validate front and rear/side views where relevant, especially Back Gear, Neckwear, Jewelry, and Props.
+- Little Planet is the store's `?tab=planet` section. Its catalog/prices live in `src/components/rewards/planetConfig.js`; its procedural Three.js scenery lives in `planetScene.js` and `PlanetViewer.js`.
+- Planet ownership is saved as `ownedPlanetItems` and visibility as `activePlanetItems` on the existing student profile. Missing fields give a free starter world; an empty active list means all purchased scenery is tucked away. Keep purchases and visibility changes transactional through `src/services/planetStoreService.js`; previews must never write to the profile or spend coins.
 
 ## Question bank / history notes
 - Class question copies under `artifacts/{appId}/classes/{classId}/questions` must include enough metadata for student-side filtering: `subtopic`, `operation`, and `tags` should be copied from the source question when assigning to a class. Students can read class question copies, but should not rely on reading private teacher question-bank source documents at quiz time.

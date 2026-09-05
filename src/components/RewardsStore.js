@@ -1,7 +1,9 @@
-import React, { useState } from "react";
-import { CheckCircle, Coins, Image, Store, X } from "lucide-react";
+import React from "react";
+import { useSearchParams } from "react-router-dom";
+import { CheckCircle, Coins, Globe2, Image, Store, X } from "lucide-react";
 import { STORE_BACKGROUND_COST } from "../constants/appConstants";
 import CharacterStore from "./rewards/CharacterStore";
+import PlanetStore from "./rewards/PlanetStore";
 
 const BackgroundStore = ({
   storeItems,
@@ -155,8 +157,17 @@ const RewardsStore = ({
   handleUnequipAccessory,
   handleSetCharacterColor,
   handleSetCharacterLook,
+  handlePurchasePlanetItem,
+  handleSetPlanetItemActive,
 }) => {
-  const [storeMode, setStoreMode] = useState("characters");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const storeMode = ['characters', 'backgrounds', 'planet'].includes(requestedTab) ? requestedTab : 'characters';
+  const setStoreMode = (tab) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    next.set('tab', tab);
+    return next;
+  }, { replace: true });
 
   return (
     <div
@@ -176,14 +187,15 @@ const RewardsStore = ({
             className="text-sm text-gray-500"
             data-tutorial-id="store-description"
           >
-            Spend coins on characters, accessories, and backgrounds.
+            Spend coins on characters, accessories, backgrounds, and your own little planet.
           </p>
         </div>
 
-        <div className="inline-flex justify-center rounded-lg bg-gray-100 p-1">
+        <div className="inline-flex shrink-0 flex-wrap justify-center rounded-lg bg-gray-100 p-1" aria-label="Store sections">
           <button
             type="button"
             onClick={() => setStoreMode("characters")}
+            aria-pressed={storeMode === "characters"}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition active:scale-95 ${
               storeMode === "characters"
                 ? "bg-white text-brand-blue shadow-sm"
@@ -195,6 +207,7 @@ const RewardsStore = ({
           <button
             type="button"
             onClick={() => setStoreMode("backgrounds")}
+            aria-pressed={storeMode === "backgrounds"}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition active:scale-95 ${
               storeMode === "backgrounds"
                 ? "bg-white text-brand-purple shadow-sm"
@@ -202,6 +215,14 @@ const RewardsStore = ({
             }`}
           >
             <Image size={16} /> Backgrounds
+          </button>
+          <button
+            type="button"
+            onClick={() => setStoreMode("planet")}
+            aria-pressed={storeMode === "planet"}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition active:scale-95 ${storeMode === "planet" ? "bg-white text-emerald-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <Globe2 size={16} /> Little Planet
           </button>
         </div>
       </div>
@@ -217,6 +238,12 @@ const RewardsStore = ({
           handleUnequipAccessory={handleUnequipAccessory}
           handleSetCharacterColor={handleSetCharacterColor}
           handleSetCharacterLook={handleSetCharacterLook}
+        />
+      ) : storeMode === "planet" ? (
+        <PlanetStore
+          userData={userData}
+          handlePurchasePlanetItem={handlePurchasePlanetItem}
+          handleSetPlanetItemActive={handleSetPlanetItemActive}
         />
       ) : (
         <BackgroundStore

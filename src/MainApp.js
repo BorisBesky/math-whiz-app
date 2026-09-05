@@ -83,12 +83,13 @@ import {
   normalizeAllowedSubtopicsByTopic,
 } from "./utils/subtopicUtils";
 import { getPortalMessagesPath } from "./utils/userRoles";
+import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreService';
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-willow-tint-v35" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-little-planet-v36" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -2148,6 +2149,16 @@ const MainAppContent = () => {
   };
 
   // --- Store Logic ---
+  const handlePurchasePlanetItem = async (itemId) => {
+    if (!user) throw new Error('Your profile is still loading. Please try again.');
+    return purchasePlanetItem(db, getUserDocRef(user.uid), itemId);
+  };
+
+  const handleSetPlanetItemActive = async (itemId, enabled) => {
+    if (!user) throw new Error('Your profile is still loading. Please try again.');
+    return setPlanetItemActive(db, getUserDocRef(user.uid), itemId, enabled);
+  };
+
   const handlePurchase = async (item) => {
     if (userData.coins >= STORE_BACKGROUND_COST) {
       const userDocRef = getUserDocRef(user.uid);
@@ -2610,6 +2621,8 @@ Answer: [The answer]`;
                   handleUnequipAccessory={handleUnequipAccessory}
                   handleSetCharacterColor={handleSetCharacterColor}
                   handleSetCharacterLook={handleSetCharacterLook}
+                  handlePurchasePlanetItem={handlePurchasePlanetItem}
+                  handleSetPlanetItemActive={handleSetPlanetItemActive}
                 />
               } />
               <Route path="messages" element={
