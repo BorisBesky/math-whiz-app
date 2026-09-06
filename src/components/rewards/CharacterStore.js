@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle, Coins, Heart, Undo2 } from "lucide-react";
+import { ArrowUp, CheckCircle, Coins, Hand, Heart, Play, Sparkles, Undo2 } from "lucide-react";
 import CharacterViewer from "./CharacterViewer";
 import { CharacterPortrait, ItemPreview } from "./RewardPreview";
 import {
@@ -10,6 +10,7 @@ import {
   REWARD_ACCESSORIES,
   REWARD_CHARACTERS,
   getCharacterById,
+  getCharacterSkills,
   getColorRegions,
   getConflictingCategories,
 } from "./rewardConfig";
@@ -23,6 +24,7 @@ const CharacterStore = ({
   handleSelectCharacter,
   handlePurchaseCharacter,
   handlePurchaseAccessory,
+  handlePurchaseCharacterSkill,
   handleEquipAccessory,
   handleUnequipAccessory,
   handleSetCharacterColor,
@@ -33,6 +35,7 @@ const CharacterStore = ({
   const selectedCharacter = getCharacterById(selectedCharacterId);
   const ownedCharacterIds = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
   const ownedAccessoryIds = userData?.ownedAccessories || [];
+  const ownedCharacterSkillIds = userData?.ownedCharacterSkills || [];
   const equippedForCharacter =
     userData?.equippedAccessories?.[selectedCharacterId] || {};
   const [activeCategory, setActiveCategory] = useState(ACCESSORY_CATEGORIES[0].id);
@@ -41,6 +44,16 @@ const CharacterStore = ({
   const colorRegions = getColorRegions(selectedCharacterId);
   const hasFaceColors = colorRegions.some((region) => region.group === "face");
   const [stylePanel, setStylePanel] = useState(hasFaceColors ? "face" : "body");
+  const [animationRequest, setAnimationRequest] = useState(null);
+  const characterSkills = getCharacterSkills(selectedCharacterId);
+  const isSelectedCharacterOwned = ownedCharacterIds.includes(selectedCharacterId);
+
+  const playAnimation = (name) => {
+    setAnimationRequest((current) => ({
+      name,
+      nonce: (current?.nonce || 0) + 1,
+    }));
+  };
 
   const savedColors = userData?.characterColors?.[selectedCharacterId] || {};
   // Region list with the currently applied color (saved override or default).
@@ -129,6 +142,7 @@ const CharacterStore = ({
 
   useEffect(() => {
     setPreviewItem(null);
+    setAnimationRequest(null);
   }, [activeCategory, selectedCharacterId]);
 
   useEffect(() => {
@@ -205,6 +219,8 @@ const CharacterStore = ({
             equippedItems={previewEquippedItems}
             colors={characterColorMap}
             focus={hasFaceColors && stylePanel === "face" ? "face" : "full"}
+            animationRequest={animationRequest}
+            hoverAnimation={selectedCharacterId === "koko-monkey" ? "Wave" : null}
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent px-4 pb-3 pt-10">
             <h3 className="font-display text-2xl font-bold leading-tight text-white drop-shadow">
@@ -299,6 +315,79 @@ const CharacterStore = ({
                   style={{ backgroundColor: color }}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {characterSkills.length > 0 && (
+          <div className="mt-3 rounded-lg border border-violet-100 bg-violet-50/70 p-3" data-testid="character-skills">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-violet-500">Koko's moves</p>
+                <p className="mt-0.5 text-sm text-gray-600">Hover over Koko for a hello, or choose a move.</p>
+              </div>
+              <Sparkles className="mt-0.5 shrink-0 text-violet-500" size={19} aria-hidden="true" />
+            </div>
+
+            {purchaseFeedback && (
+              <div
+                className={`mb-3 rounded-lg border p-2 text-center text-xs font-bold animate-slide-up ${
+                  purchaseFeedback.type === "success"
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {purchaseFeedback.message}
+              </div>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-3">
+              {characterSkills.map((skill) => {
+                const isUnlocked = skill.included || ownedCharacterSkillIds.includes(skill.id);
+                const canPerform = isSelectedCharacterOwned && isUnlocked;
+                const SkillIcon = skill.animation === "Wave" ? Hand : skill.animation === "Jump" ? ArrowUp : Sparkles;
+                return (
+                  <article
+                    key={skill.id}
+                    aria-label={`${skill.name} skill`}
+                    className="flex min-h-[154px] flex-col rounded-lg border border-white bg-white p-3 shadow-sm"
+                  >
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ backgroundColor: skill.color }}>
+                        <SkillIcon size={17} aria-hidden="true" />
+                      </span>
+                      <h4 className="text-sm font-bold text-gray-800">{skill.name}</h4>
+                    </div>
+                    <p className="mb-3 text-xs leading-relaxed text-gray-500">{skill.description}</p>
+                    {canPerform ? (
+                      <button
+                        type="button"
+                        onClick={() => playAnimation(skill.animation)}
+                        className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-2.5 py-2 text-xs font-bold text-white transition hover:opacity-90 active:scale-95"
+                      >
+                        <Play size={14} fill="currentColor" /> Perform
+                      </button>
+                    ) : isUnlocked ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-auto rounded-lg bg-gray-100 px-2.5 py-2 text-xs font-bold text-gray-400"
+                      >
+                        Buy Koko first
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handlePurchaseCharacterSkill?.(skill, selectedCharacterId)}
+                        disabled={!isSelectedCharacterOwned}
+                        className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-2.5 py-2 text-xs font-bold text-white transition hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                      >
+                        <Coins size={14} /> {isSelectedCharacterOwned ? `Buy · ${skill.price}` : "Buy Koko first"}
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </div>
         )}

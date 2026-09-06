@@ -152,6 +152,7 @@ const RewardsStore = ({
   returnToTopics,
   handleSelectCharacter,
   handlePurchaseCharacter,
+  handlePurchaseCharacterSkill,
   handlePurchaseAccessory,
   handleEquipAccessory,
   handleUnequipAccessory,
@@ -233,6 +234,7 @@ const RewardsStore = ({
           purchaseFeedback={purchaseFeedback}
           handleSelectCharacter={handleSelectCharacter}
           handlePurchaseCharacter={handlePurchaseCharacter}
+          handlePurchaseCharacterSkill={handlePurchaseCharacterSkill}
           handlePurchaseAccessory={handlePurchaseAccessory}
           handleEquipAccessory={handleEquipAccessory}
           handleUnequipAccessory={handleUnequipAccessory}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import {
   DEFAULT_CHARACTER_ID,
   getAccessoryById,
@@ -44,7 +45,7 @@ const loadCharacterModel = (url) => {
           }
         }
       });
-      return root;
+      return { root, animations: gltf.animations || [] };
     });
     modelCache.set(url, promise);
   }
@@ -52,14 +53,14 @@ const loadCharacterModel = (url) => {
 };
 
 const cloneCharacterModel = (source) => {
-  const clone = source.clone(true);
+  const clone = cloneSkeleton(source.root);
   clone.traverse((child) => {
     if (!child.isMesh || !child.material) return;
     child.material = Array.isArray(child.material)
       ? child.material.map((material) => material.clone())
       : child.material.clone();
   });
-  return clone;
+  return { root: clone, animations: source.animations };
 };
 
 const colorLookupKeys = (name) => {
@@ -981,11 +982,16 @@ const CharacterViewer = ({
   looks = {},
   focus = "full",
   className = "",
+  animationRequest = null,
+  hoverAnimation = null,
 }) => {
   const containerRef = useRef(null);
+  const animationControllerRef = useRef(null);
   const equippedKey = JSON.stringify(equippedItems);
   const colorKey = JSON.stringify(colors);
   const looksKey = JSON.stringify(looks);
+  const requestedAnimationName = animationRequest?.name;
+  const requestedAnimationNonce = animationRequest?.nonce;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -1041,8 +1047,39 @@ const CharacterViewer = ({
     const character = getCharacterById(characterId);
     let cancelled = false;
     let modelObject = null;
+    let modelMixer = null;
+    let modelAnimations = [];
+    let activeAnimationAction = null;
+    let queuedAnimationName = null;
     let pmrem = null;
     let envTexture = null;
+
+    const playModelAnimation = (name) => {
+      if (!name) return false;
+      if (!modelMixer) {
+        queuedAnimationName = name;
+        return false;
+      }
+      const clip = THREE.AnimationClip.findByName(modelAnimations, name);
+      if (!clip) return false;
+      const nextAction = modelMixer.clipAction(clip);
+      const isIdle = name === "Idle";
+      if (activeAnimationAction && activeAnimationAction !== nextAction) {
+        activeAnimationAction.fadeOut(0.12);
+      }
+      nextAction.reset();
+      nextAction.enabled = true;
+      nextAction.clampWhenFinished = !isIdle;
+      nextAction.setLoop(isIdle ? THREE.LoopRepeat : THREE.LoopOnce, isIdle ? Infinity : 1);
+      nextAction.fadeIn(0.12).play();
+      activeAnimationAction = nextAction;
+      return true;
+    };
+    animationControllerRef.current = playModelAnimation;
+
+    const onAnimationFinished = (event) => {
+      if (event.action === activeAnimationAction) playModelAnimation("Idle");
+    };
 
     if (character.model) {
       // GLB model characters only: image-based lighting + filmic tone mapping
@@ -1062,9 +1099,9 @@ const CharacterViewer = ({
       }
 
       loadCharacterModel(character.model)
-        .then((root) => {
+        .then((cachedModel) => {
           if (cancelled) return;
-          const modelRoot = cloneCharacterModel(root);
+          const { root: modelRoot, animations } = cloneCharacterModel(cachedModel);
           if (character.id === WILLOW_CHARACTER_ID) {
             improveWillowMaterials(modelRoot);
           }
@@ -1078,6 +1115,13 @@ const CharacterViewer = ({
           modelObject = new THREE.Group();
           modelObject.add(modelRoot);
           group.add(modelObject);
+          if (animations.length) {
+            modelAnimations = animations;
+            modelMixer = new THREE.AnimationMixer(modelRoot);
+            modelMixer.addEventListener("finished", onAnimationFinished);
+            playModelAnimation(queuedAnimationName || "Idle");
+            queuedAnimationName = null;
+          }
           // Willow keeps all eight original meshes. Legacy generic loadouts
           // are ignored, so old purchases cannot hide or overlay her outfit.
         })
@@ -1134,6 +1178,10 @@ const CharacterViewer = ({
     renderer.domElement.addEventListener("pointermove", onPointerMove);
     renderer.domElement.addEventListener("pointerup", onPointerUp);
     renderer.domElement.addEventListener("pointercancel", onPointerUp);
+    const onPointerEnter = () => {
+      if (hoverAnimation) playModelAnimation(hoverAnimation);
+    };
+    renderer.domElement.addEventListener("pointerenter", onPointerEnter);
 
     const resize = () => {
       const width = Math.max(container.clientWidth, 260);
@@ -1152,11 +1200,13 @@ const CharacterViewer = ({
     window.addEventListener("resize", scheduleResize);
 
     let frameId;
+    const clock = new THREE.Clock();
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       const time = performance.now() * 0.001;
       group.rotation.y = manualRotation + Math.sin(time * 0.8) * 0.08;
-      group.position.y = -0.15 + Math.sin(time * 1.8) * 0.025;
+      group.position.y = -0.15 + (modelMixer ? 0 : Math.sin(time * 1.8) * 0.025);
+      modelMixer?.update(Math.min(clock.getDelta(), 0.05));
       renderer.render(scene, camera);
     };
     animate();
@@ -1170,6 +1220,14 @@ const CharacterViewer = ({
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.domElement.removeEventListener("pointercancel", onPointerUp);
+      renderer.domElement.removeEventListener("pointerenter", onPointerEnter);
+      if (animationControllerRef.current === playModelAnimation) {
+        animationControllerRef.current = null;
+      }
+      if (modelMixer) {
+        modelMixer.removeEventListener("finished", onAnimationFinished);
+        modelMixer.stopAllAction();
+      }
       // Detach model instances before disposing the scene so shared cached
       // geometry survives for reuse; cloned instance materials can be released.
       if (modelObject) {
@@ -1188,13 +1246,20 @@ const CharacterViewer = ({
     // Rebuild only when the serialized look/loadout actually changes. The
     // parent often passes fresh object identities for the same values.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterId, equippedKey, colorKey, looksKey, focus]);
+  }, [characterId, equippedKey, colorKey, looksKey, focus, hoverAnimation]);
+
+  useEffect(() => {
+    if (requestedAnimationName) {
+      animationControllerRef.current?.(requestedAnimationName);
+    }
+  }, [requestedAnimationName, requestedAnimationNonce]);
 
   return (
     <div
       ref={containerRef}
       className={`min-h-[250px] w-full cursor-grab active:cursor-grabbing ${className}`}
       aria-label={`${getCharacterById(characterId).name} 3D character preview`}
+      data-hover-animation={hoverAnimation || undefined}
       role="img"
     />
   );

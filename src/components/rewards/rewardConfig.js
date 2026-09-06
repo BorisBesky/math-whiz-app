@@ -136,10 +136,49 @@ export const REWARD_CHARACTERS = [
     name: "Koko",
     title: "Cheeky Monkey",
     accent: "#8b5a2b",
-    summary: "A playful 3D monkey with a swingy tail and separately colorable fur, face, and ears.",
-    model: "/models/monkey_parts.glb",
+    summary: "A playful animated monkey who waves hello and can learn new moves.",
+    model: "/models/monkey_parts.glb?v=animated-1",
   },
 ];
+
+// Character-specific animation skills. Included moves are available as soon as
+// the character is owned; paid moves are permanent profile unlocks.
+export const REWARD_CHARACTER_SKILLS = [
+  {
+    id: "koko-wave",
+    characterId: "koko-monkey",
+    name: "Hello Wave",
+    description: "Koko's friendly hello is included.",
+    animation: "Wave",
+    included: true,
+    price: 0,
+    color: "#38bdf8",
+  },
+  {
+    id: "koko-jump",
+    characterId: "koko-monkey",
+    name: "Big Jump",
+    description: "Leap up with both hands in the air.",
+    animation: "Jump",
+    price: 15,
+    color: "#22c55e",
+  },
+  {
+    id: "koko-floss",
+    characterId: "koko-monkey",
+    name: "Floss Dance",
+    description: "Unlock Koko's side-to-side floss dance.",
+    animation: "Floss",
+    price: 25,
+    color: "#a855f7",
+  },
+];
+
+export const getCharacterSkills = (characterId) =>
+  REWARD_CHARACTER_SKILLS.filter((skill) => skill.characterId === characterId);
+
+export const getCharacterSkillById = (skillId) =>
+  REWARD_CHARACTER_SKILLS.find((skill) => skill.id === skillId) || null;
 
 // Characters whose look is hand-built from primitives (and therefore support
 // the dress-up accessories). GLB model characters are buy-only for now.
@@ -403,20 +442,18 @@ export const CHARACTER_COLOR_REGIONS = {
     { id: "hoodie", label: "Hoodie", default: "#16a34a", materialNames: ["part_2_hoodie"] },
     { id: "pants", label: "Pants", default: "#ea580c", materialNames: ["part_3_pants"] },
   ],
-  // Koko Monkey is pure anatomy — the model has no clothing or gear meshes, so
-  // there are no detachable accessories. Every part is substantial geometry, so
-  // the body/arms/legs share one "Fur" control while face, ears and tail get
-  // their own accent colors.
+  // Koko's Blender model uses semantic material names shared across its moving
+  // parts, so recoloring survives animation without depending on mesh names.
   "koko-monkey": [
     {
       id: "fur",
       label: "Fur",
       default: "#8b5a2b",
-      materialNames: ["part_2_body", "part_3_arms", "part_4_legs"],
+      materialNames: ["koko_fur"],
     },
-    { id: "face", label: "Face", default: "#e8b48a", materialNames: ["part_0_head"] },
-    { id: "ears", label: "Ears", default: "#d9a066", materialNames: ["part_1_ears"] },
-    { id: "tail", label: "Tail", default: "#8b5a2b", materialNames: ["part_5_tail"] },
+    { id: "face", label: "Face", default: "#edb07a", materialNames: ["koko_face", "koko_belly"] },
+    { id: "ears", label: "Ears", default: "#f2a09a", materialNames: ["koko_ears"] },
+    { id: "tail", label: "Tail", default: "#6f3016", materialNames: ["koko_tail"] },
   ],
 };
 

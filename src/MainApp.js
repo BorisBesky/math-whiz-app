@@ -84,12 +84,13 @@ import {
 } from "./utils/subtopicUtils";
 import { getPortalMessagesPath } from "./utils/userRoles";
 import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreService';
+import { purchaseCharacterSkill } from './services/characterSkillStoreService';
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-willow-sculpt-v40" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-koko-animated-v41" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -993,6 +994,12 @@ const MainAppContent = () => {
                 needsUpdate = true;
               }
 
+              if (!Array.isArray(data.ownedCharacterSkills)) {
+                data.ownedCharacterSkills = [];
+                updatePayload.ownedCharacterSkills = [];
+                needsUpdate = true;
+              }
+
               if (!data.equippedAccessories) {
                 data.equippedAccessories = {};
                 updatePayload.equippedAccessories = {};
@@ -1066,7 +1073,8 @@ const MainAppContent = () => {
                 selectedCharacterId: DEFAULT_CHARACTER_ID,
                 ownedCharacters: [DEFAULT_CHARACTER_ID],
                 ownedAccessories: [],
-	                equippedAccessories: {},
+		                ownedCharacterSkills: [],
+		                equippedAccessories: {},
 	                dailyStories: { [today]: {} },
 	                questionSummary: { total: 0, correct: 0, latestActivity: null },
 	                questionStatsByDate: {},
@@ -2269,6 +2277,32 @@ const MainAppContent = () => {
     setTimeout(() => setPurchaseFeedback(""), 3000);
   };
 
+  const handlePurchaseCharacterSkill = async (requestedSkill, characterId) => {
+    if (!user || !requestedSkill) return;
+    const userDocRef = getUserDocRef(user.uid);
+    if (!userDocRef) return;
+    try {
+      const result = await purchaseCharacterSkill(
+        db,
+        userDocRef,
+        requestedSkill.id,
+        characterId
+      );
+      setPurchaseFeedback({
+        type: "success",
+        message: result.alreadyOwned
+          ? `${result.skill.name} is already unlocked!`
+          : `${result.skill.name} unlocked for Koko!`,
+      });
+    } catch (error) {
+      setPurchaseFeedback({
+        type: "error",
+        message: error?.message || "Couldn't unlock that move. Please try again.",
+      });
+    }
+    setTimeout(() => setPurchaseFeedback(""), 3000);
+  };
+
   const handleEquipAccessory = async (item, characterId) => {
     if (!user || !item) return;
     if (!userData?.ownedAccessories?.includes(item.id)) return;
@@ -2618,6 +2652,7 @@ Answer: [The answer]`;
                   returnToTopics={returnToTopics}
                   handleSelectCharacter={handleSelectCharacter}
                   handlePurchaseCharacter={handlePurchaseCharacter}
+                  handlePurchaseCharacterSkill={handlePurchaseCharacterSkill}
                   handlePurchaseAccessory={handlePurchaseAccessory}
                   handleEquipAccessory={handleEquipAccessory}
                   handleUnequipAccessory={handleUnequipAccessory}

@@ -1,5 +1,7 @@
 import {
   getCharacterById,
+  getCharacterSkillById,
+  getCharacterSkills,
   getColorRegions,
   getModelPartAccessories,
   REWARD_CHARACTERS,
@@ -9,7 +11,7 @@ describe("monkey store character", () => {
   test("registers Koko as a model character", () => {
     const koko = getCharacterById("koko-monkey");
     expect(koko.name).toBe("Koko");
-    expect(koko.model).toBe("/models/monkey_parts.glb");
+    expect(koko.model).toBe("/models/monkey_parts.glb?v=animated-1");
     expect(REWARD_CHARACTERS.map((character) => character.id)).toEqual(
       expect.arrayContaining(["koko-monkey"])
     );
@@ -24,18 +26,28 @@ describe("monkey store character", () => {
     ]);
   });
 
-  test("covers every mesh in the model so nothing renders untinted", () => {
+  test("uses semantic material controls that follow Koko's animated parts", () => {
     const covered = getColorRegions("koko-monkey").flatMap(
       (region) => region.materialNames || [region.id]
     );
     expect(covered.sort()).toEqual([
-      "part_0_head",
-      "part_1_ears",
-      "part_2_body",
-      "part_3_arms",
-      "part_4_legs",
-      "part_5_tail",
+      "koko_belly",
+      "koko_ears",
+      "koko_face",
+      "koko_fur",
+      "koko_tail",
     ].sort());
+  });
+
+  test("includes a free hello plus purchasable jump and floss skills", () => {
+    expect(getCharacterSkills("koko-monkey")).toEqual([
+      expect.objectContaining({ id: "koko-wave", animation: "Wave", included: true, price: 0 }),
+      expect.objectContaining({ id: "koko-jump", animation: "Jump", price: 15 }),
+      expect.objectContaining({ id: "koko-floss", animation: "Floss", price: 25 }),
+    ]);
+    expect(getCharacterSkillById("koko-floss")).toEqual(
+      expect.objectContaining({ characterId: "koko-monkey", animation: "Floss" })
+    );
   });
 
   test("has no detachable accessories (the model carries no gear meshes)", () => {
