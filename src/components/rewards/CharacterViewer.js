@@ -11,10 +11,7 @@ import {
 } from "./rewardConfig";
 import {
   WILLOW_CHARACTER_ID,
-  WILLOW_RIG,
   applyWillowHeadTexture,
-  applyWillowPartVisibility,
-  decorateWillowCharacter,
   improveWillowMaterials,
 } from "./willowAppearance";
 
@@ -416,9 +413,6 @@ const getRig = (characterId) => {
       shoeZ: 0.12,
       fit: "human",
     };
-  }
-  if (characterId === WILLOW_CHARACTER_ID) {
-    return WILLOW_RIG;
   }
   if (characterId === "cora-cat") {
     return {
@@ -961,15 +955,15 @@ const addAccessory = (group, item, rig) => {
 };
 
 const disposeMaterial = (material) => {
-  if (material.userData?.willowFaceMap && material.map) {
-    material.map.dispose();
-  }
+  if (material.userData?.willowFaceMap) material.map?.dispose();
   material.dispose();
 };
 
 const disposeObject = (object, { disposeGeometry = true } = {}) => {
   object.traverse((child) => {
-    if (disposeGeometry && child.geometry) child.geometry.dispose();
+    if (child.geometry && (disposeGeometry || child.geometry.userData.willowFaceInstance)) {
+      child.geometry.dispose();
+    }
     if (child.material) {
       if (Array.isArray(child.material)) {
         child.material.forEach((material) => disposeMaterial(material));
@@ -1014,8 +1008,8 @@ const CharacterViewer = ({
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
     if (focus === "face" && characterId === WILLOW_CHARACTER_ID) {
-      camera.position.set(WILLOW_RIG.faceX, 1.34, 1.85);
-      camera.lookAt(WILLOW_RIG.faceX, 1.32, 0.05);
+      camera.position.set(0.11, 1.2, 2.1);
+      camera.lookAt(0.11, 1.15, 0.05);
     } else {
       camera.position.set(0, 1.25, 5.2);
       camera.lookAt(0, 1, 0);
@@ -1059,6 +1053,13 @@ const CharacterViewer = ({
       pmrem = new THREE.PMREMGenerator(renderer);
       envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = envTexture;
+      if (character.id === WILLOW_CHARACTER_ID) {
+        scene.environmentIntensity = 0.65;
+        ambient.intensity = 0.85;
+        keyLight.intensity = 1.8;
+        fillLight.intensity = 0.6;
+        renderer.toneMappingExposure = 1;
+      }
 
       loadCharacterModel(character.model)
         .then((root) => {
@@ -1066,7 +1067,6 @@ const CharacterViewer = ({
           const modelRoot = cloneCharacterModel(root);
           if (character.id === WILLOW_CHARACTER_ID) {
             improveWillowMaterials(modelRoot);
-            applyWillowPartVisibility(modelRoot, equippedItems);
           }
           applyModelColors(modelRoot, character.id, colors);
           // Show/hide detachable parts (fox & bear cap/backpack/shoes) per the
@@ -1078,14 +1078,8 @@ const CharacterViewer = ({
           modelObject = new THREE.Group();
           modelObject.add(modelRoot);
           group.add(modelObject);
-          if (character.id === WILLOW_CHARACTER_ID) {
-            decorateWillowCharacter(group);
-            const rig = getRig(character.id);
-            Object.values(equippedItems || {})
-              .map(getAccessoryById)
-              .filter(Boolean)
-              .forEach((item) => addAccessory(group, item, rig));
-          }
+          // Willow keeps all eight original meshes. Legacy generic loadouts
+          // are ignored, so old purchases cannot hide or overlay her outfit.
         })
         .catch((error) => {
           // eslint-disable-next-line no-console

@@ -141,7 +141,7 @@ const CharacterStore = ({
   }, [activeCategory, availableCategories]);
 
   return (
-    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
+    <div className={`grid min-w-0 gap-5 ${availableCategories.length ? "lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]" : "mx-auto w-full max-w-2xl"}`}>
       <section className="min-w-0 rounded-lg border border-sky-100 bg-white p-4 shadow-card">
         {/* Compact character picker row at the top */}
         <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
@@ -255,6 +255,11 @@ const CharacterStore = ({
               </div>
             )}
 
+            {selectedCharacterId === "willow-wizard" && stylePanel === "body" && (
+              <p className="mb-3 text-sm text-gray-600">
+                Make Willow's original outfit your own. Choose a layer, then pick its color.
+              </p>
+            )}
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">
               Colors
             </p>
@@ -299,7 +304,7 @@ const CharacterStore = ({
         )}
       </section>
 
-      <section className="min-w-0 rounded-lg border border-gray-100 bg-white p-4 shadow-card">
+      {availableCategories.length > 0 && <section className="min-w-0 rounded-lg border border-gray-100 bg-white p-4 shadow-card">
         {purchaseFeedback && (
           <div
             className={`mb-4 rounded-lg border p-3 text-center text-sm font-bold animate-slide-up ${
@@ -434,7 +439,7 @@ const CharacterStore = ({
             </button>
           )}
         </div>
-      </section>
+      </section>}
     </div>
   );
 };

@@ -1,313 +1,189 @@
 import * as THREE from "three";
-import { getAccessoryById } from "./rewardConfig";
 
 export const WILLOW_CHARACTER_ID = "willow-wizard";
 
-export const WILLOW_RIG = {
-  faceX: 0.11,
-  topY: 1.74,
-  eyeY: 1.33,
-  neckY: 0.96,
-  backY: 0.5,
-  backZ: -0.55,
-  footY: 0.02,
-  propY: 0.68,
-  outfitY: 0.55,
-  waistY: 0.36,
-  handX: 0.5,
-  handY: 0.67,
-  handZ: 0.08,
-  legX: 0.16,
-  faceZ: 0.22,
-  garmentZ: 0.1,
-  garmentWidth: 0.48,
-  garmentHeight: 0.55,
-  lowerWidth: 0.46,
-  lowerY: 0.22,
-  lowerZ: 0.08,
-  shoeX: 0.14,
-  shoeZ: 0.1,
-  fit: "human",
-};
+const FACE_WINDOW = { minX: -0.3, maxX: 0.5, minY: -0.05, maxY: 0.45 };
 
-// Front-projected UV window in the head mesh's local space. Chosen so the
-// sculpted eye / nose / mouth landmarks land on FEATURE_UV.
-export const WILLOW_FACE_UV_WINDOW = {
-  minX: -0.30,
-  maxX: 0.50,
-  minY: 0.02,
-  maxY: 0.62,
-  minZ: -0.02,
-};
-
-export const WILLOW_FACE_FEATURE_UV = {
-  leftEye: [0.23, 0.41],
-  rightEye: [0.77, 0.41],
-  nose: [0.5, 0.30],
-  mouth: [0.5, 0.20],
-  blush: [0.12, 0.32],
-};
-
-// Keep a skin gutter around the face atlas so triangles that straddle the
-// face/back boundary interpolate through skin, not across the painted eyes.
-const FACE_ATLAS_PAD = 0.22;
-const SKIN_ISLAND_UV = [0.03, 0.03];
-
-export const faceUVToAtlasUV = ([u, v]) => [
-  FACE_ATLAS_PAD + u * (1 - 2 * FACE_ATLAS_PAD),
-  FACE_ATLAS_PAD + v * (1 - 2 * FACE_ATLAS_PAD),
-];
-
-const HIDDEN_PARTS = {
-  hat: ["part_2_hat", "part_1_feather"],
-  prop: ["part_6_magic staff", "part_7_orb"],
-  cloak: ["part_4_cloak"],
-};
-
-const makeMat = (color, options = {}) =>
-  new THREE.MeshStandardMaterial({
-    color,
-    roughness: options.roughness ?? 0.5,
-    metalness: options.metalness ?? 0.05,
-    emissive: options.emissive ?? 0x000000,
-    emissiveIntensity: options.emissiveIntensity ?? 0,
-    transparent: options.transparent ?? false,
-    opacity: options.opacity ?? 1,
-  });
-
-const addMesh = (group, geometry, material, position, scale, rotation) => {
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(...position);
-  if (scale) mesh.scale.set(...scale);
-  if (rotation) mesh.rotation.set(...rotation);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  group.add(mesh);
-  return mesh;
-};
-
-const pickColor = (colors = {}, region, fallback) => colors[region] || fallback;
-
-const hexToRgb = (hex) => {
-  const value = String(hex || "").replace("#", "");
-  const full = value.length === 3 ? value.split("").map((part) => part + part).join("") : value;
-  if (!/^[0-9a-fA-F]{6}$/.test(full)) return { r: 242, g: 199, b: 160 };
-  return {
-    r: parseInt(full.slice(0, 2), 16),
-    g: parseInt(full.slice(2, 4), 16),
-    b: parseInt(full.slice(4, 6), 16),
-  };
-};
-
-export const localPositionToFaceUV = (x, y, z, window = WILLOW_FACE_UV_WINDOW) => {
-  if (z < window.minZ) return SKIN_ISLAND_UV;
-  const u = (x - window.minX) / (window.maxX - window.minX);
-  const v = (y - window.minY) / (window.maxY - window.minY);
-  if (u < -0.04 || u > 1.04 || v < -0.04 || v > 1.04) return SKIN_ISLAND_UV;
-  return faceUVToAtlasUV([Math.min(Math.max(u, 0), 1), Math.min(Math.max(v, 0), 1)]);
-};
-
-export const applyWillowHeadFaceUVs = (geometry, window = WILLOW_FACE_UV_WINDOW) => {
-  const position = geometry.attributes.position;
-  const uvs = new Float32Array(position.count * 2);
-  for (let i = 0; i < position.count; i += 1) {
-    const [u, v] = localPositionToFaceUV(
-      position.getX(i),
-      position.getY(i),
-      position.getZ(i),
-      window
-    );
-    uvs[i * 2] = u;
-    uvs[i * 2 + 1] = v;
-  }
-  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-  geometry.userData.willowFaceUv = "atlas-v3";
-};
-
-const rgb01 = (hex) => {
-  const { r, g, b } = hexToRgb(hex);
-  return [r / 255, g / 255, b / 255];
-};
-
-const ellipseWeight = (px, py, { x, y, rx, ry, tilt = 0 }) => {
-  const dx = px - x;
-  const dy = py - y;
-  const c = Math.cos(tilt);
-  const s = Math.sin(tilt);
-  const lx = (dx * c + dy * s) / rx;
-  const ly = (-dx * s + dy * c) / ry;
-  const d = lx * lx + ly * ly;
-  if (d >= 1) return 0;
-  return (1 - d) ** 0.55;
-};
-
-// Local-space tints that follow the sculpted eye sockets, brow ridges, and lips.
+// Traced on wizard_parts.glb in head LOCAL coordinates, before normalization.
+// The carved face is asymmetric; mirrored ellipses miss the lids and brows.
 export const WILLOW_FACE_LANDMARKS = {
-  leftEye: { x: -0.116, y: 0.266, rx: 0.092, ry: 0.044, tilt: 0.22, minZ: 0.1 },
-  rightEye: { x: 0.316, y: 0.266, rx: 0.092, ry: 0.044, tilt: -0.22, minZ: 0.1 },
-  leftBrow: { x: -0.13, y: 0.348, rx: 0.11, ry: 0.022, tilt: 0.28, minZ: 0.08 },
-  rightBrow: { x: 0.33, y: 0.348, rx: 0.11, ry: 0.022, tilt: -0.28, minZ: 0.08 },
-  leftShadow: { x: -0.116, y: 0.3, rx: 0.08, ry: 0.022, tilt: 0.22, minZ: 0.1 },
-  rightShadow: { x: 0.316, y: 0.3, rx: 0.08, ry: 0.022, tilt: -0.22, minZ: 0.1 },
-  lips: { x: 0.1, y: 0.145, rx: 0.055, ry: 0.022, tilt: 0, minZ: 0.12 },
-  leftBlush: { x: -0.06, y: 0.2, rx: 0.07, ry: 0.04, tilt: 0, minZ: 0.08 },
-  rightBlush: { x: 0.26, y: 0.2, rx: 0.07, ry: 0.04, tilt: 0, minZ: 0.08 },
+  leftEye: [[-0.186, 0.2722], [-0.1431, 0.2787], [-0.0989, 0.2826], [-0.0677, 0.2774], [-0.0352, 0.2591], [-0.0118, 0.2306], [0.0077, 0.1955], [0.0142, 0.1747], [-0.0326, 0.1734], [-0.0742, 0.1799], [-0.1145, 0.1968], [-0.147, 0.2215], [-0.1678, 0.2488]],
+  rightEye: [[0.2053, 0.1812], [0.2118, 0.2202], [0.2287, 0.2527], [0.2586, 0.2747], [0.2937, 0.2813], [0.3483, 0.2761], [0.3873, 0.28], [0.3782, 0.2462], [0.3652, 0.2111], [0.3392, 0.1864], [0.3002, 0.1721], [0.2495, 0.1669], [0.217, 0.1708]],
+  leftBrow: [[-0.2445, 0.4022], [-0.225, 0.3775], [-0.186, 0.3684], [-0.1405, 0.3697], [-0.1067, 0.3619], [-0.0703, 0.3424], [-0.0313, 0.3176]],
+  rightBrow: [[0.2066, 0.3164], [0.243, 0.3397], [0.2755, 0.3567], [0.3145, 0.3658], [0.3678, 0.367], [0.4094, 0.3814], [0.4341, 0.4022]],
+  leftShadow: [[-0.225, 0.3294], [-0.1873, 0.3216], [-0.1353, 0.3306], [-0.1015, 0.3268], [-0.0638, 0.3059], [-0.0339, 0.2839]],
+  rightShadow: [[0.2352, 0.2917], [0.269, 0.3176], [0.3015, 0.3268], [0.3509, 0.3241], [0.3873, 0.3294], [0.4224, 0.3359]],
+  lips: [[0.0506, 0.0044], [0.0714, 0.0122], [0.0935, 0.0161], [0.1117, 0.0109], [0.1299, 0.0161], [0.152, 0.0109], [0.1676, 0.0031], [0.1455, -0.0047], [0.1143, -0.006], [0.0805, -0.0047]],
+  leftIris: { x: -0.09, y: 0.233, rx: 0.04, ry: 0.049 },
+  rightIris: { x: 0.3, y: 0.234, rx: 0.04, ry: 0.049 },
+  leftBlush: { x: -0.17, y: 0.075, rx: 0.072, ry: 0.034 },
+  rightBlush: { x: 0.36, y: 0.075, rx: 0.072, ry: 0.034 },
 };
+
+const smoothstep = (a, b, x) => THREE.MathUtils.smoothstep(x, a, b);
+const mix = (base, tint, weight) => base.map((value, i) => value + (tint[i] - value) * weight);
+// BufferAttribute colors, unlike CSS/material colors, must already be linear.
+const linearRgb = (hex) => new THREE.Color(hex).toArray();
+const sclera = linearRgb("#fff4e6");
+const pupil = linearRgb("#111827");
+
+const segmentDistance = (x, y, a, b) => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const t = THREE.MathUtils.clamp(((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy), 0, 1);
+  return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy);
+};
+
+const contourWeight = (x, y, points, feather = 0.006) => {
+  let inside = false;
+  let distance = Infinity;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+    const a = points[i];
+    const b = points[j];
+    if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+    distance = Math.min(distance, segmentDistance(x, y, a, b));
+  }
+  return smoothstep(-feather, feather, inside ? distance : -distance);
+};
+
+const strokeWeight = (x, y, points, width) => {
+  let distance = Infinity;
+  for (let i = 1; i < points.length; i += 1) {
+    distance = Math.min(distance, segmentDistance(x, y, points[i - 1], points[i]));
+  }
+  return 1 - smoothstep(width * 0.3, width, distance);
+};
+
+const ellipseRadius = (x, y, { x: cx, y: cy, rx, ry }) => Math.hypot((x - cx) / rx, (y - cy) / ry);
 
 export const paintWillowFaceVertexColor = (x, y, z, skinRgb, tints) => {
+  // Exclude the back of the head and ears, with a soft depth boundary.
+  const front = smoothstep(0.035, 0.09, z);
+  if (!front || y < -0.03 || y > 0.43 || x < -0.29 || x > 0.47) return skinRgb;
   let color = skinRgb;
-  const layer = (landmark, tint, strength) => {
-    if (z < landmark.minZ) return;
-    const weight = ellipseWeight(x, y, landmark) * strength;
-    if (weight <= 0) return;
-    color = [
-      color[0] + (tint[0] - color[0]) * weight,
-      color[1] + (tint[1] - color[1]) * weight,
-      color[2] + (tint[2] - color[2]) * weight,
-    ];
-  };
-  layer(WILLOW_FACE_LANDMARKS.leftBlush, tints.blush, 0.35);
-  layer(WILLOW_FACE_LANDMARKS.rightBlush, tints.blush, 0.35);
-  layer(WILLOW_FACE_LANDMARKS.leftShadow, tints.shadow, 0.45);
-  layer(WILLOW_FACE_LANDMARKS.rightShadow, tints.shadow, 0.45);
-  layer(WILLOW_FACE_LANDMARKS.leftBrow, tints.brows, 0.92);
-  layer(WILLOW_FACE_LANDMARKS.rightBrow, tints.brows, 0.92);
-  layer(WILLOW_FACE_LANDMARKS.lips, tints.lips, 0.85);
-  layer(WILLOW_FACE_LANDMARKS.leftEye, tints.eyes, 1);
-  layer(WILLOW_FACE_LANDMARKS.rightEye, tints.eyes, 1);
+  const layer = (tint, weight) => { color = mix(color, tint, weight * front); };
+  const features = WILLOW_FACE_LANDMARKS;
+  [features.leftBlush, features.rightBlush].forEach((cheek) => {
+    layer(tints.blush, (1 - smoothstep(0, 1, ellipseRadius(x, y, cheek))) * 0.32);
+  });
+  [features.leftShadow, features.rightShadow].forEach((path) => layer(tints.shadow, strokeWeight(x, y, path, 0.021) * 0.48));
+  [features.leftBrow, features.rightBrow].forEach((path) => layer(tints.brows, strokeWeight(x, y, path, 0.012) * 0.95));
+  layer(tints.lips, contourWeight(x, y, features.lips, 0.005) * 0.9);
+  [[features.leftEye, features.leftIris], [features.rightEye, features.rightIris]].forEach(([outline, iris]) => {
+    const eye = contourWeight(x, y, outline);
+    if (!eye) return;
+    layer(sclera, eye);
+    const radius = ellipseRadius(x, y, iris);
+    layer(tints.eyes, eye * (1 - smoothstep(0.85, 1, radius)));
+    layer(pupil, eye * (1 - smoothstep(0.36, 0.48, radius)));
+  });
   return color;
 };
 
-export const applyWillowFaceVertexColors = (geometry, colors = {}) => {
-  const position = geometry.attributes.position;
-  const skin = rgb01(pickColor(colors, "head", "#f2c7a0"));
-  const tints = {
-    eyes: rgb01(pickColor(colors, "eyes", "#2563eb")),
-    brows: rgb01(pickColor(colors, "brows", "#4a044e")),
-    lips: rgb01(pickColor(colors, "lips", "#db2777")),
-    blush: rgb01(pickColor(colors, "blush", "#fb7185")),
-    shadow: rgb01(pickColor(colors, "eyeshadow", "#a78bfa")),
-  };
-  const data = new Float32Array(position.count * 3);
-  for (let i = 0; i < position.count; i += 1) {
-    const [r, g, b] = paintWillowFaceVertexColor(
-      position.getX(i),
-      position.getY(i),
-      position.getZ(i),
-      skin,
-      tints
-    );
-    data[i * 3] = r;
-    data[i * 3 + 1] = g;
-    data[i * 3 + 2] = b;
+const facePalette = (colors) => ({
+  eyes: linearRgb(colors.eyes || "#2563eb"),
+  brows: linearRgb(colors.brows || "#4a044e"),
+  lips: linearRgb(colors.lips || "#db2777"),
+  blush: linearRgb(colors.blush || "#fb7185"),
+  shadow: linearRgb(colors.eyeshadow || "#a78bfa"),
+});
+
+const createFaceTexture = (colors) => {
+  // Paint at texture resolution: the sculpt has sparse triangles inside the
+  // eyes, so vertex colors produce jagged irises even with correct landmarks.
+  const width = 768;
+  const height = 480;
+  const skin = linearRgb(colors.head || "#f2c7a0");
+  const tints = facePalette(colors);
+  const data = new Uint8Array(width * height * 4);
+  const pixel = new THREE.Color();
+  for (let row = 0; row < height; row += 1) {
+    const y = FACE_WINDOW.minY + (row + 0.5) / height * (FACE_WINDOW.maxY - FACE_WINDOW.minY);
+    for (let col = 0; col < width; col += 1) {
+      const x = FACE_WINDOW.minX + (col + 0.5) / width * (FACE_WINDOW.maxX - FACE_WINDOW.minX);
+      pixel.fromArray(paintWillowFaceVertexColor(x, y, 1, skin, tints)).convertLinearToSRGB();
+      const offset = (row * width + col) * 4;
+      data[offset] = Math.round(pixel.r * 255);
+      data[offset + 1] = Math.round(pixel.g * 255);
+      data[offset + 2] = Math.round(pixel.b * 255);
+      data[offset + 3] = 255;
+    }
   }
-  geometry.setAttribute("color", new THREE.BufferAttribute(data, 3));
+  const texture = new THREE.DataTexture(data, width, height);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
 };
 
-const isWillowHeadMesh = (child) =>
-  Boolean(child?.isMesh && /part_0_head|^head$/i.test(child.name || ""));
+export const applyWillowHeadFaceUVs = (geometry) => {
+  const position = geometry.attributes.position;
+  const uv = new Float32Array(position.count * 2);
+  for (let i = 0; i < position.count; i += 1) {
+    // Continuous projection on ALL vertices. No abrupt UV island boundary that
+    // could smear a painted feature across triangles at the face's edge.
+    uv[i * 2] = (position.getX(i) - FACE_WINDOW.minX) / (FACE_WINDOW.maxX - FACE_WINDOW.minX);
+    uv[i * 2 + 1] = (position.getY(i) - FACE_WINDOW.minY) / (FACE_WINDOW.maxY - FACE_WINDOW.minY);
+  }
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+};
 
 export const applyWillowHeadTexture = (root, colors = {}) => {
-  try {
-    root.traverse((child) => {
-      if (!isWillowHeadMesh(child)) return;
-      applyWillowFaceVertexColors(child.geometry, colors);
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      materials.forEach((material) => {
-        if (material.map?.userData?.willowFaceMap) {
-          material.map.dispose();
-          material.map = null;
-        }
-        material.vertexColors = true;
-        material.color.set("#ffffff");
-        material.roughness = 0.62;
-        material.metalness = 0.02;
-        material.needsUpdate = true;
-      });
-    });
-  } catch (error) {
-    // Keep the character visible even if face tinting fails.
-    // eslint-disable-next-line no-console
-    console.error("Failed to apply Willow face colors", error);
-  }
-};
-
-
-export const getWillowHiddenPartNames = (equippedItems = {}) => {
-  const hidden = new Set();
-  if (equippedItems.hat) {
-    HIDDEN_PARTS.hat.forEach((name) => hidden.add(name));
-  }
-  if (equippedItems.prop) {
-    HIDDEN_PARTS.prop.forEach((name) => hidden.add(name));
-  }
-  const backItem = getAccessoryById(equippedItems.back);
-  if (equippedItems.dress || equippedItems.skirt || backItem?.shape === "cape") {
-    HIDDEN_PARTS.cloak.forEach((name) => hidden.add(name));
-  }
-  return hidden;
-};
-
-export const applyWillowPartVisibility = (root, equippedItems = {}) => {
-  const hidden = getWillowHiddenPartNames(equippedItems);
   root.traverse((child) => {
-    if (!child.isMesh) return;
-    if (hidden.has(child.name)) {
-      child.visible = false;
+    if (!child.isMesh || child.name !== "part_0_head") return;
+    // Do not mutate shared cached GLB geometry or another viewer's face colors.
+    // The viewer disposes this private copy when the instance is unmounted.
+    if (!child.geometry.userData.willowFaceInstance) {
+      child.geometry = child.geometry.clone();
+      child.geometry.userData.willowFaceInstance = true;
     }
+    applyWillowHeadFaceUVs(child.geometry);
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (material.userData.willowFaceMap) material.map?.dispose();
+      material.map = createFaceTexture(colors);
+      material.userData.willowFaceMap = true;
+      material.vertexColors = false;
+      material.color.set("#ffffff");
+      material.roughness = 0.78;
+      material.metalness = 0;
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.willowSkin = { value: new THREE.Color(colors.head || "#f2c7a0") };
+        shader.vertexShader = `varying float vWillowDepth;\n${shader.vertexShader}`
+          .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWillowDepth = position.z;");
+        shader.fragmentShader = `varying float vWillowDepth;\nuniform vec3 willowSkin;\n${shader.fragmentShader}`
+          .replace("#include <map_fragment>", `
+            #include <map_fragment>
+            diffuseColor.rgb = mix(willowSkin, diffuseColor.rgb, smoothstep(0.035, 0.09, vWillowDepth));
+          `);
+      };
+      material.customProgramCacheKey = () => "willow-sculpt-face-v1";
+      material.needsUpdate = true;
+    });
   });
 };
 
 export const improveWillowMaterials = (root) => {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
-    if (!child.geometry.attributes.normal) {
-      child.geometry.computeVertexNormals();
-    }
+    if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals();
     const materials = Array.isArray(child.material) ? child.material : [child.material];
-    const name = `${child.name || ""} ${materials.map((material) => material.name || "").join(" ")}`;
     materials.forEach((material) => {
-      if (name.includes("head") || name.includes("hands")) {
-        material.roughness = 0.62;
-        material.metalness = 0.02;
-      } else if (name.includes("orb")) {
-        material.roughness = 0.18;
-        material.metalness = 0.35;
+      const name = child.name || "";
+      material.roughness = 0.8;
+      material.metalness = 0;
+      if (name.includes("orb")) {
+        material.roughness = 0.25;
+        material.metalness = 0.15;
         material.userData.glow = true;
-        material.emissive = material.color.clone();
-        material.emissiveIntensity = 0.4;
+        material.emissive.copy(material.color);
+        material.emissiveIntensity = 0.25;
       } else if (name.includes("staff")) {
-        material.roughness = 0.32;
-        material.metalness = 0.28;
-      } else if (name.includes("feather")) {
-        material.roughness = 0.72;
-        material.metalness = 0.02;
-      } else {
-        material.roughness = 0.46;
-        material.metalness = 0.08;
+        material.roughness = 0.45;
+        material.metalness = 0.2;
       }
     });
   });
-};
-
-export const addWillowFitProxies = (group) => {
-  const hidden = makeMat("#000000", { transparent: true, opacity: 0 });
-  const torso = addMesh(
-    group,
-    new THREE.SphereGeometry(0.46, 20, 16),
-    hidden,
-    [0.13, 0.48, -0.18],
-    [1.08, 0.92, 0.7]
-  );
-  torso.visible = false;
-  const head = addMesh(group, new THREE.SphereGeometry(0.4, 16, 12), hidden, [0.11, 1.34, -0.16]);
-  head.visible = false;
-  group.userData.clothable = [torso];
-  group.userData.lowerBody = [torso];
-  group.userData.head = head;
-  group.userData.feet = [];
-};
-
-export const decorateWillowCharacter = (group) => {
-  addWillowFitProxies(group);
 };

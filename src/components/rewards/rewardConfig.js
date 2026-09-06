@@ -441,11 +441,9 @@ export const getColorRegions = (characterId) =>
 const ALL_CHARACTER_IDS = PROCEDURAL_CHARACTER_IDS;
 const SOFT_CHARACTER_IDS = ALL_CHARACTER_IDS.filter((id) => id !== "milo-robot");
 const WILLOW_ID = "willow-wizard";
-const withWillow = (ids) => (ids.includes(WILLOW_ID) ? ids : [...ids, WILLOW_ID]);
 const OUTFIT_CHARACTER_IDS = SOFT_CHARACTER_IDS;
-const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl", WILLOW_ID];
+const DRESS_SKIRT_CHARACTER_IDS = ["cora-cat", "sunny-bird", "mia-girl"];
 const KID_CHARACTER_IDS = ["leo-boy", "mia-girl"];
-const WILLOW_WARDROBE_IDS = withWillow(SOFT_CHARACTER_IDS);
 
 export const FACE_FEATURE_SLOTS = [
   { id: "eyes", label: "Eyes" },
@@ -504,7 +502,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ef4444",
     accentColor: "#f97316",
     shape: "cap",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "star-wizard-hat",
@@ -514,7 +512,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#f6c844",
     shape: "wizardHat",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "gold-crown",
@@ -524,7 +522,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f6c844",
     accentColor: "#fb923c",
     shape: "crown",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "robot-antenna",
@@ -544,7 +542,7 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#dbeafe",
     shape: "roundGlasses",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "star-spark-glasses",
@@ -554,7 +552,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#fef08a",
     shape: "starGlasses",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "snow-goggles",
@@ -564,7 +562,7 @@ export const REWARD_ACCESSORIES = [
     color: "#0f766e",
     accentColor: "#a7f3d0",
     shape: "goggles",
-    characterIds: ["milo-robot", "pip-penguin", "sunny-bird", WILLOW_ID, ...KID_CHARACTER_IDS],
+    characterIds: ["milo-robot", "pip-penguin", "sunny-bird", ...KID_CHARACTER_IDS],
   },
   {
     id: "party-dress",
@@ -634,7 +632,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#f6c844",
     shape: "heartNecklace",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "friendship-bracelet",
@@ -644,7 +642,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#48d1a5",
     shape: "friendshipBracelet",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "sparkle-ring",
@@ -654,7 +652,7 @@ export const REWARD_ACCESSORIES = [
     color: "#38bdf8",
     accentColor: "#f6c844",
     shape: "sparkleRing",
-    characterIds: withWillow([...SOFT_CHARACTER_IDS, "milo-robot"]),
+    characterIds: [...SOFT_CHARACTER_IDS, "milo-robot"],
   },
   {
     id: "rainbow-scarf",
@@ -664,7 +662,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f56565",
     accentColor: "#48d1a5",
     shape: "scarf",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "bright-bow-tie",
@@ -674,7 +672,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#fdf2f8",
     shape: "bowTie",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "math-medal",
@@ -684,7 +682,7 @@ export const REWARD_ACCESSORIES = [
     color: "#f6c844",
     accentColor: "#2563eb",
     shape: "medal",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "hero-cape",
@@ -694,7 +692,7 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#ef4444",
     shape: "cape",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "rocket-pack",
@@ -714,7 +712,7 @@ export const REWARD_ACCESSORIES = [
     color: "#16a34a",
     accentColor: "#fbbf24",
     shape: "backpack",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "mint-sneakers",
@@ -744,7 +742,7 @@ export const REWARD_ACCESSORIES = [
     color: "#7c3aed",
     accentColor: "#c4b5fd",
     shape: "boots",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   {
     id: "sparkle-wand",
@@ -754,7 +752,7 @@ export const REWARD_ACCESSORIES = [
     color: "#ec4899",
     accentColor: "#f6c844",
     shape: "wand",
-    characterIds: WILLOW_WARDROBE_IDS,
+    characterIds: SOFT_CHARACTER_IDS,
   },
   {
     id: "quiz-book",
@@ -764,7 +762,7 @@ export const REWARD_ACCESSORIES = [
     color: "#2563eb",
     accentColor: "#f6c844",
     shape: "book",
-    characterIds: withWillow(ALL_CHARACTER_IDS),
+    characterIds: ALL_CHARACTER_IDS,
   },
   // Detachable parts of the fox/bear GLBs, surfaced as equippable accessories.
   // `modelPart` names the mesh CharacterViewer shows (and tints to `color`) when

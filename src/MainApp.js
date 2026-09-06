@@ -89,7 +89,7 @@ import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreS
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-planet-details-v39" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-willow-sculpt-v40" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
