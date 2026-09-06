@@ -29,6 +29,18 @@ const CharacterPortrait = ({ characterId }) => {
   const character = getCharacterById(characterId);
   const color = character.accent;
 
+  if (character.portrait) {
+    return (
+      <img
+        src={character.portrait}
+        alt={`${character.name} preview`}
+        width={48}
+        height={48}
+        className="mx-auto mb-2 h-12 w-12 rounded-full object-cover"
+      />
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 64 64"

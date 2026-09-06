@@ -90,7 +90,7 @@ import { purchaseCharacterSkill } from './services/characterSkillStoreService';
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-koko-animated-v41" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-sage-owl-v43" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));

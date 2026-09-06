@@ -139,6 +139,15 @@ export const REWARD_CHARACTERS = [
     summary: "A playful animated monkey who waves hello and can learn new moves.",
     model: "/models/monkey_parts.glb?v=animated-1",
   },
+  {
+    id: "sage-owl",
+    name: "Sage",
+    title: "Wise Owl",
+    accent: "#79513a",
+    summary: "A book-loving owl who blinks, flaps his wings, and gives a playful full head spin.",
+    model: "/models/sage_owl.glb?v=animated-1",
+    portrait: "/images/characters/sage-owl.png?v=1",
+  },
 ];
 
 // Character-specific animation skills. Included moves are available as soon as
@@ -454,6 +463,14 @@ export const CHARACTER_COLOR_REGIONS = {
     { id: "face", label: "Face", default: "#edb07a", materialNames: ["koko_face", "koko_belly"] },
     { id: "ears", label: "Ears", default: "#f2a09a", materialNames: ["koko_ears"] },
     { id: "tail", label: "Tail", default: "#6f3016", materialNames: ["koko_tail"] },
+  ],
+  "sage-owl": [
+    { id: "feathers", label: "Feathers", default: "#79513a", materialNames: ["sage_feathers"] },
+    { id: "face", label: "Face", default: "#f3dec0", materialNames: ["sage_face"] },
+    { id: "belly", label: "Belly", default: "#d7b48a", materialNames: ["sage_belly"] },
+    { id: "glasses", label: "Glasses", default: "#292229", materialNames: ["sage_glasses"] },
+    { id: "book", label: "Book", default: "#913b2c", materialNames: ["sage_book"] },
+    { id: "beak", label: "Beak & feet", default: "#f5b323", materialNames: ["sage_beak"] },
   ],
 };
 

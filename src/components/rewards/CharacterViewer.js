@@ -1016,6 +1016,9 @@ const CharacterViewer = ({
     if (focus === "face" && characterId === WILLOW_CHARACTER_ID) {
       camera.position.set(0.11, 1.2, 2.1);
       camera.lookAt(0.11, 1.15, 0.05);
+    } else if (characterId === "sage-owl") {
+      camera.position.set(0, 1.25, 4.15);
+      camera.lookAt(0, 0.95, 0);
     } else {
       camera.position.set(0, 1.25, 5.2);
       camera.lookAt(0, 1, 0);
@@ -1095,6 +1098,13 @@ const CharacterViewer = ({
         ambient.intensity = 0.85;
         keyLight.intensity = 1.8;
         fillLight.intensity = 0.6;
+        renderer.toneMappingExposure = 1;
+      }
+      if (character.id === "sage-owl") {
+        scene.environmentIntensity = 0.75;
+        ambient.intensity = 1.2;
+        keyLight.intensity = 2;
+        fillLight.intensity = 0.75;
         renderer.toneMappingExposure = 1;
       }
 

@@ -51,6 +51,7 @@
 - Cora intentionally has no tail; previous tail shapes looked detached or odd from side/rear angles.
 - Koko's source generator is `scripts/generate-koko-monkey.py`; run it with Blender to rebuild `public/models/monkey_parts.glb`. The GLB must retain the named `Idle`, `Wave`, `Jump`, and `Floss` clips.
 - Koko's hello wave is included and triggered on viewer hover. Paid animation unlocks are stored in `ownedCharacterSkills`; the character must be owned before a paid skill can be purchased or performed.
+- Sage is the brown Wise Owl character (`sage-owl`), distinct from the original purple Ollie. Rebuild with Blender using `scripts/generate-sage-owl.py`; the reference is `assets/references/wise-owl.jpeg`, the editable source is `assets/blender/sage-owl.blend`, and the model is `public/models/sage_owl.glb`. Preserve the `Idle`, `WingFlap`, `HeadSpin`, and `Blink` clips. The 24-second idle includes occasional wing flaps, blinks, and a complete head turn, all included with the character. The generator also renders the character picker portrait.
 - Bow ties should use rounded flattened lobes plus a center knot, not diamond/rhombus cone shapes.
 - For character-fit work, validate front and rear/side views where relevant, especially Back Gear, Neckwear, Jewelry, and Props.
 - Little Planet is the store's `?tab=planet` section. Its catalog/prices live in `src/components/rewards/planetConfig.js`; its procedural Three.js scenery lives in `planetScene.js` and `PlanetViewer.js`.
