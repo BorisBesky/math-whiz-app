@@ -776,7 +776,7 @@ export const REWARD_ACCESSORIES = [
     color: "#48d1a5",
     accentColor: "#ffffff",
     shape: "sneakers",
-    characterIds: ["buddy-bear", "milo-robot", "cora-cat", WILLOW_ID, ...KID_CHARACTER_IDS],
+    characterIds: ["buddy-bear", "milo-robot", "cora-cat", ...KID_CHARACTER_IDS],
   },
   {
     id: "polar-skates",
