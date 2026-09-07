@@ -4,6 +4,7 @@ import {
   generateMultiDigitArithmeticQuestion,
   generatePlaceValueQuestion,
   generateDecimalExpandedFormQuestion,
+  generateMultiStepWordProblemQuestion,
 } from '../questions.js';
 
 describe('G4 base-ten: rounding never shows negative multiple-choice options', () => {
@@ -29,6 +30,28 @@ describe('G4 base-ten: rounding never shows negative multiple-choice options', (
       const q = generateRoundingQuestion(1.0);
       expect(q.options).toContain(q.correctAnswer);
       expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+});
+
+describe('G4 base-ten: multi-step word problems never show negative distractors', () => {
+  it('every multiple-choice option is a non-negative integer', () => {
+    // Regression: the "below" distractor was `(answer - 5000)` with no clamp,
+    // so a real question like a 3,200-ticket balance would offer "-1800" as
+    // a possible answer. 4th graders should never see negatives in
+    // scenarios about tickets, supplies, or fundraising dollars.
+    const difficulties = [0.6, 0.7, 0.8, 0.9, 1.0];
+    for (const d of difficulties) {
+      for (let i = 0; i < 300; i += 1) {
+        const q = generateMultiStepWordProblemQuestion(d);
+        for (const opt of q.options) {
+          expect(opt).not.toMatch(/^-/);
+          expect(Number(opt)).toBeGreaterThanOrEqual(0);
+        }
+        // Options remain distinct and the correct answer is always present.
+        expect(q.options).toContain(q.correctAnswer);
+        expect(new Set(q.options).size).toBe(q.options.length);
+      }
     }
   });
 });

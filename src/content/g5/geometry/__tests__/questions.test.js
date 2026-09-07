@@ -17,6 +17,7 @@ import {
   SHAPE_DEFINITIONS,
   HIERARCHY_STATEMENTS,
   INHERITANCE_FACTS,
+  HIERARCHY_PROPERTIES,
 } from '../questions';
 
 const DIFFICULTIES = [0, 0.25, 0.5, 0.75, 1];
@@ -110,6 +111,29 @@ describe('Geometry 5th correctness', () => {
     }
   });
 
+  test('classifying shapes: distractors never include an equally-valid answer', () => {
+    // The CCSS shape hierarchy is inclusive: a square is a rectangle is a
+    // parallelogram. So "a parallelogram with four right angles" fits BOTH
+    // "rectangle" and "square". The generator promises that whenever a
+    // description could match another SHAPE_DEFINITIONS name (declared in
+    // alsoMatches), that name never appears as a distractor.
+    const entriesByName = new Map(SHAPE_DEFINITIONS.map((entry) => [entry.name, entry]));
+    for (const q of draw('classifying shapes', 200)) {
+      const description = q.question.match(/^Which shape is (.+)\?$/)[1];
+      const entry = SHAPE_DEFINITIONS.find((e) => e.description === description);
+      expect(entry).toBeDefined();
+      const alsoMatches = new Set(entry.alsoMatches || []);
+      for (const option of q.options) {
+        // Every option must be a real shape name from the bank so a distractor
+        // isn't silently invented by the picker.
+        expect(entriesByName.has(option)).toBe(true);
+        if (option !== q.correctAnswer) {
+          expect(alsoMatches.has(option)).toBe(false);
+        }
+      }
+    }
+  });
+
   test('shape hierarchy: truths match the bank; properties inherit', () => {
     const byStatement = new Map(
       HIERARCHY_STATEMENTS.map((entry) => [entry.statement, entry.truth])
@@ -132,6 +156,34 @@ describe('Geometry 5th correctness', () => {
       } else {
         throw new Error(`unrecognized question: ${q.question}`);
       }
+    }
+  });
+
+  test('shape hierarchy: inheritance distractors are properties FALSE about the child', () => {
+    // For the inheritance branch ("Every square is one of the rectangles…"),
+    // any distractor that is also true about the child (a square has four
+    // equal sides because it is a rhombus, etc.) would be an equally-correct
+    // answer. The generator declares those in childAlsoHas and filters them
+    // out of the distractor pool.
+    const propertySentences = new Set(HIERARCHY_PROPERTIES.map((p) => `It has ${p}.`));
+    for (const q of draw('shape hierarchy', 200)) {
+      const m = q.question.match(
+        /^All ([\w ]+) have ([\w ]+)\. Every ([\w ]+) is one of the [\w ]+\. What must be true about every [\w ]+\?$/
+      );
+      if (!m) continue; // true/false branch has its own coverage above
+      const fact = INHERITANCE_FACTS.find((f) => f.parent === m[1]);
+      const child = m[3];
+      const alsoTrue = new Set(
+        (fact.childAlsoHas?.[child] || []).map((property) => `It has ${property}.`)
+      );
+      for (const option of q.options) {
+        expect(propertySentences.has(option)).toBe(true); // no invented text
+        if (option !== q.correctAnswer) {
+          expect(alsoTrue.has(option)).toBe(false);
+        }
+      }
+      expect(new Set(q.options).size).toBe(q.options.length); // no dupes
+      expect(q.options.length).toBe(4);
     }
   });
 

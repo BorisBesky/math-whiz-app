@@ -228,10 +228,22 @@ const generateMixedNumbersQuestion = (difficulty) => {
   if (!add && numerator === 0) return generateMixedNumbersQuestion(difficulty);
   const correct = formatMixed(numerator, denominator);
 
+  // Straight-across error: add wholes together and add tops/bottoms straight,
+  // left unsimplified. When the wholes cancel in a subtraction (w1 === w2),
+  // the whole part is 0 and we drop it so the option reads as a proper
+  // fraction ("3/9") instead of the malformed "0 3/9".
+  const strawWhole = add ? w1 + w2 : Math.abs(w1 - w2);
+  const strawNumerator = add ? n1 + n2 : Math.abs(n1 - n2) || 1;
+  const strawDenominator = d1 + d2;
+  const strawMixed =
+    strawWhole === 0
+      ? `${strawNumerator}/${strawDenominator}`
+      : `${strawWhole} ${strawNumerator}/${strawDenominator}`;
+
   const distractors = [
     formatMixed(add ? numerator + denominator : Math.max(numerator - denominator, 1), denominator), // whole part off by one
     formatMixed(add ? numerator + d1 : Math.max(numerator - d1, 1), denominator),
-    `${add ? w1 + w2 : Math.abs(w1 - w2)} ${add ? n1 + n2 : Math.abs(n1 - n2) || 1}/${d1 + d2}`, // straight-across error, left unsimplified
+    strawMixed,
   ].filter((option) => option !== correct);
 
   return {

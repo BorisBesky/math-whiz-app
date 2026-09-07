@@ -164,7 +164,8 @@ const MeasurementDataExplanation = () => {
     // We'll show a full circle instead
     if (angle === 360) {
       return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${angle} degree angle diagram`}>
+          <title>{`${angle}° angle`}</title>
           <circle cx={centerX} cy={centerY} r="3" fill="#333" />
           <line x1={centerX} y1={centerY} x2={centerX + rayLength} y2={centerY} stroke={stroke} strokeWidth="2" />
           <circle cx={centerX} cy={centerY} r={arcRadius} fill="none" stroke={arcStroke} strokeWidth="2" />
@@ -175,7 +176,8 @@ const MeasurementDataExplanation = () => {
     const pathData = `M ${centerX + arcRadius} ${centerY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} 0 ${arcEndX} ${arcEndY}`;
 
     return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${angle} degree angle diagram`}>
+        <title>{`${angle}° angle`}</title>
         <circle cx={centerX} cy={centerY} r="3" fill="#333" />
         <line x1={centerX} y1={centerY} x2={centerX + rayLength} y2={centerY} stroke={stroke} strokeWidth="2" />
         <line x1={centerX} y1={centerY} x2={ray2X} y2={ray2Y} stroke={stroke} strokeWidth="2" />

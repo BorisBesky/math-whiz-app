@@ -149,22 +149,31 @@ const generateGridDistancesQuestion = (difficulty) => {
 /* classifying shapes — definition → name (5.G.B.4)                    */
 /* Format: "Which shape is <description>?"                             */
 /* The bank is mirrored in __tests__/questions.test.js.                */
+/*                                                                     */
+/* `alsoMatches` lists other names that ALSO fit the description under */
+/* the inclusive CCSS hierarchy (a square is a rectangle, a rectangle  */
+/* is a parallelogram, etc.). Those names are excluded from the        */
+/* distractor pool so a student picking an equally-valid answer is     */
+/* never marked wrong.                                                 */
 /* ------------------------------------------------------------------ */
 export const SHAPE_DEFINITIONS = [
-  { description: 'a quadrilateral with exactly one pair of parallel sides', name: 'trapezoid' },
-  { description: 'a quadrilateral with two pairs of parallel sides', name: 'parallelogram' },
-  { description: 'a parallelogram with four right angles', name: 'rectangle' },
-  { description: 'a parallelogram with four equal sides', name: 'rhombus' },
-  { description: 'a rectangle with four equal sides', name: 'square' },
-  { description: 'a triangle with all three sides equal', name: 'equilateral triangle' },
-  { description: 'a triangle with no equal sides', name: 'scalene triangle' },
-  { description: 'a triangle with one right angle', name: 'right triangle' },
+  { description: 'a quadrilateral with exactly one pair of parallel sides', name: 'trapezoid', alsoMatches: [] },
+  { description: 'a quadrilateral with two pairs of parallel sides', name: 'parallelogram', alsoMatches: ['rectangle', 'rhombus', 'square'] },
+  { description: 'a parallelogram with four right angles', name: 'rectangle', alsoMatches: ['square'] },
+  { description: 'a parallelogram with four equal sides', name: 'rhombus', alsoMatches: ['square'] },
+  { description: 'a rectangle with four equal sides', name: 'square', alsoMatches: [] },
+  { description: 'a triangle with all three sides equal', name: 'equilateral triangle', alsoMatches: [] },
+  { description: 'a triangle with no equal sides', name: 'scalene triangle', alsoMatches: [] },
+  { description: 'a triangle with one right angle', name: 'right triangle', alsoMatches: [] },
 ];
 
 const generateClassifyingShapesQuestion = () => {
   const entry = pick(SHAPE_DEFINITIONS);
+  const forbidden = new Set([entry.name, ...(entry.alsoMatches || [])]);
   const others = shuffle(
-    SHAPE_DEFINITIONS.filter((other) => other.name !== entry.name).map((other) => other.name)
+    SHAPE_DEFINITIONS
+      .map((other) => other.name)
+      .filter((name) => !forbidden.has(name))
   ).slice(0, 3);
   return {
     question: `Which shape is ${entry.description}?`,
@@ -198,27 +207,55 @@ export const HIERARCHY_STATEMENTS = [
   { statement: 'Every quadrilateral is a parallelogram.', truth: false },
 ];
 
+// `childAlsoHas` lists every OTHER property (from the geometric bank) that is
+// also true about the child in question. Those get excluded from the
+// distractor pool — otherwise a distractor like "four equal sides" for the
+// square-is-a-rectangle prompt would be an equally-correct answer.
 export const INHERITANCE_FACTS = [
   {
     parent: 'rectangles',
     property: 'four right angles',
     children: ['square'],
+    childAlsoHas: {
+      square: ['two pairs of parallel sides', 'four equal sides'],
+    },
   },
   {
     parent: 'parallelograms',
     property: 'two pairs of parallel sides',
     children: ['rectangle', 'rhombus', 'square'],
+    childAlsoHas: {
+      rectangle: ['four right angles'],
+      rhombus: ['four equal sides'],
+      square: ['four right angles', 'four equal sides'],
+    },
   },
   {
     parent: 'rhombuses',
     property: 'four equal sides',
     children: ['square'],
+    childAlsoHas: {
+      square: ['four right angles', 'two pairs of parallel sides'],
+    },
   },
 ];
 
-const ALL_PROPERTIES = INHERITANCE_FACTS.map((fact) => `It has ${fact.property}.`).concat([
-  'It has exactly one pair of parallel sides.',
-]);
+// Bank of geometric properties used as options in the inheritance question.
+// The first four are the shape properties named in the hierarchy prompts; the
+// rest are properties that are DEFINITELY FALSE about any rectangle, rhombus,
+// or square, so they remain safe distractors after the childAlsoHas filter
+// removes the properties that are also true about the specific child.
+export const HIERARCHY_PROPERTIES = [
+  'four right angles',
+  'two pairs of parallel sides',
+  'four equal sides',
+  'exactly one pair of parallel sides',
+  'exactly three sides',
+  'no equal sides',
+  'an odd number of sides',
+];
+
+const ALL_PROPERTIES = HIERARCHY_PROPERTIES.map((property) => `It has ${property}.`);
 
 const generateShapeHierarchyQuestion = (difficulty) => {
   if (difficulty < 0.5) {
@@ -236,12 +273,14 @@ const generateShapeHierarchyQuestion = (difficulty) => {
   const fact = pick(INHERITANCE_FACTS);
   const child = pick(fact.children);
   const correct = `It has ${fact.property}.`;
+  const alsoTrue = (fact.childAlsoHas?.[child] || []).map((property) => `It has ${property}.`);
+  const excluded = new Set([correct, ...alsoTrue]);
   return {
     question: `All ${fact.parent} have ${fact.property}. Every ${child} is one of the ${fact.parent}. What must be true about every ${child}?`,
     correctAnswer: correct,
     options: shuffle([
       correct,
-      ...shuffle(ALL_PROPERTIES.filter((property) => property !== correct)).slice(0, 3),
+      ...shuffle(ALL_PROPERTIES.filter((property) => !excluded.has(property))).slice(0, 3),
     ]),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: 'Whatever is true for the whole category is true for every shape inside it.',

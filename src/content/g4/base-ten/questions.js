@@ -815,10 +815,15 @@ export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
     return generateMultiStepWordProblemQuestion(difficulty);
   }
   const correctAnswer = answer.toString();
+  // A "close but wrong" distractor above and one below is more instructive
+  // than three high options — but the below option must not go negative.
+  // Fourth graders shouldn't see "-1800" offered as a possible ticket count.
+  const belowDistractor = Math.max(answer - 5000, Math.floor(answer / 2), 1);
   const potentialDistractors = [
     (answer + 5000).toString(),
-    (answer - 5000).toString(),
+    belowDistractor.toString(),
     (answer + 10000).toString(),
+    (answer + 2500).toString(), // backup so the collision case still has 4 options
   ];
 
   return {
