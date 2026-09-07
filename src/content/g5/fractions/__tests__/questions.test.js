@@ -85,6 +85,26 @@ describe('Fractions 5th correctness', () => {
     }
   });
 
+  test('mixed numbers: every option is well-formed (no "0 X/Y" leading zero)', () => {
+    // Standard mixed-number notation writes X/Y, not "0 X/Y". The
+    // straight-across-error distractor used to emit "0 3/9" whenever the
+    // whole parts happened to cancel in a subtraction — students should
+    // never see that as a plausible answer choice.
+    const isWellFormedMixed = (s) =>
+      /^\d+$/.test(s) || // whole number
+      /^\d+\/\d+$/.test(s) || // proper or improper fraction
+      /^[1-9]\d* \d+\/\d+$/.test(s); // mixed: whole must be >= 1
+    for (const q of draw('mixed numbers', 300)) {
+      for (const option of q.options) {
+        expect({ option, question: q.question }).toEqual({
+          option: expect.stringMatching(/^(\d+|\d+\/\d+|[1-9]\d* \d+\/\d+)$/),
+          question: q.question,
+        });
+        expect(isWellFormedMixed(option)).toBe(true);
+      }
+    }
+  });
+
   test('fraction as division: all three variants are exact', () => {
     for (const q of draw('fraction as division')) {
       let m;

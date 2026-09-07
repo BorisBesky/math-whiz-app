@@ -50,6 +50,18 @@ describe('G4 geometry Explanation: parallelogram does not falsely exclude right 
   });
 });
 
+describe('G4 geometry Explanation: L-shape perimeter tip is consistent with the diagram', () => {
+  // The example L-shape lists sides 3, 6, 6, 3, 9, 9 summing to 36. The two
+  // 6-unit sides are on the OUTSIDE (right edge of the vertical column and
+  // top of the horizontal foot's right extension) — the earlier tip claimed
+  // they were "on the inside", contradicting the sum right above it.
+  it('does not tell students the two 6-unit sides are "on the inside" of the L', () => {
+    expect(explanationSrc).not.toMatch(
+      /two shorter sides on the inside of the L[\s\S]{0,80}6 and[\s\S]{0,30}6[\s\S]{0,80}not[\s\S]{0,30}outside/
+    );
+  });
+});
+
 describe('G4 geometry Explanation: pentagon/hexagon gallery cards qualify "regular"', () => {
   // The gallery cards for these shapes list properties that only hold for the
   // regular variant ("5 equal sides", "sum of angles = 720°" for a hexagon —

@@ -683,7 +683,8 @@ const GeometryExplanation = () => {
               <h3 style={styles.h3}>Parallel Lines ∥</h3>
               <p>Lines that go in the <strong>same direction</strong> and <strong>never cross</strong>, no matter how far they go!</p>
               <div style={styles.svgContainer}>
-                <svg width="200" height="120" viewBox="0 0 200 120">
+                <svg width="200" height="120" viewBox="0 0 200 120" role="img" aria-label="Two horizontal parallel lines with arrows on both ends, staying the same distance apart">
+                  <title>Two parallel lines that never meet, marked with equal-distance tick marks</title>
                   {/* Top line with arrows */}
                   <line x1="20" y1="35" x2="180" y2="35" stroke="#2196f3" strokeWidth="3" />
                   <polygon points="180,35 170,30 170,40" fill="#2196f3" />
@@ -713,7 +714,8 @@ const GeometryExplanation = () => {
               <h3 style={styles.h3}>Perpendicular Lines ⊥</h3>
               <p>Lines that cross each other at a <strong>right angle (90°)</strong>, making a perfect corner!</p>
               <div style={styles.svgContainer}>
-                <svg width="200" height="120" viewBox="0 0 200 120">
+                <svg width="200" height="120" viewBox="0 0 200 120" role="img" aria-label="A horizontal line crossing a vertical line at a right angle, with a small square marking the 90 degree corner">
+                  <title>Two perpendicular lines crossing at a 90-degree angle</title>
                   {/* Horizontal line with arrows */}
                   <line x1="30" y1="65" x2="170" y2="65" stroke="#e91e63" strokeWidth="3" />
                   <polygon points="170,65 160,60 160,70" fill="#e91e63" />
@@ -737,7 +739,8 @@ const GeometryExplanation = () => {
           <strong>🔍 Spot the Difference:</strong>
           <div style={{display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', marginTop: '10px'}}>
             <div style={{textAlign: 'center', margin: '10px'}}>
-              <svg width="90" height="70" viewBox="0 0 90 70">
+              <svg width="90" height="70" viewBox="0 0 90 70" role="img" aria-label="Two horizontal lines that never cross — parallel">
+                <title>Parallel lines example</title>
                 <line x1="10" y1="20" x2="80" y2="20" stroke="#2196f3" strokeWidth="3" />
                 <line x1="10" y1="50" x2="80" y2="50" stroke="#2196f3" strokeWidth="3" />
               </svg>
@@ -745,7 +748,8 @@ const GeometryExplanation = () => {
               <br/><span style={{fontSize: '0.85em'}}>Never cross</span>
             </div>
             <div style={{textAlign: 'center', margin: '10px'}}>
-              <svg width="90" height="70" viewBox="0 0 90 70">
+              <svg width="90" height="70" viewBox="0 0 90 70" role="img" aria-label="A horizontal line and a vertical line crossing at a right angle — perpendicular">
+                <title>Perpendicular lines example</title>
                 <line x1="10" y1="35" x2="80" y2="35" stroke="#e91e63" strokeWidth="3" />
                 <line x1="45" y1="5" x2="45" y2="65" stroke="#e91e63" strokeWidth="3" />
                 <rect x="45" y="25" width="10" height="10" fill="none" stroke="#ff9800" strokeWidth="1.5" />
@@ -754,7 +758,8 @@ const GeometryExplanation = () => {
               <br/><span style={{fontSize: '0.85em'}}>Cross at 90°</span>
             </div>
             <div style={{textAlign: 'center', margin: '10px'}}>
-              <svg width="90" height="70" viewBox="0 0 90 70">
+              <svg width="90" height="70" viewBox="0 0 90 70" role="img" aria-label="Two diagonal lines crossing in an X, meeting at an angle that is not 90 degrees — intersecting">
+                <title>Intersecting lines example</title>
                 <line x1="10" y1="55" x2="80" y2="15" stroke="#9c27b0" strokeWidth="3" />
                 <line x1="10" y1="15" x2="80" y2="55" stroke="#9c27b0" strokeWidth="3" />
               </svg>
@@ -1147,10 +1152,11 @@ const GeometryExplanation = () => {
             </div>
           </div>
           <p style={{fontSize: '0.95em', color: '#555'}}>
-            <strong>Tip:</strong> The two shorter sides on the inside of the L (the 6 and
-            the 6) are <em>not</em> on the outside, so they don't get added when you walk
-            around the perimeter — but they do help you split the shape into rectangles
-            for area!
+            <strong>Tip:</strong> All six sides you added up (3 + 6 + 6 + 3 + 9 + 9) trace
+            the <em>outside</em> of the L — including the two 6's, which run along the
+            outer edges after the concave corner. The only "inside" line is the imaginary
+            cut you draw to split the L into two rectangles for area; that cut is not
+            part of the perimeter.
           </p>
         </div>
 
