@@ -525,12 +525,22 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
       subclassOf: [],
     },
     {
+      // The `Explanation.js` for this topic (and the G5 hierarchy the student
+      // will meet next year) teaches an inclusive hierarchy: every square is
+      // a rectangle, every rectangle is a parallelogram, every square is a
+      // rhombus. So descriptions here must NEVER teach exclusive facts like
+      // "a rectangle has adjacent sides of different lengths" or "a rhombus
+      // has no right angles" — those would contradict the same app's own
+      // Explanation and mark a technically-correct answer wrong.
+      //
+      // We instead use explicit "NOT ..." qualifiers (the same pattern as
+      // `generateQuadrilateralPropertiesQuestion` below) to name the specific
+      // shape unambiguously without denying the hierarchy. The `subclassOf`
+      // list then keeps subclass names out of the distractor pool so the
+      // presented options still resolve to a single correct answer.
       name: "rectangle",
-      description: "has 4 sides with opposite sides equal, adjacent sides of different lengths, and 4 right angles",
+      description: "has 4 right angles, with opposite sides equal but NOT all sides equal",
       properties: ["4 sides", "opposite sides equal", "all angles 90°"],
-      // Squares satisfy the generic rectangle description; the "adjacent sides
-      // of different lengths" clause above excludes squares mathematically,
-      // but keep them out of the distractor pool as a belt-and-suspenders.
       subclassOf: ["square"],
     },
     {
@@ -541,13 +551,13 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
     },
     {
       name: "rhombus",
-      description: "has 4 equal sides and no right angles",
+      description: "has 4 equal sides but NOT 4 right angles",
       properties: ["4 sides", "all sides equal", "opposite angles equal"],
       subclassOf: ["square"],
     },
     {
       name: "parallelogram",
-      description: "has 4 sides with opposite sides parallel and equal, adjacent sides of different lengths, and no right angles",
+      description: "has opposite sides parallel and equal, but NOT 4 right angles and NOT all sides equal",
       properties: ["4 sides", "opposite sides parallel", "opposite sides equal"],
       subclassOf: ["square", "rectangle", "rhombus"],
     },
@@ -592,9 +602,13 @@ export function generateTriangleClassificationBySidesQuestion(difficulty = 0.5) 
       properties: "all 3 sides equal",
     },
     {
-      name: "isosceles", 
+      name: "isosceles",
       description: "A triangle with exactly two sides equal",
-      properties: "2 sides equal",
+      // "exactly" is load-bearing: under the inclusive definition an
+      // equilateral triangle also has "two sides equal" (it has three), so a
+      // question worded "What triangle has 2 sides equal?" would mark a
+      // student picking "equilateral" wrong on a technically-correct answer.
+      properties: "exactly 2 sides equal",
     },
     {
       name: "scalene",
