@@ -8,6 +8,7 @@ import {
   generatePointsLinesRaysQuestion,
   generateShapeClassificationQuestion,
   generateQuadrilateralPropertiesQuestion,
+  generateTriangleClassificationBySidesQuestion,
   refreshAngleAdditionDiagram,
 } from '../questions.js';
 
@@ -267,6 +268,57 @@ describe('geometry shape classification: no hierarchy-driven ambiguity', () => {
       // Sanity: correct answer is in options; options are distinct.
       expect(q.options).toContain(q.correctAnswer);
       expect(new Set(q.options).size).toBe(q.options.length);
+    }
+  });
+
+  it('never teaches exclusive definitions that contradict the inclusive shape hierarchy', () => {
+    // Explanation.js in this topic (and G5 hierarchy) teaches: every square
+    // is a rectangle, a rhombus, and a parallelogram. A question stating
+    // "rectangle has adjacent sides of different lengths" or "rhombus has
+    // no right angles" would directly deny that hierarchy and confuse the
+    // same student who read the Explanation. The specific exclusive phrasings
+    // we regressed away from must never come back.
+    const exclusivePhrases = [
+      // Historic rectangle wording that excluded squares.
+      /adjacent sides of different lengths/i,
+      // Historic rhombus / parallelogram wording that excluded squares.
+      /and no right angles/i,
+    ];
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateShapeClassificationQuestion();
+      exclusivePhrases.forEach((pattern) => {
+        expect(q.question).not.toMatch(pattern);
+      });
+    }
+  });
+});
+
+describe('triangle classification by sides: no hierarchy-driven ambiguity', () => {
+  // Under the inclusive definition an equilateral triangle also has "two
+  // sides equal" — it has three. A prompt worded "What type of triangle has
+  // 2 sides equal?" therefore has TWO defensible answers (isosceles and
+  // equilateral), and a student picking equilateral would be marked wrong on
+  // a mathematically-correct choice. The isosceles prompt must always carry
+  // the "exactly" qualifier.
+  it('never asks "What type of triangle has 2 sides equal?" without an "exactly" qualifier', () => {
+    let isoscelesSeen = 0;
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateTriangleClassificationBySidesQuestion();
+      if (q.correctAnswer !== 'isosceles') continue;
+      isoscelesSeen += 1;
+      expect(q.question).toMatch(/exactly/i);
+      // Belt-and-suspenders: forbid the exact pre-fix wording verbatim.
+      expect(q.question).not.toBe('What type of triangle has 2 sides equal?');
+    }
+    expect(isoscelesSeen).toBeGreaterThan(0);
+  });
+
+  it('always produces a valid question with the correct answer among unique options', () => {
+    for (let i = 0; i < 300; i += 1) {
+      const q = generateTriangleClassificationBySidesQuestion();
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(['equilateral', 'isosceles', 'scalene']).toContain(q.correctAnswer);
     }
   });
 });
