@@ -4,6 +4,7 @@ import { CheckCircle, Coins, Globe2, Image, Store, X } from "lucide-react";
 import { STORE_BACKGROUND_COST } from "../constants/appConstants";
 import CharacterStore from "./rewards/CharacterStore";
 import PlanetStore from "./rewards/PlanetStore";
+import StoreMedia from "./StoreMedia";
 
 const BackgroundStore = ({
   storeItems,
@@ -79,10 +80,9 @@ const BackgroundStore = ({
                 className="group flex flex-col items-center justify-between rounded-lg border border-gray-100 bg-white p-3 shadow-card transition-all duration-300 hover:shadow-card-hover"
               >
                 <div className="relative mb-3 w-full overflow-hidden rounded-lg">
-                  <img
-                    src={item.url}
+                  <StoreMedia
+                    url={item.url}
                     alt={item.name}
-                    loading="lazy"
                     onClick={(event) => handleStoreImageClick(item, event)}
                     className="h-32 w-full cursor-pointer bg-gray-100 object-cover transition-transform duration-300 group-hover:scale-105"
                   />
@@ -282,10 +282,11 @@ const RewardsStore = ({
             >
               <X className="h-8 w-8" />
             </button>
-            <img
-              src={popupImage.url}
+            <StoreMedia
+              url={popupImage.url}
               alt={popupImage.name}
               className="max-h-[85vh] max-w-full rounded-lg bg-white object-contain shadow-2xl"
+              controls
             />
             <div className="mt-4 text-center text-white">
               <h3 className="text-xl font-bold">{popupImage.name}</h3>

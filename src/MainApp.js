@@ -68,8 +68,10 @@ import {
   decodeTopicFromPath,
 } from "./utils/firebaseHelpers";
 import { loadStoreImages, getCachedStoreImages } from "./utils/storeImages";
+import { isVideoStoreMedia } from "./utils/storeMedia";
 import { resetTransientQuizState } from './utils/quizStateHelpers';
 import AppHeader from './components/AppHeader';
+import StoreMedia from "./components/StoreMedia";
 import TopicSelection from './components/TopicSelection';
 import StudentProfile from './components/StudentProfile';
 import Dashboard from './components/Dashboard';
@@ -90,7 +92,7 @@ import { purchaseCharacterSkill } from './services/characterSkillStoreService';
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-sage-owl-v43" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-video-bg-v1" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -2573,6 +2575,7 @@ Answer: [The answer]`;
     userData?.activeBackground && userData.activeBackground !== "default"
       ? storeItems.find((item) => item.id === userData.activeBackground)?.url
       : DEFAULT_BACKGROUND_IMAGE;
+  const isActiveBgVideo = isVideoStoreMedia(activeBgUrl);
   const portalMessagesPath = getPortalMessagesPath(userRole);
 
   if (!user || !userData) {
@@ -2587,12 +2590,23 @@ Answer: [The answer]`;
   return (
     <div
       className="min-h-screen bg-gray-100 font-sans relative"
-      style={{
-        backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : "none",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      style={
+        activeBgUrl && !isActiveBgVideo
+          ? {
+              backgroundImage: `url(${activeBgUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : undefined
+      }
     >
+      {isActiveBgVideo ? (
+        <StoreMedia
+          url={activeBgUrl}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-0"></div>
       <div className="relative z-10 w-full">
         <AppHeader

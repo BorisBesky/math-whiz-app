@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Image as ImageIcon, AlertCircle, CheckCircle, Sparkles, Edit2, Trash2, X, Save } from 'lucide-react';
 import { loadStoreImages, clearStoreImagesCache, updateStoreImage, deleteStoreImage, deleteStoreTheme } from '../utils/storeImages';
+import StoreMedia from './StoreMedia';
 import ImageGenerationModal from './ImageGenerationModal';
 import ConfirmationModal from './ui/ConfirmationModal';
 import useConfirmation from '../hooks/useConfirmation';
@@ -193,7 +194,7 @@ const StoreImagesManager = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Store Images</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Manage background images available in the rewards store
+            Manage background images and videos available in the rewards store
           </p>
         </div>
         <div className="flex gap-2">
@@ -219,7 +220,7 @@ const StoreImagesManager = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 mb-2">How to Add Images</h3>
         <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
-          <li>Upload image files to Firebase Storage in the <code className="bg-blue-100 px-1 rounded">store-images/</code> folder</li>
+          <li>Upload image or video files to Firebase Storage in the <code className="bg-blue-100 px-1 rounded">store-images/</code> folder</li>
           <li>Create or update <code className="bg-blue-100 px-1 rounded">image-metadata.json</code> in the same folder</li>
           <li>Each image entry should have: <code className="bg-blue-100 px-1 rounded">name</code>, <code className="bg-blue-100 px-1 rounded">description</code>, <code className="bg-blue-100 px-1 rounded">theme</code>, and <code className="bg-blue-100 px-1 rounded">filename</code></li>
           <li>Click "Refresh" to reload images from Firebase Storage</li>
@@ -404,8 +405,8 @@ const StoreImagesManager = () => {
                     className="relative w-full h-48 mb-3 bg-gray-100 rounded-md overflow-hidden group cursor-pointer"
                     onClick={() => openPreview(item)}
                   >
-                    <img
-                      src={item.url}
+                    <StoreMedia
+                      url={item.url}
                       alt={item.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
@@ -481,10 +482,11 @@ const StoreImagesManager = () => {
             >
               <X className="w-8 h-8" />
             </button>
-            <img
-              src={previewImage.url}
+            <StoreMedia
+              url={previewImage.url}
               alt={previewImage.name}
               className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-white cursor-pointer"
+              controls
             />
             <div className="mt-4 text-white text-center">
               <h3 className="text-xl font-bold">{previewImage.name}</h3>

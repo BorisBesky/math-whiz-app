@@ -3,7 +3,7 @@
  * Uses localStorage with TTL (Time To Live) to cache images
  */
 
-const CACHE_KEY = 'store_images_cache';
+const CACHE_KEY = 'store_images_cache_v2';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /**
