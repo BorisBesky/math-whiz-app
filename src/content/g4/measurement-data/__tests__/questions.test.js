@@ -5,6 +5,7 @@ import {
   generateClockReadingQuestion,
   generateAreaPerimeterQuestion,
   generateDataInterpretationQuestion,
+  generateLinePlotQuestion,
 } from '../questions.js';
 
 // Mock the clock SVG generator so the tests don't depend on its output.
@@ -220,6 +221,38 @@ describe('generateDataInterpretationQuestion chart data', () => {
       expect(q.correctAnswer).toBe(winners[0].category);
     }
     expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('generateLinePlotQuestion multiple-choice options', () => {
+  // Every line-plot question is multiple choice with a fixed answer domain
+  // (fraction values that ARE on the plot, or whole-number counts). If the
+  // distractor pool collapses onto the correct answer the student sees only
+  // 2 or 3 choices — a silent coin-flip regression. Bug caught in the wild
+  // when the plot uses only 3 distinct fraction values: the mostCommon /
+  // leastCommon variants had 2 valid distractors, so the shipped MC was
+  // 3-option. This test wraps many draws so we exercise every variant at
+  // every difficulty.
+  it('always ships 4 distinct multiple-choice options', () => {
+    const seenTypes = new Set();
+    for (let i = 0; i < 1500; i += 1) {
+      const difficulty = (i % 5) / 4; // 0, 0.25, 0.5, 0.75, 1
+      const q = generateLinePlotQuestion(difficulty);
+      // The four question variants share the same subtopic string, so
+      // distinguish them by their question text prefix.
+      if (q.question.includes('appears most frequently')) seenTypes.add('mostCommon');
+      else if (q.question.includes('appears least frequently')) seenTypes.add('leastCommon');
+      else if (q.question.includes('How many data points are at')) seenTypes.add('count');
+      else if (q.question.includes('How many total measurements')) seenTypes.add('howMany');
+
+      expect(Array.isArray(q.options)).toBe(true);
+      expect(q.options.length).toBe(4);
+      const unique = new Set(q.options.map((o) => String(o)));
+      expect(unique.size).toBe(4);
+      expect(unique.has(String(q.correctAnswer))).toBe(true);
+    }
+    // Coverage sanity: every variant should surface in 1500 draws.
+    expect(seenTypes.size).toBe(4);
   });
 });
 

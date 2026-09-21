@@ -268,6 +268,12 @@ describe('geometry shape classification: no hierarchy-driven ambiguity', () => {
       // Sanity: correct answer is in options; options are distinct.
       expect(q.options).toContain(q.correctAnswer);
       expect(new Set(q.options).size).toBe(q.options.length);
+      // The parallelogram target excludes 3 of the 4 named shape distractors
+      // (square, rectangle, rhombus), leaving only "triangle" in-hierarchy.
+      // The generator must pad with named shapes outside the parallelogram
+      // hierarchy (kite / pentagon / hexagon / circle) so the shipped MC is
+      // always 4-option — never a 2-option coin flip.
+      expect(q.options.length).toBe(4);
     }
   });
 

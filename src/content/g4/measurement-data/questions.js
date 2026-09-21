@@ -506,21 +506,32 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
   
   // Select distinct values to use in the plot (3 to 5 distinct values)
   const numDistinctValues = getRandomInt(3, 5);
-  const selectedValues = shuffle(allPossibleValues).slice(0, numDistinctValues);
-  
+  const shuffledValues = shuffle(allPossibleValues);
+  const selectedValues = shuffledValues.slice(0, numDistinctValues);
+  // "Nearby" values not chosen for the plot — used to pad the wrong-answer pool
+  // for the mostCommon/leastCommon variants below when we picked only 3 distinct
+  // plot values. Those extras appear ZERO times in the data, so they're
+  // legitimate wrong answers to "which measurement appears most/least often?".
+  const paddingValues = shuffledValues.slice(numDistinctValues);
+
+  const valueToKey = (value) =>
+    value.numerator === 0
+      ? `${value.whole}`
+      : `${value.whole} ${value.numerator}/${value.denominator}`;
+
   // Determine frequencies with guaranteed unique max and min
   const minFreq = 1;
   const maxFreq = getRandomInt(3, 5); // Ensure gap for distinctness (at least 2 greater than min)
-  
+
   // Assign counts
   let valueCounts = [];
-  
+
   // 1. Max frequency
   valueCounts.push({ value: selectedValues[0], count: maxFreq });
-  
+
   // 2. Min frequency
   valueCounts.push({ value: selectedValues[1], count: minFreq });
-  
+
   // 3. Others (strictly between min and max)
   for (let i = 2; i < selectedValues.length; i++) {
       const midCount = getRandomInt(minFreq + 1, maxFreq - 1);
@@ -533,12 +544,8 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
     for(let k=0; k < item.count; k++) {
         dataPoints.push(item.value);
     }
-    
-    // Build counts map
-    const key = item.value.numerator === 0 
-        ? `${item.value.whole}` 
-        : `${item.value.whole} ${item.value.numerator}/${item.value.denominator}`;
-    counts[key] = item.count;
+
+    counts[valueToKey(item.value)] = item.count;
   });
   
   dataPoints = shuffle(dataPoints);
@@ -562,13 +569,26 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
   
   if (questionType === 'count') {
     const targetValue = sortedKeys[getRandomInt(0, Math.min(2, sortedKeys.length - 1))];
-    const correctAnswer = counts[targetValue].toString();
-    const potentialDistractors = [
-      (counts[targetValue] + 1).toString(),
-      (counts[targetValue] - 1).toString(),
-      (numPoints).toString(),
+    const targetCount = counts[targetValue];
+    const correctAnswer = targetCount.toString();
+    // Pad from a wide numeric window so we always land on 3 non-colliding
+    // distractors: +1 and −1 are the misread-by-one errors, and the rest are
+    // any other whole numbers 0..numPoints that don't equal the correct answer.
+    // "0" is a valid wrong answer here — the student may claim the value never
+    // appears — but negatives are not.
+    const candidateDistractors = [
+      (targetCount + 1).toString(),
+      (targetCount - 1).toString(),
+      numPoints.toString(),
     ];
-    
+    for (let n = 0; n <= numPoints + 2 && candidateDistractors.length < 6; n++) {
+      const s = n.toString();
+      if (!candidateDistractors.includes(s) && s !== correctAnswer) {
+        candidateDistractors.push(s);
+      }
+    }
+    const potentialDistractors = candidateDistractors.filter(s => Number(s) >= 0);
+
     return {
       question: `Line Plot Data:\n${dataDescription}\n\nHow many data points are at ${targetValue}?`,
       correctAnswer: correctAnswer,
@@ -582,8 +602,15 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
     };
   } else if (questionType === 'mostCommon') {
     const correctAnswer = mostCommon;
-    const wrongOptions = sortedKeys.filter(k => k !== mostCommon).slice(0, 3);
-    
+    // Values in the plot that aren't the most common are the primary
+    // distractors. When the plot uses only 3 distinct values we'd otherwise
+    // ship a 3-option MC, so pad with unused fraction values (they legitimately
+    // "appear 0 times", i.e. less often than any plotted value).
+    const wrongOptions = [
+      ...sortedKeys.filter(k => k !== mostCommon),
+      ...paddingValues.map(valueToKey).filter(k => !counts[k]),
+    ].slice(0, 3);
+
     return {
       question: `Line Plot Data:\n${dataDescription}\n\nWhich measurement appears most frequently?`,
       correctAnswer: correctAnswer,
@@ -597,8 +624,15 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
     };
   } else if (questionType === 'leastCommon') {
     const correctAnswer = leastCommon;
-    const wrongOptions = sortedKeys.filter(k => k !== leastCommon).slice(0, 3);
-    
+    // Same padding rationale as mostCommon above. An unused fraction value has
+    // 0 occurrences, so it doesn't appear "least" in the plot (the plot only
+    // shows the values that ARE plotted) — that's why the plotted values
+    // themselves stay the primary distractors and padding is a last-resort.
+    const wrongOptions = [
+      ...sortedKeys.filter(k => k !== leastCommon),
+      ...paddingValues.map(valueToKey).filter(k => !counts[k]),
+    ].slice(0, 3);
+
     return {
       question: `Line Plot Data:\n${dataDescription}\n\nWhich measurement appears least frequently?`,
       correctAnswer: correctAnswer,
@@ -612,12 +646,20 @@ export function generateLinePlotQuestion(difficulty = 0.5) {
     };
   } else {
     const correctAnswer = numPoints.toString();
-    const potentialDistractors = [
+    // "sortedKeys.length" (the count of distinct values plotted) can collide
+    // with numPoints−1 for small samples (e.g. 4 points with 3 distinct
+    // values both produce "3"). Build a wider pool so a collision still leaves
+    // enough distinct wrong answers to fill 4 options.
+    const candidateDistractors = [
       (numPoints + 2).toString(),
       (numPoints - 1).toString(),
-      (sortedKeys.length).toString(),
+      sortedKeys.length.toString(),
+      (numPoints + 1).toString(),
+      (numPoints + 3).toString(),
+      Math.max(0, numPoints - 2).toString(),
     ];
-    
+    const potentialDistractors = candidateDistractors.filter(s => Number(s) >= 0 && s !== correctAnswer);
+
     return {
       question: `Line Plot Data:\n${dataDescription}\n\nHow many total measurements are shown on the line plot?`,
       correctAnswer: correctAnswer,
