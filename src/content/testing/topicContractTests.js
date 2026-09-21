@@ -61,6 +61,18 @@ export const runTopicContractTests = (topicModule, options = {}) => {
         // A multiple-choice question the student cannot answer is a hard bug.
         expect(isMultipleChoiceAnswerable(question)).toBe(true);
 
+        // Multiple-choice options must be distinct — a duplicate option is a
+        // silent collapse (two choices that look the same, one of them the
+        // secretly-correct one) that a student can't detect. The count itself
+        // isn't checked here because a few subtopics have inherently narrow
+        // answer domains (comparison operators like <, >, =; prime/composite);
+        // the topic-specific tests assert ≥4 options where that guarantee
+        // applies.
+        if (Array.isArray(question.options) && question.options.length > 0) {
+          const uniqueOptions = new Set(question.options.map((o) => String(o)));
+          expect(uniqueOptions.size).toBe(question.options.length);
+        }
+
         if (question.questionType === 'fill-in-the-blanks') {
           const blanks = question.question.match(/_{2,}/g) || [];
           const answers = String(question.correctAnswer).split(';;');

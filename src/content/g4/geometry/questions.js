@@ -569,11 +569,16 @@ export function generateShapeClassificationQuestion(difficulty = 0.5) {
   // description at the definition level).
   const excludedNames = new Set([shape.name, ...shape.subclassOf]);
   const otherShapes = shapes.filter((s) => !excludedNames.has(s.name));
-  const wrongOptions = otherShapes
-    .map((s) => s.name)
-    .slice(0, 2);
-
-  const potentialDistractors = [...wrongOptions, "circle"];
+  // "parallelogram" excludes square/rectangle/rhombus, leaving only [triangle]
+  // as an in-hierarchy distractor. Pad with named shapes outside the
+  // parallelogram hierarchy so the shipped MC is always 4-option, matching the
+  // same pattern already used in `generateQuadrilateralPropertiesQuestion`.
+  const fallbackDistractors = ['circle', 'kite', 'pentagon', 'hexagon']
+    .filter((name) => !excludedNames.has(name));
+  const potentialDistractors = [
+    ...otherShapes.map((s) => s.name),
+    ...fallbackDistractors,
+  ];
   
   return {
     question: `What shape ${shape.description}?`,
