@@ -85,9 +85,9 @@ export const SEO_PAGES = [
   {
     slug: 'fun-math-app-elementary',
     tabLabel: 'Fun Math',
-    title: 'Fun Math App for Elementary School — Rewards & Drawing | Math Whiz',
+    title: 'Fun Math App for Elementary Kids — Free Rewards & Drawing | Math Whiz',
     metaDescription:
-      'Math practice that kids actually enjoy. Earn coins, unlock rewards, draw your work, and level up with adaptive challenges. Free for elementary students.',
+      'Looking for a fun math app for elementary school? Kids earn coins, unlock rewards, and draw their work while practicing adaptive math. Free to start.',
     keyword: 'fun math app elementary school',
     component: React.lazy(() => import('./pages/FunMathAppElementary')),
   },
@@ -103,9 +103,9 @@ export const SEO_PAGES = [
   {
     slug: 'adaptive-math-app',
     tabLabel: 'Adaptive',
-    title: 'Adaptive Math App for Kids — Personalized Practice | Math Whiz',
+    title: 'Adaptive Math App for Kids — Real-Time Personalized Practice | Math Whiz',
     metaDescription:
-      'Math Whiz adapts to your child\'s level in real time. Questions get harder as they improve and easier when they struggle — no frustration, no boredom.',
+      'Looking for an adaptive math app? Math Whiz adjusts difficulty after every answer so kids stay challenged — never bored, never frustrated. Free for 3rd–4th grade.',
     keyword: 'adaptive math app for kids',
     component: React.lazy(() => import('./pages/AdaptiveMathAppForKids')),
   },

@@ -65,9 +65,9 @@ const SEO_PAGES = {
     keyword: "fractions app for kids",
   },
   "fun-math-app-elementary": {
-    title: "Fun Math App for Elementary School - Rewards & Drawing | Math Whiz",
+    title: "Fun Math App for Elementary Kids - Free Rewards & Drawing | Math Whiz",
     description:
-      "Math practice that kids actually enjoy. Earn coins, unlock rewards, draw your work, and level up with adaptive challenges. Free for elementary students.",
+      "Looking for a fun math app for elementary school? Kids earn coins, unlock rewards, and draw their work while practicing adaptive math. Free to start.",
     keyword: "fun math app elementary school",
   },
   "free-math-practice-app": {
@@ -77,9 +77,9 @@ const SEO_PAGES = {
     keyword: "free math practice app elementary",
   },
   "adaptive-math-app": {
-    title: "Adaptive Math App for Kids - Personalized Practice | Math Whiz",
+    title: "Adaptive Math App for Kids - Real-Time Personalized Practice | Math Whiz",
     description:
-      "Math Whiz adapts to your child's level in real time. Questions get harder as they improve and easier when they struggle.",
+      "Looking for an adaptive math app? Math Whiz adjusts difficulty after every answer so kids stay challenged — never bored, never frustrated. Free for 3rd–4th grade.",
     keyword: "adaptive math app for kids",
   },
   "common-core-math-app": {

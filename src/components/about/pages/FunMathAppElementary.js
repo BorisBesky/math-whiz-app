@@ -7,7 +7,7 @@ const FunMathAppElementary = () => (
   <PageWrapper>
     <header>
       <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-        Fun Math App for Elementary School
+        Fun Math App for Elementary Kids
       </h1>
       <p className="mt-4 text-lg text-gray-600 max-w-3xl">
         Most kids don't wake up excited about math practice. But the right app can change that.
