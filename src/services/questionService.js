@@ -51,6 +51,15 @@ export const retryWithBackoff = async (fn, options = {}) => {
     } catch (error) {
       lastError = error;
 
+      // Firestore reports 'unavailable' both for genuinely retryable service
+      // hiccups AND for a client that is simply offline. Waiting 1s+2s+4s only
+      // to fail is wasted time when we already know the network is down —
+      // students in the offline fallback path hit that 7s stall before every
+      // quiz. Bail out immediately so the caller's fallback runs.
+      if (isLikelyOfflineError(error)) {
+        throw error;
+      }
+
       // Check if error is retryable
       const errorCode = error?.code?.toLowerCase() || '';
       const errorMessage = error?.message?.toLowerCase() || '';

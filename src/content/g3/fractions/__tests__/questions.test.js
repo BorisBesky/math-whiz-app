@@ -86,13 +86,37 @@ describe('generateEquivalentFractionsQuestion: never picks the original fraction
 });
 
 describe('generateFractionComparisonQuestion: consistent multiple-choice across both branches', () => {
-  it('always returns MULTIPLE_CHOICE with both < and > as options', () => {
-    for (let i = 0; i < 100; i += 1) {
-      const q = generateFractionComparisonQuestion();
+  it('always returns MULTIPLE_CHOICE with all three comparison symbols as options', () => {
+    // Regression: the option pool was `["<", ">"]`, which after deduping the
+    // correct answer left students with a 2-option coin-flip. Including "="
+    // as a distractor turns the question into a genuine 3-way pick (and
+    // students who mistakenly think the two fractions are equal now see that
+    // choice offered explicitly, so the wrong answer is discoverable).
+    for (let i = 0; i < 300; i += 1) {
+      const q = generateFractionComparisonQuestion(Math.random());
       expect(q.questionType).toBe(QUESTION_TYPES.MULTIPLE_CHOICE);
       expect(Array.isArray(q.options)).toBe(true);
-      expect(q.options).toEqual(expect.arrayContaining(['<', '>']));
+      expect(q.options).toEqual(expect.arrayContaining(['<', '>', '=']));
+      expect(q.options.length).toBe(3);
+      expect(new Set(q.options).size).toBe(3);
       expect(['<', '>']).toContain(q.correctAnswer);
+    }
+  });
+});
+
+describe('generateFractionAdditionQuestion: distractor pool never collapses to 3-option MC', () => {
+  // Regression: the "add both tops AND bottoms", "kept first numerator", and
+  // "product of numerators" candidates all silently reduced to the same value
+  // for common small denominators (e.g. num1=num2=1 with d=3 or d=4). After
+  // dedup the pool held only 2 unique distractors, so generateUniqueOptions
+  // shipped a 3-option MC. The pool was widened with additional misconception
+  // candidates that stay distinct.
+  it('every drawn addition question ships 4 unique options including the correct answer', () => {
+    for (let i = 0; i < 800; i += 1) {
+      const q = generateFractionAdditionQuestion(Math.random());
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
     }
   });
 });

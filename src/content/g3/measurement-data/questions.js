@@ -136,7 +136,10 @@ export function generateVolumeQuestion() {
     options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: "Volume is the space inside an object. You can find it by multiplying length x width x height.",
-    standard: "3.MD.C.5",
+    // 3.MD.C.5 is about *area* (unit squares); volume-by-cubes / l×w×h is a
+    // 5th-grade standard, so surface it as a stretch/preview item under
+    // 5.MD.C.5 rather than mislabel the standard.
+    standard: "5.MD.C.5",
     concept: "Measurement & Data",
     grade: "G3",
     subtopic: "volume",

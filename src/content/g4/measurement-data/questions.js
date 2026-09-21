@@ -157,10 +157,20 @@ export function generateWeightCapacityConversionQuestion(difficulty = 0.5) {
   const wcAmount = wcConv.factor > 100 ? getRandomInt(1, 3) : getRandomInt(2, 8);
   const wcConverted = wcAmount * wcConv.factor;
   const correctAnswer = `${wcConverted} ${wcConv.to}`;
+  // For factor-2 conversions (quarts→pints, pints→cups) the "half" distractor
+  // `floor(2 · wcAmount / 2) === wcAmount` collides with the "forgot to
+  // multiply" distractor `${wcAmount} ${wcConv.to}`, silently collapsing to a
+  // 3-option MC. Substitute a distinct wrong answer (one factor too many)
+  // when the factor is 2 so the pool stays 4 unique options.
+  const halfDistractor = wcConv.factor === 2
+    ? `${wcAmount * (wcConv.factor + 1)} ${wcConv.to}`
+    : `${Math.floor(wcConverted / 2)} ${wcConv.to}`;
   const potentialDistractors = [
     `${wcAmount} ${wcConv.to}`,
     `${wcConverted + (wcConv.factor < 100 ? 5 : 100)} ${wcConv.to}`,
-    `${Math.floor(wcConverted / 2)} ${wcConv.to}`,
+    halfDistractor,
+    // Extra fallback covers any future factor collisions.
+    `${wcConverted + wcConv.factor} ${wcConv.to}`,
   ];
 
   return {

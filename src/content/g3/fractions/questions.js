@@ -116,10 +116,13 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
 
     const correctAnswer = comp_num1 > comp_num2 ? ">" : "<";
 
+    // Include "=" as a distractor so students see all three comparison symbols
+    // (the previous 2-option MC turned this into a coin flip — the student
+    // couldn't demonstrate that they'd ruled equality out).
     return {
       question: `Which symbol makes this true? ${comp_num1}/${comp_den} ___ ${comp_num2}/${comp_den}`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
+      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">", "="], 3)),
       questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: "If the bottom numbers are the same, the fraction with the bigger top number is greater.",
       standard: "3.NF.A.3.d",
@@ -142,7 +145,7 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     return {
       question: `Which symbol makes this true? ${comp_num}/${comp_den1} ___ ${comp_num}/${comp_den2}`,
       correctAnswer: correctAnswer,
-      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">"])),
+      options: shuffle(generateUniqueOptions(correctAnswer, ["<", ">", "="], 3)),
       questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
       hint: "If the top numbers are the same, the fraction with the smaller bottom number is bigger (think of bigger pizza slices!).",
       standard: "3.NF.A.3.d",
@@ -162,6 +165,12 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
   const add_num2 = getRandomInt(1, denominator - add_num1);
   const sumNum = add_num1 + add_num2;
   const add_answer = getSimplifiedFraction(sumNum, denominator);
+  // When the "add tops AND bottoms" candidate (sum/2d) reduces to the same
+  // value as the "kept only first numerator" or "product of numerators"
+  // candidate — common when num1=num2=1 with small denominators — the pool
+  // collapses to 2 unique distractors and generateUniqueOptions ships a 3-
+  // option MC. Build a longer, misconception-ordered pool and let the helper
+  // pick the first three that stay distinct from the correct answer.
   const potentialDistractors = [
     // Common wrong step: add both tops AND both bottoms.
     getSimplifiedFraction(sumNum, denominator + denominator),
@@ -169,8 +178,15 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
     getSimplifiedFraction(sumNum + 1, denominator),
     // Forgot to add — kept only the first numerator.
     getSimplifiedFraction(add_num1, denominator),
+    // Off-by-one low (never below 1 to avoid "0/N").
+    getSimplifiedFraction(Math.max(1, sumNum - 1), denominator),
+    // Wrong denominator — off by one.
+    getSimplifiedFraction(sumNum, denominator + 1),
     // Product of the numerators instead of the sum.
     getSimplifiedFraction(add_num1 * add_num2, denominator),
+    // Sum written over the doubled numerator (another "confused about the
+    // denominator" trap that produces a distinct fraction).
+    getSimplifiedFraction(sumNum, denominator * 2 + 1),
   ];
 
   return {

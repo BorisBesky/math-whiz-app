@@ -44,6 +44,23 @@ describe('generateWeightCapacityConversionQuestion hint singularization', () => 
       expect(q.hint).not.toMatch(/\b1 (pounds|tons|gallons|quarts|pints|kilograms|liters)\b/);
     }
   });
+
+  it('always ships 4 unique options — even for the factor-2 quart→pint and pint→cup pairs', () => {
+    // Regression: for the factor-2 conversions the `Math.floor(wcConverted / 2)`
+    // distractor collapsed onto the "forgot to multiply" distractor
+    // (`wcAmount`), silently shipping a 3-option MC. Widen the pool and swap
+    // in a distinct distractor when factor === 2 so the option count stays 4.
+    let factor2Count = 0;
+    for (let i = 0; i < 800; i += 1) {
+      const q = generateWeightCapacityConversionQuestion();
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
+      if (/pints|cups/.test(q.correctAnswer)) factor2Count += 1;
+    }
+    // Make sure we actually hit the factor-2 path many times.
+    expect(factor2Count).toBeGreaterThan(50);
+  });
 });
 
 describe('generateTimeConversionQuestion hint singularization', () => {

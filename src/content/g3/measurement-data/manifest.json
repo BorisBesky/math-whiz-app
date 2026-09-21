@@ -5,7 +5,7 @@
   "grade": "G3",
   "order": 4,
   "description": "Understanding area, perimeter, and volume through hands-on measurement",
-  "standards": ["3.MD.C.5", "3.MD.C.6", "3.MD.C.7.a", "3.MD.C.7.b", "3.MD.C.7.c", "3.MD.D.8"],
+  "standards": ["3.MD.C.5", "3.MD.C.6", "3.MD.C.7.a", "3.MD.C.7.b", "3.MD.C.7.c", "3.MD.D.8", "5.MD.C.3", "5.MD.C.5"],
   "subtopics": ["area", "perimeter", "volume"],
   "objectives": [
     "Find area by counting unit squares",

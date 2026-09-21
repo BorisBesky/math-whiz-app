@@ -755,7 +755,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Accuracy:</span>
                 <span className={`font-medium ${viewingStudent.accuracy >= 80 ? 'text-green-600' : viewingStudent.accuracy >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {viewingStudent.accuracy.toFixed(1)}%
+                  {(typeof viewingStudent.accuracy === 'number' && Number.isFinite(viewingStudent.accuracy)
+                    ? viewingStudent.accuracy
+                    : 0
+                  ).toFixed(1)}%
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1372,7 +1375,10 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                   <td className="px-4 py-3 text-gray-900 font-medium">{student.totalQuestions}</td>
                   <td className="px-4 py-3 text-gray-700">
                     <span className={`${student.accuracy >= 80 ? 'text-green-600' : student.accuracy >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      {student.accuracy.toFixed(1)}%
+                      {(typeof student.accuracy === 'number' && Number.isFinite(student.accuracy)
+                        ? student.accuracy
+                        : 0
+                      ).toFixed(1)}%
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-700">

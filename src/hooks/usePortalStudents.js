@@ -60,20 +60,41 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       const db = getFirestore();
       const classEnrollmentsMap = new Map();
 
-      for (const classItem of classes) {
-        const enrollmentsQuery = query(
-          collection(db, 'artifacts', appId, 'classStudents'),
-          where('classId', '==', classItem.id)
-        );
-        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-        enrollmentsSnapshot.forEach((docSnapshot) => {
+      // Fire every class's enrollment query in parallel — the serial `for` loop
+      // this replaced round-tripped once per class, so a teacher with N classes
+      // paid an unnecessary N× Firestore latency on every portal refresh
+      // (30 s tick + focus/visibility handlers). Errors on one class don't
+      // block the others; a bad snapshot logs and yields an empty enrollment
+      // list for that class.
+      const enrollmentSnapshots = await Promise.all(
+        classes.map(async (classItem) => {
+          try {
+            const enrollmentsQuery = query(
+              collection(db, 'artifacts', appId, 'classStudents'),
+              where('classId', '==', classItem.id)
+            );
+            const snapshot = await getDocs(enrollmentsQuery);
+            return { classItem, snapshot };
+          } catch (enrollmentError) {
+            console.warn(
+              `[usePortalStudents] Failed to load enrollments for class ${classItem.id}`,
+              enrollmentError
+            );
+            return { classItem, snapshot: null };
+          }
+        })
+      );
+
+      enrollmentSnapshots.forEach(({ classItem, snapshot }) => {
+        if (!snapshot) return;
+        snapshot.forEach((docSnapshot) => {
           const enrollment = docSnapshot.data();
           const existingClassIds = classEnrollmentsMap.get(enrollment.studentId) || [];
           if (!existingClassIds.includes(classItem.id)) {
             classEnrollmentsMap.set(enrollment.studentId, [...existingClassIds, classItem.id]);
           }
         });
-      }
+      });
 
       let totalQuestions = 0;
       let totalCorrect = 0;

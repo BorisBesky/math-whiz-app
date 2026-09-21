@@ -99,8 +99,12 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryToDecimalQuestion(difficulty = 0.5) {
-  // Keep numbers small for 4th graders (1-15 decimal range)
-  const decimal = getRandomInt(1, 15);
+  // Scale the decimal range with difficulty so the adaptive engine can actually
+  // stretch stronger students on this subtopic. The old code hard-coded
+  // getRandomInt(1, 15) regardless of `difficulty`, so easy and hard quizzes
+  // both showed the same 4-bit numbers.
+  const maxDecimal = difficulty < 0.35 ? 7 : difficulty < 0.7 ? 15 : 31;
+  const decimal = getRandomInt(1, maxDecimal);
   const binary = decimalToBinary(decimal);
 
 
@@ -121,8 +125,10 @@ export function generateBinaryToDecimalQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateDecimalToBinaryQuestion(difficulty = 0.5) {
-  // Keep numbers small for 4th graders (1-15 decimal range)
-  const decimal = getRandomInt(1, 15);
+  // Scale the decimal range with difficulty — same reasoning as the sibling
+  // binary→decimal generator above.
+  const maxDecimal = difficulty < 0.35 ? 7 : difficulty < 0.7 ? 15 : 31;
+  const decimal = getRandomInt(1, maxDecimal);
   const correctBinary = decimalToBinary(decimal);
 
 
