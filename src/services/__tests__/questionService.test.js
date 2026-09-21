@@ -49,6 +49,7 @@ jest.mock('../../content/registry', () => ({
 const {
   fetchQuestionsFromFirestore,
   getQuestionHistory,
+  retryWithBackoff,
   subscribeToQuestionHistory,
 } = require('../questionService');
 
@@ -214,6 +215,34 @@ describe('questionService quiz-loading performance', () => {
         expect.objectContaining({ subtopic: 'place value', tags: ['place-value'] }),
       ])
     );
+  });
+
+  test('retryWithBackoff short-circuits on offline errors instead of sleeping', async () => {
+    // Regression: `retryableErrors` includes `'unavailable'`, which is exactly
+    // the code Firestore returns when the client is offline. Waiting 1s + 2s +
+    // 4s only to end up in the same offline fallback made a poor first-quiz
+    // experience — this test guards that offline errors throw immediately.
+    const originalOnLine = navigator.onLine;
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+
+    try {
+      const start = Date.now();
+      const call = jest.fn().mockRejectedValue(Object.assign(new Error('offline'), { code: 'unavailable' }));
+      await expect(retryWithBackoff(call, { maxRetries: 3, initialDelay: 100 })).rejects.toThrow('offline');
+      const elapsedMs = Date.now() - start;
+      // A single call, no sleeps.
+      expect(call).toHaveBeenCalledTimes(1);
+      // Even accounting for CI slowness, we should be well under a single retry delay.
+      expect(elapsedMs).toBeLessThan(150);
+    } finally {
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true,
+      });
+    }
   });
 
   test('starts personal and shared question-bank reads in parallel', async () => {

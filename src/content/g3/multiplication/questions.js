@@ -98,12 +98,22 @@ export function generateSkipCountingQuestion() {
   const count = getRandomInt(3, 8);
   const result = factor * count;
   const correctAnswer = result.toString();
+  // Pool of misconception-based distractors ordered by pedagogical value.
+  // `factor + count` collides with `result - factor` whenever the student
+  // hits pairs like factor=2/count=4 (both 6), or with `result + factor`
+  // when factor=1/count=2, silently collapsing to 3-option MC. The extra
+  // candidates below (skip one, one too many, adjacent products) guarantee
+  // at least 3 distinct wrong answers remain after deduplication.
   const potentialDistractors = [
     (result + factor).toString(),
     (result - factor).toString(),
     (factor + count).toString(),
+    (result + 1).toString(),
+    Math.max(1, result - 1).toString(),
+    (factor * (count + 1)).toString(),
+    (factor * Math.max(1, count - 1)).toString(),
   ];
-  
+
   return {
     question: `If you skip count by ${factor}s, ${count} times, what number do you land on?`,
     correctAnswer: correctAnswer,

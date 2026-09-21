@@ -3,6 +3,7 @@ import path from 'path';
 import multiplicationQuestions, {
   generateFactFamilyQuestion,
   generateQuestion,
+  generateSkipCountingQuestion,
 } from '../questions.js';
 import manifest from '../manifest.json';
 
@@ -23,6 +24,27 @@ describe('G3 multiplication basic MC: distractors are always four unique options
       expect(q.options).toContain(q.correctAnswer);
     }
     expect(seenBasic).toBeGreaterThan(0);
+  });
+});
+
+describe('G3 multiplication skip counting: distractors are always four unique options', () => {
+  // The original 3-distractor pool `[result + factor, result - factor,
+  // factor + count]` collapsed to 3 unique wrong answers when `factor + count`
+  // equaled `result - factor` (e.g., factor=2, count=4 → both are 6) or when
+  // it equaled `result + factor` (factor=1, count=2 → both are 3). In either
+  // case the student would see a 3-option MC. The pool was widened with
+  // adjacent products and off-by-ones so at least 3 distinct wrong answers
+  // survive.
+  it('every drawn skip-counting question has 4 unique options including the correct answer', () => {
+    let seen = 0;
+    for (let i = 0; i < 800; i += 1) {
+      const q = generateSkipCountingQuestion();
+      seen += 1;
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
+    }
+    expect(seen).toBeGreaterThan(0);
   });
 });
 

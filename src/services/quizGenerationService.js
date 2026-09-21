@@ -161,9 +161,12 @@ export const generateQuizQuestions = async (
       }
     }
 
-    // Skip if question generation failed (e.g., no valid subtopics)
+    // Skip if question generation failed (e.g., no valid subtopics).
+    // `attempts` was already bumped at the top of the loop; a second bump here
+    // burned two attempts per empty draw and could exit the loop early when a
+    // topic's difficulty gate turned it into "no valid questions right now"
+    // — halving the effective retry budget for that quiz.
     if (!question || !question.question) {
-      attempts++;
       continue;
     }
 

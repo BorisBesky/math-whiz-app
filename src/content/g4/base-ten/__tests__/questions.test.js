@@ -4,6 +4,7 @@ import {
   generateMultiDigitArithmeticQuestion,
   generatePlaceValueQuestion,
   generateDecimalExpandedFormQuestion,
+  generateDecimalPlaceRelationshipQuestion,
   generateMultiStepWordProblemQuestion,
 } from '../questions.js';
 
@@ -147,6 +148,28 @@ describe('G4 base-ten: decimal expanded form — no distractor evaluates to the 
         }
         expect(q.options).toContain(q.correctAnswer);
         expect(new Set(q.options).size).toBe(q.options.length);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('G4 base-ten: decimal place-relationship always ships 4 unique options', () => {
+  // Regression: `numOptions = Math.max(2, Math.min(4, uniqueDistractors.length + 1))`
+  // silently shipped a 2- or 3-option MC when distractors collided with the
+  // correct ratio — most reliably at ratio=10 with digit=1 (potentialDistractors
+  // reduce to {100, 1, 1} → only 2 unique). Widening the pool with additional
+  // plausible ratios guarantees a full 4-option question.
+  it('every drawn question has 4 unique options including the correct answer', () => {
+    const difficulties = [0.6, 0.7, 0.8, 0.9, 1.0];
+    let seen = 0;
+    for (const d of difficulties) {
+      for (let i = 0; i < 400; i += 1) {
+        const q = generateDecimalPlaceRelationshipQuestion(d);
+        seen += 1;
+        expect(q.options.length).toBe(4);
+        expect(new Set(q.options).size).toBe(4);
+        expect(q.options).toContain(q.correctAnswer);
       }
     }
     expect(seen).toBeGreaterThan(0);

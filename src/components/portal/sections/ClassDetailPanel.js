@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle, Edit3 } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getTeacherIds } from '../../../utils/classHelpers';
 import { USER_ROLES } from '../../../utils/userRoles';
@@ -283,41 +283,62 @@ const ClassDetailPanel = ({
       setLoadingEnrollments(true);
       setEnrollmentError(null);
       setFailedStudentIds(new Set());
-      
+
       try {
+        // Replace N parallel getDoc calls with a single classId-scoped query:
+        // one RPC returns every enrollment doc for the class instead of
+        // opening a separate fetch per student (100 students = 100 requests
+        // every time the panel opened). Fall back to per-student getDoc on
+        // permission errors so a rules edge case can't wipe the whole panel.
+        const rosterIds = new Set(roster.map((student) => student.id));
         const enrollmentData = {};
+        roster.forEach((student) => {
+          enrollmentData[student.id] = { allowedSubtopicsByTopic: {} };
+        });
         const failedIds = new Set();
-        
-        await Promise.all(
-          roster.map(async (student) => {
-            const enrollmentId = `${classId}__${student.id}`;
-            const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
-            try {
-              const enrollmentSnap = await getDoc(enrollmentRef);
-              if (enrollmentSnap.exists()) {
-                const data = enrollmentSnap.data();
-                enrollmentData[student.id] = {
-                  allowedSubtopicsByTopic: data.allowedSubtopicsByTopic || {},
-                };
-              } else {
-                enrollmentData[student.id] = {
-                  allowedSubtopicsByTopic: {},
-                };
-              }
-            } catch (err) {
-              console.error(`Error loading enrollment for student ${student.id}:`, err);
-              failedIds.add(student.id);
-              // Still set empty data so UI doesn't break
-              enrollmentData[student.id] = {
-                allowedSubtopicsByTopic: {},
+
+        try {
+          const enrollmentsQuery = query(
+            collection(db, 'artifacts', appId, 'classStudents'),
+            where('classId', '==', classId)
+          );
+          const snapshot = await getDocs(enrollmentsQuery);
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data && data.studentId && rosterIds.has(data.studentId)) {
+              enrollmentData[data.studentId] = {
+                allowedSubtopicsByTopic: data.allowedSubtopicsByTopic || {},
               };
             }
-          })
-        );
-        
+          });
+        } catch (bulkError) {
+          console.warn(
+            '[ClassDetailPanel] Bulk enrollment query failed; falling back to per-student reads.',
+            bulkError
+          );
+          await Promise.all(
+            roster.map(async (student) => {
+              const enrollmentId = `${classId}__${student.id}`;
+              const enrollmentRef = doc(db, 'artifacts', appId, 'classStudents', enrollmentId);
+              try {
+                const enrollmentSnap = await getDoc(enrollmentRef);
+                if (enrollmentSnap.exists()) {
+                  const data = enrollmentSnap.data();
+                  enrollmentData[student.id] = {
+                    allowedSubtopicsByTopic: data.allowedSubtopicsByTopic || {},
+                  };
+                }
+              } catch (err) {
+                console.error(`Error loading enrollment for student ${student.id}:`, err);
+                failedIds.add(student.id);
+              }
+            })
+          );
+        }
+
         setEnrollments(enrollmentData);
         setFailedStudentIds(failedIds);
-        
+
         // Set error if any students failed to load
         if (failedIds.size > 0) {
           const failedCount = failedIds.size;

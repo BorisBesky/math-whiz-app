@@ -1053,20 +1053,29 @@ export function generateDecimalPlaceRelationshipQuestion(difficulty = 0.5) {
   const higherValue = parseFloat((digit * placeValues[higherIdx]).toFixed(3));
   const lowerValue = parseFloat((digit * placeValues[lowerIdx]).toFixed(3));
 
+  // Base distractors: "off by ×10" up, "off by ×10" down, and the digit itself
+  // (a common "confused what's being asked" trap). Any of them can collide
+  // with the correct ratio — e.g. ratio=10, digit=1 gives {100, 1, 1} which
+  // has only 2 unique wrong answers, and the older code shipped a 3-option
+  // MC. Pad with additional plausible ratios so the question always renders
+  // a full 4-option MC.
   const potentialDistractors = [
     (ratio * 10).toString(),
     Math.max(1, ratio / 10).toString(),
     digit.toString(),
+    (ratio + 1).toString(),
+    (ratio - 1).toString(),
+    (ratio * 2).toString(),
+    (ratio * 100).toString(),
   ];
   const uniqueDistractors = Array.from(
     new Set(potentialDistractors.filter(option => option !== correctAnswer))
   );
-  const numOptions = Math.max(2, Math.min(4, uniqueDistractors.length + 1));
 
   return {
     question: `How many times greater is the value of the digit ${digit} in ${higherValue} than the value of the digit ${digit} in ${lowerValue}?`,
     correctAnswer,
-    options: shuffle(generateUniqueOptions(correctAnswer, uniqueDistractors, numOptions)),
+    options: shuffle(generateUniqueOptions(correctAnswer, uniqueDistractors, 4)),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Compare the place values: ${placeNames[higherIdx]} vs ${placeNames[lowerIdx]}. Each place to the left is 10 times greater.`,
     standard: '4.NBT.A.1',
