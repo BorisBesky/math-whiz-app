@@ -15,6 +15,18 @@ import { getUserAttemptsCollectionRef, getUserDocRef } from "../utils/firebaseHe
 import { getCachedClassQuestions, setCachedClassQuestions } from "../utils/questionCache";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
 import { gradeWordPattern, normalizeGradeKey } from "../content/registry";
+import { isTimeoutError, withTimeout } from "../utils/withTimeout";
+
+// History only tunes adaptivity, so a quiz must never wait on it for long.
+export const QUESTION_HISTORY_TIMEOUT_MS = 3000;
+
+const TRANSIENT_ERROR_CODES = ['unavailable', 'deadline-exceeded', 'resource-exhausted', 'cancelled'];
+
+const isTransientReadError = (error) => (
+  isTimeoutError(error) ||
+  isLikelyOfflineError(error) ||
+  TRANSIENT_ERROR_CODES.includes(String(error?.code || '').toLowerCase())
+);
 
 export const isLikelyOfflineError = (error) => {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -145,15 +157,17 @@ export const getQuestionHistory = async (
           limit(maxAttempts)
         )
       : null;
-    const attemptsSnapshot = attemptsQuery ? await getDocs(attemptsQuery) : null;
+    const attemptsSnapshot = attemptsQuery
+      ? await withTimeout(getDocs(attemptsQuery), QUESTION_HISTORY_TIMEOUT_MS, 'Attempt history read')
+      : null;
     if (attemptsSnapshot && !attemptsSnapshot.empty) {
       return mapAttemptSnapshot(attemptsSnapshot);
     }
   } catch (error) {
-    if (!isLikelyOfflineError(error)) {
+    if (!isTransientReadError(error)) {
       throw error;
     }
-    console.warn('[questionService] Attempt history unavailable offline; falling back to cached profile history.', error);
+    console.warn('[questionService] Attempt history unavailable (offline, slow, or transient error); falling back to cached profile history.', error);
   }
 
   if (Array.isArray(legacyHistory)) {
@@ -163,7 +177,7 @@ export const getQuestionHistory = async (
   }
 
   try {
-    const userDoc = await getDoc(userDocRef);
+    const userDoc = await withTimeout(getDoc(userDocRef), QUESTION_HISTORY_TIMEOUT_MS, 'Profile history read');
     if (userDoc.exists() && userDoc.data().answeredQuestions) {
       const profileLegacyHistory = userDoc.data().answeredQuestions;
       return topic
@@ -171,10 +185,10 @@ export const getQuestionHistory = async (
         : profileLegacyHistory;
     }
   } catch (error) {
-    if (!isLikelyOfflineError(error)) {
+    if (!isTransientReadError(error)) {
       throw error;
     }
-    console.warn('[questionService] Profile history unavailable offline; using empty history.', error);
+    console.warn('[questionService] Profile history unavailable (offline, slow, or transient error); using empty history.', error);
   }
   return [];
 };

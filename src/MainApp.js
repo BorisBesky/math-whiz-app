@@ -1250,19 +1250,16 @@ const MainAppContent = () => {
     quizFinishedRef.current = false;
     setCurrentTopic(topic);
     
-    // Clear any paused quiz for this topic
+    // Clear any paused quiz for this topic. Firestore write promises resolve
+    // only on server acknowledgement, so awaiting them here stalled quiz start
+    // on slow or flaky connections; the write is queued locally either way.
     if (user && userData?.pausedQuizzes?.[topic]) {
       console.log('[startNewQuiz] Clearing paused quiz');
       const userDocRef = getUserDocRef(user.uid);
       if (userDocRef) {
-        try {
-          await updateDoc(userDocRef, {
-            [`pausedQuizzes.${topic}`]: null,
-          });
-          console.log('[startNewQuiz] Paused quiz cleared');
-        } catch (e) {
-          console.warn('Could not clear paused quiz:', e);
-        }
+        updateDoc(userDocRef, {
+          [`pausedQuizzes.${topic}`]: null,
+        }).catch((e) => console.warn('Could not clear paused quiz:', e));
       }
     }
     
@@ -1346,16 +1343,15 @@ const MainAppContent = () => {
 
     // Remember last asked per topic, set difficulty, and persist to Firestore
     setLastAskedComplexityByTopic((prev) => ({ ...prev, [topic]: target }));
-    try {
-      const userDocRef = getUserDocRef(user.uid);
-      if (userDocRef) {
-        await updateDoc(userDocRef, {
-          [`lastAskedComplexityByTopic.${topic}`]: target,
-        });
-      }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn("Could not persist lastAskedComplexityByTopic:", e);
+    const complexityDocRef = getUserDocRef(user.uid);
+    if (complexityDocRef) {
+      // Not awaited: see the paused-quiz write above.
+      updateDoc(complexityDocRef, {
+        [`lastAskedComplexityByTopic.${topic}`]: target,
+      }).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.warn("Could not persist lastAskedComplexityByTopic:", e);
+      });
     }
     setDifficulty(target);
 
