@@ -6,6 +6,7 @@ import { DEFAULT_DAILY_GOAL } from "../constants/appConstants";
 import { isSubtopicAllowed } from "../utils/subtopicUtils";
 import { getQuestionSignature, getQuestionMasteryKey } from "../utils/questionKey";
 import { fetchQuestionsFromFirestore } from "./questionService";
+import { withTimeout } from "../utils/withTimeout";
 import {
   getDefaultGradeKey,
   getTopicContent,
@@ -26,6 +27,10 @@ export const isMultipleChoiceAnswerable = (question) => {
   if (correctAnswer === undefined || correctAnswer === null || correctAnswer === "") return false;
   return options.map((option) => String(option)).includes(String(correctAnswer));
 };
+
+// Upper bound on waiting for question-bank reads (class retries included)
+// before the quiz falls back to generated questions.
+export const QUESTION_BANK_FETCH_TIMEOUT_MS = 4000;
 
 // --- Dynamic Quiz Generation ---
 export const generateQuizQuestions = async (
@@ -86,19 +91,35 @@ export const generateQuizQuestions = async (
   let consecutiveFilteredCount = 0;
   const maxConsecutiveFiltered = 50; // Early exit if too many consecutive filtered questions
 
-  // Fetch questions from Firestore
-  const firestoreQuestions = await fetchQuestionsFromFirestore(
-    topic,
-    grade,
-    userId,
-    classId,
-    answeredQuestionIds,
-    appId,
-    allowedSubtopicsByTopic,
-    numQuestions * 3
-  );
+  // A failed or stalled bank read must not stop the quiz from opening: the
+  // student would otherwise be stuck on the topic screen with no feedback.
+  let firestoreQuestions = [];
+  let questionBankUnavailable = false;
+  try {
+    firestoreQuestions = await withTimeout(
+      fetchQuestionsFromFirestore(
+        topic,
+        grade,
+        userId,
+        classId,
+        answeredQuestionIds,
+        appId,
+        allowedSubtopicsByTopic,
+        numQuestions * 3
+      ),
+      QUESTION_BANK_FETCH_TIMEOUT_MS,
+      `Question bank fetch for ${topic}/${grade}`
+    );
+  } catch (error) {
+    questionBankUnavailable = true;
+    console.error(
+      `[generateQuizQuestions] Question bank unavailable for ${topic}/${grade}; using generated questions.`,
+      error
+    );
+  }
   let firestoreQuestionIndex = 0;
-  const forceQuestionBankOnly = questionBankProbability >= 1;
+  // Bank-only classes still get a quiz when the bank itself can't be read.
+  const forceQuestionBankOnly = questionBankProbability >= 1 && !questionBankUnavailable;
 
   while (questions.length < numQuestions && attempts < maxAttempts) {
     attempts++;
