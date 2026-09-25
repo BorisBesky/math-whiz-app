@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import * as shapes from './shapes';
 import { createCompositeShapeSVG } from './composite-shapes';
+import { buildLShape } from '../../../utils/rectilinearShapes';
 
 const GeometryExplanation = () => {
   // Example composite shapes used in the area/perimeter walk-through below.
@@ -12,6 +13,20 @@ const GeometryExplanation = () => {
   ];
   const exampleLShapeUri = createCompositeShapeSVG(exampleLShapeCells, 3);
   const exampleTShapeUri = createCompositeShapeSVG(exampleTShapeCells, 2);
+  // Outer sides only, like a worksheet: 5 top, 4 lower right, 9 bottom, 7 left.
+  // Clockwise side order: top, notch wall (?), notch floor (blank), right, bottom, left.
+  const exampleMissingSidesAlt =
+    'L-shaped figure: top 5 cm, the notch wall marked ?, the notch floor not labeled, right 4 cm, bottom 9 cm, left 7 cm';
+  const exampleMissingSidesUri = createCompositeShapeSVG(
+    buildLShape({ width: 9, height: 7, notchWidth: 4, notchHeight: 3, corner: 'top-right' }),
+    1,
+    {
+      labelForSide: (_side, index) => ['5 cm', '?', null, '4 cm', '9 cm', '7 cm'][index],
+      maxWidth: 420,
+      maxHeight: 360,
+      description: exampleMissingSidesAlt,
+    }
+  );
 
   useEffect(() => {
 
@@ -1114,10 +1129,10 @@ const GeometryExplanation = () => {
         <h2 style={styles.h2}>🧩 Area & Perimeter of Composite Shapes</h2>
         <p>
           A <strong>composite shape</strong> is a figure that you can split into smaller
-          rectangles (or squares). The figures in your quiz will show the length of every
-          side in units. Use those numbers to find either the <strong>perimeter</strong>
-          (the distance all the way around) or the <strong>area</strong> (how much space
-          is inside).
+          rectangles (or squares). Use the side lengths to find either the
+          <strong> perimeter</strong> (the distance all the way around) or the
+          <strong> area</strong> (how much space is inside). Some figures leave a side
+          unlabeled or mark it with <strong>?</strong> — Example 3 shows how to find it.
         </p>
 
         <div style={styles.tip}>
@@ -1183,10 +1198,48 @@ const GeometryExplanation = () => {
           </div>
         </div>
 
+        <div style={styles.geometryVisual}>
+          <h3 style={styles.h3}>Example 3: Finding Sides That Aren't Labeled</h3>
+          <div style={styles.svgContainer}>
+            <img
+              src={exampleMissingSidesUri}
+              alt={exampleMissingSidesAlt}
+              style={{maxWidth: '320px', height: 'auto'}}
+            />
+          </div>
+          <p>
+            <strong>Opposite sides add up.</strong> Going around a figure made of
+            rectangles, the top sides together are as long as the bottom sides together,
+            and the left sides together are as long as the right sides together.
+          </p>
+          <div style={styles.grid}>
+            <div style={styles.shapeBox20}>
+              <strong>🔍 Find the missing sides first:</strong>
+              <br/>• Blank side at the notch: 9 − 5 = <strong>4 cm</strong>
+              <br/>• The "?" side: 7 − 4 = <strong>3 cm</strong>
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>🟦 Area — big rectangle minus the cut-out corner:</strong>
+              <br/>9 × 7 − 4 × 3 = 63 − 12 = <strong>51 square cm</strong>
+              <br/>(or split it: 5 × 7 + 4 × 4 = 35 + 16 = 51)
+            </div>
+            <div style={styles.shapeBox20}>
+              <strong>🚶 Perimeter — all six sides:</strong>
+              <br/>5 + 3 + 4 + 4 + 9 + 7 = <strong>32 cm</strong>
+            </div>
+          </div>
+          <p style={{fontSize: '0.95em', color: '#555'}}>
+            <strong>Watch out:</strong> adding only the labeled numbers (5 + 4 + 9 + 7 = 25)
+            leaves out the two notch sides. Every side counts toward the perimeter, labeled
+            or not.
+          </p>
+        </div>
+
         <div style={styles.example}>
           <strong>🧠 Step-by-Step Strategy:</strong>
           <ol style={{margin: '8px 0 0 18px', padding: 0}}>
-            <li>Look at the picture and read the side labels carefully.</li>
+            <li>Look at the picture and read the side labels carefully. If a side is
+              blank or marked <strong>?</strong>, find it first: opposite sides add up.</li>
             <li>For <strong>perimeter</strong>, trace your finger around the outside and
               add every side length you cross.</li>
             <li>For <strong>area</strong>, draw a line to split the figure into 2 (or

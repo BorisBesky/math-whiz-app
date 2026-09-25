@@ -5,7 +5,9 @@ import {
   createCompositePrismImage,
   createLinePlotImage,
   createMetricLadderImage,
+  createLShapedPrismImage,
 } from './visuals';
+import { buildLShape } from '../../../utils/rectilinearShapes';
 
 // Shown when a student taps "Explain" on a Measurement & Data 5th question.
 // Follows the kid-friendly inline-style pattern of the other Explanations.
@@ -183,6 +185,28 @@ const MeasurementData5thExplanation = () => {
       <div style={styles.example}>
         <span style={styles.emoji}>🧱</span>A 4 × 2 × 3 prism (24) plus a 2 × 2 × 2 prism (8) make{' '}
         <strong>32 cubic units</strong> in all.
+      </div>
+      <p>
+        Sometimes the two boxes are <strong>joined into one solid</strong>, and only the outside
+        edges are labeled. Find the missing edges first, then split the front face.
+      </p>
+      <Figure
+        built={createLShapedPrismImage({
+          cells: buildLShape({ width: 4, height: 7, notchWidth: 1, notchHeight: 4, corner: 'top-right' }),
+          depth: 3,
+          outerLabels: { top: '3 cm', right: '3 cm', bottom: '4 cm', left: '7 cm' },
+          depthLabel: '3 cm deep',
+          description:
+            'A prism with an L-shaped front face, 3 cm deep. Front face edges: top 3 cm, right 3 cm, bottom 4 cm, left 7 cm; the two edges of the cut-out corner are not labeled.',
+        })}
+      >
+        Missing edges: the step is 4 − 3 = <strong>1 cm</strong> wide and 7 − 3 ={' '}
+        <strong>4 cm</strong> tall.
+      </Figure>
+      <div style={styles.example}>
+        <span style={styles.emoji}>🧮</span>Front face = tall part 3 × 7 = 21, plus the step
+        1 × 3 = 3, so 21 + 3 = 24 square cm. It is 3 cm deep: 24 × 3 ={' '}
+        <strong>72 cubic centimeters</strong>.
       </div>
       <div style={styles.tip}>
         <span style={styles.emoji}>🌟</span>
