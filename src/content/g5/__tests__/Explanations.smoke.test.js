@@ -65,4 +65,11 @@ describe('G5 Explanations cover the newer subtopics', () => {
     // the reasonableness example from the standard itself
     expect(text).toMatch(/2\/5 \+ 1\/2 = 3\/7/);
   });
+
+  it('Measurement & Data covers joined (L-shaped) prisms with edges to deduce (5.MD.C.5c)', () => {
+    const text = textOf(MeasurementData);
+    expect(text).toMatch(/joined into one solid/i);
+    expect(text).toMatch(/4 − 3 = 1 cm/);
+    expect(text).toMatch(/24 × 3 = 72 cubic centimeters/);
+  });
 });

@@ -20,7 +20,9 @@ import {
   createLabeledPrismImage,
   createCompositePrismImage,
   createLinePlotImage,
+  createLShapedPrismImage,
 } from './visuals';
+import { randomRectilinearFigure } from '../../../utils/rectilinearShapes.js';
 
 // Wraps a builder's { data, description } into the question `images` shape
 // that QuizView renders.
@@ -307,7 +309,7 @@ const generatePrismVolumeQuestion = (difficulty) => {
 /* <l1> × <w1> × <h1> units and the other is <l2> × <w2> × <h2> units. */
 /* What is the total volume of the figure in cubic units?"             */
 /* ------------------------------------------------------------------ */
-const generateAdditiveVolumeQuestion = (difficulty) => {
+const generateTwoPrismVolumeQuestion = (difficulty) => {
   const top = 4 + Math.round(difficulty * 6);
   const dims1 = [randomInt(2, top), randomInt(2, 5), randomInt(2, 5)];
   const dims2 = [randomInt(2, top), randomInt(2, 5), randomInt(2, 5)];
@@ -323,6 +325,80 @@ const generateAdditiveVolumeQuestion = (difficulty) => {
     ...baseFields('additive volume', '5.MD.C.5'),
   };
 };
+
+/* ------------------------------------------------------------------ */
+/* additive volume — one joined L-shaped prism (5.MD.C.5c)             */
+/* Format: "This solid is an L-shaped prism: two rectangular prisms    */
+/* joined together. It is <d> <unit> deep. ..."                        */
+/* The figure labels only the four outer edges of the front face, so   */
+/* the student first finds the two notch edges by subtraction, then    */
+/* splits the face into rectangles (or subtracts the notch) and        */
+/* multiplies by the depth. The image description spells out the same  */
+/* measurements so the question stays answerable without the picture.  */
+/* ------------------------------------------------------------------ */
+const PRISM_UNITS = [
+  { plural: 'centimeters', short: 'cm' },
+  { plural: 'inches', short: 'in' },
+  { plural: 'meters', short: 'm' },
+  { plural: 'feet', short: 'ft' },
+];
+
+const generateLShapedPrismVolumeQuestion = (difficulty) => {
+  const figure = randomRectilinearFigure(Math.min(difficulty, 0.6), { family: 'L-shape' });
+  const depth = randomInt(2, 3 + Math.round(difficulty * 3));
+  const unit = pick(PRISM_UNITS);
+  const { cells, sides, width, height, area } = figure;
+
+  const edge = (dir, onBorder) => sides.find((s) => s.dir === dir && onBorder(s));
+  const outer = {
+    top: edge('R', (s) => s.y1 === 0).length,
+    right: edge('D', (s) => s.x1 === width).length,
+    bottom: edge('L', (s) => s.y1 === height).length,
+    left: edge('U', (s) => s.x1 === 0).length,
+  };
+  const label = (n) => `${n} ${unit.short}`;
+  const description =
+    `A prism with an L-shaped front face, ${label(depth)} deep. Front face edges: ` +
+    `top ${label(outer.top)}, right ${label(outer.right)}, bottom ${label(outer.bottom)}, ` +
+    `left ${label(outer.left)}; the two edges of the cut-out corner are not labeled.`;
+
+  const volume = area * depth;
+
+  return {
+    question:
+      `This solid is an L-shaped prism: two rectangular prisms joined together. ` +
+      `It is ${depth} ${unit.plural} deep, and the edges of its front face are labeled in ${unit.plural}. ` +
+      `What is the total volume of the figure in cubic ${unit.plural}?`,
+    correctAnswer: String(volume),
+    options: [],
+    images: questionImage(createLShapedPrismImage({
+      cells,
+      depth,
+      outerLabels: {
+        top: label(outer.top),
+        right: label(outer.right),
+        bottom: label(outer.bottom),
+        left: label(outer.left),
+      },
+      depthLabel: `${label(depth)} deep`,
+      description,
+    })),
+    questionType: QUESTION_TYPES.NUMERIC,
+    hint:
+      `First find the unlabeled edges of the cut-out corner: it is ${width} − ${Math.min(outer.top, outer.bottom)} wide ` +
+      `and ${height} − ${Math.min(outer.left, outer.right)} tall. Split the front face into two rectangles, ` +
+      `add their areas, then multiply by the depth (${depth}).`,
+    ...baseFields('additive volume', '5.MD.C.5'),
+  };
+};
+
+// Both families teach 5.MD.C.5c: easier draws show the two prisms apart,
+// harder ones join them into one solid with edges to deduce.
+const generateAdditiveVolumeQuestion = (difficulty) => (
+  randomInt(0, 99) < (difficulty < 0.4 ? 25 : 60)
+    ? generateLShapedPrismVolumeQuestion(difficulty)
+    : generateTwoPrismVolumeQuestion(difficulty)
+);
 
 /* ------------------------------------------------------------------ */
 

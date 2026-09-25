@@ -5,6 +5,7 @@
 // generators embed them as `images` data URIs, and Explanation.js renders the
 // same builders as <img> figures. Keep them string-based (not JSX) so both
 // consumers can use them.
+import { getOutlineSides } from '../../../utils/rectilinearShapes.js';
 
 const escapeXml = (value) => String(value)
   .replace(/&/g, '&amp;')
@@ -220,6 +221,118 @@ export const createCompositePrismImage = ({ first, second }) => {
     `font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#92400e">+</text>` +
     `</svg>`;
 
+  return { data: createSvgDataUri(svg), description };
+};
+
+/* ------------------------------------------------------------------ */
+/* Joined composite prism — an L-shaped face extruded (5.MD.C.5c)      */
+/* ------------------------------------------------------------------ */
+
+const FACE_FILL = '#fde68a';
+
+/**
+ * Draws a prism whose front face is the rectilinear figure `cells`, pushed
+ * back `depth` units (oblique view, receding up and to the right). Only the
+ * four outer edges of the front face are labeled — the notch edges are left
+ * for the student to work out, as on "find the total volume" worksheets — and
+ * the depth is written on the receding bottom edge. Thin lines split the
+ * receding faces into `depth` unit slabs.
+ *
+ * `outerLabels` is { top, right, bottom, left } (text or null).
+ */
+export const createLShapedPrismSvg = ({
+  cells,
+  depth,
+  outerLabels,
+  depthLabel,
+  description,
+  maxWidth = 380,
+  maxHeight = 320,
+}) => {
+  const sides = getOutlineSides(cells);
+  const cols = Math.max(...cells.map(([c]) => c)) + 1;
+  const rows = Math.max(...cells.map(([, r]) => r)) + 1;
+
+  const labelSpace = { left: 62, right: 70, top: 34, bottom: 42 };
+  const recede = Math.min(46, 16 + depth * 5);
+  const ox = recede;
+  const oy = recede * 0.6;
+  const cell = Math.min(
+    34,
+    (maxWidth - labelSpace.left - labelSpace.right - ox) / cols,
+    (maxHeight - labelSpace.top - labelSpace.bottom - oy) / rows
+  );
+
+  const originX = labelSpace.left;
+  const originY = labelSpace.top + oy;
+  const X = (c) => round(originX + c * cell);
+  const Y = (r) => round(originY + r * cell);
+  const svgWidth = round(originX + cols * cell + ox + labelSpace.right);
+  const svgHeight = round(originY + rows * cell + labelSpace.bottom);
+
+  const quad = (s, fill) => {
+    const pts = [
+      [X(s.x1), Y(s.y1)],
+      [X(s.x2), Y(s.y2)],
+      [X(s.x2) + ox, Y(s.y2) - oy],
+      [X(s.x1) + ox, Y(s.y1) - oy],
+    ];
+    const slabs = depth <= 10
+      ? Array.from({ length: depth - 1 }, (_, n) => {
+        const f = (n + 1) / depth;
+        return `<line x1="${round(pts[0][0] + ox * f)}" y1="${round(pts[0][1] - oy * f)}" ` +
+          `x2="${round(pts[1][0] + ox * f)}" y2="${round(pts[1][1] - oy * f)}" stroke="${CUBE_LINE}" stroke-width="1" opacity="0.7" />`;
+      }).join('')
+      : '';
+    return `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${fill}" stroke="${EDGE}" ` +
+      `stroke-width="1.5" stroke-linejoin="round" />${slabs}`;
+  };
+
+  // Receding faces exist only on edges that face up (R) or right (D); the
+  // front face is painted last and hides anything behind it.
+  const recedingFaces = sides
+    .filter((s) => s.dir === 'R' || s.dir === 'D')
+    .map((s) => quad(s, s.dir === 'R' ? TOP_FILL : RIGHT_FILL))
+    .join('');
+  const frontFace = `<polygon points="${sides.map((s) => `${X(s.x1)},${Y(s.y1)}`).join(' ')}" ` +
+    `fill="${FACE_FILL}" stroke="${EDGE}" stroke-width="2.5" stroke-linejoin="round" />`;
+
+  const text = (x, y, value, anchor) =>
+    `<text x="${round(x)}" y="${round(y)}" text-anchor="${anchor}" font-family="Arial, sans-serif" ` +
+    `font-size="15" font-weight="700" fill="${EDGE}">${escapeXml(value)}</text>`;
+  const outer = {
+    top: sides.find((s) => s.dir === 'R' && s.y1 === 0),
+    right: sides.find((s) => s.dir === 'D' && s.x1 === cols),
+    bottom: sides.find((s) => s.dir === 'L' && s.y1 === rows),
+    left: sides.find((s) => s.dir === 'U' && s.x1 === 0),
+  };
+  const mid = (s) => ({ x: (X(s.x1) + X(s.x2)) / 2, y: (Y(s.y1) + Y(s.y2)) / 2 });
+  const labels = [
+    outerLabels.top && text(mid(outer.top).x + ox / 2, Y(0) - oy - 9, outerLabels.top, 'middle'),
+    outerLabels.right && text(X(cols) + ox + 9, mid(outer.right).y - oy / 2 + 5, outerLabels.right, 'start'),
+    outerLabels.bottom && text(mid(outer.bottom).x, Y(rows) + 22, outerLabels.bottom, 'middle'),
+    outerLabels.left && text(X(0) - 10, mid(outer.left).y + 5, outerLabels.left, 'end'),
+  ].filter(Boolean).join('');
+
+  // Depth: on the receding edge at the bottom-right corner.
+  const depthMarkup = depthLabel
+    ? text(X(cols) + ox / 2 + 8, Y(rows) - oy / 2 + 16, depthLabel, 'start')
+    : '';
+
+  return {
+    svg:
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" ` +
+      `viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(description)}">` +
+      `<title>${escapeXml(description)}</title>` +
+      `<rect width="${svgWidth}" height="${svgHeight}" rx="12" fill="#fffbeb" />` +
+      recedingFaces + frontFace + labels + depthMarkup +
+      `</svg>`,
+    description,
+  };
+};
+
+export const createLShapedPrismImage = (options) => {
+  const { svg, description } = createLShapedPrismSvg(options);
   return { data: createSvgDataUri(svg), description };
 };
 

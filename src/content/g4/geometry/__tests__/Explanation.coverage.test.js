@@ -41,3 +41,18 @@ describe('G4 geometry Explanation: covers the "find missing side" subtopic', () 
     expect(explanationSrc).toMatch(/length\s*\+\s*width/i);
   });
 });
+
+describe('G4 geometry Explanation: composite shapes with unlabeled sides', () => {
+  // generateRectilinearFigureQuestion leaves sides blank or marks one "?";
+  // the Explanation must teach how to recover them before area/perimeter.
+  it('has a worked example for finding sides that are not labeled', () => {
+    expect(explanationSrc).toMatch(/Finding Sides That Aren't Labeled/);
+    expect(explanationSrc).toMatch(/Opposite sides add up/);
+    expect(explanationSrc).toMatch(/9 − 5 = <strong>4 cm/);
+    expect(explanationSrc).toMatch(/9 × 7 − 4 × 3 = 63 − 12 = <strong>51 square cm/);
+  });
+
+  it('warns against adding only the labeled sides for perimeter', () => {
+    expect(explanationSrc).toMatch(/adding only the labeled numbers/);
+  });
+});

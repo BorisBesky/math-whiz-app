@@ -6,6 +6,10 @@ import {
   computePerimeterUnits,
   createCompositeShapeSVG,
 } from './composite-shapes.js';
+import {
+  planHiddenSides,
+  randomRectilinearFigure,
+} from '../../../utils/rectilinearShapes.js';
 
 // Helper functions that need to be imported from utils
 function getRandomInt(min, max) {
@@ -400,7 +404,10 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'quadrilaterals': { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'find missing side': { generator: generateMissingSideQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    'composite shapes': { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'composite shapes': [
+      { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+      { generator: generateRectilinearFigureQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    ],
     'rectangle to square': { generator: generateRectangleToSquareAreaQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'photo collage': { generator: generatePhotoCollageQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   };
@@ -1486,8 +1493,149 @@ export function generateCompositeShapeAreaPerimeterQuestion(difficulty = 0.5) {
   };
 }
 
+const FIGURE_UNITS = [
+  { abbr: 'cm', singular: 'centimeter', plural: 'centimeters' },
+  { abbr: 'm', singular: 'meter', plural: 'meters' },
+  { abbr: 'ft', singular: 'foot', plural: 'feet' },
+  { abbr: 'in', singular: 'inch', plural: 'inches' },
+];
+
+const FIGURE_NAMES = {
+  'L-shape': 'L-shaped figure',
+  'U-shape': 'U-shaped figure',
+  staircase: 'staircase-shaped figure',
+};
+
+/**
+ * Area, perimeter, or missing-side question on a figure made of rectangles
+ * with arbitrary side lengths (4.MD.A.3, 3.MD.C.7.d). Unlike the grid
+ * templates above, some sides can be left unlabeled (or marked "?"), so the
+ * student first works out missing lengths from the parallel sides — the
+ * skill from "total area / total volume of a composite figure" worksheets.
+ * @param {number} difficulty - Difficulty level from 0 to 1
+ */
+export function generateRectilinearFigureQuestion(difficulty = 0.5) {
+  const figure = randomRectilinearFigure(difficulty);
+  const { sides, area, perimeter, width, height, family } = figure;
+  const unit = FIGURE_UNITS[getRandomInt(0, FIGURE_UNITS.length - 1)];
+  const unitWord = (n) => (n === 1 ? unit.singular : unit.plural);
+
+  const kinds = difficulty < 0.6 ? ['area', 'perimeter'] : ['area', 'perimeter', 'missing side'];
+  const kind = kinds[getRandomInt(0, kinds.length - 1)];
+
+  let hidden = [];
+  let target = -1;
+  if (kind === 'missing side') {
+    target = getRandomInt(0, sides.length - 1);
+  } else {
+    hidden = planHiddenSides(sides, difficulty < 0.6 ? 0 : difficulty < 0.8 ? 1 : 2);
+  }
+  const labelForSide = (side, index) => {
+    if (index === target) return '?';
+    if (hidden.includes(index)) return null;
+    return `${side.length} ${unit.abbr}`;
+  };
+
+  const shortestSide = Math.min(...sides.map((s) => s.length));
+  let correctValue;
+  let candidates;
+  let formatValue;
+  let questionText;
+  let hint;
+  const intro = `This ${FIGURE_NAMES[family]} is made of rectangles. Its side lengths are in ${unit.plural}.`;
+  const hiddenNote = hidden.length > 0
+    ? ' Some sides are not labeled, so work out their lengths from the other sides first.'
+    : '';
+  const oppositeSidesRule =
+    'The sides facing up add up to the same length as the sides facing down, and the sides facing left add up to the sides facing right.';
+
+  if (kind === 'area') {
+    correctValue = area;
+    formatValue = (n) => `${n} square ${unitWord(n)}`;
+    candidates = [width * height, perimeter, area + shortestSide, area - shortestSide];
+    questionText = `${intro}${hiddenNote} What is the area of the figure?`;
+    hint = 'Split the figure into rectangles, find each rectangle\'s area (length × width), and add them. '
+      + 'Or find the area of the whole big rectangle and subtract the part that is cut out.'
+      + (hidden.length > 0 ? ` ${oppositeSidesRule}` : '');
+  } else if (kind === 'perimeter') {
+    correctValue = perimeter;
+    formatValue = (n) => `${n} ${unitWord(n)}`;
+    const labeledOnly = perimeter - hidden.reduce((sum, i) => sum + sides[i].length, 0);
+    candidates = [
+      labeledOnly,
+      2 * (width + height),
+      area,
+      perimeter + 2 * shortestSide,
+      perimeter - shortestSide,
+    ];
+    questionText = `${intro}${hiddenNote} What is the perimeter of the figure?`;
+    hint = 'Perimeter is the distance all the way around: add the length of every side. '
+      + (hidden.length > 0 ? `Find the unlabeled sides first. ${oppositeSidesRule}` : 'Count every side exactly once.');
+  } else {
+    const missing = sides[target];
+    correctValue = missing.length;
+    formatValue = (n) => `${n} ${unitWord(n)}`;
+    const parallelOthers = sides
+      .filter((s, i) => i !== target && (s.dir === 'R' || s.dir === 'L') === (missing.dir === 'R' || missing.dir === 'L'))
+      .map((s) => s.length);
+    candidates = [
+      parallelOthers.reduce((a, b) => a + b, 0),
+      Math.max(...parallelOthers),
+      correctValue + 1,
+      correctValue - 1,
+      correctValue + 2,
+    ];
+    questionText = `${intro} What is the length of the side marked "?"`;
+    hint = `Look at the sides that run the same direction as the "?" side. ${oppositeSidesRule} Subtract to find the missing part.`;
+  }
+
+  const correctAnswer = formatValue(correctValue);
+  const distractors = [...new Set(candidates)]
+    .filter((v) => Number.isInteger(v) && v > 0 && v !== correctValue)
+    .map(formatValue);
+  for (let bump = 3; distractors.length < 3; bump += 1) {
+    const padded = formatValue(correctValue + bump);
+    if (!distractors.includes(padded)) distractors.push(padded);
+  }
+
+  const labelList = sides
+    .map((side, index) => {
+      const label = labelForSide(side, index);
+      return label === null ? 'unlabeled' : label === '?' ? 'the side marked ?' : label;
+    })
+    .join(', ');
+  const description = `${FIGURE_NAMES[family]} made of rectangles. Side lengths going clockwise from the top left: ${labelList}.`;
+
+  return {
+    question: questionText,
+    correctAnswer,
+    options: shuffle(generateUniqueOptions(correctAnswer, distractors)),
+    questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+    hint,
+    standard: '4.MD.A.3',
+    concept: 'Geometry',
+    grade: 'G4',
+    subtopic: 'composite shapes',
+    difficultyRange: { min: 0.5, max: 1.0 },
+    suggestedDifficulty: difficulty,
+    images: [
+      {
+        type: 'question',
+        data: createCompositeShapeSVG(figure.cells, 1, {
+          labelForSide,
+          maxWidth: 520,
+          maxHeight: 460,
+          description,
+        }),
+        description,
+      },
+    ],
+  };
+}
+
 const geometryQuestions = {
   generateQuestion,
+  generateRectilinearFigureQuestion,
   refreshAngleAdditionDiagram,
   generateLinesAndAnglesQuestion,
   generateShapeClassificationQuestion,

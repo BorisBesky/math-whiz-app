@@ -117,6 +117,11 @@ Curriculum content is a plug-in system — **the folder is the registration**
   Give every figure `role="img"` plus an `aria-label`/`<title>`, or an `alt` on
   the `<img>`: `src/content/g5/__tests__/Explanations.smoke.test.js` renders each
   Explanation and fails on a figure with an empty accessible name.
+- **Composite (rectilinear) figures** share one model: `src/utils/rectilinearShapes.js`
+  (outline sides, L/U/staircase builders, `planHiddenSides` + `solveSideLengths`
+  — hide at most one horizontal and one vertical side so it stays deducible).
+  Rendered in 2D by g4 `composite-shapes.js` (`createCompositeShapeSVG` with
+  `labelForSide`) and as a joined prism by g5 `visuals.js` (`createLShapedPrismImage`).
 
 ## Running things
 
