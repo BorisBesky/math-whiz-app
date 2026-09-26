@@ -121,7 +121,9 @@ Curriculum content is a plug-in system — **the folder is the registration**
   (outline sides, L/U/staircase builders, `planHiddenSides` + `solveSideLengths`
   — hide at most one horizontal and one vertical side so it stays deducible).
   Rendered in 2D by g4 `composite-shapes.js` (`createCompositeShapeSVG` with
-  `labelForSide`) and as a joined prism by g5 `visuals.js` (`createLShapedPrismImage`).
+  `labelForSide`) for the g4 geometry "rectilinear figures" subtopic, and as a
+  joined prism by g5 `visuals.js` (`createLShapedPrismImage`) for the g5
+  measurement-data "composite prisms" subtopic.
 
 ## Running things
 

@@ -78,7 +78,7 @@ describe('generateRectilinearFigureQuestion', () => {
       expect(q.options).toHaveLength(4);
       expect(new Set(q.options).size).toBe(4);
       expect(q.options).toContain(q.correctAnswer);
-      expect(q.subtopic).toBe('composite shapes');
+      expect(q.subtopic).toBe('rectilinear figures');
     }
     expect(kinds.area).toBeGreaterThan(0);
     expect(kinds.perimeter).toBeGreaterThan(0);
@@ -103,9 +103,17 @@ describe('generateRectilinearFigureQuestion', () => {
     }
   });
 
-  test('is reachable through the "composite shapes" subtopic', () => {
-    const questions = Array.from({ length: 200 }, () => generateQuestion(0.8, ['composite shapes']));
-    expect(questions.some((q) => /made of rectangles/.test(q.question))).toBe(true);
-    expect(questions.some((q) => /shows the length of every side in units/.test(q.question))).toBe(true);
+  test('has its own "rectilinear figures" subtopic, separate from "composite shapes"', () => {
+    // Its own subtopic so teachers can Focus on it.
+    const focused = Array.from({ length: 200 }, () => generateQuestion(0.8, ['rectilinear figures']));
+    focused.forEach((q) => {
+      expect(q.subtopic).toBe('rectilinear figures');
+      expect(q.question).toMatch(/made of rectangles/);
+    });
+    const grid = Array.from({ length: 200 }, () => generateQuestion(0.8, ['composite shapes']));
+    grid.forEach((q) => {
+      expect(q.subtopic).toBe('composite shapes');
+      expect(q.question).toMatch(/shows the length of every side in units/);
+    });
   });
 });

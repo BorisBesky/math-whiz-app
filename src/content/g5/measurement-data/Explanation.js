@@ -186,6 +186,7 @@ const MeasurementData5thExplanation = () => {
         <span style={styles.emoji}>🧱</span>A 4 × 2 × 3 prism (24) plus a 2 × 2 × 2 prism (8) make{' '}
         <strong>32 cubic units</strong> in all.
       </div>
+      <h2 style={styles.h2}>🧊 Composite prisms</h2>
       <p>
         Sometimes the two boxes are <strong>joined into one solid</strong>, and only the outside
         edges are labeled. Find the missing edges first, then split the front face.

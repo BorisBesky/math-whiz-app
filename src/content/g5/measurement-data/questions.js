@@ -309,7 +309,7 @@ const generatePrismVolumeQuestion = (difficulty) => {
 /* <l1> × <w1> × <h1> units and the other is <l2> × <w2> × <h2> units. */
 /* What is the total volume of the figure in cubic units?"             */
 /* ------------------------------------------------------------------ */
-const generateTwoPrismVolumeQuestion = (difficulty) => {
+const generateAdditiveVolumeQuestion = (difficulty) => {
   const top = 4 + Math.round(difficulty * 6);
   const dims1 = [randomInt(2, top), randomInt(2, 5), randomInt(2, 5)];
   const dims2 = [randomInt(2, top), randomInt(2, 5), randomInt(2, 5)];
@@ -327,7 +327,7 @@ const generateTwoPrismVolumeQuestion = (difficulty) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* additive volume — one joined L-shaped prism (5.MD.C.5c)             */
+/* composite prisms — one joined L-shaped prism (5.MD.C.5c)            */
 /* Format: "This solid is an L-shaped prism: two rectangular prisms    */
 /* joined together. It is <d> <unit> deep. ..."                        */
 /* The figure labels only the four outer edges of the front face, so   */
@@ -388,17 +388,9 @@ const generateLShapedPrismVolumeQuestion = (difficulty) => {
       `First find the unlabeled edges of the cut-out corner: it is ${width} − ${Math.min(outer.top, outer.bottom)} wide ` +
       `and ${height} − ${Math.min(outer.left, outer.right)} tall. Split the front face into two rectangles, ` +
       `add their areas, then multiply by the depth (${depth}).`,
-    ...baseFields('additive volume', '5.MD.C.5'),
+    ...baseFields('composite prisms', '5.MD.C.5'),
   };
 };
-
-// Both families teach 5.MD.C.5c: easier draws show the two prisms apart,
-// harder ones join them into one solid with edges to deduce.
-const generateAdditiveVolumeQuestion = (difficulty) => (
-  randomInt(0, 99) < (difficulty < 0.4 ? 25 : 60)
-    ? generateLShapedPrismVolumeQuestion(difficulty)
-    : generateTwoPrismVolumeQuestion(difficulty)
-);
 
 /* ------------------------------------------------------------------ */
 
@@ -408,6 +400,7 @@ const GENERATORS_BY_SUBTOPIC = {
   'volume concepts': generateVolumeConceptsQuestion,
   'volume of rectangular prisms': generatePrismVolumeQuestion,
   'additive volume': generateAdditiveVolumeQuestion,
+  'composite prisms': generateLShapedPrismVolumeQuestion,
 };
 
 export const generateQuestion = (difficulty, allowedSubtopics = null) => {

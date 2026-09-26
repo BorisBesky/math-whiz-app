@@ -1199,7 +1199,7 @@ const GeometryExplanation = () => {
         </div>
 
         <div style={styles.geometryVisual}>
-          <h3 style={styles.h3}>Example 3: Finding Sides That Aren't Labeled</h3>
+          <h3 style={styles.h3}>Example 3: Rectilinear Figures — Finding Sides That Aren't Labeled</h3>
           <div style={styles.svgContainer}>
             <img
               src={exampleMissingSidesUri}

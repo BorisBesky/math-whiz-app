@@ -497,6 +497,7 @@
             "angle measurement",
             "find missing side",
             "composite shapes",
+            "rectilinear figures",
             "rectangle to square",
             "photo collage"
           ],
@@ -514,6 +515,7 @@
             "Measure and classify angles (acute, right, obtuse, straight)",
             "Find a missing side length given the area or perimeter of a square or rectangle",
             "Find the area and perimeter of composite shapes built from squares and rectangles",
+            "Find unlabeled side lengths of rectilinear figures, then their area and perimeter",
             "Find the original area of a rectangle after it is transformed into a square",
             "Find square photo side lengths in a rectangular collage using total area and a side-length ratio"
           ],
@@ -824,14 +826,16 @@
             "line plots",
             "volume concepts",
             "volume of rectangular prisms",
-            "additive volume"
+            "additive volume",
+            "composite prisms"
           ],
           "objectives": [
             "Convert among units within the metric and customary measurement systems",
             "Interpret line plots with measurements in fractions of a unit",
             "Understand volume as counting unit cubes with no gaps or overlaps",
             "Find volumes of right rectangular prisms with V = l × w × h",
-            "Find volumes of solid figures composed of two rectangular prisms"
+            "Find volumes of solid figures composed of two rectangular prisms",
+            "Find the volume of an L-shaped prism by first finding its unlabeled edges"
           ],
           "ui": {
             "icon": "📦",
