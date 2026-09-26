@@ -404,10 +404,8 @@ export function generateQuestion(difficulty = 0.5, allowedSubtopics = null) {
     'quadrilaterals': { generator: generateQuadrilateralPropertiesQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'angle measurement': { generator: generateAngleMeasurementQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'find missing side': { generator: generateMissingSideQuestion, minDifficulty: 0.4, maxDifficulty: 1.0 },
-    'composite shapes': [
-      { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
-      { generator: generateRectilinearFigureQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
-    ],
+    'composite shapes': { generator: generateCompositeShapeAreaPerimeterQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
+    'rectilinear figures': { generator: generateRectilinearFigureQuestion, minDifficulty: 0.5, maxDifficulty: 1.0 },
     'rectangle to square': { generator: generateRectangleToSquareAreaQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
     'photo collage': { generator: generatePhotoCollageQuestion, minDifficulty: 0.6, maxDifficulty: 1.0 },
   };
@@ -1615,7 +1613,7 @@ export function generateRectilinearFigureQuestion(difficulty = 0.5) {
     standard: '4.MD.A.3',
     concept: 'Geometry',
     grade: 'G4',
-    subtopic: 'composite shapes',
+    subtopic: 'rectilinear figures',
     difficultyRange: { min: 0.5, max: 1.0 },
     suggestedDifficulty: difficulty,
     images: [

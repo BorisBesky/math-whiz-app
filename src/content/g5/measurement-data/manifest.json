@@ -11,14 +11,16 @@
     "line plots",
     "volume concepts",
     "volume of rectangular prisms",
-    "additive volume"
+    "additive volume",
+    "composite prisms"
   ],
   "objectives": [
     "Convert among units within the metric and customary measurement systems",
     "Interpret line plots with measurements in fractions of a unit",
     "Understand volume as counting unit cubes with no gaps or overlaps",
     "Find volumes of right rectangular prisms with V = l × w × h",
-    "Find volumes of solid figures composed of two rectangular prisms"
+    "Find volumes of solid figures composed of two rectangular prisms",
+    "Find the volume of an L-shaped prism by first finding its unlabeled edges"
   ],
   "ui": { "icon": "📦", "theme": "amber" },
   "ai": {

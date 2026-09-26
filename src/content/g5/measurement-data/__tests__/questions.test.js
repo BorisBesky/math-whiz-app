@@ -135,42 +135,39 @@ describe('Measurement & Data 5th correctness', () => {
     }
   });
 
-  test('additive volume: total is the sum of the parts, for both figure families', () => {
-    const seen = { separate: 0, joined: 0 };
-    for (const q of draw('additive volume', 200)) {
-      const separate = q.question.match(
+  test('additive volume: total is the sum of the two prisms', () => {
+    for (const q of draw('additive volume')) {
+      const m = q.question.match(
         /^A figure is made of two rectangular prisms\. One is (\d+) × (\d+) × (\d+) units and the other is (\d+) × (\d+) × (\d+) units\. What is the total volume of the figure in cubic units\?$/
       );
+      expect(m).not.toBeNull();
+      const [, a, b, c, d, e, f] = m.map(Number);
+      expect(Number(q.correctAnswer)).toBe(a * b * c + d * e * f);
+    }
+  });
+
+  test('composite prisms: volume of the L-shaped prism from its outer edges', () => {
+    for (const q of draw('composite prisms', 200)) {
       const joined = q.question.match(
         /^This solid is an L-shaped prism: two rectangular prisms joined together\. It is (\d+) (\w+) deep, and the edges of its front face are labeled in \2\. What is the total volume of the figure in cubic \2\?$/
       );
-      if (separate) {
-        seen.separate += 1;
-        const [, a, b, c, d, e, f] = separate.map(Number);
-        expect(Number(q.correctAnswer)).toBe(a * b * c + d * e * f);
-      } else if (joined) {
-        seen.joined += 1;
-        // Only the four outer edges are given; solve it the way a student
-        // would: the longer edge on each axis is the full size, and the
-        // cut-out corner is full size minus the shorter edge.
-        const d = q.images[0].description.match(
-          /(\d+) \w+ deep\. Front face edges: top (\d+) \w+, right (\d+) \w+, bottom (\d+) \w+, left (\d+) \w+; the two edges of the cut-out corner are not labeled\.$/
-        );
-        expect(d).not.toBeNull();
-        const [, depth, top, right, bottom, left] = d.map(Number);
-        expect(depth).toBe(Number(joined[1]));
-        const width = Math.max(top, bottom);
-        const height = Math.max(left, right);
-        const notch = (width - Math.min(top, bottom)) * (height - Math.min(left, right));
-        expect(notch).toBeGreaterThan(0);
-        expect(Number(q.correctAnswer)).toBe((width * height - notch) * depth);
-        expect(q.images[0].data).toMatch(/^data:image\/svg\+xml/);
-      } else {
-        throw new Error(`unrecognized question: ${q.question}`);
-      }
+      expect(joined).not.toBeNull();
+      // Only the four outer edges are given; solve it the way a student
+      // would: the longer edge on each axis is the full size, and the
+      // cut-out corner is full size minus the shorter edge.
+      const d = q.images[0].description.match(
+        /(\d+) \w+ deep\. Front face edges: top (\d+) \w+, right (\d+) \w+, bottom (\d+) \w+, left (\d+) \w+; the two edges of the cut-out corner are not labeled\.$/
+      );
+      expect(d).not.toBeNull();
+      const [, depth, top, right, bottom, left] = d.map(Number);
+      expect(depth).toBe(Number(joined[1]));
+      const width = Math.max(top, bottom);
+      const height = Math.max(left, right);
+      const notch = (width - Math.min(top, bottom)) * (height - Math.min(left, right));
+      expect(notch).toBeGreaterThan(0);
+      expect(Number(q.correctAnswer)).toBe((width * height - notch) * depth);
+      expect(q.images[0].data).toMatch(/^data:image\/svg\+xml/);
     }
-    expect(seen.separate).toBeGreaterThan(0);
-    expect(seen.joined).toBeGreaterThan(0);
   });
 
   test('unit-conversion hints singularize "feet" and "inches" correctly', () => {
@@ -192,6 +189,7 @@ describe('Measurement & Data 5th correctness', () => {
       'volume concepts',
       'volume of rectangular prisms',
       'additive volume',
+      'composite prisms',
     ]) {
       const questions = draw(subtopic, 20);
       questions.forEach((q) => expect(q.subtopic).toBe(subtopic));

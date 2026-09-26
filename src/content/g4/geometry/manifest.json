@@ -16,6 +16,7 @@
     "angle measurement",
     "find missing side",
     "composite shapes",
+    "rectilinear figures",
     "rectangle to square",
     "photo collage"
   ],
@@ -33,6 +34,7 @@
     "Measure and classify angles (acute, right, obtuse, straight)",
     "Find a missing side length given the area or perimeter of a square or rectangle",
     "Find the area and perimeter of composite shapes built from squares and rectangles",
+    "Find unlabeled side lengths of rectilinear figures, then their area and perimeter",
     "Find the original area of a rectangle after it is transformed into a square",
     "Find square photo side lengths in a rectangular collage using total area and a side-length ratio"
   ],
