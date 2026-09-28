@@ -147,24 +147,85 @@ const COMPOSITES_FNF = COMPOSITES.map(x => {
 });
 
 /**
+ * Pick `count` distinct items from `pool` at random.
+ */
+function samplePool(pool, count) {
+  const copy = [...pool];
+  const picks = [];
+  const take = Math.min(count, copy.length);
+  for (let i = 0; i < take; i++) {
+    const j = getRandomInt(0, copy.length - 1);
+    picks.push(copy[j]);
+    copy.splice(j, 1);
+  }
+  return picks;
+}
+
+/**
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generatePrimeCompositeQuestion(difficulty = 0.1) {
+  // Two forms, chosen at random on every draw:
+  //  1) "Which of these numbers is PRIME/COMPOSITE?" — always ships as a
+  //     4-option MC (one correct + three distractors from the opposite bank).
+  //     This is the primary form: the previous 2-option "Prime/Composite"
+  //     form rendered as a 50 % coin flip inside a UI designed around a
+  //     four-way pick, so a student could guess correctly without knowing
+  //     what the words mean.
+  //  2) "Is <n> a prime number or a composite number?" — the classic binary
+  //     framing, preserved for content coverage but explicitly shipped as a
+  //     2-option MC so the UI can render it as such where supported.
+  //     Kept minority-share via the coin flip below.
+  const useMcForm = Math.random() < 0.75;
+  if (useMcForm) {
+    const askPrime = Math.random() < 0.5;
+    const correctPool = askPrime ? PRIMES : COMPOSITES;
+    const distractorPool = askPrime ? COMPOSITES : PRIMES;
+    const correctAnswer = correctPool[getRandomInt(0, correctPool.length - 1)];
+    const distractors = samplePool(
+      distractorPool.filter((n) => n !== correctAnswer),
+      3
+    );
+    const options = [correctAnswer, ...distractors].map(String);
+    // Shuffle in place: PRIMES and COMPOSITES are already disjoint, so
+    // dedupe by string is a no-op, but keep the guard so the assertion
+    // stays honest if the banks ever share a value.
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = getRandomInt(0, i);
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return {
+      question: askPrime
+        ? 'Which of these numbers is PRIME?'
+        : 'Which of these numbers is COMPOSITE?',
+      correctAnswer: String(correctAnswer),
+      options,
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: 'A prime number has exactly two factors: 1 and itself. A composite number has more than two factors.',
+      standard: '4.OA.B.4',
+      concept: 'Operations & Algebraic Thinking',
+      grade: 'G4',
+      subtopic: 'prime vs composite',
+      difficultyRange: { min: 0.4, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  }
+
   const isPrime = Math.random() < 0.5;
   const testNumber = isPrime
     ? PRIMES[getRandomInt(0, PRIMES.length - 1)]
     : COMPOSITES[getRandomInt(0, COMPOSITES.length - 1)];
-  const correctAnswer = isPrime ? "Prime" : "Composite";
+  const correctAnswer = isPrime ? 'Prime' : 'Composite';
   return {
     question: `Is ${testNumber} a prime number or a composite number?`,
     correctAnswer: correctAnswer,
-    options: ["Prime", "Composite"],
+    options: ['Prime', 'Composite'],
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: "A prime number has exactly two factors: 1 and itself. A composite number has more than two factors.",
-    standard: "4.OA.B.4",
-    concept: "Operations & Algebraic Thinking",
-    grade: "G4",
-    subtopic: "prime vs composite",
+    hint: 'A prime number has exactly two factors: 1 and itself. A composite number has more than two factors.',
+    standard: '4.OA.B.4',
+    concept: 'Operations & Algebraic Thinking',
+    grade: 'G4',
+    subtopic: 'prime vs composite',
     difficultyRange: { min: 0.4, max: 1.0 },
     suggestedDifficulty: difficulty,
   };

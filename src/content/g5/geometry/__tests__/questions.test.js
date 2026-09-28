@@ -140,9 +140,25 @@ describe('Geometry 5th correctness', () => {
     );
     for (const q of draw('shape hierarchy')) {
       let m;
-      if ((m = q.question.match(/^True or false: (.+)$/))) {
-        expect(byStatement.has(m[1])).toBe(true);
-        expect(q.correctAnswer).toBe(byStatement.get(m[1]) ? 'True' : 'False');
+      if (
+        (m = q.question.match(/^Which of these statements is (TRUE|FALSE)\?$/))
+      ) {
+        const wantTruth = m[1] === 'TRUE';
+        // The correct choice must be a bank statement of the requested truth,
+        // and every distractor a bank statement of the opposite truth.
+        expect(byStatement.has(q.correctAnswer)).toBe(true);
+        expect(byStatement.get(q.correctAnswer)).toBe(wantTruth);
+        for (const option of q.options) {
+          expect(byStatement.has(option)).toBe(true);
+          if (option !== q.correctAnswer) {
+            expect(byStatement.get(option)).toBe(!wantTruth);
+          }
+        }
+        // Every draw must render as a 4-option MC — a 2-option True/False
+        // rendered inside the 4-option UI was the coin-flip bug this test
+        // now guards against.
+        expect(q.options.length).toBe(4);
+        expect(new Set(q.options).size).toBe(4);
       } else if (
         (m = q.question.match(
           /^All ([\w ]+) have ([\w ]+)\. Every ([\w ]+) is one of the [\w ]+\. What must be true about every [\w ]+\?$/
