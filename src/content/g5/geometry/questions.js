@@ -259,15 +259,35 @@ const ALL_PROPERTIES = HIERARCHY_PROPERTIES.map((property) => `It has ${property
 
 const generateShapeHierarchyQuestion = (difficulty) => {
   if (difficulty < 0.5) {
-    const entry = pick(HIERARCHY_STATEMENTS);
-    return {
-      question: `True or false: ${entry.statement}`,
-      correctAnswer: entry.truth ? 'True' : 'False',
-      options: shuffle(['True', 'False']),
-      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-      hint: 'A category\'s properties pass DOWN to its subcategories — but not back up.',
-      ...baseFields('shape hierarchy', '5.G.B.3'),
-    };
+    // Pick a target truth value, then draw one statement of that truth plus
+    // three distractor statements of the opposite truth. A 2-option
+    // True/False rendered as a 4-option MC ships as a coin flip — students
+    // can guess correctly 50 % of the time and never demonstrate
+    // understanding. The wider prompt "Which of these statements is
+    // TRUE/FALSE?" forces the student to evaluate every statement against
+    // the inclusive hierarchy.
+    const targetTruth = Math.random() < 0.5;
+    const promptFor = (truth) => (truth ? 'Which of these statements is TRUE?' : 'Which of these statements is FALSE?');
+
+    const matches = HIERARCHY_STATEMENTS.filter((entry) => entry.truth === targetTruth);
+    const opposites = HIERARCHY_STATEMENTS.filter((entry) => entry.truth !== targetTruth);
+    // The bank is balanced 6/6, so both pools always have enough draws for
+    // one correct answer plus three distractors — but guard the pool sizes
+    // anyway so this stays robust to future edits of the statement list.
+    if (matches.length >= 1 && opposites.length >= 3) {
+      const correct = pick(matches).statement;
+      const distractors = shuffle(opposites.map((entry) => entry.statement)).slice(0, 3);
+      return {
+        question: promptFor(targetTruth),
+        correctAnswer: correct,
+        options: shuffle([correct, ...distractors]),
+        questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+        hint: 'A category\'s properties pass DOWN to its subcategories — but not back up.',
+        ...baseFields('shape hierarchy', '5.G.B.3'),
+      };
+    }
+    // Guaranteed-valid fallback: fall through to the inheritance form,
+    // which always renders 4 options regardless of the current statement bank.
   }
 
   const fact = pick(INHERITANCE_FACTS);
