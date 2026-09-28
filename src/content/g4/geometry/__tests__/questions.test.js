@@ -168,16 +168,19 @@ describe('geometry angle real-life examples', () => {
 describe('points / lines / rays questions', () => {
   const runMany = (n) => Array.from({ length: n }, () => generatePointsLinesRaysQuestion(0.5));
 
-  it('always produces a valid question whose correct answer is among unique options', () => {
-    runMany(300).forEach((q) => {
+  it('always produces a valid 4-option question whose correct answer is among unique options', () => {
+    runMany(500).forEach((q) => {
       expect(typeof q.question).toBe('string');
       expect(q.question.length).toBeGreaterThan(0);
       expect(q.subtopic).toBe('points lines rays');
       expect(q.options).toContain(q.correctAnswer);
       // No duplicate options.
       expect(new Set(q.options).size).toBe(q.options.length);
-      // Multiple-choice forms have 4 options; true/false forms have 2.
-      expect([2, 4]).toContain(q.options.length);
+      // Every form ships as a 4-option MC. The previous "True or False:
+      // <statement>." form shipped 2 options — a coin flip inside a UI
+      // designed around a four-way pick — and this assertion guards against
+      // any future builder shipping fewer than 4 again.
+      expect(q.options.length).toBe(4);
     });
   });
 
@@ -192,33 +195,49 @@ describe('points / lines / rays questions', () => {
     endpointQuestions.forEach((q) => expect(q.question).not.toMatch(/does a point have/));
   });
 
-  it('never marks a mathematically-true statement as False in the notation T/F form', () => {
-    // Regression: the T/F builder borrows another concept's notation to build
-    // the false variant. "A point has no endpoints." (borrowed from line's
-    // "has no endpoints") is TRUE — a point has zero endpoints — but was being
-    // labeled False. The borrow must skip concepts with the same endpoint count.
-    const trueStatements = new Set([
+  it('labels the notation "which is true/false" statements consistently with the endpoint bank', () => {
+    // Regression: the earlier builder shipped "True or False: <statement>."
+    // with only two options, so a student saw a 50 % coin flip inside the
+    // 4-option UI. It also mislabelled "A point has no endpoints." as False
+    // even though a point has 0 endpoints. The new 4-option "Which
+    // statement is TRUE / FALSE?" form must never place a mathematically
+    // true statement in a slot the question requires to be false, or vice
+    // versa. We derive truth from the endpoint bank so a future edit of
+    // the notation list is checked against the same source of truth.
+    const TRUE_STATEMENTS = new Set([
+      'A point is shown as a single dot.',
       'A point has no endpoints.',
       'A line has no endpoints.',
       'A ray has exactly one endpoint.',
       'A line segment has two endpoints.',
     ]);
-    // Gather mislabelled statements rather than asserting inside the loop —
-    // otherwise a run that happens to draw no true statements passes without
-    // checking anything.
+    let trueFormsSeen = 0;
+    let falseFormsSeen = 0;
     const mislabelled = [];
-    let trueStatementsSeen = 0;
-    for (let i = 0; i < 1000; i += 1) {
+    for (let i = 0; i < 1500; i += 1) {
       const q = generatePointsLinesRaysQuestion(0.5);
-      const tfMatch = q.question.match(/^True or False: (.+)$/);
-      if (!tfMatch) continue;
-      const stmt = tfMatch[1];
-      if (!trueStatements.has(stmt)) continue;
-      trueStatementsSeen += 1;
-      if (q.correctAnswer !== 'True') mislabelled.push(`${stmt} -> ${q.correctAnswer}`);
+      const trueForm = q.question === 'Which statement is TRUE?';
+      const falseForm = q.question === 'Which statement is FALSE?';
+      if (!trueForm && !falseForm) continue;
+      if (trueForm) trueFormsSeen += 1;
+      else falseFormsSeen += 1;
+      // The correct answer must match the question's requested truth.
+      const answerIsTrue = TRUE_STATEMENTS.has(q.correctAnswer);
+      if (trueForm && !answerIsTrue) mislabelled.push(`TRUE-form correct is FALSE: ${q.correctAnswer}`);
+      if (falseForm && answerIsTrue) mislabelled.push(`FALSE-form correct is TRUE: ${q.correctAnswer}`);
+      // Every distractor must carry the OPPOSITE truth from the correct
+      // answer's — otherwise a distractor is also a valid answer and the
+      // student is marked wrong for picking it.
+      for (const option of q.options) {
+        if (option === q.correctAnswer) continue;
+        const optionIsTrue = TRUE_STATEMENTS.has(option);
+        if (trueForm && optionIsTrue) mislabelled.push(`TRUE-form distractor is TRUE: ${option}`);
+        if (falseForm && !optionIsTrue) mislabelled.push(`FALSE-form distractor is FALSE: ${option}`);
+      }
     }
     expect(mislabelled).toEqual([]);
-    expect(trueStatementsSeen).toBeGreaterThan(0);
+    expect(trueFormsSeen).toBeGreaterThan(0);
+    expect(falseFormsSeen).toBeGreaterThan(0);
   });
 });
 

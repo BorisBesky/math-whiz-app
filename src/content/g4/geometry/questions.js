@@ -1074,24 +1074,70 @@ export function generatePointsLinesRaysQuestion(difficulty = 0.5) {
       correctAnswer: c.example,
       distractors: shuffle(otherConcepts(c).map((x) => x.example)).slice(0, 3),
     }),
-    // Notation true/false. A false variant borrows another concept's notation.
-    // Restrict the borrow to concepts with a different endpoint count — otherwise
-    // "A point has no endpoints." (borrowed from line) is TRUE (a point has 0
-    // endpoints) even though the builder would label it False.
-    (c) => {
-      const eligible = otherConcepts(c).filter((x) => x.endpoints !== c.endpoints);
-      if (eligible.length > 0 && Math.random() < 0.5) {
-        const other = pick(eligible);
-        return {
-          question: `True or False: ${c.Phrase} ${other.notation}.`,
-          correctAnswer: "False",
-          fixedOptions: ["True", "False"],
-        };
+    // Notation "which statement is TRUE / FALSE?" — always 4 options. The
+    // previous "True or False: <statement>" form rendered as a 2-option
+    // multiple-choice, which is a 50 % coin flip inside a UI designed
+    // around a four-way pick. This builder ignores its `c` argument and
+    // draws four statements that cover multiple concepts, so a student
+    // must evaluate each statement rather than compare against one
+    // familiar object.
+    //
+    // Truth semantics: a statement "<subject.Phrase> <notation>." is TRUE
+    // when either the notation is the visual signifier "is shown as a
+    // single dot" and subject is a point, or the notation is one of the
+    // endpoint-count notations and subject.endpoints matches the notation.
+    // (That is why "A point has no endpoints." is TRUE — a point has 0
+    // endpoints. The previous builder had a special-case for exactly
+    // this collision.)
+    () => {
+      const DOT_NOTATION = 'is shown as a single dot';
+      const NOTATION_EXPECTED_ENDPOINTS = {
+        'has no endpoints': 0,
+        'has exactly one endpoint': 1,
+        'has two endpoints': 2,
+      };
+      const isTrueStatement = (subject, notation) =>
+        notation === DOT_NOTATION
+          ? subject.name === 'point'
+          : NOTATION_EXPECTED_ENDPOINTS[notation] === subject.endpoints;
+
+      const NOTATIONS = [
+        DOT_NOTATION,
+        'has no endpoints',
+        'has exactly one endpoint',
+        'has two endpoints',
+      ];
+
+      // Enumerate all 4×4=16 (subject, notation) pairs, dedupe by text so a
+      // pair that produced the same sentence twice never occupies two
+      // options, and partition into true and false sets.
+      const allStatements = [];
+      for (const subject of concepts) {
+        for (const notation of NOTATIONS) {
+          allStatements.push({
+            text: `${subject.Phrase} ${notation}.`,
+            truth: isTrueStatement(subject, notation),
+          });
+        }
       }
+      const byText = new Map();
+      for (const s of allStatements) if (!byText.has(s.text)) byText.set(s.text, s);
+      const trueStatements = Array.from(byText.values()).filter((s) => s.truth).map((s) => s.text);
+      const falseStatements = Array.from(byText.values()).filter((s) => !s.truth).map((s) => s.text);
+
+      const askTrue = Math.random() < 0.5;
+      const [correctPool, distractorPool] = askTrue
+        ? [trueStatements, falseStatements]
+        : [falseStatements, trueStatements];
+      if (correctPool.length < 1 || distractorPool.length < 3) return null;
+      const correct = pick(correctPool);
+      const distractors = shuffle(distractorPool).slice(0, 3);
       return {
-        question: `True or False: ${c.Phrase} ${c.notation}.`,
-        correctAnswer: "True",
-        fixedOptions: ["True", "False"],
+        question: askTrue
+          ? 'Which statement is TRUE?'
+          : 'Which statement is FALSE?',
+        correctAnswer: correct,
+        distractors,
       };
     },
     // Endpoint count (point excluded — endpoints don't describe it).

@@ -143,3 +143,70 @@ describe('generateMultiplesQuestion identify-form distractor count', () => {
     expect(tooFewOptions).toEqual([]);
   });
 });
+
+describe('generatePrimeCompositeQuestion', () => {
+  // Small primality helper — the source-of-truth banks in questions.js are not
+  // exported, so the test regenerates the classification independently to
+  // guard against a bank drift on either side.
+  const isPrime = (n) => {
+    if (n < 2) return false;
+    if (n === 2) return true;
+    if (n % 2 === 0) return false;
+    for (let i = 3; i * i <= n; i += 2) if (n % i === 0) return false;
+    return true;
+  };
+
+  it('produces 4-option MCs for the "which is prime/composite?" form and 2-option MCs for the classic form', () => {
+    // Regression: the classic form ships as a 2-option "multiple-choice"
+    // (Prime / Composite), which renders as a coin flip inside a UI designed
+    // around a four-way pick. We added a "Which of these numbers is
+    // PRIME/COMPOSITE?" 4-option form so the generator can offer both.
+    // Verify each form matches its expected option count and its correct
+    // answer is genuinely of the requested class.
+    const four = [];
+    const binary = [];
+    for (let i = 0; i < 800; i += 1) {
+      const q = questions.generatePrimeCompositeQuestion(0.5);
+      expect(q.subtopic).toBe('prime vs composite');
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+
+      if (/^Which of these numbers is (PRIME|COMPOSITE)\?$/.test(q.question)) {
+        four.push(q);
+      } else if (/^Is \d+ a prime number or a composite number\?$/.test(q.question)) {
+        binary.push(q);
+      } else {
+        throw new Error(`unrecognized question: ${q.question}`);
+      }
+    }
+
+    expect(four.length).toBeGreaterThan(0);
+    expect(binary.length).toBeGreaterThan(0);
+
+    // 4-option form: exactly 4 options, correct answer's primality matches
+    // the prompt, every distractor's primality is the opposite.
+    for (const q of four) {
+      expect(q.options.length).toBe(4);
+      const wantPrime = q.question === 'Which of these numbers is PRIME?';
+      const correctN = Number(q.correctAnswer);
+      expect(Number.isInteger(correctN)).toBe(true);
+      expect(isPrime(correctN)).toBe(wantPrime);
+      for (const option of q.options) {
+        if (option === q.correctAnswer) continue;
+        const n = Number(option);
+        expect(Number.isInteger(n)).toBe(true);
+        expect(isPrime(n)).toBe(!wantPrime);
+      }
+    }
+
+    // Classic form stays a 2-option MC with the fixed labels.
+    for (const q of binary) {
+      expect(q.options.length).toBe(2);
+      expect(q.options.sort()).toEqual(['Composite', 'Prime']);
+      expect(['Prime', 'Composite']).toContain(q.correctAnswer);
+      const [, subjectStr] = q.question.match(/^Is (\d+) /);
+      const n = Number(subjectStr);
+      expect(q.correctAnswer === 'Prime').toBe(isPrime(n));
+    }
+  });
+});
