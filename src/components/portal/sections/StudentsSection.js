@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   BarChart3, RefreshCw, Download, Target, Trash2, Eye,
   ChevronUp, ChevronDown, CheckCircle, Crosshair, Sparkles, Loader2, AlertCircle
@@ -74,7 +74,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     setCurrentPage(1); // Reset to first page when sorting changes
   };
 
-  const getSortedStudents = useCallback(() => {
+  // Sort once per [students, sortField, sortDirection] change — the previous
+  // `useCallback` was invoked on every render (see line below), so the
+  // `[...students].sort(...)` ran on every keystroke in the filter box and
+  // every Firestore enrollment tick. For a class with 100+ students that was
+  // meaningful wasted work.
+  const sortedStudents = useMemo(() => {
     if (!sortField) return students;
 
     return [...students].sort((a, b) => {
@@ -99,6 +104,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students, sortField, sortDirection]);
 
   const getSortIcon = (field) => {
@@ -598,7 +604,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     }
   };
 
-  const sortedStudents = getSortedStudents();
+  // sortedStudents is memoized above; no per-render sort.
 
   // Pagination logic
   const totalPages = Math.ceil(sortedStudents.length / itemsPerPage);

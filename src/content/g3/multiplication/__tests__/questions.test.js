@@ -82,6 +82,38 @@ describe('G3 multiplication: every question generator emits a subtopic that the 
   });
 });
 
+describe('G3 multiplication: default export only contains functions that actually ship', () => {
+  // Regression for the dead `generateFillInTheBlanksQuestion` that was defined
+  // and re-exported in the default object but never wired into
+  // subtopicToGenerator — so no "fill in the blanks" multiplication question
+  // ever reached a student. The default export should list only generators
+  // that are either called by `generateQuestion` OR imported externally.
+  it('every exported generator corresponds to a registered subtopic', () => {
+    const declared = new Set(manifest.subtopics.map((s) => s.toLowerCase()));
+    for (const [name, gen] of Object.entries(multiplicationQuestions)) {
+      if (typeof gen !== 'function') continue;
+      if (name === 'generateQuestion') continue;
+      const q = gen(0.5);
+      if (!q || !q.subtopic) continue;
+      // Each exported generator must emit a subtopic the manifest declares;
+      // otherwise it is unreachable from the quiz pipeline AND off the radar
+      // of Focus restrictions / analytics.
+      expect(declared).toContain(q.subtopic.toLowerCase());
+    }
+  });
+
+  it('generateQuestion can reach every manifest subtopic under unrestricted draws', () => {
+    const seen = new Set();
+    for (let i = 0; i < 600; i += 1) {
+      const q = generateQuestion(Math.random(), null);
+      if (q?.subtopic) seen.add(q.subtopic.toLowerCase());
+    }
+    for (const sub of manifest.subtopics) {
+      expect(seen).toContain(sub.toLowerCase());
+    }
+  });
+});
+
 describe('G3 multiplication: fact family never asks a trivially identical commutative question', () => {
   it('never asks "If A x A = X, what is A x A?"', () => {
     let commutativeSeen = 0;

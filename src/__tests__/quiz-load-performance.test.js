@@ -434,6 +434,57 @@ describe('Waiting time — simulated network faults', () => {
     expect(criticalPath).not.toMatch(/await\s+(updateDoc|setDoc|addDoc|deleteDoc|writeBatch)/);
   });
 
+  test('MainApp.finishQuiz does not await the paused-quiz-clear write before navigating to results', () => {
+    // Same reasoning as startNewQuiz: the student should see the results
+    // screen immediately on the last question. Awaiting the paused-quiz-clear
+    // stalled the transition for the round-trip ack time, which users on
+    // flaky connections perceived as the app "freezing" at the end of a quiz.
+    // eslint-disable-next-line global-require
+    const fs = require('fs');
+    // eslint-disable-next-line global-require
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'MainApp.js'), 'utf8');
+    const start = source.indexOf('const finishQuiz = async');
+    const end = source.indexOf('navigateApp(', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const criticalPath = source.slice(start, end);
+    expect(criticalPath).not.toMatch(/await\s+(updateDoc|setDoc|addDoc|deleteDoc|writeBatch)/);
+  });
+
+  test('MainApp AI-answer branch gates legacy progress writes on LEGACY_GRADE_KEY and uses seconds, not ms', () => {
+    // The AI-evaluated (drawing / write-in) branch was writing the legacy
+    // `progress.<today>.*` paths unconditionally AND storing `timeTaken * 1000`
+    // instead of seconds — unlike the MC and fill-in branches, which gate on
+    // LEGACY_GRADE_KEY and store seconds. The result: a non-G3 student's
+    // drawing answer silently inflated the legacy counters that drive the
+    // G3-only home screen, with mismatched units. This test pins the fix.
+    // eslint-disable-next-line global-require
+    const fs = require('fs');
+    // eslint-disable-next-line global-require
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'MainApp.js'), 'utf8');
+    const startMarker = 'if (isAIEvaluatedQuestion(currentQuestion)) {';
+    const endMarker = 'const saved = await persistQuestionAttempt';
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const aiBranch = source.slice(start, end);
+
+    // No `timeTaken * 1000` in the AI branch — the fill-in and MC branches
+    // record `timeTaken` (seconds), so this one must too.
+    expect(aiBranch).not.toMatch(/timeTaken\s*\*\s*1000/);
+
+    // Legacy `progress.${today}.*` increments must sit inside a
+    // `LEGACY_GRADE_KEY` conditional. Grab every legacy-path write statement
+    // and confirm each one is preceded by that gate in the AI branch.
+    const legacyLines = aiBranch.match(/updates\[.*(?:allProgress_path|topicProgress_path)[^\]]*\]/g) || [];
+    // The AI branch references the legacy paths — but only inside the gate.
+    expect(legacyLines.length).toBeGreaterThan(0);
+    expect(aiBranch).toMatch(/if\s*\(\s*selectedGrade\s*===\s*LEGACY_GRADE_KEY\s*\)/);
+  });
+
   test('a 100% question-bank class that times out still opens a generated quiz', async () => {
     const { grade, topic } = GRADE_TOPICS[0];
     await topic.loadGenerateQuestion();

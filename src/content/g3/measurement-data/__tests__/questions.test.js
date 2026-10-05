@@ -70,4 +70,27 @@ describe('G3 measurement-data: perimeter question sanity', () => {
       expect(new Set(q.options).size).toBe(q.options.length);
     }
   });
+
+  it('never ships an AREA quantity (side1 × side2) as a perimeter distractor', () => {
+    // Regression: the old distractor pool included `${s1 * s2} inches`, which
+    // is an area quantity labeled with linear units. A student who multiplied
+    // sides (the classic "confused area with perimeter" mistake) would be
+    // rewarded with the exact wrong value they computed. Perimeter distractors
+    // should all be *linear* near-misses — never an area quantity.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generatePerimeterQuestion();
+      const match = q.question.match(/sides of length (\d+) inches and (\d+) inches/);
+      const [, s1, s2] = match.map(Number);
+      const areaValue = s1 * s2;
+      q.options.forEach((opt) => {
+        const value = parseInt(opt, 10);
+        // Perimeter can only equal area for (3,6)/(4,4)/(6,3) with
+        // s1,s2 ≥ 5, so area never coincides with the correct answer here.
+        // Any option matching the area value is the forbidden distractor.
+        if (opt !== q.correctAnswer) {
+          expect(value).not.toBe(areaValue);
+        }
+      });
+    }
+  });
 });

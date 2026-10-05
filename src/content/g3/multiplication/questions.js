@@ -242,43 +242,10 @@ export function generateFactFamilyQuestion() {
   };
 }
 
-/**
- * Generates a fill-in-the-blanks multiplication question
- * @param {number} difficulty - Difficulty level from 0 to 1
- */
-function generateFillInTheBlanksQuestion(difficulty = 0.5) {
-  const factor1 = getRandomInt(2, 2 + Math.floor(8 * difficulty));
-  const factor2 = getRandomInt(2, 2 + Math.floor(8 * difficulty));
-  const product = factor1 * factor2;
-  
-  const questionTypes = [
-    {
-      question: `____ × ${factor2} = ${product}`,
-      answers: [`${factor1}`],
-      inputTypes: ['numeric'],
-    },
-    {
-      question: `${factor1} × ${factor2} = ____`,
-      answers: [`${product}`],
-      inputTypes: ['numeric'],
-    },
-  ];
-  
-  const selected = questionTypes[getRandomInt(0, questionTypes.length - 1)];
-  
-  return {
-    question: selected.question,
-    questionType: QUESTION_TYPES.FILL_IN_THE_BLANKS,
-    correctAnswer: selected.answers.join(' ;; '),
-    inputTypes: selected.inputTypes,
-    options: [], // No options for fill-in-the-blanks
-    hint: "Think about what multiplication means: groups of equal size!",
-    standard: "3.OA.C.7",
-    concept: "Multiplication",
-    grade: "G3",
-    subtopic: "basic multiplication",
-  };
-}
+// `generateFillInTheBlanksQuestion` was defined here but never registered in
+// `subtopicToGenerator` above and never imported anywhere else — a whole
+// question type that silently never shipped. Removed to keep the file honest
+// about what the student actually sees.
 
 const multiplicationQuestions = {
   generateQuestion,
@@ -286,7 +253,6 @@ const multiplicationQuestions = {
   generateArrayQuestion,
   generateEqualGroupsQuestion,
   generateFactFamilyQuestion,
-  generateFillInTheBlanksQuestion,
 };
 
 export default multiplicationQuestions;
