@@ -235,14 +235,18 @@ const generatePrimeFactorizationQuestion = (difficulty) => {
 
   const correct = factors.join(' × ');
   // Distractors: swap one prime, drop a factor, or use a non-prime split.
-  // For two-prime composites the naive "n / factors[0]" split collides with
-  // the correct answer (e.g., 6 = 2 × 3, and "2 × 3" is also the split). Use
-  // a distinctly non-prime split there instead.
+  // For a two-prime composite n = p × q, `factors[0] * factors[1] === n` is
+  // ALWAYS true by definition, so the previous ternary always chose the
+  // `1 × n` branch — identical to the "drop a factor" distractor on the next
+  // line, wasting one slot after dedup. Give two-prime composites a distinct
+  // "repeated prime" split that is clearly wrong but still looks like a
+  // factorization (e.g. 15 → "3 × 3 × 5"), and keep the clean `1 × n`
+  // distractor as the "drop a factor" option below.
   const swapped = [...factors];
   swapped[0] = swapped[0] === 2 ? 3 : 2;
   const nonPrimeSplit = factors.length > 2
     ? (n % 2 === 0 ? `2 × ${n / 2}` : `${factors[0]} × ${n / factors[0]}`)
-    : `${factors[0] * factors[1] === n ? 1 : factors[0]} × ${n}`;
+    : `${factors[0]} × ${factors[0]} × ${factors[1]}`;
   const distractors = [
     swapped.join(' × '),
     factors.length > 2 ? factors.slice(1).join(' × ') : `1 × ${n}`,

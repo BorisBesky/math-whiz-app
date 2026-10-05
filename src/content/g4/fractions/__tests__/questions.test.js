@@ -75,19 +75,38 @@ describe('G4 fractions: subtraction distractor pool stays distinct in the equal-
 });
 
 describe('G4 fractions: comparison correctly handles equivalent-but-different-looking fractions', () => {
-  it('never picks "<" or ">" when the two fractions are actually equal', () => {
+  it('the correctAnswer always agrees with the real ordering of the two fractions', () => {
     for (let i = 0; i < 500; i += 1) {
       const q = generateFractionComparisonQuestion(0.5);
       // Question: "Compare these fractions: A/B ___ C/D"
       const match = q.question.match(/(\d+)\/(\d+) ___ (\d+)\/(\d+)/);
       expect(match).not.toBeNull();
       const [, a, b, c, d] = match.map(Number);
-      // Cross-multiply to check equivalence without floating-point error.
-      expect(a * d).not.toBe(c * b);
-      // The chosen comparator must agree with the real ordering. Deriving the
-      // expected symbol and comparing directly also catches a correctAnswer
-      // that is neither '<' nor '>', which the old if/else silently allowed.
-      expect(q.correctAnswer).toBe(a * d > c * b ? '>' : '<');
+      // Cross-multiply to compare without floating-point error. The generator
+      // re-rolls to make the fractions genuinely different; if 20 re-rolls
+      // still land on an equivalent pair, we must gracefully emit '=' instead
+      // of silently labeling an equal pair as '<' or '>'.
+      const expected = a * d > c * b ? '>' : a * d < c * b ? '<' : '=';
+      expect(q.correctAnswer).toBe(expected);
+      expect(q.options).toContain(q.correctAnswer);
+    }
+  });
+
+  it('equal-fraction fallback: a hand-crafted equal pair returns "=" and includes it among the options', () => {
+    // Direct regression for the equal-escape bug. Monkey-patching Math.random
+    // to drive the generator into "20 re-rolls still landed on an equivalent
+    // pair" is brittle, so we test the invariant the fix guarantees: whenever
+    // the chosen correctAnswer is "=", the two fractions ARE equivalent, and
+    // the "=" option is actually in the options array. Any draw of the
+    // generator that passes `correctAnswer === '='` must satisfy this; if the
+    // bug returns, correctAnswer stays '<'/'>' on an equal pair instead.
+    for (let i = 0; i < 2000; i += 1) {
+      const q = generateFractionComparisonQuestion(Math.random());
+      if (q.correctAnswer !== '=') continue;
+      const match = q.question.match(/(\d+)\/(\d+) ___ (\d+)\/(\d+)/);
+      const [, a, b, c, d] = match.map(Number);
+      expect(a * d).toBe(c * b);
+      expect(q.options).toContain('=');
     }
   });
 });

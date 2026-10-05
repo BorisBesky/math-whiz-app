@@ -276,6 +276,30 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
     safety += 1;
   }
 
+  // If 20 re-rolls still landed on an equivalent fraction, admit the equality
+  // instead of silently emitting the wrong correct answer. The old code would
+  // compute `decimal1 > decimal2` on two equal values, get FALSE, and ship
+  // ">" or "<" as the "correct" answer — marking a student picking "=" wrong
+  // on a question whose true answer is "=". Make "=" the correct answer and
+  // include it among the options so the student can select it.
+  if (num1 * den2 === num2 * den1) {
+    const correctAnswer = "=";
+    const potentialDistractors = [">", "<"];
+    return {
+      question: `Compare these fractions: ${num1}/${den1} ___ ${num2}/${den2}`,
+      correctAnswer,
+      options: shuffle(generateUniqueOptions(correctAnswer, potentialDistractors)),
+      questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
+      hint: "Convert to common denominators, or think about which fraction is closer to 0, 1/2, or 1.",
+      standard: "4.NF.A.2",
+      concept: "Fractions 4th",
+      grade: "G4",
+      subtopic: "comparison",
+      difficultyRange: { min: 0.5, max: 1.0 },
+      suggestedDifficulty: difficulty,
+    };
+  }
+
   const decimal1 = num1 / den1;
   const decimal2 = num2 / den2;
   const correctAnswer = decimal1 > decimal2 ? ">" : "<";

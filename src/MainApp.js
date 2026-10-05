@@ -1565,20 +1565,27 @@ const MainAppContent = () => {
           }
         }
         
-        // Update progress tracking
+        // Update progress tracking. Match the fill-in and multiple-choice
+        // branches: timeTaken is in SECONDS (not ms), and the legacy
+        // `progress.*` paths are only written for the legacy grade. A G4/G5
+        // student's drawing or write-in answer must not quietly inflate the
+        // legacy counters that drive the home screen for G3 students.
         const allProgress_path = `progress.${today}.all`;
         const topicProgress_path = `progress.${today}.${sanitizedTopic}`;
         const gradeAllProgress_path = `progressByGrade.${today}.${selectedGrade}.all`;
         const gradeTopicProgress_path = `progressByGrade.${today}.${selectedGrade}.${sanitizedTopic}`;
-        
-        updates[`${allProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
-        updates[`${allProgress_path}.timeSpent`] = increment(timeTaken * 1000);
-        updates[`${topicProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
-        updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+
         updates[`${gradeAllProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
-        updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        updates[`${gradeAllProgress_path}.timeSpent`] = increment(timeTaken);
         updates[`${gradeTopicProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
-        updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken * 1000);
+        updates[`${gradeTopicProgress_path}.timeSpent`] = increment(timeTaken);
+
+        if (selectedGrade === LEGACY_GRADE_KEY) {
+          updates[`${allProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+          updates[`${allProgress_path}.timeSpent`] = increment(timeTaken);
+          updates[`${topicProgress_path}.${isCorrect ? 'correct' : 'incorrect'}`] = increment(1);
+          updates[`${topicProgress_path}.timeSpent`] = increment(timeTaken);
+        }
         
         if (isCorrect) {
           setScore(score + 1);
@@ -2074,10 +2081,15 @@ const MainAppContent = () => {
   const finishQuiz = async () => {
     if (!user) return;
     const userDocRef = getUserDocRef(user.uid);
-    // Clear the paused quiz for this topic by setting it to null
-    await updateDoc(userDocRef, {
-      [`pausedQuizzes.${currentTopic}`]: null,
-    });
+    // Clear the paused quiz for this topic by setting it to null. Not awaited:
+    // the write is queued locally and the student should see the results screen
+    // immediately, not wait for server acknowledgement (which stalls on a slow
+    // or flaky connection). Mirrors the fire-and-forget pattern in startNewQuiz.
+    if (userDocRef) {
+      updateDoc(userDocRef, {
+        [`pausedQuizzes.${currentTopic}`]: null,
+      }).catch((e) => console.warn('Could not clear paused quiz on finish:', e));
+    }
     quizFinishedRef.current = true;
     updateDifficulty(score, currentQuiz.length);
     navigateApp(`/results/${encodeTopicForPath(currentTopic)}`);

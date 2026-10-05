@@ -121,6 +121,15 @@ export const generateQuizQuestions = async (
   // Bank-only classes still get a quiz when the bank itself can't be read.
   const forceQuestionBankOnly = questionBankProbability >= 1 && !questionBankUnavailable;
 
+  // Resolve the topic's generator ONCE, before the retry loop. loadGenerateQuestion()
+  // is a dynamic import whose promise is cached per topic — but awaiting it on
+  // every attempt (up to numQuestions*30 = 300 for a focused student) still
+  // allocates a Promise and yields a microtask per attempt. Hoisting it keeps
+  // the hot path strictly synchronous after the first await.
+  const topicContent = getTopicContent(topic);
+  const generateQuestion = topicContent ? await topicContent.loadGenerateQuestion() : null;
+  const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
+
   while (questions.length < numQuestions && attempts < maxAttempts) {
     attempts++;
     let question = {};
@@ -161,13 +170,11 @@ export const generateQuizQuestions = async (
       break;
     }
 
-    // If not using Firestore question, generate one
+    // If not using Firestore question, generate one. The topic's generator
+    // was resolved once above the loop — a sync call here keeps the retry
+    // budget cheap even when the first draws keep getting filtered.
     if (!useFirestoreQuestion) {
-      const topicContent = getTopicContent(topic);
-      if (topicContent) {
-        const allowedSubtopicsForThisTopic = allowedSubtopicsByTopic?.[topic] ?? null;
-        // Load question generator on demand (code-split per topic)
-        const generateQuestion = await topicContent.loadGenerateQuestion();
+      if (generateQuestion) {
         question = generateQuestion(difficulty, allowedSubtopicsForThisTopic);
         if (question) {
           question.concept = topic;
@@ -190,8 +197,6 @@ export const generateQuizQuestions = async (
     if (!question || !question.question) {
       continue;
     }
-
-    question = await prepareQuestionForDisplay(topic, question);
 
     // Use complexity-based mastery to bias selection toward struggled/unseen items
     // Only apply to generated questions, not Firestore questions
@@ -265,6 +270,13 @@ export const generateQuizQuestions = async (
         consecutiveFilteredCount++;
         continue;
       }
+
+      // Apply the topic's display hook ONLY when we're about to keep the
+      // question. The hook rebuilds expensive artifacts (e.g. the geometry
+      // angle-addition SVG) and historically ran before the accept gate, so
+      // it fired for every rejected candidate too. Deferring it here means a
+      // 100-attempt quiz does at most `numQuestions` display builds, not 100.
+      question = await prepareQuestionForDisplay(topic, question);
 
       usedQuestions.add(questionSig);
       questions.push(question);

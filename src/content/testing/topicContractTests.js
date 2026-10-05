@@ -104,6 +104,46 @@ export const runTopicContractTests = (topicModule, options = {}) => {
       throw new Error('generator produced no questions under any single-subtopic restriction');
     });
 
+    // Dead-code guard: without this, a manifest subtopic that is NEVER wired
+    // into the generator (e.g. a function defined and exported but never
+    // registered in the subtopicToGenerator map) passes every other check
+    // silently — students just never see that question type. By scanning
+    // across the full difficulty range we tolerate difficulty-gated
+    // subtopics while still forcing each manifest subtopic to be reachable.
+    test('every manifest subtopic is reachable under unrestricted draws', () => {
+      const seen = new Set();
+      const perDifficulty = 120;
+      for (const difficulty of DIFFICULTIES) {
+        for (let i = 0; i < perDifficulty; i++) {
+          const question = generateQuestion(difficulty, null);
+          if (question?.subtopic) seen.add(question.subtopic);
+        }
+        if (seen.size >= topicModule.subtopics.length) break;
+      }
+      const missing = topicModule.subtopics.filter((subtopic) => !seen.has(subtopic));
+      // A subtopic listed in the manifest but never produced by the generator
+      // is dead content — surface the specific subtopic(s) so the fix is
+      // obvious ("register the generator" or "remove from the manifest").
+      expect(missing).toEqual([]);
+    });
+
+    // Dead-code guard, flip side: a subtopic produced by the generator but
+    // NOT listed in the manifest means Focus restrictions, the question-bank
+    // health flag, and the AI prompt guidelines can't reach it. The per-draw
+    // check in `difficulty %p produces well-formed questions` already asserts
+    // `subtopics.includes(question.subtopic)`, so this is implied — kept as a
+    // consolidated explicit statement for anyone grepping the file.
+    test('every produced subtopic belongs to the manifest', () => {
+      for (const difficulty of DIFFICULTIES) {
+        for (let i = 0; i < 40; i++) {
+          const question = generateQuestion(difficulty, null);
+          if (question?.subtopic) {
+            expect(topicModule.subtopics).toContain(question.subtopic);
+          }
+        }
+      }
+    });
+
     test(`produces at least ${minVariety} distinct questions over ${draws} draws`, () => {
       const signatures = new Set();
       for (let i = 0; i < draws; i++) {

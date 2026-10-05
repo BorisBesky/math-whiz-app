@@ -87,11 +87,23 @@ export function generateAreaQuestion() {
 export function generatePerimeterQuestion() {
   const md_side1 = getRandomInt(5, 20);
   const md_side2 = getRandomInt(5, 20);
-  const correctAnswer = `${2 * (md_side1 + md_side2)} inches`;
+  const perimeter = 2 * (md_side1 + md_side2);
+  const correctAnswer = `${perimeter} inches`;
+  // Pedagogical distractors — each targets a specific perimeter misconception,
+  // all labeled in LINEAR inches (never area units). The old
+  // `${md_side1 * md_side2} inches` distractor emitted an AREA quantity under
+  // an "inches" label, which contradicts what the student learns in the
+  // Explanation ("area is square units, perimeter is linear"), and could
+  // reward a confused student who multiplied the sides.
   const potentialDistractors = [
-      `${md_side1 * md_side2} inches`,
-      `${md_side1 + md_side2} inches`,
-      `${2 * (md_side1 + md_side2) + 10} inches`,
+    // "Half-perimeter" — forgot to double the sum of (length + width).
+    `${md_side1 + md_side2} inches`,
+    // Added only three sides instead of all four.
+    `${2 * md_side1 + md_side2} inches`,
+    // Off-by-10 near-miss.
+    `${perimeter + 10} inches`,
+    // Off-by-2 near-miss (a reliably-distinct fallback distractor).
+    `${perimeter - 2} inches`,
   ];
 
   return {

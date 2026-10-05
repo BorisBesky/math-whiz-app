@@ -516,13 +516,22 @@ export function generateComparisonQuestion(difficulty = 0.5) {
   const minNum = 1000 + Math.floor(difficulty * 9000);
   const maxNum = 10000 + Math.floor(difficulty * 990000);
   const num1 = getRandomInt(minNum, maxNum);
-  const num2 = getRandomInt(minNum, maxNum);
-  
-  // Ensure numbers are different
-  if (num1 === num2) {
-    return generateComparisonQuestion(difficulty);
+  let num2 = getRandomInt(minNum, maxNum);
+
+  // Ensure numbers are different. Bounded re-roll instead of recursion so a
+  // pathological random stream can't blow the stack (same pattern as every
+  // other guarded draw in this file). The range is wide, so a single re-roll
+  // is nearly always enough.
+  let safety = 0;
+  while (num1 === num2 && safety < 20) {
+    num2 = getRandomInt(minNum, maxNum);
+    safety += 1;
   }
-  
+  if (num1 === num2) {
+    // Last resort: nudge num2 one past num1, clamping into the range.
+    num2 = num1 === maxNum ? num1 - 1 : num1 + 1;
+  }
+
   const correctAnswer = num1 > num2 ? ">" : "<";
 
   return {
@@ -745,7 +754,7 @@ export function generateAdditionWordProblemQuestion(difficulty = 0.5) {
  * Generates multi-step word problems involving both addition and subtraction (4.NBT.B.4)
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
-export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
+export function generateMultiStepWordProblemQuestion(difficulty = 0.5, _retryBudget = 10) {
   const scenarios = [
     {
       context: "school supplies",
@@ -810,9 +819,14 @@ export function generateMultiStepWordProblemQuestion(difficulty = 0.5) {
       questionText = "Error in question generation";
   }
 
-  // Ensure answer is positive
+  // Ensure answer is positive. Bounded retry so a pathological random stream
+  // (or a buggy future scenario) can't recurse into a stack overflow — if we
+  // can't find a positive draw within the budget, fall through with |answer|.
   if (answer < 0) {
-    return generateMultiStepWordProblemQuestion(difficulty);
+    if (_retryBudget > 0) {
+      return generateMultiStepWordProblemQuestion(difficulty, _retryBudget - 1);
+    }
+    answer = Math.abs(answer);
   }
   const correctAnswer = answer.toString();
   // A "close but wrong" distractor above and one below is more instructive

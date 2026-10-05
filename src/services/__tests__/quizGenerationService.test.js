@@ -123,6 +123,110 @@ describe('isMultipleChoiceAnswerable', () => {
   });
 });
 
+describe('generateQuizQuestions — hot-loop allocation guards', () => {
+  // These tests pin the two perf fixes that keep "Start quiz" latency flat
+  // when the retry loop runs many candidates (focused student, high mastery,
+  // narrow allowed-subtopic set). A regression here is invisible to
+  // correctness tests but shows up as a slower first question.
+  let randomSpy;
+  const mockLoadGenerateQuestion = jest.fn();
+
+  beforeEach(() => {
+    // Rebuild the registry mock so we can count `loadGenerateQuestion` /
+    // `prepareQuestionForDisplay` calls per run.
+    jest.resetModules();
+    mockLoadGenerateQuestion.mockReset();
+    mockLoadGenerateQuestion.mockResolvedValue(mockGenerate);
+    mockFetchFirestore.mockReset();
+    mockFetchFirestore.mockResolvedValue([]);
+    mockAdapt.mockReset();
+    mockAdapt.mockReturnValue([]);
+    mockRank.mockReset();
+    mockRank.mockReturnValue([]);
+    mockIsSubtopicAllowed.mockReset();
+    mockIsSubtopicAllowed.mockReturnValue(true);
+    randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    randomSpy.mockRestore();
+    jest.clearAllMocks();
+  });
+
+  test('loadGenerateQuestion is awaited ONCE per quiz, not once per attempt', async () => {
+    const prepareSpy = jest.fn(async (_topic, q) => q);
+    jest.doMock('../../content/registry', () => ({
+      getDefaultGradeKey: () => 'G3',
+      getTopicContent: () => ({ loadGenerateQuestion: mockLoadGenerateQuestion }),
+      prepareQuestionForDisplay: prepareSpy,
+    }));
+    const { generateQuizQuestions: isolatedGenerate } = require('../quizGenerationService');
+
+    // Ask for 5 questions and let the generator return a fresh question each
+    // call. If loadGenerateQuestion were still inside the while-loop, the
+    // mock would log once per attempt (≥5).
+    let counter = 0;
+    mockGenerate.mockImplementation(() => ({
+      ...GEN_QUESTION,
+      question: `${GEN_QUESTION.question} #${counter++}`,
+    }));
+
+    const questions = await isolatedGenerate(
+      'Geometry', { Geometry: 5 }, [], 0.5, 'G3',
+      'student-1', ['class-1'], [], 'app-1', 0, null, {}, 3,
+    );
+
+    expect(questions).toHaveLength(5);
+    expect(mockLoadGenerateQuestion).toHaveBeenCalledTimes(1);
+  });
+
+  test('prepareQuestionForDisplay is only applied to KEPT questions, not every candidate', async () => {
+    const prepareSpy = jest.fn(async (_topic, q) => q);
+    jest.doMock('../../content/registry', () => ({
+      getDefaultGradeKey: () => 'G3',
+      getTopicContent: () => ({ loadGenerateQuestion: mockLoadGenerateQuestion }),
+      prepareQuestionForDisplay: prepareSpy,
+    }));
+    const { generateQuizQuestions: isolatedGenerate } = require('../quizGenerationService');
+
+    // Each draw is a UNIQUE candidate so the usedQuestions set never blocks a
+    // retry. The subtopic gate rejects half of them: 2 asked, 4 draws total
+    // (accept, reject, accept, reject...), so prepareQuestionForDisplay must
+    // run exactly 2 times — once per KEPT question. If the pre-fix behavior
+    // regressed (prep before accept), the spy would record 4+ calls.
+    let draw = 0;
+    mockGenerate.mockImplementation(() => {
+      const index = draw;
+      draw += 1;
+      return {
+        ...GEN_QUESTION,
+        question: `uniq#${index}`,
+        correctAnswer: `a${index}`,
+        options: [`a${index}`, 'b', 'c', 'd'],
+      };
+    });
+
+    // Accept every other candidate: gateCall even → true, odd → false.
+    let gateCall = 0;
+    mockIsSubtopicAllowed.mockImplementation(() => {
+      const allowed = gateCall % 2 === 0;
+      gateCall += 1;
+      return allowed;
+    });
+
+    const questions = await isolatedGenerate(
+      'Geometry', { Geometry: 2 }, [], 0.5, 'G3',
+      'student-1', ['class-1'], [], 'app-1', 0, null, {}, 3,
+    );
+
+    expect(questions.length).toBe(2);
+    // Hook invoked exactly `questions.length` times — never for a rejected draw.
+    expect(prepareSpy).toHaveBeenCalledTimes(2);
+    // Sanity: the subtopic gate was called more times than the hook — the
+    // rejected candidates DID exist, we just skipped the expensive prep.
+    expect(gateCall).toBeGreaterThan(prepareSpy.mock.calls.length);
+  });
+});
+
 describe('generateQuizQuestions — unanswerable-question safety net', () => {
   let randomSpy;
   beforeEach(() => {
