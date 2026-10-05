@@ -77,20 +77,21 @@ describe('G3 measurement-data: perimeter question sanity', () => {
     // sides (the classic "confused area with perimeter" mistake) would be
     // rewarded with the exact wrong value they computed. Perimeter distractors
     // should all be *linear* near-misses — never an area quantity.
+    // Note: s1, s2 ∈ [5, 20] in the generator, and perimeter can only equal
+    // area for (3,6)/(4,4)/(6,3) — all below s1=5, so area never coincides
+    // with the correct answer here. Any option matching the area value is
+    // therefore the forbidden distractor.
     for (let i = 0; i < 500; i += 1) {
       const q = generatePerimeterQuestion();
       const match = q.question.match(/sides of length (\d+) inches and (\d+) inches/);
       const [, s1, s2] = match.map(Number);
       const areaValue = s1 * s2;
-      q.options.forEach((opt) => {
-        const value = parseInt(opt, 10);
-        // Perimeter can only equal area for (3,6)/(4,4)/(6,3) with
-        // s1,s2 ≥ 5, so area never coincides with the correct answer here.
-        // Any option matching the area value is the forbidden distractor.
-        if (opt !== q.correctAnswer) {
-          expect(value).not.toBe(areaValue);
-        }
-      });
+      // Collect distractor numeric values up front, then assert on the whole
+      // list — no `expect` inside a conditional branch (jest/no-conditional-expect).
+      const distractorValues = q.options
+        .filter((opt) => opt !== q.correctAnswer)
+        .map((opt) => parseInt(opt, 10));
+      expect(distractorValues).not.toContain(areaValue);
     }
   });
 });
