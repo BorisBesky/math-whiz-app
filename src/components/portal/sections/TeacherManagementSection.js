@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { Plus, Trash2, RefreshCw, UserCheck } from "lucide-react";
 import ConfirmationModal from "../../ui/ConfirmationModal";
 import useConfirmation from "../../../hooks/useConfirmation";
+import {
+  Alert, Avatar, EmptyState, IconButton, LoadingRow, PortalButton, RowActions, SectionCard, SectionHeader,
+} from "../PortalUI";
 
 const TeacherManagementSection = ({
   teachers,
@@ -100,200 +103,200 @@ const TeacherManagementSection = ({
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Teacher Management
-          </h3>
-          <p className="text-sm text-gray-500">
-            Invite or remove teacher accounts
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Teacher
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
-          {error}
-        </div>
-      )}
+    <div className="space-y-4">
+      {error && <Alert>{error}</Alert>}
 
       {showForm && (
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <form onSubmit={handleSubmit} className="space-y-3">
+        <SectionCard className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Teacher Name
-              </label>
-              <input
-                type="text"
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                value={formData.name}
-                onChange={(event) =>
-                  setFormData({ ...formData, name: event.target.value })
-                }
-              />
+              <h4 className="text-base font-semibold text-gray-900">Add a teacher</h4>
+              <p className="text-sm text-gray-500">They will be able to sign in to the teacher portal with this email.</p>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                value={formData.email}
-                onChange={(event) =>
-                  setFormData({ ...formData, email: event.target.value })
-                }
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="new-teacher-name" className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Teacher Name
+                </label>
+                <input
+                  id="new-teacher-name"
+                  type="text"
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.name}
+                  onChange={(event) =>
+                    setFormData({ ...formData, name: event.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="new-teacher-email" className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Email
+                </label>
+                <input
+                  id="new-teacher-email"
+                  type="email"
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.email}
+                  onChange={(event) =>
+                    setFormData({ ...formData, email: event.target.value })
+                  }
+                />
+              </div>
             </div>
             {formError && <p className="text-sm text-red-600">{formError}</p>}
-            <div className="flex items-center space-x-3">
-              <button
-                type="submit"
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium"
-              >
+            <div className="flex items-center gap-2">
+              <PortalButton type="submit" variant="primary">
                 Create Teacher
-              </button>
-              <button
-                type="button"
+              </PortalButton>
+              <PortalButton
+                variant="ghost"
                 onClick={() => {
                   setShowForm(false);
                   setFormError(null);
                 }}
-                className="text-sm text-gray-500"
               >
                 Cancel
-              </button>
+              </PortalButton>
             </div>
           </form>
-        </div>
+        </SectionCard>
       )}
 
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <SectionCard className="overflow-hidden">
+        <div className="px-4 py-4 sm:px-5 border-b border-gray-100">
+          <SectionHeader
+            title="Teacher Management"
+            description="Invite or remove teacher accounts"
+            actions={(
+              <>
+                <PortalButton icon={RefreshCw} onClick={onRefresh}>
+                  Refresh
+                </PortalButton>
+                <PortalButton variant="primary" icon={Plus} onClick={() => setShowForm(true)}>
+                  New Teacher
+                </PortalButton>
+              </>
+            )}
+          />
+        </div>
+
         {selectedTeachers.length > 0 && (
-          <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
-            <span className="text-sm text-blue-700 font-medium">
+          <div className="bg-blue-50 px-4 py-2 sm:px-5 border-b border-blue-100 flex items-center justify-between">
+            <span className="text-sm text-blue-800 font-medium">
               {selectedTeachers.length} selected
             </span>
-            <button
+            <PortalButton
+              variant="danger"
+              icon={Trash2}
               onClick={handleBulkDelete}
               disabled={isBulkDeleting}
-              className="text-sm text-red-600 font-medium hover:text-red-800 flex items-center"
+              className="py-1.5"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
               {isBulkDeleting ? "Deleting..." : "Delete Selected"}
-            </button>
+            </PortalButton>
           </div>
         )}
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 w-10">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={
-                    teachers.length > 0 &&
-                    selectedTeachers.length === teachers.length
-                  }
-                  onChange={handleSelectAll}
-                  disabled={loading || teachers.length === 0}
-                />
-              </th>
-              <th className="px-4 py-2 text-left font-semibold text-gray-600">
-                Teacher
-              </th>
-              <th className="px-4 py-2 text-left font-semibold text-gray-600">
-                Email
-              </th>
-              <th className="px-4 py-2 text-left font-semibold text-gray-600">
-                UID
-              </th>
-              <th className="px-4 py-2 text-right font-semibold text-gray-600">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-xs uppercase tracking-wide">
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
-                    <span>Loading teachers...</span>
-                  </div>
-                </td>
+                <th scope="col" className="w-12 px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={
+                      teachers.length > 0 &&
+                      selectedTeachers.length === teachers.length
+                    }
+                    onChange={handleSelectAll}
+                    disabled={loading || teachers.length === 0}
+                    aria-label="Select all teachers"
+                  />
+                </th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-gray-600">
+                  Teacher
+                </th>
+                <th scope="col" className="hidden md:table-cell px-4 py-3 text-left font-semibold text-gray-600">
+                  Email
+                </th>
+                <th scope="col" className="hidden lg:table-cell px-4 py-3 text-left font-semibold text-gray-600">
+                  UID
+                </th>
+                <th scope="col" className="relative px-4 py-3 text-right font-semibold text-gray-600">
+                  <span className="sr-only sm:not-sr-only">Actions</span>
+                </th>
               </tr>
-            ) : teachers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                  No teachers found.
-                </td>
-              </tr>
-            ) : (
-              teachers.map((teacher) => (
-                <tr key={teacher.id} className="bg-white">
-                  <td className="px-4 py-2">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedTeachers.includes(teacher.id)}
-                      onChange={() => handleSelectTeacher(teacher.id)}
-                    />
-                  </td>
-                  <td className="px-4 py-2 flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <UserCheck className="h-4 w-4 text-blue-700" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {teacher.name || teacher.displayName || "Teacher"}
-                      </p>
-                      {teacher.role && (
-                        <p className="text-xs text-gray-500">{teacher.role}</p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2 text-gray-600">{teacher.email}</td>
-                  <td className="px-4 py-2 text-gray-600">
-                    {teacher.uid || teacher.id}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(teacher)}
-                      className="inline-flex items-center text-red-600 hover:text-red-800"
-                      disabled={pendingDelete === teacher.id}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      {pendingDelete === teacher.id ? "Removing..." : "Remove"}
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4">
+                    <LoadingRow label="Loading teachers..." />
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : teachers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-4 sm:p-5">
+                    <EmptyState
+                      icon={UserCheck}
+                      title="No teachers found."
+                      description='Use "New Teacher" to add the first teacher account.'
+                    />
+                  </td>
+                </tr>
+              ) : (
+                teachers.map((teacher) => {
+                  const teacherName = teacher.name || teacher.displayName || "Teacher";
+                  const isSelected = selectedTeachers.includes(teacher.id);
+                  return (
+                    <tr key={teacher.id} className={`align-middle ${isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'}`}>
+                      <td className="w-12 px-4 py-3">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          checked={isSelected}
+                          onChange={() => handleSelectTeacher(teacher.id)}
+                          aria-label={`Select ${teacherName}`}
+                        />
+                      </td>
+                      <td className="px-4 py-3 max-w-[16rem]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar name={teacherName} seed={teacher.uid || teacher.id} size="sm" />
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{teacherName}</p>
+                            <p className="text-xs text-gray-500 truncate md:hidden">{teacher.email}</p>
+                            {teacher.role && (
+                              <p className="hidden md:block text-xs text-gray-500 capitalize">{teacher.role}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-3 text-gray-600 max-w-[16rem] truncate">{teacher.email}</td>
+                      <td className="hidden lg:table-cell px-4 py-3">
+                        <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                          {teacher.uid || teacher.id}
+                        </code>
+                      </td>
+                      <td className="px-2 py-2 sm:px-4">
+                        <RowActions>
+                          <IconButton
+                            icon={pendingDelete === teacher.id ? RefreshCw : Trash2}
+                            label={pendingDelete === teacher.id ? `Removing ${teacherName}...` : `Remove ${teacherName}`}
+                            tone="red"
+                            onClick={() => handleDelete(teacher)}
+                            disabled={pendingDelete === teacher.id}
+                            className={pendingDelete === teacher.id ? '[&>svg]:animate-spin' : ''}
+                          />
+                        </RowActions>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
 
       <ConfirmationModal {...confirmationProps} />
     </div>
