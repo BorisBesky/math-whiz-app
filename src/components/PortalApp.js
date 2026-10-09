@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image, MessageCircle } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -227,10 +227,46 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     }
   }, [location.pathname, portalBase, navigate, sections.length]);
 
+  // Bumped every time the user picks a tab, including re-picking the tab that
+  // is already open. Used to (a) remount the section so any drill-down view
+  // (student detail, etc.) resets to the section's landing view, and (b)
+  // trigger a data refresh.
+  const [sectionVisit, setSectionVisit] = useState(0);
+
   // Navigate to section via URL
   const handleSectionChange = useCallback((sectionId) => {
-    navigate(`${portalBase}/${sectionId}`);
-  }, [navigate, portalBase]);
+    const targetPath = `${portalBase}/${sectionId}`;
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+    setSectionVisit((visit) => visit + 1);
+  }, [location.pathname, navigate, portalBase]);
+
+  // Roster/teacher data lives in PortalApp-level hooks that only fetched on
+  // mount (plus a 30s background tick), so returning to a tab showed whatever
+  // was loaded the first time. Refresh whenever a section is (re)entered,
+  // whether from a tab click or browser back/forward. The refresh functions
+  // are read through a ref so their changing identities never re-run this
+  // effect; it only depends on user-driven values, so it cannot loop.
+  const refreshOnEnterRef = useRef(null);
+  refreshOnEnterRef.current = () => {
+    refreshStudents();
+    if (userRole === USER_ROLES.ADMIN) {
+      Promise.resolve(refreshTeachers()).catch((err) => {
+        console.error('[PortalApp] Failed to refresh teachers', err);
+      });
+    }
+  };
+  const hasEnteredSectionRef = useRef(false);
+  useEffect(() => {
+    if (!userRole) return;
+    if (!hasEnteredSectionRef.current) {
+      // Initial load is already handled by the data hooks themselves.
+      hasEnteredSectionRef.current = true;
+      return;
+    }
+    refreshOnEnterRef.current?.();
+  }, [activeSectionId, sectionVisit, userRole]);
 
   if (loading || !userRole) {
     return (
@@ -274,7 +310,9 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
       roleLabel={userRole === USER_ROLES.ADMIN ? 'Administrator' : 'Teacher'}
       onLogout={handleLogout}
     >
-      {activeSection.render()}
+      <React.Fragment key={`${activeSection.id}:${sectionVisit}`}>
+        {activeSection.render()}
+      </React.Fragment>
     </PortalLayout>
   );
 };
