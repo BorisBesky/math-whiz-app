@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, FileUp } from 'lucide-react';
 import QuestionBankManager from '../../QuestionBankManager';
 import AdminQuestionBankManager from '../../AdminQuestionBankManager';
 import UploadQuestionsPDF from '../../UploadQuestionsPDF';
 import { USER_ROLES } from '../../../utils/userRoles';
+import { PortalButton, SectionCard, SectionHeader } from '../PortalUI';
 
 const QuestionBankSection = ({ userRole, classes = [], appId, userId }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -15,25 +16,26 @@ const QuestionBankSection = ({ userRole, classes = [], appId, userId }) => {
     setReloadKey(prev => prev + 1);
   };
 
+  const uploadHeader = (
+    <SectionCard className="p-5">
+      <SectionHeader
+        icon={FileUp}
+        title="Question Bank"
+        description="Upload PDF files to extract quiz questions"
+        actions={(
+          <PortalButton variant="primary" icon={Upload} onClick={() => setShowUploadModal(true)}>
+            Upload Questions
+          </PortalButton>
+        )}
+      />
+    </SectionCard>
+  );
+
   if (userRole === USER_ROLES.ADMIN) {
     return (
-      <div className="bg-white">
+      <div className="space-y-6">
         {/* Upload Questions Section */}
-        <div className="border border-gray-200 rounded-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
-              <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
-            </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Upload Questions</span>
-            </button>
-          </div>
-        </div>
+        {uploadHeader}
 
         <AdminQuestionBankManager key={reloadKey} classes={classes} appId={appId} />
 
@@ -50,23 +52,9 @@ const QuestionBankSection = ({ userRole, classes = [], appId, userId }) => {
   }
 
   return (
-    <div className="bg-white">
+    <div className="space-y-6">
       {/* Upload Questions Section */}
-      <div className="border border-gray-200 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Bank</h3>
-            <p className="text-sm text-gray-600">Upload PDF files to extract quiz questions</p>
-          </div>
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Upload className="h-4 w-4" />
-            <span>Upload Questions</span>
-          </button>
-        </div>
-      </div>
+      {uploadHeader}
 
       <QuestionBankManager
         key={reloadKey}

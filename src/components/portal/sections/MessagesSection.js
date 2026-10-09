@@ -27,7 +27,7 @@ const MessagesSection = ({ appId, user, userRole, classes = [] }) => {
   });
 
   return (
-    <div className="p-6">
+    <div>
       <InternalInbox
         title="Student Messages"
         description="Send feedback to students and reply to student questions. Messages are internal only; no email is sent."
