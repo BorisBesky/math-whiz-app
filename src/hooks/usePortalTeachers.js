@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 
 const defaultState = [];
@@ -7,6 +7,9 @@ const usePortalTeachers = ({ appId = 'default-app-id', enabled }) => {
   const [teachers, setTeachers] = useState(defaultState);
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
+  // After the first successful load, refreshes (e.g. re-entering the Teachers
+  // tab) revalidate in the background instead of blanking the table.
+  const hasLoadedRef = useRef(false);
 
   const fetchTeachers = useCallback(async () => {
     if (!enabled) {
@@ -21,7 +24,8 @@ const usePortalTeachers = ({ appId = 'default-app-id', enabled }) => {
       throw new Error('Not authenticated');
     }
 
-    setLoading(true);
+    const isInitialLoad = !hasLoadedRef.current;
+    if (isInitialLoad) setLoading(true);
     setError(null);
 
     try {
@@ -41,10 +45,11 @@ const usePortalTeachers = ({ appId = 'default-app-id', enabled }) => {
 
       const teachersList = await response.json();
       setTeachers(teachersList);
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error('[usePortalTeachers] Failed to fetch teachers', err);
       setError(err.message || 'Failed to load teachers');
-      setTeachers(defaultState);
+      if (isInitialLoad) setTeachers(defaultState);
     } finally {
       setLoading(false);
     }
