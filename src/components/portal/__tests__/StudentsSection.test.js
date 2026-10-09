@@ -116,6 +116,8 @@ const renderSection = (students = [baseStudent], overrides = {}) =>
       error: null,
       onRefresh: overrides.onRefresh || jest.fn(),
       appId: 'test-app',
+      initialStudentId: overrides.initialStudentId,
+      onInitialStudentHandled: overrides.onInitialStudentHandled,
     })
   );
 
@@ -202,6 +204,13 @@ describe('StudentsSection - Focus integration', () => {
 
   afterEach(() => {
     delete global.fetch;
+  });
+
+  test('opens the detail view for initialStudentId (deep link from a class roster) and reports it handled', () => {
+    const onInitialStudentHandled = jest.fn();
+    renderSection([baseStudent], { initialStudentId: baseStudent.id, onInitialStudentHandled });
+    expect(screen.getByText('Student Overview')).toBeInTheDocument();
+    expect(onInitialStudentHandled).toHaveBeenCalled();
   });
 
   test('renders a Focus action button for each student row', () => {

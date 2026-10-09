@@ -14,7 +14,12 @@ import { getEnrollmentId, sendInternalMessage } from '../../../services/internal
 import { fetchClassQuestionPoolHealth } from '../../../services/questionPoolHealth';
 import QuestionPoolHealthBanner from '../QuestionPoolHealthBanner';
 import EditClassForm from '../../EditClassForm';
-import { Avatar, EmptyState, IconButton, OverflowMenu, RowActions } from '../PortalUI';
+import { Avatar, EmptyState, PortalButton } from '../PortalUI';
+import StudentRowActions from '../StudentRowActions';
+import GoalsModal from '../GoalsModal';
+import ConfirmationModal from '../../ui/ConfirmationModal';
+import useConfirmation from '../../../hooks/useConfirmation';
+import useStudentGoals from '../../../hooks/useStudentGoals';
 
 const ClassDetailPanel = ({
   classItem,
@@ -23,6 +28,7 @@ const ClassDetailPanel = ({
   onAssignStudent,
   onRemoveStudent,
   onRefresh,
+  onViewStudent,
   userRole,
   userId,
   teachers = [],
@@ -86,6 +92,23 @@ const ClassDetailPanel = ({
   const [status, setStatus] = useState(null);
   const [assigning, setAssigning] = useState(false);
   const [removingId, setRemovingId] = useState(null);
+  const [selectedRosterIds, setSelectedRosterIds] = useState(() => new Set());
+  const [bulkRemoving, setBulkRemoving] = useState(false);
+  const { confirmationProps, confirm } = useConfirmation();
+  const { goalsModalProps, isGoalsOpen, openGoalsForStudent, openGoalsForStudents } = useStudentGoals({
+    appId,
+    onSaved: onRefresh,
+  });
+
+  // Drop selections for students who are no longer on the roster.
+  useEffect(() => {
+    setSelectedRosterIds((prev) => {
+      if (prev.size === 0) return prev;
+      const ids = new Set(rosterIds ? rosterIds.split(',') : []);
+      const next = new Set([...prev].filter((id) => ids.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [rosterIds]);
   const canManageStudents = typeof onAssignStudent === 'function' && typeof onRemoveStudent === 'function';
 
   // Teacher management state
@@ -443,6 +466,10 @@ const ClassDetailPanel = ({
   // Escape key to close
   const handleEscapeKey = useCallback((e) => {
     if (e.key === 'Escape') {
+      if (isGoalsOpen || confirmationProps.isOpen || selectedStudentForMessage) {
+        // A nested modal owns Escape; it closes itself.
+        return;
+      }
       if (showSubtopicsModal) {
         setShowSubtopicsModal(false);
       } else if (showInviteModal) {
@@ -451,7 +478,7 @@ const ClassDetailPanel = ({
         onClose();
       }
     }
-  }, [onClose, showSubtopicsModal, showInviteModal]);
+  }, [onClose, showSubtopicsModal, showInviteModal, isGoalsOpen, confirmationProps.isOpen, selectedStudentForMessage]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
@@ -497,6 +524,50 @@ const ClassDetailPanel = ({
     } finally {
       setAssigning(false);
     }
+  };
+
+  const toggleRosterSelection = (studentId) => {
+    setSelectedRosterIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const allRosterSelected = roster.length > 0 && roster.every((student) => selectedRosterIds.has(student.id));
+  const toggleSelectAllRoster = () => {
+    setSelectedRosterIds(allRosterSelected ? new Set() : new Set(roster.map((student) => student.id)));
+  };
+
+  const handleBulkRemove = async () => {
+    const targets = roster.filter((student) => selectedRosterIds.has(student.id));
+    if (targets.length === 0 || !canManageStudents) return;
+    const ok = await confirm({
+      title: 'Remove from class',
+      message: `Remove ${targets.length} student${targets.length === 1 ? '' : 's'} from ${classItem.name}? Their accounts and progress are kept.`,
+      variant: 'danger',
+      confirmLabel: 'Remove',
+    });
+    if (!ok) return;
+    setBulkRemoving(true);
+    setStatus(null);
+    const failed = [];
+    for (const student of targets) {
+      try {
+        // Sequential on purpose: each call is a separate enrollment write.
+        // eslint-disable-next-line no-await-in-loop
+        await onRemoveStudent({ studentId: student.id, classId: classItem.id });
+      } catch (err) {
+        failed.push(getStudentDisplayName(student));
+      }
+    }
+    setSelectedRosterIds(new Set());
+    setStatus(failed.length > 0
+      ? { type: 'error', message: `Could not remove: ${failed.join(', ')}` }
+      : { type: 'success', message: `Removed ${targets.length} student${targets.length === 1 ? '' : 's'} from class.` });
+    if (onRefresh) await onRefresh();
+    setBulkRemoving(false);
   };
 
   const handleRemove = async (student) => {
@@ -646,7 +717,7 @@ const ClassDetailPanel = ({
           )}
         </div>
 
-        <div className="px-6 py-4">
+        <div className="px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <h4 className="text-lg font-semibold text-gray-900">Roster</h4>
@@ -765,94 +836,152 @@ const ClassDetailPanel = ({
               description={(isTeacherOnClass || isAdmin) ? 'Use "Invite Students" to share a join link or code.' : undefined}
             />
           ) : (
-            <div className="border border-gray-200 rounded-lg overflow-x-auto">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div
+                className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4 border-b text-sm transition-colors ${
+                  selectedRosterIds.size > 0 ? 'bg-blue-50 border-blue-100' : 'bg-gray-50/70 border-gray-100'
+                }`}
+              >
+                <span className={selectedRosterIds.size > 0 ? 'font-medium text-blue-800' : 'text-gray-500'}>
+                  {selectedRosterIds.size > 0
+                    ? `${selectedRosterIds.size} selected`
+                    : 'Select students to set goals or remove in bulk'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <PortalButton
+                    icon={Target}
+                    onClick={() => openGoalsForStudents(selectedRosterIds)}
+                    disabled={selectedRosterIds.size === 0}
+                    title="Set Goals"
+                    className="py-1.5"
+                  >
+                    <span>Set goals</span>
+                  </PortalButton>
+                  {canManageStudents && (
+                    <PortalButton
+                      variant="danger"
+                      icon={UserMinus}
+                      onClick={handleBulkRemove}
+                      disabled={selectedRosterIds.size === 0 || bulkRemoving}
+                      title="Remove selected from class"
+                      aria-label="Remove selected from class"
+                      className="py-1.5"
+                    >
+                      <span className="hidden sm:inline">{bulkRemoving ? 'Removing...' : 'Remove'}</span>
+                    </PortalButton>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-xs uppercase tracking-wide">
+                <thead className="bg-white border-b border-gray-200 text-xs uppercase tracking-wide">
                   <tr>
-                    <th scope="col" className="px-4 py-2.5 text-left font-semibold text-gray-600">Student</th>
-                    <th scope="col" className="hidden sm:table-cell px-4 py-2.5 text-left font-semibold text-gray-600">Grade</th>
+                    <th scope="col" className="w-9 pl-3 pr-1 py-2.5 text-left sm:w-12 sm:px-4">
+                      <input
+                        type="checkbox"
+                        checked={allRosterSelected}
+                        onChange={toggleSelectAllRoster}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        aria-label="Select all students in this class"
+                      />
+                    </th>
+                    <th scope="col" className="px-2 py-2.5 text-left font-semibold text-gray-600 sm:px-4">Student</th>
                     <th scope="col" className="hidden sm:table-cell px-4 py-2.5 text-right font-semibold text-gray-600">Questions</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-semibold text-gray-600">Accuracy</th>
-                    {canManageStudents && (
-                      <th scope="col" className="relative px-4 py-2.5 text-right font-semibold text-gray-600">
-                        <span className="sr-only sm:not-sr-only">Actions</span>
-                      </th>
-                    )}
+                    <th scope="col" className="px-2 py-2.5 text-right font-semibold text-gray-600 sm:px-4">Accuracy</th>
+                    <th scope="col" className="relative px-2 py-2.5 text-right font-semibold text-gray-600 sm:px-4">
+                      <span className="sr-only sm:not-sr-only">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {roster.map((student) => {
                     const displayName = getStudentDisplayName(student);
                     const focusDisabled = failedStudentIds.has(student.id) || loadingEnrollments;
+                    const isSelected = selectedRosterIds.has(student.id);
+                    const isRemoving = removingId === student.id;
                     return (
-                      <tr key={student.id} className="align-middle hover:bg-gray-50">
-                        <td className="px-4 py-2.5 max-w-[11rem] sm:max-w-[15rem]">
+                      <tr key={student.id} className={`align-middle transition-colors ${isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'}`}>
+                        <td className="w-9 pl-3 pr-1 py-2.5 sm:w-12 sm:px-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleRosterSelection(student.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            aria-label={`Select ${displayName}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2.5 max-w-[9rem] sm:px-4 sm:max-w-[14rem]">
                           <div className="flex items-center gap-3 min-w-0">
                             <Avatar name={displayName} seed={student.id} size="sm" />
                             <div className="min-w-0">
-                              <p className="font-medium text-gray-900 truncate">{displayName}</p>
-                              <p className="text-xs text-gray-400 truncate">ID: {getStudentShortId(student)}</p>
+                              {onViewStudent ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewStudent(student)}
+                                  className="block max-w-full truncate text-left font-medium text-gray-900 hover:text-blue-700 focus:outline-none focus-visible:underline"
+                                >
+                                  {displayName}
+                                </button>
+                              ) : (
+                                <p className="font-medium text-gray-900 truncate">{displayName}</p>
+                              )}
+                              <p className="text-xs text-gray-400 truncate">
+                                {student.grade} · ID: {getStudentShortId(student)}
+                              </p>
                               {student.email && (
                                 <p className="text-xs text-gray-500 truncate" title={student.email}>{student.email}</p>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="hidden sm:table-cell px-4 py-2.5 text-gray-600">{student.grade}</td>
                         <td className="hidden sm:table-cell px-4 py-2.5 text-right text-gray-600 tabular-nums">{student.totalQuestions}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{student.accuracy}%</td>
-                        {canManageStudents && (
-                          <td className="px-2 py-2 sm:px-4">
-                            <OverflowMenu
-                              className="flex justify-end sm:hidden"
-                              label={`Actions for ${displayName}`}
-                              items={[
-                                isTeacherOnClass && { key: 'message', label: 'Message student', icon: MessageCircle, onClick: () => setSelectedStudentForMessage(student) },
-                                { key: 'focus', label: 'Focus subtopics', icon: Target, onClick: () => handleOpenSubtopicsModal(student), disabled: focusDisabled },
-                                { key: 'remove', label: removingId === student.id ? 'Removing...' : 'Remove from class', icon: UserMinus, onClick: () => handleRemove(student), disabled: removingId === student.id, tone: 'red' },
-                              ]}
-                            />
-                            <RowActions className="hidden sm:flex">
-                              {isTeacherOnClass && (
-                                <IconButton
-                                  icon={MessageCircle}
-                                  label={`Message ${displayName}`}
-                                  title="Message student"
-                                  tone="blue"
-                                  onClick={() => setSelectedStudentForMessage(student)}
-                                />
-                              )}
-                              <IconButton
-                                icon={Target}
-                                label={`Set focus subtopics for ${displayName}`}
-                                tone="purple"
-                                onClick={() => handleOpenSubtopicsModal(student)}
-                                disabled={focusDisabled}
-                                title={
-                                  failedStudentIds.has(student.id)
-                                    ? 'Enrollment data failed to load. Click Retry above to reload.'
-                                    : loadingEnrollments
-                                    ? 'Loading enrollment data...'
-                                    : 'Set Focus Subtopics'
-                                }
-                              />
-                              <span className="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
-                              <IconButton
-                                icon={removingId === student.id ? RefreshCw : UserMinus}
-                                label={removingId === student.id ? `Removing ${displayName}...` : `Remove ${displayName} from class`}
-                                tone="red"
-                                onClick={() => handleRemove(student)}
-                                disabled={removingId === student.id}
-                                className={removingId === student.id ? '[&>svg]:animate-spin' : ''}
-                              />
-                            </RowActions>
-                          </td>
-                        )}
+                        <td className="px-2 py-2.5 text-right text-gray-600 tabular-nums sm:px-4">{student.accuracy}%</td>
+                        <td className="px-2 py-2 sm:px-4">
+                          <StudentRowActions
+                            displayName={displayName}
+                            onViewDetails={onViewStudent ? () => onViewStudent(student) : undefined}
+                            onSetGoals={() => openGoalsForStudent(student)}
+                            onSetFocus={canManageStudents ? () => handleOpenSubtopicsModal(student) : undefined}
+                            focusDisabled={focusDisabled}
+                            focusTitle={
+                              failedStudentIds.has(student.id)
+                                ? 'Enrollment data failed to load. Click Retry above to reload.'
+                                : loadingEnrollments
+                                ? 'Loading enrollment data...'
+                                : 'Set focus subtopics'
+                            }
+                            extraActions={[
+                              isTeacherOnClass && {
+                                key: 'message',
+                                label: `Message ${displayName}`,
+                                menuLabel: 'Message student',
+                                title: 'Message student',
+                                icon: MessageCircle,
+                                tone: 'blue',
+                                separated: true,
+                                onClick: () => setSelectedStudentForMessage(student),
+                              },
+                              canManageStudents && {
+                                key: 'remove',
+                                label: isRemoving ? `Removing ${displayName}...` : `Remove ${displayName} from class`,
+                                menuLabel: isRemoving ? 'Removing...' : 'Remove from class',
+                                title: 'Remove from class',
+                                icon: isRemoving ? RefreshCw : UserMinus,
+                                tone: 'red',
+                                separated: !isTeacherOnClass,
+                                onClick: () => handleRemove(student),
+                                disabled: isRemoving,
+                                className: isRemoving ? '[&>svg]:animate-spin' : '',
+                              },
+                            ]}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
@@ -981,6 +1110,9 @@ const ClassDetailPanel = ({
           onSaved={handleSubtopicsSaved}
         />
       )}
+
+      {isGoalsOpen && renderModalInPortal(<GoalsModal {...goalsModalProps} />)}
+      {renderModalInPortal(<ConfirmationModal {...confirmationProps} />)}
 
       {showEditForm && canEditClass && (
         <EditClassForm
