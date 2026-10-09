@@ -13,6 +13,7 @@ const QuizResults = ({
   storyCreatedForCurrentQuiz,
   feedback,
   handleCreateStoryProblem,
+  aiStoryEnabled = false,
   startNewQuiz,
   navigateApp,
   returnToTopics,
@@ -39,6 +40,8 @@ const QuizResults = ({
   const today = getTodayDateString();
   const todaysStories =
     userData?.dailyStories?.[today]?.[selectedGrade] || {};
+  // AI story problems are switched on/off by admins (portal Settings).
+  const storyFeatureEnabled = aiStoryEnabled === true;
   const canCreateStory =
     !todaysStories[currentTopic] && !storyCreatedForCurrentQuiz;
 
@@ -75,7 +78,7 @@ const QuizResults = ({
         </div>
       )}
       <div className="flex flex-col gap-4 justify-center">
-        {canCreateStory ? (
+        {!storyFeatureEnabled ? null : canCreateStory ? (
           <button
             onClick={handleCreateStoryProblem}
             className="bg-brand-purple text-white font-display font-bold py-3 px-6 rounded-button hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"

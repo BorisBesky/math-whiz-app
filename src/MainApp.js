@@ -87,6 +87,7 @@ import {
 import { getPortalMessagesPath } from "./utils/userRoles";
 import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreService';
 import { purchaseCharacterSkill } from './services/characterSkillStoreService';
+import useFeatureSettings from "./hooks/useFeatureSettings";
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
@@ -218,6 +219,13 @@ const MainAppContent = () => {
     [navigate]
   );
   const [user, setUser] = useState(null);
+  // Admin-controlled runtime switch (artifacts/{appId}/settings/features).
+  // Falls back to disabled while loading, when missing, or on read errors.
+  const { settings: featureSettings } = useFeatureSettings({
+    appId: typeof __app_id !== "undefined" ? __app_id : "default-app-id",
+    enabled: Boolean(authUser),
+  });
+  const aiStoryEnabled = featureSettings.aiStoryEnabled === true;
   const [userData, setUserData] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState(getDefaultGradeKey());
   const [currentTopic, setCurrentTopic] = useState(null);
@@ -2528,6 +2536,8 @@ const MainAppContent = () => {
     }
   };
   const handleCreateStoryProblem = async () => {
+    // Disabled by the admin feature setting: never call the story endpoint.
+    if (!aiStoryEnabled) return;
     if (storyCreatedForCurrentQuiz) {
       setFeedback({
         message: "You've already created a story problem for this quiz!",
@@ -2704,6 +2714,7 @@ Answer: [The answer]`;
                   storyCreatedForCurrentQuiz={storyCreatedForCurrentQuiz}
                   feedback={feedback}
                   handleCreateStoryProblem={handleCreateStoryProblem}
+                  aiStoryEnabled={aiStoryEnabled}
                   startNewQuiz={startNewQuiz}
                   navigateApp={navigateApp}
                   returnToTopics={returnToTopics}
@@ -2799,7 +2810,7 @@ Answer: [The answer]`;
               onClose={() => navigateApp(`/quiz/${encodeTopicForPath(currentTopic)}`)}
             />
           } />
-          <Route path="results/:topic/story" element={<ContentModal
+          {aiStoryEnabled && <Route path="results/:topic/story" element={<ContentModal
                 modalTitle={modalTitle}
                 modalReactComponent={modalReactComponent}
                 generatedContent={generatedContent}
@@ -2812,7 +2823,7 @@ Answer: [The answer]`;
                 setModalReactComponent={setModalReactComponent}
                 setGeneratedContent={setGeneratedContent}
                 navigate={navigate}
-              />} />
+              />} />}
         </Routes>
         </React.Suspense>
         <TutorialOverlay />

@@ -201,6 +201,14 @@ service cloud.firestore {
                );
       }
 
+      // App-level runtime settings (e.g. settings/features.aiStoryEnabled).
+      // Every signed-in user (students included) may read them so the apps can
+      // hide disabled features; only admins can change them.
+      match /settings/{settingId} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+      }
+
       // Internal student <-> teacher messages. No student-to-student messaging.
       match /messages/{messageId} {
         allow create: if request.auth != null && isValidStudentTeacherMessage(request.resource.data);

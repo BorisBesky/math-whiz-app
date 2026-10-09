@@ -86,6 +86,7 @@ jest.mock('../portal/sections/QuestionBankSection', () => () => <div data-testid
 jest.mock('../portal/sections/TeacherManagementSection', () => () => <div data-testid="teachers-section" />);
 jest.mock('../portal/sections/ImagesSection', () => () => <div data-testid="images-section" />);
 jest.mock('../portal/sections/MessagesSection', () => () => <div data-testid="messages-section" />);
+jest.mock('../portal/sections/SettingsSection', () => () => <div data-testid="settings-section" />);
 
 // eslint-disable-next-line import/first
 import PortalApp from '../PortalApp';
@@ -155,5 +156,30 @@ describe('PortalApp tab selection', () => {
     expect(mockOpenedStudent).toHaveBeenCalledWith('stu-42');
     expect(screen.getByTestId('student-detail')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Students', current: 'page' })).toBeInTheDocument();
+  });
+});
+
+describe('PortalApp admin-only Settings section', () => {
+  beforeEach(() => {
+    mockUserRole = 'teacher';
+  });
+
+  it('shows the Settings tab to admins and renders it', () => {
+    mockUserRole = 'admin';
+    renderPortal('/teacher/overview');
+    clickNav('Settings');
+    expect(screen.getByTestId('settings-section')).toBeInTheDocument();
+  });
+
+  it('hides the Settings tab from teachers', () => {
+    mockUserRole = 'teacher';
+    renderPortal('/teacher/overview');
+    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+  });
+
+  it('does not render Settings for a teacher who opens its URL directly', () => {
+    mockUserRole = 'teacher';
+    renderPortal('/teacher/settings');
+    expect(screen.queryByTestId('settings-section')).not.toBeInTheDocument();
   });
 });

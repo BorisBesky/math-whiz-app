@@ -11,7 +11,33 @@ const {
   topicNamesForGrade,
 } = require("./content-registry");
 
+const featureDefaults = require("../../src/config/features.json");
+
 // Valid grades/topics and prompt text derive from the content manifests
+
+// AI story problems are switched on/off at runtime by admins from the portal
+// (Settings → Features). The switch lives in Firestore at
+// artifacts/{appId}/settings/features.aiStoryEnabled — the same document the
+// student app reads. A missing document falls back to src/config/features.json
+// (disabled); any read error is treated as disabled.
+const STORY_APP_ID = "default-app-id";
+
+const isAiStoryEnabled = async (appId = STORY_APP_ID) => {
+  try {
+    const snapshot = await db
+      .collection("artifacts")
+      .doc(appId)
+      .collection("settings")
+      .doc("features")
+      .get();
+    if (!snapshot.exists) return featureDefaults.aiStoryEnabled === true;
+    const data = snapshot.data() || {};
+    return data.aiStoryEnabled === true;
+  } catch (error) {
+    console.warn("[gemini-proxy] Could not read feature settings; treating AI stories as disabled.", error.message);
+    return false;
+  }
+};
 
 // Helper function to get today's date string
 const getTodayDateString = () => {
@@ -39,7 +65,7 @@ const checkRateLimit = async (userId, topic, grade = getDefaultGradeKey()) => {
   const today = getTodayDateString();
   const userDoc = db
     .collection("artifacts")
-    .doc("default-app-id")
+    .doc(STORY_APP_ID)
     .collection("users")
     .doc(userId)
     .collection("math_whiz_data")
@@ -144,6 +170,16 @@ exports.handler = async (event) => {
     const authHeader =
       event.headers.authorization || event.headers.Authorization;
     const userId = await verifyAuthToken(authHeader);
+
+    // Feature switched off by an admin: refuse before rate limiting or any
+    // Gemini call.
+    if (!(await isAiStoryEnabled())) {
+      return {
+        statusCode: 410,
+        headers,
+        body: JSON.stringify({ error: "AI story problems are currently disabled." }),
+      };
+    }
 
     const { prompt, topic, grade = getDefaultGradeKey() } = JSON.parse(event.body);
 
@@ -267,4 +303,5 @@ exports.handler = async (event) => {
 // Exposed for characterization tests only (see src/__tests__/ai-prompt-snapshots.test.js)
 exports._test = {
   validateAndEnhancePrompt,
+  isAiStoryEnabled,
 };
