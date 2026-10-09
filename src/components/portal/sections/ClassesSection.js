@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Users, GraduationCap, Plus, Trash2 } from 'lucide-react';
+import { Users, GraduationCap, Plus, Trash2, Layers, BookOpen, ChevronRight } from 'lucide-react';
 import { USER_ROLES } from '../../../utils/userRoles';
 import CreateClassForm from '../../CreateClassForm';
 import ClassDetailPanel from './ClassDetailPanel';
 import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
+import {
+  Alert, EmptyState, IconButton, LoadingRow, PortalButton, SectionCard, SectionHeader,
+} from '../PortalUI';
 
 const ClassesSection = ({
   classes,
@@ -69,96 +72,103 @@ const ClassesSection = ({
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <h3 className="text-lg font-semibold text-gray-900">Classes</h3>
-        <div className="flex items-center space-x-3">
-          {canCreateClass && (
-            <button
-              type="button"
-              onClick={() => {
-                setActionError(null);
-                setShowCreateForm(true);
-              }}
-              className="inline-flex items-center space-x-2 px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Class</span>
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="space-y-5">
+      <SectionHeader
+        title={userRole === USER_ROLES.ADMIN ? 'All classes' : 'Your classes'}
+        description={canCreateClass
+          ? 'Create classes, invite students, and manage rosters'
+          : 'Browse classes and manage their rosters'}
+        actions={canCreateClass && (
+          <PortalButton
+            variant="primary"
+            icon={Plus}
+            onClick={() => {
+              setActionError(null);
+              setShowCreateForm(true);
+            }}
+          >
+            New Class
+          </PortalButton>
+        )}
+      />
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
-          {error}
-        </div>
-      )}
+      {error && <Alert>{error}</Alert>}
 
-      {actionError && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800">
-          {actionError}
-        </div>
-      )}
+      {actionError && <Alert tone="warning">{actionError}</Alert>}
 
       {loading ? (
-        <div className="flex items-center justify-center space-x-2 text-gray-500">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
-          <span>Loading classes...</span>
-        </div>
+        <SectionCard>
+          <LoadingRow label="Loading classes..." />
+        </SectionCard>
       ) : sortedClasses.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg text-gray-500">
-          {canCreateClass
+        <EmptyState
+          icon={Layers}
+          title={canCreateClass
             ? 'No classes yet. Use the "New Class" button to get started.'
             : 'No classes yet. Classes you create or manage will appear here.'}
-        </div>
+          description="Each class gets its own invite code so students can join in seconds."
+          className="bg-white"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sortedClasses.map((classItem) => (
-            <div key={classItem.id} className="border border-gray-200 rounded-lg p-4 bg-white space-y-2">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{classItem.gradeLevel || classItem.grade || 'Grade N/A'}</p>
-                  <h4 className="text-lg font-semibold text-gray-900">{classItem.name}</h4>
+          {sortedClasses.map((classItem) => {
+            const teacherLabel = classItem.teacherEmails?.join(', ') || classItem.teacherName || classItem.teacherEmail || classItem.teacherId || 'Assigned teacher';
+            return (
+              <SectionCard
+                key={classItem.id}
+                as="div"
+                className="group flex flex-col transition-shadow hover:shadow-card-hover"
+              >
+                <div className="flex-1 p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                        <BookOpen className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <h4 className="text-base font-semibold text-gray-900 truncate" title={classItem.name}>{classItem.name}</h4>
+                        <p className="text-xs font-medium text-gray-500">{classItem.gradeLevel || classItem.grade || 'Grade N/A'}</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex flex-shrink-0 items-center whitespace-nowrap px-2 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 tabular-nums">
+                      <Users className="h-3 w-3 mr-1" aria-hidden="true" />
+                      {classCounts[classItem.id] || 0} students
+                    </span>
+                  </div>
+                  {userRole === USER_ROLES.ADMIN && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 min-w-0">
+                      <GraduationCap className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                      <span className="truncate" title={teacherLabel}>{teacherLabel}</span>
+                    </p>
+                  )}
+                  {classItem.subject && (
+                    <p className="text-sm text-gray-600">Subject: {classItem.subject}</p>
+                  )}
+                  {classItem.description && (
+                    <p className="text-xs text-gray-500 line-clamp-2">{classItem.description}</p>
+                  )}
                 </div>
-                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700">
-                  <Users className="h-3 w-3 mr-1" />
-                  {classCounts[classItem.id] || 0} students
-                </span>
-              </div>
-              {userRole === USER_ROLES.ADMIN && (
-                <p className="text-xs text-gray-500 flex items-center space-x-1">
-                  <GraduationCap className="h-3 w-3" />
-                  <span>{classItem.teacherEmails?.join(', ') || classItem.teacherName || classItem.teacherEmail || classItem.teacherId || 'Assigned teacher'}</span>
-                </p>
-              )}
-              {classItem.subject && (
-                <p className="text-sm text-gray-600">Subject: {classItem.subject}</p>
-              )}
-              {classItem.description && (
-                <p className="text-xs text-gray-500">{classItem.description}</p>
-              )}
-              <div className="pt-2 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setSelectedClassId(classItem.id)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  View details
-                </button>
-                {(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) && typeof onDeleteClass === 'function' && (
+                <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-5 py-3">
                   <button
                     type="button"
-                    onClick={() => handleDeleteClass(classItem.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                    title="Delete Class"
+                    onClick={() => setSelectedClassId(classItem.id)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    View details
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                   </button>
-                )}
-              </div>
-            </div>
-          ))}
+                  {(userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.TEACHER) && typeof onDeleteClass === 'function' && (
+                    <IconButton
+                      icon={Trash2}
+                      label="Delete Class"
+                      tone="red"
+                      onClick={() => handleDeleteClass(classItem.id)}
+                    />
+                  )}
+                </div>
+              </SectionCard>
+            );
+          })}
         </div>
       )}
 

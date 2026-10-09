@@ -3,7 +3,7 @@ import StoreImagesManager from '../../StoreImagesManager';
 
 const ImagesSection = () => {
   return (
-    <div className="p-6">
+    <div>
       <StoreImagesManager />
     </div>
   );
