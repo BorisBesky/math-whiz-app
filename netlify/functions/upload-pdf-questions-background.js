@@ -1,4 +1,4 @@
-const { admin, db } = require("./firebase-admin");
+const { admin, db, storage } = require("./firebase-admin");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const {
   getDefaultGradeKey,
@@ -13,8 +13,14 @@ const {
   setJobWithRetry,
   generateContentWithRetry,
 } = require("./retry-utils");
+const {
+  MAX_PDF_UPLOAD_BYTES,
+  validateStoragePath,
+  loadPdfFromStorage,
+  deleteStoredPdf,
+} = require("./pdf-upload-storage");
 
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_UPLOAD_SIZE_BYTES = MAX_PDF_UPLOAD_BYTES; // 10MB
 const JOB_ID_MAX_LENGTH = 160;
 
 const createJobId = (userId) =>
@@ -276,6 +282,27 @@ const parseMultipartFormData = (event) => {
   });
 };
 
+// Parse the small JSON request the portal sends after uploading the PDF to
+// Firebase Storage: { appId, grade, classId, jobId, storagePath, fileName }.
+const parseJsonBody = (event) => {
+  const raw = event.isBase64Encoded
+    ? Buffer.from(event.body || "", "base64").toString("utf8")
+    : event.body || "";
+  try {
+    const parsed = JSON.parse(raw || "{}");
+    if (!parsed || typeof parsed !== "object") throw new Error("not an object");
+    return parsed;
+  } catch (error) {
+    throw new Error("Request body must be valid JSON");
+  }
+};
+
+const isJsonRequest = (event) => {
+  const contentType =
+    event.headers?.["content-type"] || event.headers?.["Content-Type"] || "";
+  return contentType.includes("application/json");
+};
+
 // Builds the Gemini prompt for extracting questions from an uploaded PDF.
 // Pure function of the grade so tests can freeze the prompt text.
 const buildExtractionPrompt = (grade) => {
@@ -430,36 +457,57 @@ exports.handler = async (event) => {
     const decodedToken = await verifyAuthToken(authHeader);
     const userId = decodedToken.uid;
 
-    // Parse multipart form data
+    // Preferred path: the PDF is already in Firebase Storage and the body is a
+    // tiny JSON reference (background functions reject bodies over ~256 KB).
+    // Legacy path: multipart/form-data with the file inline (only works for
+    // very small PDFs on Netlify; kept for local dev and old clients).
     let fields, fileData, fileName, fileContentType;
-    try {
-      const parsed = await parseMultipartFormData(event);
-      fields = parsed.fields;
-      fileData = parsed.fileData;
-      fileName = parsed.fileName;
-      fileContentType = parsed.fileContentType;
-    } catch (parseError) {
-      console.error("Multipart parsing error:", parseError);
-      console.error("Error stack:", parseError.stack);
-      console.error(
-        "Content-Type:",
-        event.headers["content-type"] || event.headers["Content-Type"]
-      );
-      console.error("Body type:", typeof event.body);
-      console.error("Body length:", event.body ? event.body.length : 0);
-      console.error("isBase64Encoded:", event.isBase64Encoded);
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: "Failed to parse multipart form data",
-          details: parseError.message,
-          contentType:
-            event.headers["content-type"] ||
-            event.headers["Content-Type"] ||
-            "not set",
-        }),
-      };
+    let storagePath = null;
+    if (isJsonRequest(event)) {
+      try {
+        fields = parseJsonBody(event);
+      } catch (parseError) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: parseError.message }),
+        };
+      }
+      storagePath = fields.storagePath || null;
+      fileName = typeof fields.fileName === "string" && fields.fileName.trim()
+        ? fields.fileName.trim().slice(0, 255)
+        : "upload.pdf";
+      fileContentType = "application/pdf";
+    } else {
+      try {
+        const parsed = await parseMultipartFormData(event);
+        fields = parsed.fields;
+        fileData = parsed.fileData;
+        fileName = parsed.fileName;
+        fileContentType = parsed.fileContentType;
+      } catch (parseError) {
+        console.error("Multipart parsing error:", parseError);
+        console.error("Error stack:", parseError.stack);
+        console.error(
+          "Content-Type:",
+          event.headers["content-type"] || event.headers["Content-Type"]
+        );
+        console.error("Body type:", typeof event.body);
+        console.error("Body length:", event.body ? event.body.length : 0);
+        console.error("isBase64Encoded:", event.isBase64Encoded);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: "Failed to parse multipart form data",
+            details: parseError.message,
+            contentType:
+              event.headers["content-type"] ||
+              event.headers["Content-Type"] ||
+              "not set",
+          }),
+        };
+      }
     }
 
     const appId = fields.appId || "default-app-id";
@@ -467,8 +515,45 @@ exports.handler = async (event) => {
     const grade = fields.grade || getDefaultGradeKey(); // Default grade if not specified
     const providedJobId = sanitizeJobId(fields.jobId, userId);
 
+    if (isJsonRequest(event)) {
+      try {
+        validateStoragePath(storagePath, userId, providedJobId);
+      } catch (validationError) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: validationError.message }),
+        };
+      }
+    }
+
     // Verify teacher role
-    await verifyTeacherRole(userId, appId);
+    try {
+      await verifyTeacherRole(userId, appId);
+    } catch (roleError) {
+      if (storagePath) {
+        // Background invocations always answer 202, so record the failure on
+        // the job the client is polling and drop the uploaded file.
+        await deleteStoredPdf(storage.bucket(), storagePath);
+        try {
+          await setJobWithRetry(
+            db.collection("artifacts").doc(appId).collection("pdfProcessingJobs").doc(providedJobId),
+            {
+              userId,
+              status: "error",
+              error: "Only teacher or admin accounts can upload PDFs.",
+              fileName,
+              createdAt: getTimestamp(),
+              completedAt: getTimestamp(),
+              appId,
+            }
+          );
+        } catch (jobError) {
+          console.error("Failed to record role error on job:", getErrorSummary(jobError));
+        }
+      }
+      throw roleError;
+    }
 
     // Generate job ID
     const jobId = providedJobId || createJobId(userId);
@@ -494,16 +579,25 @@ exports.handler = async (event) => {
     // IMPORTANT (Netlify): do not return before the background work finishes.
     // If we return early, the invocation may end and abort in-flight network calls
     // (shows up as "TypeError: fetch failed" / Firestore DEADLINE_EXCEEDED).
-    await processPDFAsyncWithTimeout(
-      jobId,
-      userId,
-      appId,
-      classId,
-      grade,
-      fileData,
-      fileName,
-      fileContentType
-    );
+    if (storagePath) {
+      await processStoredPDF({
+        jobRef,
+        storagePath,
+        args: [jobId, userId, appId, classId, grade],
+        fileName,
+      });
+    } else {
+      await processPDFAsyncWithTimeout(
+        jobId,
+        userId,
+        appId,
+        classId,
+        grade,
+        fileData,
+        fileName,
+        fileContentType
+      );
+    }
 
     // Background functions will respond with 202 immediately in Netlify.
     // Returning a body is still useful for local dev / non-background execution.
@@ -1203,7 +1297,37 @@ async function processPDFAsyncWithTimeout(...args) {
   }
 }
 
-// Exposed for characterization tests only (see src/__tests__/ai-prompt-snapshots.test.js)
+// Download the PDF the browser put in Firebase Storage, run the normal
+// extraction, then delete the upload (it is only needed for this job).
+async function processStoredPDF({ jobRef, storagePath, args, fileName }) {
+  const bucket = storage.bucket();
+  try {
+    let loaded;
+    try {
+      loaded = await loadPdfFromStorage({ bucket, storagePath });
+    } catch (loadError) {
+      console.error(`Could not load ${storagePath}:`, loadError.message);
+      await updateJobWithRetry(jobRef, {
+        status: "error",
+        error: loadError.message,
+        completedAt: getTimestamp(),
+      });
+      return;
+    }
+    await processPDFAsyncWithTimeout(
+      ...args,
+      loaded.fileData,
+      fileName,
+      loaded.contentType
+    );
+  } finally {
+    await deleteStoredPdf(bucket, storagePath);
+  }
+}
+
+// Exposed for tests only (see src/__tests__/ai-prompt-snapshots.test.js and
+// src/__tests__/upload-pdf-questions-storage.test.js)
 exports._test = {
   buildExtractionPrompt,
+  processStoredPDF,
 };

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Firebase Storage security rules.
+// Deploy with: npm run storage:deploy-rules
+// The drawings/ and question-images/ rules match docs/FIREBASE_STORAGE_RULES_UPDATE.md.
+// Netlify functions use the Admin SDK, which bypasses these rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload drawings to their own folder
+    match /drawings/{userId}/{fileName} {
+      allow read: if true; // Public read access for displaying drawings
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow authenticated users to upload question images to their own folder
+    match /question-images/{userId}/{fileName} {
+      allow read: if true; // Public read access for displaying images
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // "Upload PDF Questions": the portal uploads the PDF here, then the
+    // upload-pdf-questions-background function downloads it (Admin SDK) and
+    // deletes it once processing finishes. Private to the uploader; PDFs only,
+    // at most 10 MB (keep in sync with src/utils/pdfUpload.js).
+    match /pdf-uploads/{userId}/{fileName} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf'
+        && fileName.matches('[A-Za-z0-9_-]+[.]pdf');
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

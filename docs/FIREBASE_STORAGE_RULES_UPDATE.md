@@ -1,5 +1,9 @@
 # Firebase Storage Rules Update
 
+> **Current rules live in [`storage.rules`](../storage.rules)** at the repo root and are deployed with
+> `npm run storage:deploy-rules`. They add `pdf-uploads/{uid}/` for the portal's "Upload PDF Questions"
+> flow (owner-only, PDF content type, max 10 MB). The snippet below is the older version, kept for reference.
+
 To support question image uploads, please update your Firebase Storage Security Rules to the following:
 
 ```javascript

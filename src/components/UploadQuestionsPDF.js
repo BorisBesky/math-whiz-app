@@ -2,8 +2,41 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, query, where, onSnapshot, limit, doc, updateDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytesResumable, deleteObject } from 'firebase/storage';
 import QuestionReviewModal from './QuestionReviewModal';
 import { getAllGrades, getDefaultGradeKey, getGrade } from '../content/registry';
+import {
+  MAX_PDF_UPLOAD_LABEL,
+  describeHttpError,
+  describeStorageError,
+  formatFileSize,
+  getPdfStoragePath,
+  validatePdfFile,
+} from '../utils/pdfUpload';
+
+// Server-side processing is capped at 10 minutes; poll a little longer.
+const POLL_MAX_DURATION_MS = 11 * 60 * 1000;
+// If the job document never appears, the background function rejected the
+// request before creating it (it always answers 202, so we can't see why).
+const JOB_NOT_FOUND_GRACE_MS = 90 * 1000;
+
+const uploadPdfToStorage = (file, storagePath, onProgress) => new Promise((resolve, reject) => {
+  const storageRef = ref(getStorage(), storagePath);
+  const task = uploadBytesResumable(storageRef, file, {
+    contentType: 'application/pdf',
+    customMetadata: { originalName: file.name.slice(0, 200) },
+  });
+  task.on(
+    'state_changed',
+    (snapshot) => {
+      if (snapshot.totalBytes > 0) {
+        onProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
+      }
+    },
+    reject,
+    () => resolve(storageRef)
+  );
+});
 
 const generateClientJobId = (userId) => {
   return `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -16,6 +49,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState('');
   const [progress, setProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [polling, setPolling] = useState(false);
   const [pendingJobs, setPendingJobs] = useState([]);
   const [checkingJobs, setCheckingJobs] = useState(true);
@@ -165,12 +199,11 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      if (selectedFile.type !== 'application/pdf' && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
-        setError('Please select a PDF file');
-        return;
-      }
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
+      const validationError = validatePdfFile(selectedFile);
+      if (validationError) {
+        setError(validationError);
+        setFile(null);
+        setFileName('');
         return;
       }
       setFile(selectedFile);
@@ -180,13 +213,16 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   };
 
   const handleUpload = async () => {
-    if (!file) {
-      setError('Please select a PDF file');
+    const validationError = validatePdfFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setUploading(true);
+    setUploadProgress(0);
     setError(null);
+    let uploadedRef = null;
 
     try {
       const auth = getAuth();
@@ -200,34 +236,50 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       // Create job ID ahead of time so we can fall back if the response body/header is stripped
       const clientGeneratedJobId = generateClientJobId(user.uid);
 
-      // Create FormData for multipart upload
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('appId', appId || 'default-app-id');
-      formData.append('grade', selectedGrade);
-      formData.append('jobId', clientGeneratedJobId);
-      if (classId) {
-        formData.append('classId', classId);
+      // 1) Upload the PDF straight to Firebase Storage. Netlify background
+      //    functions reject request bodies over ~256 KB (an empty HTTP 413),
+      //    so the file itself must not go through the function.
+      const storagePath = getPdfStoragePath(user.uid, clientGeneratedJobId);
+      try {
+        uploadedRef = await uploadPdfToStorage(file, storagePath, setUploadProgress);
+      } catch (storageError) {
+        console.error('Storage upload error:', storageError);
+        throw new Error(describeStorageError(storageError));
       }
 
-      const response = await fetch('/.netlify/functions/upload-pdf-questions-background', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      // 2) Tell the background function where the file is (tiny JSON body).
+      let response;
+      try {
+        response = await fetch('/.netlify/functions/upload-pdf-questions-background', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            appId: appId || 'default-app-id',
+            grade: selectedGrade,
+            jobId: clientGeneratedJobId,
+            classId: classId || null,
+            storagePath,
+            fileName: file.name,
+          }),
+        });
+      } catch (networkError) {
+        throw new Error('Could not reach the server. Check your internet connection and try again.');
+      }
 
       if (!response.ok) {
-        let errorMessage = 'Failed to upload PDF';
+        let bodyText = '';
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          bodyText = await response.text();
         } catch (e) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          bodyText = '';
         }
-        throw new Error(errorMessage);
+        throw new Error(describeHttpError(response.status, bodyText));
       }
+      // The server owns the uploaded file from here on (it deletes it).
+      uploadedRef = null;
 
       // Handle response - check status first
       if (response.status === 202) {
@@ -274,6 +326,10 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
       }
     } catch (err) {
       console.error('Upload error:', err);
+      if (uploadedRef) {
+        // The server never took the file; don't leave it in storage.
+        deleteObject(uploadedRef).catch(() => {});
+      }
       setError(err.message || 'Failed to upload and extract questions from PDF');
       setPollingJobId(null);
       setUploading(false);
@@ -282,8 +338,9 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
   };
 
   const pollJobStatus = async (currentJobId, token) => {
-    const maxDuration = 5 * 60 * 1000; // 5 minutes max (in milliseconds)
+    const maxDuration = POLL_MAX_DURATION_MS;
     const startTime = Date.now();
+    let firstNotFoundAt = null;
     let currentDelay = 1000; // Start with 1 second
     const maxDelay = 10000; // Cap at 10 seconds
     const backoffMultiplier = 1.5; // Increase delay by 50% each time
@@ -306,6 +363,20 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
             'Authorization': `Bearer ${token}`
           }
         });
+
+        if (response.status === 404) {
+          firstNotFoundAt = firstNotFoundAt || Date.now();
+          if (Date.now() - firstNotFoundAt >= JOB_NOT_FOUND_GRACE_MS) {
+            setError("The server didn't start processing this PDF. Please try again, and contact an admin if it keeps happening.");
+            setPollingJobId(null);
+            setUploading(false);
+            setPolling(false);
+            return;
+          }
+          currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelay);
+          setTimeout(poll, currentDelay);
+          return;
+        }
 
         if (!response.ok) {
           throw new Error('Failed to check job status');
@@ -433,6 +504,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
     setUploading(false);
     setPolling(false);
     setProgress(0);
+    setUploadProgress(0);
     if (onClose) {
       onClose();
     }
@@ -569,7 +641,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    PDF up to 10MB
+                    PDF up to {MAX_PDF_UPLOAD_LABEL}
                   </p>
                 </div>
               </div>
@@ -577,6 +649,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                 <div className="mt-2 flex items-center space-x-2 text-sm text-gray-700">
                   <FileText className="h-4 w-4" />
                   <span>{fileName}</span>
+                  {file && <span className="text-gray-500">({formatFileSize(file.size)})</span>}
                 </div>
               )}
             </div>
@@ -615,7 +688,7 @@ const UploadQuestionsPDF = ({ classId, appId, onClose, onQuestionsSaved }) => {
                 {uploading || polling ? (
                   <>
                     <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                    {polling ? `Processing PDF... ${progress}%` : 'Uploading...'}
+                    {polling ? `Processing PDF... ${progress}%` : `Uploading... ${uploadProgress}%`}
                   </>
                 ) : (
                   <>

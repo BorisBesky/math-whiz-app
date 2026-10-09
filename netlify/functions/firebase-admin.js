@@ -8,7 +8,11 @@ if (!admin.apps.length) {
 
   if (useEmulator) {
     const emulatorProjectId = process.env.GCLOUD_PROJECT || 'demo-mathwhiz';
-    admin.initializeApp({ projectId: emulatorProjectId });
+    admin.initializeApp({
+      projectId: emulatorProjectId,
+      storageBucket:
+        process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || `${emulatorProjectId}.appspot.com`,
+    });
   } else {
     // Handle private key encoding for different environments
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
