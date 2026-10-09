@@ -14,6 +14,7 @@ import { getEnrollmentId, sendInternalMessage } from '../../../services/internal
 import { fetchClassQuestionPoolHealth } from '../../../services/questionPoolHealth';
 import QuestionPoolHealthBanner from '../QuestionPoolHealthBanner';
 import EditClassForm from '../../EditClassForm';
+import { Avatar, EmptyState, IconButton, OverflowMenu, RowActions } from '../PortalUI';
 
 const ClassDetailPanel = ({
   classItem,
@@ -518,20 +519,21 @@ const ClassDetailPanel = ({
   return (
     <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-40 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
       <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-          <div>
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-gray-200 flex-shrink-0">
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
-            <h3 className="text-xl font-semibold text-gray-900">{classItem.name}</h3>
+            <h3 className="text-xl font-semibold text-gray-900 truncate" title={classItem.name}>{classItem.name}</h3>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-shrink-0 items-center space-x-2">
             {canEditClass && (
               <button
                 type="button"
                 onClick={() => setShowEditForm(true)}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                aria-label="Edit Class"
+                className="inline-flex items-center whitespace-nowrap px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
               >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit Class
+                <Edit3 className="h-4 w-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Edit Class</span>
               </button>
             )}
             <button
@@ -545,17 +547,17 @@ const ClassDetailPanel = ({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-          <div className="flex items-center space-x-2">
-            <BookOpen className="h-4 w-4 text-blue-600" />
+        <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap gap-2 text-sm text-gray-700">
+          <div className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 ring-1 ring-inset ring-gray-200">
+            <BookOpen className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <span>{classItem.subject || 'Math'}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Users className="h-4 w-4 text-blue-600" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 ring-1 ring-inset ring-gray-200">
+            <Users className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <span>{roster.length} student{roster.length === 1 ? '' : 's'}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4 text-blue-600" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 ring-1 ring-inset ring-gray-200">
+            <Calendar className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <span>Created {formatDate(classItem.createdAt)}</span>
           </div>
         </div>
@@ -585,8 +587,10 @@ const ClassDetailPanel = ({
 
           <div className="space-y-2">
             {currentTeachersResolved.map((teacher) => (
-              <div key={teacher.uid} className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
-                <div className="text-sm">
+              <div key={teacher.uid} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-3 min-w-0 text-sm">
+                  <Avatar name={teacher.displayName || teacher.email || 'Teacher'} seed={teacher.uid} size="sm" />
+                  <div className="min-w-0 truncate">
                   <span className="font-medium text-gray-900">
                     {teacher.displayName || teacher.email || 'Teacher'}
                   </span>
@@ -596,6 +600,7 @@ const ClassDetailPanel = ({
                   {classItem.createdBy === teacher.uid && (
                     <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Owner</span>
                   )}
+                  </div>
                 </div>
                 {isAdmin && currentTeacherIds.length > 1 && (
                   <button
@@ -639,23 +644,34 @@ const ClassDetailPanel = ({
         </div>
 
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <h4 className="text-lg font-semibold text-gray-900">Roster</h4>
               <p className="text-sm text-gray-500">Students enrolled in this class</p>
             </div>
-            {canManageStudents && (
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {canManageStudents && (
                 <button
                   type="button"
                   onClick={onRefresh}
-                  className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50"
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm"
                 >
-                  <RefreshCw className="h-4 w-4 mr-1" />
+                  <RefreshCw className="h-4 w-4 mr-1.5" />
                   Refresh
                 </button>
-              </div>
-            )}
+              )}
+              {/* Teacher (or admin): invite students via code/link */}
+              {(isTeacherOnClass || isAdmin) && (
+                <button
+                  type="button"
+                  onClick={handleOpenInviteModal}
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 shadow-sm transition-colors"
+                >
+                  <Link2 className="h-4 w-4 mr-1.5" />
+                  Invite Students
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Admin: direct student assignment */}
@@ -701,20 +717,6 @@ const ClassDetailPanel = ({
             </div>
           )}
 
-          {/* Teacher (or admin): invite students via code/link */}
-          {(isTeacherOnClass || isAdmin) && (
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={handleOpenInviteModal}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                <Link2 className="h-4 w-4 mr-2" />
-                Invite Students
-              </button>
-            </div>
-          )}
-
           {status && (
             <div
               className={`mb-4 text-sm rounded-md px-4 py-2 ${status.type === 'error'
@@ -754,86 +756,98 @@ const ClassDetailPanel = ({
           )}
 
           {roster.length === 0 ? (
-            <div className="border border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
-              No students have been added to this class yet.
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No students have been added to this class yet."
+              description={(isTeacherOnClass || isAdmin) ? 'Use "Invite Students" to share a join link or code.' : undefined}
+            />
           ) : (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
+            <div className="border border-gray-200 rounded-lg overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide">
                   <tr>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Student</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Grade</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Questions</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Accuracy</th>
+                    <th scope="col" className="px-4 py-2.5 text-left font-semibold text-gray-600">Student</th>
+                    <th scope="col" className="hidden sm:table-cell px-4 py-2.5 text-left font-semibold text-gray-600">Grade</th>
+                    <th scope="col" className="hidden sm:table-cell px-4 py-2.5 text-right font-semibold text-gray-600">Questions</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-semibold text-gray-600">Accuracy</th>
                     {canManageStudents && (
-                      <th className="px-4 py-2 text-right font-semibold text-gray-600">Actions</th>
+                      <th scope="col" className="relative px-4 py-2.5 text-right font-semibold text-gray-600">
+                        <span className="sr-only sm:not-sr-only">Actions</span>
+                      </th>
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {roster.map((student) => (
-                    <tr key={student.id} className="bg-white">
-                      <td className="px-4 py-2">
-                        <div>
-                          <p className="font-medium text-gray-900">{getStudentDisplayName(student)}</p>
-                          <p className="text-xs text-gray-400">ID: {getStudentShortId(student)}</p>
-                          {student.email && (
-                            <p className="text-xs text-gray-500">{student.email}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">{student.grade}</td>
-                      <td className="px-4 py-2 text-gray-600">{student.totalQuestions}</td>
-                      <td className="px-4 py-2 text-gray-600">{student.accuracy}%</td>
-                      {canManageStudents && (
-                        <td className="px-4 py-2 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            {isTeacherOnClass && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedStudentForMessage(student)}
-                                className="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs font-medium"
-                                title="Message student"
-                              >
-                                <MessageCircle className="h-4 w-4 mr-1" />
-                                Message
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenSubtopicsModal(student)}
-                              disabled={failedStudentIds.has(student.id) || loadingEnrollments}
-                              className={`inline-flex items-center text-xs font-medium ${
-                                failedStudentIds.has(student.id) || loadingEnrollments
-                                  ? 'text-gray-400 cursor-not-allowed opacity-50'
-                                  : 'text-purple-600 hover:text-purple-800'
-                              }`}
-                              title={
-                                failedStudentIds.has(student.id)
-                                  ? 'Enrollment data failed to load. Click Retry above to reload.'
-                                  : loadingEnrollments
-                                  ? 'Loading enrollment data...'
-                                  : 'Set Focus Subtopics'
-                              }
-                            >
-                              <Target className="h-4 w-4 mr-1" />
-                              Focus
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemove(student)}
-                              className="inline-flex items-center text-red-600 hover:text-red-800 text-xs font-medium"
-                              disabled={removingId === student.id}
-                            >
-                              <UserMinus className="h-4 w-4 mr-1" />
-                              {removingId === student.id ? 'Removing...' : 'Remove'}
-                            </button>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {roster.map((student) => {
+                    const displayName = getStudentDisplayName(student);
+                    const focusDisabled = failedStudentIds.has(student.id) || loadingEnrollments;
+                    return (
+                      <tr key={student.id} className="align-middle hover:bg-gray-50">
+                        <td className="px-4 py-2.5 max-w-[11rem] sm:max-w-[15rem]">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar name={displayName} seed={student.id} size="sm" />
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{displayName}</p>
+                              <p className="text-xs text-gray-400 truncate">ID: {getStudentShortId(student)}</p>
+                              {student.email && (
+                                <p className="text-xs text-gray-500 truncate" title={student.email}>{student.email}</p>
+                              )}
+                            </div>
                           </div>
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="hidden sm:table-cell px-4 py-2.5 text-gray-600">{student.grade}</td>
+                        <td className="hidden sm:table-cell px-4 py-2.5 text-right text-gray-600 tabular-nums">{student.totalQuestions}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{student.accuracy}%</td>
+                        {canManageStudents && (
+                          <td className="px-2 py-2 sm:px-4">
+                            <OverflowMenu
+                              className="flex justify-end sm:hidden"
+                              label={`Actions for ${displayName}`}
+                              items={[
+                                isTeacherOnClass && { key: 'message', label: 'Message student', icon: MessageCircle, onClick: () => setSelectedStudentForMessage(student) },
+                                { key: 'focus', label: 'Focus subtopics', icon: Target, onClick: () => handleOpenSubtopicsModal(student), disabled: focusDisabled },
+                                { key: 'remove', label: removingId === student.id ? 'Removing...' : 'Remove from class', icon: UserMinus, onClick: () => handleRemove(student), disabled: removingId === student.id, tone: 'red' },
+                              ]}
+                            />
+                            <RowActions className="hidden sm:flex">
+                              {isTeacherOnClass && (
+                                <IconButton
+                                  icon={MessageCircle}
+                                  label={`Message ${displayName}`}
+                                  title="Message student"
+                                  tone="blue"
+                                  onClick={() => setSelectedStudentForMessage(student)}
+                                />
+                              )}
+                              <IconButton
+                                icon={Target}
+                                label={`Set focus subtopics for ${displayName}`}
+                                tone="purple"
+                                onClick={() => handleOpenSubtopicsModal(student)}
+                                disabled={focusDisabled}
+                                title={
+                                  failedStudentIds.has(student.id)
+                                    ? 'Enrollment data failed to load. Click Retry above to reload.'
+                                    : loadingEnrollments
+                                    ? 'Loading enrollment data...'
+                                    : 'Set Focus Subtopics'
+                                }
+                              />
+                              <span className="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+                              <IconButton
+                                icon={removingId === student.id ? RefreshCw : UserMinus}
+                                label={removingId === student.id ? `Removing ${displayName}...` : `Remove ${displayName} from class`}
+                                tone="red"
+                                onClick={() => handleRemove(student)}
+                                disabled={removingId === student.id}
+                                className={removingId === student.id ? '[&>svg]:animate-spin' : ''}
+                              />
+                            </RowActions>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
