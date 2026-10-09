@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // Variables captured by closure so factories can reference them after hoisting
+const mockBatch = { update: jest.fn(), commit: jest.fn().mockResolvedValue(undefined) };
 let mockGetDoc;
 let mockUpdateDoc;
 let mockGetIdToken;
@@ -20,6 +21,7 @@ jest.mock('firebase/firestore', () => ({
   query: jest.fn(),
   serverTimestamp: jest.fn(() => 'SERVER_TIME'),
   where: jest.fn(),
+  writeBatch: jest.fn(() => mockBatch),
 }));
 
 jest.mock('firebase/auth', () => ({
@@ -71,6 +73,22 @@ jest.mock('../../../messaging/MessageComposer', () => {
   const React = require('react');
   return function MockMessageComposer() {
     return React.createElement('div', { 'data-testid': 'message-composer' });
+  };
+});
+
+jest.mock('../../GoalsModal', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: function MockGoalsModal({ isOpen, studentCount, onSave }) {
+      if (!isOpen) return null;
+      return React.createElement(
+        'div',
+        { 'data-testid': 'goals-modal' },
+        `Goals modal (${studentCount})`,
+        React.createElement('button', { onClick: () => onSave({ grade: 'G3', targets: { Multiplication: 5 } }) }, 'Save Goals'),
+      );
+    },
   };
 });
 
@@ -242,7 +260,7 @@ describe('ClassDetailPanel', () => {
   it('calls onRemoveStudent with correct args when Remove is clicked', async () => {
     const onRemoveStudent = jest.fn().mockResolvedValue(undefined);
     render(<ClassDetailPanel {...defaultProps} onRemoveStudent={onRemoveStudent} />);
-    fireEvent.click(screen.getByRole('button', { name: /remove/i }));
+    fireEvent.click(screen.getByRole('button', { name: /remove ada from class/i }));
     await waitFor(() => {
       expect(onRemoveStudent).toHaveBeenCalledWith(
         expect.objectContaining({ studentId: 'student-1', classId: 'class-1' })
@@ -253,6 +271,79 @@ describe('ClassDetailPanel', () => {
   it('returns null when classItem is not provided', () => {
     render(<ClassDetailPanel {...defaultProps} classItem={null} />);
     expect(screen.queryByText('Room 12')).not.toBeInTheDocument();
+  });
+
+  describe('roster row actions (shared with the Students table)', () => {
+    it('shows the same core actions as the Students table plus class actions, in order', () => {
+      render(<ClassDetailPanel {...defaultProps} onViewStudent={jest.fn()} />);
+      const labels = screen
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+        .filter((label) => /^(View details|Set daily goals|Set focus subtopics|Message Ada|Remove Ada from class)$/.test(label || ''));
+      expect(labels).toEqual([
+        'View details',
+        'Set daily goals',
+        'Set focus subtopics',
+        'Message Ada',
+        'Remove Ada from class',
+      ]);
+      expect(screen.getByRole('button', { name: /actions for ada/i })).toBeInTheDocument();
+    });
+
+    it('View details hands the student to onViewStudent', () => {
+      const onViewStudent = jest.fn();
+      render(<ClassDetailPanel {...defaultProps} onViewStudent={onViewStudent} />);
+      fireEvent.click(screen.getByRole('button', { name: 'View details' }));
+      expect(onViewStudent).toHaveBeenCalledWith(expect.objectContaining({ id: 'student-1' }));
+    });
+
+    it('hides View details when no onViewStudent handler is provided', () => {
+      render(<ClassDetailPanel {...defaultProps} />);
+      expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
+    });
+
+    it('Set daily goals saves for that student and refreshes the roster', async () => {
+      // CRA's Jest config resets mock implementations between tests.
+      mockBatch.update = jest.fn();
+      mockBatch.commit = jest.fn().mockResolvedValue(undefined);
+      require('firebase/firestore').writeBatch.mockReturnValue(mockBatch);
+      const onRefresh = jest.fn().mockResolvedValue(undefined);
+      render(<ClassDetailPanel {...defaultProps} onRefresh={onRefresh} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Set daily goals' }));
+      expect(screen.getByTestId('goals-modal')).toHaveTextContent('Goals modal (1)');
+      fireEvent.click(screen.getByRole('button', { name: 'Save Goals' }));
+      await waitFor(() => expect(mockBatch.commit).toHaveBeenCalled());
+      expect(require('firebase/firestore').doc).toHaveBeenCalledWith(
+        undefined, 'artifacts', 'app-test', 'users', 'student-1', 'math_whiz_data', 'profile'
+      );
+      expect(mockBatch.update.mock.calls[0][1]).toEqual({ 'dailyGoalsByGrade.G3': { Multiplication: 5 } });
+      await waitFor(() => expect(onRefresh).toHaveBeenCalled());
+    });
+
+    it('overflow menu exposes the same actions on mobile', () => {
+      render(<ClassDetailPanel {...defaultProps} onViewStudent={jest.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: /actions for ada/i }));
+      const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+      expect(items).toEqual(['View details', 'Daily goals', 'Focus subtopics', 'Message student', 'Remove from class']);
+    });
+
+    it('bulk bar sets goals for selected students and removes them after confirmation', async () => {
+      const students = [makeStudent(), makeStudent({ id: 'student-2', name: 'Grace' })];
+      const onRemoveStudent = jest.fn().mockResolvedValue(undefined);
+      render(<ClassDetailPanel {...defaultProps} students={students} onRemoveStudent={onRemoveStudent} />);
+
+      const setGoals = screen.getByTitle('Set Goals');
+      expect(setGoals).toBeDisabled();
+      fireEvent.click(screen.getByRole('checkbox', { name: /select all students in this class/i }));
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+      fireEvent.click(setGoals);
+      expect(screen.getByTestId('goals-modal')).toHaveTextContent('Goals modal (2)');
+
+      fireEvent.click(screen.getByRole('button', { name: /remove selected from class/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /^remove$/i }));
+      await waitFor(() => expect(onRemoveStudent).toHaveBeenCalledTimes(2));
+      expect(onRemoveStudent).toHaveBeenCalledWith({ studentId: 'student-2', classId: 'class-1' });
+    });
   });
 
   it('keeps the teachers list bounded and scrollable', () => {

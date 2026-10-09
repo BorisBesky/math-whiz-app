@@ -211,7 +211,15 @@ export const OverflowMenu = ({ label = 'More actions', items = [], className = '
     }
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setPosition({ top: rect.bottom + 4, right: Math.max(8, window.innerWidth - rect.right) });
+    const right = Math.max(8, window.innerWidth - rect.right);
+    // Open upward when the menu would run past the bottom of the viewport
+    // (e.g. last rows of a table or a roster inside a modal).
+    const estimatedHeight = items.filter(Boolean).length * 36 + 8;
+    if (rect.bottom + 4 + estimatedHeight > window.innerHeight && rect.top - 4 - estimatedHeight > 0) {
+      setPosition({ bottom: window.innerHeight - rect.top + 4, right });
+    } else {
+      setPosition({ top: rect.bottom + 4, right });
+    }
   };
 
   return (
@@ -231,7 +239,7 @@ export const OverflowMenu = ({ label = 'More actions', items = [], className = '
         <div
           ref={menuRef}
           role="menu"
-          style={{ position: 'fixed', top: position.top, right: position.right }}
+          style={{ position: 'fixed', top: position.top, bottom: position.bottom, right: position.right }}
           className="z-50 min-w-[11rem] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
         >
           {items.filter(Boolean).map(({ key, label: itemLabel, icon: Icon, onClick, disabled, tone }) => (

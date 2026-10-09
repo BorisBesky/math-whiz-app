@@ -24,6 +24,7 @@ const ClassesSection = ({
   onAssignStudent,
   onRemoveStudent,
   onRefreshStudents,
+  onViewStudent,
 }) => {
   const sortedClasses = useMemo(() => {
     return [...classes].sort((a, b) => {
@@ -200,6 +201,12 @@ const ClassesSection = ({
           onAssignStudent={onAssignStudent}
           onRemoveStudent={onRemoveStudent}
           onRefresh={onRefreshStudents}
+          onViewStudent={typeof onViewStudent === 'function'
+            ? (student) => {
+              setSelectedClassId(null);
+              onViewStudent(student.id);
+            }
+            : undefined}
           userRole={userRole}
           userId={userId}
           teachers={teachers}

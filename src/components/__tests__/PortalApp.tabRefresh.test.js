@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 const mockRefreshStudents = jest.fn();
 const mockRefreshTeachers = jest.fn(() => Promise.resolve());
 const mockStudentsMount = jest.fn();
+const mockOpenedStudent = jest.fn();
 let mockUserRole = 'teacher';
 
 // react-router-dom v7 is ESM-only and can't be loaded by this Jest setup (see
@@ -21,7 +22,8 @@ jest.mock('react-router-dom', () => {
         listeners.add(force);
         return () => listeners.delete(force);
       }, []);
-      return { pathname: currentPath };
+      const [pathname, search = ''] = currentPath.split('?');
+      return { pathname, search: search ? `?${search}` : '' };
     },
     useNavigate: () => ReactActual.useCallback((to) => {
       currentPath = to;
@@ -62,15 +64,24 @@ jest.mock('../../hooks/usePortalTeachers', () => () => ({
 jest.mock('../portal/sections/OverviewSection', () => () => <div data-testid="overview-section">Overview body</div>);
 jest.mock('../portal/sections/StudentsSection', () => {
   const ReactActual = jest.requireActual('react');
-  return function MockStudentsSection() {
+  return function MockStudentsSection({ initialStudentId, onInitialStudentHandled }) {
     const [drilledIn, setDrilledIn] = ReactActual.useState(false);
     ReactActual.useEffect(() => { mockStudentsMount(); }, []);
+    ReactActual.useEffect(() => {
+      if (initialStudentId) {
+        mockOpenedStudent(initialStudentId);
+        setDrilledIn(true);
+        onInitialStudentHandled?.();
+      }
+    }, [initialStudentId, onInitialStudentHandled]);
     return drilledIn
       ? <div data-testid="student-detail">Student detail</div>
       : <button type="button" onClick={() => setDrilledIn(true)}>Open student</button>;
   };
 });
-jest.mock('../portal/sections/ClassesSection', () => () => <div data-testid="classes-section" />);
+jest.mock('../portal/sections/ClassesSection', () => ({ onViewStudent }) => (
+  <button type="button" onClick={() => onViewStudent('stu-42')}>Roster view details</button>
+));
 jest.mock('../portal/sections/QuestionBankSection', () => () => <div data-testid="qb-section" />);
 jest.mock('../portal/sections/TeacherManagementSection', () => () => <div data-testid="teachers-section" />);
 jest.mock('../portal/sections/ImagesSection', () => () => <div data-testid="images-section" />);
@@ -136,5 +147,13 @@ describe('PortalApp tab selection', () => {
     clickNav('Teachers');
     expect(mockRefreshStudents).toHaveBeenCalledTimes(1);
     expect(mockRefreshTeachers).toHaveBeenCalledTimes(1);
+  });
+
+  it('View details from a class roster opens that student on the Students tab', () => {
+    renderPortal('/teacher/classes');
+    fireEvent.click(screen.getByRole('button', { name: 'Roster view details' }));
+    expect(mockOpenedStudent).toHaveBeenCalledWith('stu-42');
+    expect(screen.getByTestId('student-detail')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Students', current: 'page' })).toBeInTheDocument();
   });
 });

@@ -55,6 +55,27 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     refresh: refreshTeachers,
   } = usePortalTeachers({ appId, enabled: userRole === USER_ROLES.ADMIN });
 
+  // Bumped every time the user picks a tab, including re-picking the tab that
+  // is already open. Used to (a) remount the section so any drill-down view
+  // (student detail, etc.) resets to the section's landing view, and (b)
+  // trigger a data refresh.
+  const [sectionVisit, setSectionVisit] = useState(0);
+
+  // "View details" from a class roster jumps to the Students tab and opens
+  // that student's detail view via ?student=<id>.
+  const requestedStudentId = useMemo(
+    () => new URLSearchParams(location.search).get('student'),
+    [location.search]
+  );
+  const openStudentDetail = useCallback((studentId) => {
+    if (!studentId) return;
+    navigate(`${portalBase}/students?student=${encodeURIComponent(studentId)}`);
+    setSectionVisit((visit) => visit + 1);
+  }, [navigate, portalBase]);
+  const clearRequestedStudent = useCallback(() => {
+    navigate(`${portalBase}/students`, { replace: true });
+  }, [navigate, portalBase]);
+
   const sections = useMemo(() => {
     if (!userRole) {
       return [];
@@ -103,6 +124,8 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
             error={studentsError}
             onRefresh={refreshStudents}
             appId={appId}
+            initialStudentId={requestedStudentId}
+            onInitialStudentHandled={requestedStudentId ? clearRequestedStudent : undefined}
           />
         ),
       },
@@ -127,6 +150,7 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
             onAssignStudent={assignStudentToClass}
             onRemoveStudent={removeStudentFromClass}
             onRefreshStudents={refreshStudents}
+            onViewStudent={openStudentDetail}
           />
         ),
       },
@@ -208,6 +232,9 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     user,
     userRole,
     unreadMessageCount,
+    requestedStudentId,
+    clearRequestedStudent,
+    openStudentDetail,
   ]);
 
   // Derive active section from URL pathname
@@ -227,11 +254,6 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
     }
   }, [location.pathname, portalBase, navigate, sections.length]);
 
-  // Bumped every time the user picks a tab, including re-picking the tab that
-  // is already open. Used to (a) remount the section so any drill-down view
-  // (student detail, etc.) resets to the section's landing view, and (b)
-  // trigger a data refresh.
-  const [sectionVisit, setSectionVisit] = useState(0);
 
   // Navigate to section via URL
   const handleSectionChange = useCallback((sectionId) => {

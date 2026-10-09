@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  BarChart3, RefreshCw, Download, Target, Trash2, Eye,
-  ChevronUp, ChevronDown, CheckCircle, Crosshair, Sparkles, Loader2, AlertCircle, Users
+  BarChart3, RefreshCw, Download, Target, Trash2,
+  ChevronUp, ChevronDown, CheckCircle, Sparkles, Loader2, AlertCircle, Users
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
@@ -19,9 +19,11 @@ import ConfirmationModal from '../../ui/ConfirmationModal';
 import useConfirmation from '../../../hooks/useConfirmation';
 import GoalsModal from '../GoalsModal';
 import StudentFocusModal from '../StudentFocusModal';
+import StudentRowActions from '../StudentRowActions';
+import useStudentGoals from '../../../hooks/useStudentGoals';
 import { fetchStudentHistory } from '../../../services/studentHistoryService';
 import {
-  Alert, Avatar, EmptyState, IconButton, LoadingRow, OverflowMenu, PortalButton, RowActions, SectionCard, SectionHeader,
+  Alert, Avatar, EmptyState, IconButton, LoadingRow, PortalButton, SectionCard, SectionHeader,
 } from '../PortalUI';
 
 const fieldMap = {
@@ -35,14 +37,10 @@ const fieldMap = {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
+const StudentsSection = ({ students, loading, error, onRefresh, appId, initialStudentId, onInitialStudentHandled }) => {
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [sortField, setSortField] = useState('questionsToday');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
-  const [goalGrade, setGoalGrade] = useState(getDefaultGradeKey());
-  const [goalTargets, setGoalTargets] = useState({});
-  const [goalStudentIds, setGoalStudentIds] = useState([]);
   const [focusStudent, setFocusStudent] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [startDate, setStartDate] = useState(getTodayDateString());
@@ -65,6 +63,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
   const db = getFirestore();
   const { confirmationProps, confirm } = useConfirmation();
+  const { goalsModalProps, openGoalsForStudent, openGoalsForStudents } = useStudentGoals({ appId, onSaved: onRefresh });
 
   // Sorting logic
   const handleSort = (field) => {
@@ -185,44 +184,9 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
     }
   };
 
-  // Goals Logic
-  const openGoalsModalForStudent = (student) => {
-    const grade = student.grade || getDefaultGradeKey();
-    const current = student.dailyGoalsByGrade?.[grade] || {};
-
-    setGoalGrade(grade);
-    setGoalTargets(current);
-    setGoalStudentIds([student.id]);
-    setShowGoalsModal(true);
-  };
-
-  const openGoalsModalForSelected = () => {
-    const ids = Array.from(selectedStudents);
-    const grade = getDefaultGradeKey();
-
-    setGoalGrade(grade);
-    setGoalTargets({});
-    setGoalStudentIds(ids);
-    setShowGoalsModal(true);
-  };
-
-  const saveGoals = async ({ grade, targets }) => {
-    if (!appId) {
-      throw new Error('App ID is missing');
-    }
-    const batch = writeBatch(db);
-
-    goalStudentIds.forEach(studentId => {
-      const studentRef = doc(db, 'artifacts', appId, 'users', studentId, 'math_whiz_data', 'profile');
-      const updateData = {
-        [`dailyGoalsByGrade.${grade}`]: targets,
-      };
-      batch.update(studentRef, updateData);
-    });
-
-    await batch.commit();
-    if (onRefresh) onRefresh();
-  };
+  // Goals logic is shared with the class roster (see useStudentGoals).
+  const openGoalsModalForStudent = openGoalsForStudent;
+  const openGoalsModalForSelected = () => openGoalsForStudents(selectedStudents);
 
   // Focus logic — StudentFocusModal loads its own data; just track which student is open.
   const openFocusModalForStudent = (student) => {
@@ -326,6 +290,19 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
       cancelled = true;
     };
   }, [appId, viewingStudent?.id, viewingStudent?.classId, viewingStudent?.historyLoaded, viewingStudent?.historyRequestKey, startDate, endDate]);
+
+  // Deep link from elsewhere in the portal (e.g. "View details" in a class
+  // roster): open that student's detail view once the roster is available,
+  // then let the parent clear the request so it doesn't re-trigger.
+  useEffect(() => {
+    if (!initialStudentId || loading) return;
+    const target = students.find((student) => student.id === initialStudentId);
+    if (target) openStudentDetails(target);
+    if (onInitialStudentHandled) onInitialStudentHandled();
+    // openStudentDetails is a plain function recreated each render; only the
+    // request itself (and roster availability) should drive this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialStudentId, loading, students]);
 
   // Keep an open history panel fresh without making the teacher close and
   // reopen it. Background refreshes retain the current list while revalidating.
@@ -1406,30 +1383,17 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
                         </span>
                       </td>
                       <td className="px-2 py-2 sm:px-4">
-                        <OverflowMenu
-                          className="flex justify-end sm:hidden"
-                          label={`Actions for ${displayName}`}
-                          items={[
-                            { key: 'view', label: 'View details', icon: Eye, onClick: () => openStudentDetails(student) },
-                            { key: 'goals', label: 'Daily goals', icon: Target, onClick: () => openGoalsModalForStudent(student) },
-                            { key: 'focus', label: 'Focus subtopics', icon: Crosshair, onClick: () => openFocusModalForStudent(student) },
-                          ]}
+                        <StudentRowActions
+                          displayName={displayName}
+                          onViewDetails={() => openStudentDetails(student)}
+                          onSetGoals={() => openGoalsModalForStudent(student)}
+                          onSetFocus={() => openFocusModalForStudent(student)}
+                          focusTitle={
+                            student.classId
+                              ? 'Set focus subtopics'
+                              : 'Assign student to a class to set focus subtopics'
+                          }
                         />
-                        <RowActions className="hidden sm:flex">
-                          <IconButton icon={Eye} label="View details" tone="blue" onClick={() => openStudentDetails(student)} />
-                          <IconButton icon={Target} label="Set daily goals" tone="purple" onClick={() => openGoalsModalForStudent(student)} />
-                          <IconButton
-                            icon={Crosshair}
-                            label="Set focus subtopics"
-                            tone="emerald"
-                            title={
-                              student.classId
-                                ? 'Set focus subtopics'
-                                : 'Assign student to a class to set focus subtopics'
-                            }
-                            onClick={() => openFocusModalForStudent(student)}
-                          />
-                        </RowActions>
                       </td>
                     </tr>
                   );
@@ -1511,14 +1475,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId }) => {
 
       <ConfirmationModal {...confirmationProps} />
 
-      <GoalsModal
-        isOpen={showGoalsModal}
-        onClose={() => setShowGoalsModal(false)}
-        initialGrade={goalGrade}
-        initialTargets={goalTargets}
-        studentCount={goalStudentIds.length}
-        onSave={saveGoals}
-      />
+      <GoalsModal {...goalsModalProps} />
 
       {focusStudent && (
         <StudentFocusModal
