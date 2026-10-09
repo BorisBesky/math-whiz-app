@@ -20,13 +20,25 @@ const QuestionPoolHealthBanner = ({ flags = [], onAddQuestions, className = '' }
       <div className="flex items-start space-x-2">
         <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5 text-amber-600" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold">Students are repeating questions</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold">Students are repeating questions</p>
+            <span className="flex-shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 tabular-nums">
+              {flags.length} {flags.length === 1 ? 'topic' : 'topics'}
+            </span>
+          </div>
           <p className="text-sm text-amber-800 mt-0.5">
             These topics have too few distinct questions, so students keep seeing the same ones.
             Add more by generating with AI or importing questions.
           </p>
 
-          <ul className="mt-3 space-y-2">
+          {/* Bounded so a long list of flags can't take over the class detail
+              modal; the header and explanation above stay visible. */}
+          <ul
+            className="mt-3 space-y-2 max-h-48 sm:max-h-64 overflow-y-auto overscroll-contain pr-1 rounded-button focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            aria-label="Topics with repeated questions"
+            tabIndex={0}
+            data-testid="question-pool-health-list"
+          >
             {flags.map((flag) => {
               const label = flag.subtopic
                 ? `${flag.topic} — ${flag.subtopic}`

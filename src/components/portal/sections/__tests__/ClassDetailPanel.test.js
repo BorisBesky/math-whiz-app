@@ -255,6 +255,13 @@ describe('ClassDetailPanel', () => {
     expect(screen.queryByText('Room 12')).not.toBeInTheDocument();
   });
 
+  it('keeps the teachers list bounded and scrollable', () => {
+    render(<ClassDetailPanel {...defaultProps} />);
+    const list = screen.getByTestId('class-teachers-list');
+    expect(list).toHaveClass('overflow-y-auto');
+    expect(list.className).toMatch(/max-h-/);
+  });
+
   it('shows teacher name in the teachers list', () => {
     render(<ClassDetailPanel {...defaultProps} />);
     expect(screen.getByText('Ms. Baker')).toBeInTheDocument();

@@ -518,7 +518,7 @@ const ClassDetailPanel = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-40 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[90vh] supports-[height:100dvh]:max-h-[90dvh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
@@ -546,7 +546,7 @@ const ClassDetailPanel = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap gap-2 text-sm text-gray-700">
           <div className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 ring-1 ring-inset ring-gray-200">
             <BookOpen className="h-4 w-4 text-blue-600" aria-hidden="true" />
@@ -585,7 +585,10 @@ const ClassDetailPanel = ({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div
+            className="space-y-2 max-h-48 overflow-y-auto overscroll-contain pr-1"
+            data-testid="class-teachers-list"
+          >
             {currentTeachersResolved.map((teacher) => (
               <div key={teacher.uid} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2">
                 <div className="flex items-center gap-3 min-w-0 text-sm">
