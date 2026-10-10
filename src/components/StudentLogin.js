@@ -15,7 +15,10 @@ const StudentLogin = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  const { loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, registerWithGoogle, resetPassword } = useAuth();
+  const {
+    loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, registerWithGoogle, resetPassword,
+    googleRedirect, clearGoogleRedirect,
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,33 +83,46 @@ const StudentLogin = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  // Google sign-in and sign-up both open Google (popup, or a redirect when the
+  // popup is blocked). Errors are shown here; they never fall back to a guest.
+  const handleGoogleAuth = async (mode) => {
     setLoading(true);
     setError('');
+    let redirected = false;
     try {
-      await loginWithGoogle(USER_ROLES.STUDENT);
+      const result = mode === 'signup'
+        ? await registerWithGoogle(USER_ROLES.STUDENT)
+        : await loginWithGoogle(USER_ROLES.STUDENT);
+      if (result?.redirected) {
+        redirected = true; // the page is navigating to Google
+        return;
+      }
+      if (!result?.user) {
+        throw new Error('Google sign-in did not complete. Please try again.');
+      }
       navigate(from, { replace: true });
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      console.error(`Google ${mode === 'signup' ? 'sign-up' : 'sign-in'} error:`, error);
       setError(getErrorMessage(error.message));
     } finally {
-      setLoading(false);
+      if (!redirected) setLoading(false);
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await registerWithGoogle(USER_ROLES.STUDENT);
+  const handleGoogleSignIn = () => handleGoogleAuth('signin');
+  const handleGoogleSignUp = () => handleGoogleAuth('signup');
+
+  // Coming back from a Google redirect (popup was blocked).
+  useEffect(() => {
+    if (!googleRedirect) return;
+    if (googleRedirect.status === 'success') {
+      clearGoogleRedirect();
       navigate(from, { replace: true });
-    } catch (error) {
-      console.error('Google sign-up error:', error);
-      setError(getErrorMessage(error.message));
-    } finally {
-      setLoading(false);
+    } else if (googleRedirect.status === 'error') {
+      setError(googleRedirect.error || 'Google sign-in failed. Please try again.');
+      clearGoogleRedirect();
     }
-  };
+  }, [googleRedirect, clearGoogleRedirect, navigate, from]);
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
@@ -130,7 +146,7 @@ const StudentLogin = () => {
     }
   };
 
-  const getErrorMessage = (errorMessage) => {
+  const getErrorMessage = (errorMessage = '') => {
     if (errorMessage.includes('user-not-found')) {
       return 'No account found with this email address.';
     } else if (errorMessage.includes('wrong-password')) {
@@ -206,7 +222,7 @@ const StudentLogin = () => {
           <button
             type="button"
             onClick={isSignUp ? handleGoogleSignUp : handleGoogleSignIn}
-            disabled={loading}
+            disabled={loading || googleRedirect?.status === 'pending'}
             className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
             <svg className="w-5 h-5 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
