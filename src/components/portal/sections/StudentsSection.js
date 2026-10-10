@@ -22,6 +22,7 @@ import StudentFocusModal from '../StudentFocusModal';
 import StudentRowActions from '../StudentRowActions';
 import useStudentGoals from '../../../hooks/useStudentGoals';
 import { fetchStudentHistory } from '../../../services/studentHistoryService';
+import { BUTTON_SHAPE, buttonClasses } from '../../../theme/accent';
 import {
   Alert, Avatar, EmptyState, IconButton, LoadingRow, PortalButton, SectionCard, SectionHeader,
 } from '../PortalUI';
@@ -686,12 +687,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                type="button"
                onClick={analyzeAiFocus}
                disabled={aiFocusLoading || !appId}
-               className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+               className={buttonClasses({ variant: 'primary', size: 'lg' })}
              >
                {aiFocusLoading ? (
-                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                 <Loader2 className="w-4 h-4 animate-spin" />
                ) : (
-                 <Sparkles className="w-4 h-4 mr-2" />
+                 <Sparkles className="w-4 h-4" />
                )}
                AI Focus
              </button>
@@ -706,15 +707,15 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
           <button
             type="button"
             onClick={() => setStudentDetailsCollapsed((collapsed) => !collapsed)}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className={buttonClasses({ variant: 'secondary' })}
             aria-label={studentDetailsCollapsed ? 'Show student details' : 'Hide student details'}
             aria-expanded={!studentDetailsCollapsed}
             aria-controls="student-detail-sections"
           >
             {studentDetailsCollapsed ? (
-              <ChevronDown className="w-4 h-4 mr-2" />
+              <ChevronDown className="w-4 h-4" />
             ) : (
-              <ChevronUp className="w-4 h-4 mr-2" />
+              <ChevronUp className="w-4 h-4" />
             )}
             {studentDetailsCollapsed ? 'Show' : 'Hide'}
           </button>
@@ -826,15 +827,15 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                 <button
                   type="button"
                   onClick={() => setAiFocusCollapsed((collapsed) => !collapsed)}
-                  className="inline-flex items-center justify-center px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className={buttonClasses({ variant: 'secondary' })}
                   aria-label={aiFocusCollapsed ? 'Show AI focus recommendations' : 'Hide AI focus recommendations'}
                   aria-expanded={!aiFocusCollapsed}
                   aria-controls="ai-focus-recommendation-content"
                 >
                   {aiFocusCollapsed ? (
-                    <ChevronDown className="w-4 h-4 mr-2" />
+                    <ChevronDown className="w-4 h-4" />
                   ) : (
-                    <ChevronUp className="w-4 h-4 mr-2" />
+                    <ChevronUp className="w-4 h-4" />
                   )}
                   {aiFocusCollapsed ? 'Show' : 'Hide'}
                 </button>
@@ -935,7 +936,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                           type="button"
                           onClick={addReviewTopic}
                           disabled={!topicToAdd}
-                          className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          className={buttonClasses({ variant: 'secondary' })}
                         >
                           Add
                         </button>
@@ -1009,21 +1010,21 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                           type="button"
                           onClick={saveAiFocusDraft}
                           disabled={aiFocusSaving || !aiFocusDirty || !hasReviewFocusAreas()}
-                          className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-blue-200 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className={buttonClasses({ variant: 'secondary', size: 'lg' })}
                         >
-                          {aiFocusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {aiFocusSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                           {aiFocusSaving ? 'Saving...' : 'Save changes'}
                         </button>
                         <button
                           type="button"
                           onClick={deleteAiFocusDraft}
                           disabled={aiFocusDeleting}
-                          className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className={buttonClasses({ variant: 'danger', size: 'lg' })}
                         >
                           {aiFocusDeleting ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <Trash2 className="w-4 h-4 mr-2" />
+                            <Trash2 className="w-4 h-4" />
                           )}
                           {aiFocusDeleting ? 'Deleting...' : 'Delete recommendation'}
                         </button>
@@ -1041,12 +1042,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                       type="button"
                       onClick={applyAiFocusRecommendations}
                       disabled={aiFocusApplying || !viewingStudent.classId}
-                      className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={buttonClasses({ variant: 'primary', size: 'lg' })}
                     >
                       {aiFocusApplying ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <CheckCircle className="w-4 h-4 mr-2" />
+                        <CheckCircle className="w-4 h-4" />
                       )}
                       {aiFocusApplying ? 'Applying...' : 'Apply recommendations'}
                     </button>
@@ -1435,7 +1436,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                 type="button"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded-md border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={buttonClasses({ variant: 'secondary', size: 'sm' })}
               >
                 Previous
               </button>
@@ -1449,7 +1450,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                     key={page}
                     onClick={() => handlePageChange(page)}
                     aria-current={currentPage === page ? 'page' : undefined}
-                    className={`min-w-[2rem] px-3 py-1 rounded-md border text-sm tabular-nums transition-colors ${
+                    className={`min-w-[2rem] px-3 py-1 ${BUTTON_SHAPE} border text-sm tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
                       currentPage === page
                         ? 'bg-blue-600 text-white border-blue-600'
                         : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
@@ -1464,7 +1465,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
                 type="button"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded-md border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={buttonClasses({ variant: 'secondary', size: 'sm' })}
               >
                 Next
               </button>

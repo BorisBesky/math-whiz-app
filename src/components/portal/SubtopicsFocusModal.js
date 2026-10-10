@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Target, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import ModalWrapper from '../ui/ModalWrapper';
+import { ModalHeader } from './PortalUI';
+import { buttonClasses } from '../../theme/accent';
 import { getTopicsForGrade, getAppId } from '../../utils/common_utils';
 import { getSubtopicsForTopic } from '../../utils/subtopicUtils';
 import { getStudentDisplayName } from '../../utils/studentName';
@@ -122,30 +124,12 @@ const SubtopicsFocusModal = ({
 
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="lg" hideCloseButton>
-      {/* Header */}
-      <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-lg">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-3">
-            <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
-              <Target className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold font-display">Focus subtopics</h2>
-              <p className="text-sm text-white/80 mt-0.5">
-                Tailor what {studentName} practices.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-1 transition"
-            aria-label="Close"
-          >
-            <span className="text-2xl leading-none">&times;</span>
-          </button>
-        </div>
-      </div>
+      <ModalHeader
+        icon={Target}
+        title="Focus subtopics"
+        subtitle={`Tailor what ${studentName} practices.`}
+        onClose={onClose}
+      />
 
       {/* Body */}
       <div className="px-6 py-5 space-y-5">
@@ -301,7 +285,7 @@ const SubtopicsFocusModal = ({
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="px-4 py-2 rounded-button border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className={buttonClasses({ variant: 'secondary', size: 'lg' })}
         >
           Cancel
         </button>
@@ -309,9 +293,9 @@ const SubtopicsFocusModal = ({
           type="button"
           onClick={handleSave}
           disabled={saving || !classId}
-          className="inline-flex items-center px-4 py-2 rounded-button bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className={buttonClasses({ variant: 'primary', size: 'lg' })}
         >
-          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {saving ? 'Saving…' : 'Save focus'}
         </button>
       </div>
