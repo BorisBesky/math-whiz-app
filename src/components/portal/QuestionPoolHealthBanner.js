@@ -64,7 +64,7 @@ const QuestionPoolHealthBanner = ({ flags = [], onAddQuestions, className = '' }
                     <button
                       type="button"
                       onClick={() => onAddQuestions(flag)}
-                      className="flex-shrink-0 inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-brand-purple hover:bg-purple-700 rounded-button focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                      className="flex-shrink-0 inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-button focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <Sparkles className="h-4 w-4 mr-1.5" aria-hidden="true" />
                       Add questions

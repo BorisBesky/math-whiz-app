@@ -110,7 +110,7 @@ const GoalsModal = ({
 
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="lg" hideCloseButton>
-      <div className="bg-gradient-to-r from-brand-purple to-brand-pink text-white px-6 py-5 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="bg-white/20 rounded-full p-2">
             <Target className="h-5 w-5" />
@@ -159,7 +159,7 @@ const GoalsModal = ({
                   onClick={() => handleGradeChange(g)}
                   className={`px-4 py-1.5 text-sm font-medium rounded-button transition ${
                     grade === g
-                      ? 'bg-white shadow-card text-brand-purple'
+                      ? 'bg-white shadow-card text-blue-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -213,7 +213,7 @@ const GoalsModal = ({
           {topics.map((topic) => (
             <div
               key={topic}
-              className="flex items-center justify-between border border-gray-200 rounded-button px-4 py-3 hover:border-brand-purple/30 transition-colors bg-white"
+              className="flex items-center justify-between border border-gray-200 rounded-button px-4 py-3 hover:border-blue-300 transition-colors bg-white"
             >
               <span className="text-sm font-medium text-gray-800 mr-3 truncate" title={topic}>
                 {topic}
@@ -225,7 +225,7 @@ const GoalsModal = ({
                   value={targets[topic] ?? ''}
                   onChange={(e) => handleTargetChange(topic, e.target.value)}
                   onBlur={() => handleTargetBlur(topic)}
-                  className="w-20 border border-gray-300 rounded-button px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                  className="w-20 border border-gray-300 rounded-button px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-xs text-gray-500">/ day</span>
               </div>
@@ -251,7 +251,7 @@ const GoalsModal = ({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center px-4 py-2 rounded-button bg-brand-purple text-white text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+          className="inline-flex items-center px-4 py-2 rounded-button bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {saving ? 'Saving…' : 'Save goals'}

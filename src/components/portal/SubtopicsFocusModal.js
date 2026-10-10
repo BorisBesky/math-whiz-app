@@ -123,7 +123,7 @@ const SubtopicsFocusModal = ({
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="lg" hideCloseButton>
       {/* Header */}
-      <div className="px-6 py-5 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-t-lg">
+      <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-lg">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
@@ -179,7 +179,7 @@ const SubtopicsFocusModal = ({
                 onClick={() => handleGradeChange(g)}
                 className={`px-4 py-1.5 text-sm font-medium rounded-button transition ${
                   grade === g
-                    ? 'bg-white shadow-card text-brand-purple'
+                    ? 'bg-white shadow-card text-blue-700'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -207,14 +207,14 @@ const SubtopicsFocusModal = ({
                     onClick={() => handleTopicChange(t)}
                     className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-button text-sm transition ${
                       isActive
-                        ? 'bg-brand-purple/10 text-brand-purple font-semibold'
+                        ? 'bg-blue-50 text-blue-700 font-semibold'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     <span className="truncate" title={t}>{t}</span>
                     <span className="flex items-center space-x-1 flex-shrink-0">
                       {restrictedCount > 0 && (
-                        <span className="text-xs bg-brand-purple text-white rounded-full px-2 py-0.5">
+                        <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">
                           {restrictedCount}
                         </span>
                       )}
@@ -269,7 +269,7 @@ const SubtopicsFocusModal = ({
                             type="checkbox"
                             checked={checked}
                             onChange={() => handleToggle(sub)}
-                            className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                           <span className="text-sm text-gray-800">{sub}</span>
                         </label>
@@ -309,7 +309,7 @@ const SubtopicsFocusModal = ({
           type="button"
           onClick={handleSave}
           disabled={saving || !classId}
-          className="inline-flex items-center px-4 py-2 rounded-button bg-brand-purple text-white text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+          className="inline-flex items-center px-4 py-2 rounded-button bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {saving ? 'Saving…' : 'Save focus'}

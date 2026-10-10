@@ -74,7 +74,7 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-button focus:outline-none focus:ring-2 focus:ring-brand-purple ${
+              className={`w-full px-3 py-2 border rounded-button focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="e.g., Algebra 1 - Period 3"
@@ -91,7 +91,7 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
               name="gradeLevel"
               value={formData.gradeLevel}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-button focus:outline-none focus:ring-2 focus:ring-brand-purple ${
+              className={`w-full px-3 py-2 border rounded-button focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.gradeLevel ? 'border-red-300' : 'border-gray-300'
               }`}
             >
@@ -143,7 +143,7 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
                 max="20"
                 value={formData.questionMasteryThreshold}
                 onChange={handleThresholdChange}
-                className="w-20 px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-brand-purple text-center"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
               />
               <span className="text-sm text-gray-600">correct answers to retire a question type</span>
             </div>
@@ -162,7 +162,7 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
               rows={3}
               value={formData.description}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-brand-purple"
+              className="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Brief description of the class..."
             />
           </div>
@@ -171,14 +171,14 @@ const EditClassForm = ({ classData, onSubmit, onCancel }) => {
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-button hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple"
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-button hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-brand-purple border border-transparent rounded-button hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-button hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update Class'}
             </button>

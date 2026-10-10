@@ -211,23 +211,23 @@ const StudentLogin = () => {
           )}
 
           {isGuestSession && (
-            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4" data-testid="guest-session-card">
-              <p className="text-sm font-semibold text-purple-900">You&apos;re playing as a guest</p>
-              <p className="mt-1 text-xs text-purple-800">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4" data-testid="guest-session-card">
+              <p className="text-sm font-semibold text-blue-900">You&apos;re playing as a guest</p>
+              <p className="mt-1 text-xs text-blue-800">
                 Save your progress to an account so your coins, rewards and quiz history are kept.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => setGuestUpgrade({ open: true, existingAccount: null })}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   <Save className="h-4 w-4" aria-hidden="true" /> Save my progress
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(from, { replace: true })}
-                  className="flex-1 rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-800 hover:bg-purple-100"
+                  className="flex-1 rounded-md border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100"
                 >
                   Keep playing as guest
                 </button>
@@ -449,7 +449,7 @@ const StudentLogin = () => {
             <div className="flex justify-center space-x-4">
               <Link
                 to="/teacher-login"
-                className="text-sm text-indigo-600 hover:text-indigo-500"
+                className="text-sm text-blue-600 hover:text-blue-500"
               >
                 Teacher Login
               </Link>

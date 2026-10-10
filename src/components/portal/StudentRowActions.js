@@ -28,7 +28,7 @@ const StudentRowActions = ({
       key: 'view', label: 'View details', menuLabel: 'View details', icon: Eye, tone: 'blue', onClick: onViewDetails,
     },
     onSetGoals && {
-      key: 'goals', label: 'Set daily goals', menuLabel: 'Daily goals', icon: Target, tone: 'purple', onClick: onSetGoals,
+      key: 'goals', label: 'Set daily goals', menuLabel: 'Daily goals', icon: Target, tone: 'blue', onClick: onSetGoals,
     },
     onSetFocus && {
       key: 'focus',

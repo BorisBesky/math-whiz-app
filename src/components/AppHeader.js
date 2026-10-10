@@ -100,7 +100,7 @@ const AppHeader = ({
         <button
           type="button"
           onClick={onSaveProgress}
-          className="flex flex-shrink-0 items-center gap-1 rounded-xl bg-brand-purple px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
+          className="flex flex-shrink-0 items-center gap-1 rounded-xl bg-blue-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700"
           title="Create an account to keep your progress"
           data-testid="guest-save-progress"
         >

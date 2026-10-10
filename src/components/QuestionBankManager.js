@@ -1184,7 +1184,7 @@ const QuestionBankManager = ({
           {isAdmin && (
             <button
               onClick={() => setShowGenerateModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
             >
               <Sparkles className="h-4 w-4" />
               <span>Generate Questions</span>
