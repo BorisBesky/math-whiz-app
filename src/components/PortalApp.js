@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image, MessageCircle, Settings as SettingsIcon } from 'lucide-react';
+import { BookOpen, Layers, Users as UsersIcon, LayoutDashboard, UserCog, Image, MessageCircle, Settings as SettingsIcon, UserCircle } from 'lucide-react';
 import PortalLayout from './portal/PortalLayout';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +16,7 @@ import TeacherManagementSection from './portal/sections/TeacherManagementSection
 import ImagesSection from './portal/sections/ImagesSection';
 import MessagesSection from './portal/sections/MessagesSection';
 import SettingsSection from './portal/sections/SettingsSection';
+import AccountSection from './portal/sections/AccountSection';
 import { getAppId } from '../utils/common_utils';
 import { useUnreadMessageCount } from '../hooks/useInternalMessages';
 
@@ -171,8 +172,19 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
       },
     ];
 
+    // Self-service data export / account deletion (admins: export only).
+    const accountSection = {
+      id: 'account',
+      label: 'My Account',
+      description: 'Download your data or delete your account',
+      icon: UserCircle,
+      render: () => (
+        <AccountSection user={user} appId={appId} isAdmin={userRole === USER_ROLES.ADMIN} />
+      ),
+    };
+
     if (userRole === USER_ROLES.TEACHER) {
-      return sharedSections;
+      return [...sharedSections, accountSection];
     }
 
     if (userRole === USER_ROLES.ADMIN) {
@@ -213,6 +225,7 @@ const PortalApp = ({ portalBase = '/teacher' }) => {
             <SettingsSection appId={appId} userId={userId} />
           ),
         },
+        accountSection,
       ];
     }
 

@@ -6,6 +6,7 @@ const LoginPage = () => {
   const [mode, setMode] = useState('signin');
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const accountDeleted = searchParams.get('accountDeleted') === '1';
   const redirectSuffix = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
 
   useEffect(() => {
@@ -30,6 +31,12 @@ const LoginPage = () => {
             }
           </p>
         </div>
+
+        {accountDeleted && (
+          <div role="status" className="mb-4 rounded-card border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            Your account and its data have been deleted. Thanks for using Math Whiz.
+          </div>
+        )}
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-md rounded-card shadow-card border border-white/60 p-6 animate-fade-in">
