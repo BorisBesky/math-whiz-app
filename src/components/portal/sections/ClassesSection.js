@@ -123,7 +123,7 @@ const ClassesSection = ({
                 <div className="flex-1 p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
-                      <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                      <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                         <BookOpen className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <div className="min-w-0">

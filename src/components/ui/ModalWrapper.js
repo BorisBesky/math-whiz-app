@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { MODAL } from '../../theme/accent';
 
 const SIZE_CLASSES = {
   sm: 'max-w-md',
@@ -78,20 +79,20 @@ const ModalWrapper = ({ isOpen, onClose, title, size = 'md', children, hideClose
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+        className={`absolute inset-0 ${MODAL.overlay} transition-opacity`}
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative bg-white rounded-lg shadow-xl w-full ${sizeClass} max-w-[95vw] max-h-[90vh] flex flex-col transform transition-all`}
+        className={`relative ${MODAL.panel} overflow-hidden w-full ${sizeClass} max-w-[95vw] max-h-[90vh] flex flex-col transform transition-all`}
       >
         {/* Header */}
         {(title || !hideCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+          <div className={MODAL.header}>
             {title && (
-              <h2 id="modal-wrapper-title" className="text-lg font-semibold text-gray-900">
+              <h2 id="modal-wrapper-title" className={MODAL.title}>
                 {title}
               </h2>
             )}
@@ -99,7 +100,7 @@ const ModalWrapper = ({ isOpen, onClose, title, size = 'md', children, hideClose
               <button
                 type="button"
                 onClick={onClose}
-                className="ml-auto p-1 text-gray-400 hover:text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`ml-auto ${MODAL.close}`}
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle, Edit3 } from 'lucide-react';
+import { Users, Calendar, BookOpen, Plus, UserMinus, RefreshCw, Target, AlertCircle, GraduationCap, Link2, Copy, RefreshCcw, CheckCircle, MessageCircle, Edit3 } from 'lucide-react';
 import { formatDate, getAppId } from '../../../utils/common_utils';
 import { getFirestore, doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -14,7 +14,8 @@ import { getEnrollmentId, sendInternalMessage } from '../../../services/internal
 import { fetchClassQuestionPoolHealth } from '../../../services/questionPoolHealth';
 import QuestionPoolHealthBanner from '../QuestionPoolHealthBanner';
 import EditClassForm from '../../EditClassForm';
-import { Avatar, EmptyState, PortalButton } from '../PortalUI';
+import { Avatar, EmptyState, ModalHeader, PortalButton } from '../PortalUI';
+import { MODAL } from '../../../theme/accent';
 import StudentRowActions from '../StudentRowActions';
 import GoalsModal from '../GoalsModal';
 import ConfirmationModal from '../../ui/ConfirmationModal';
@@ -588,34 +589,31 @@ const ClassDetailPanel = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-40 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-3xl w-full max-h-[90vh] supports-[height:100dvh]:max-h-[90dvh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-gray-200 flex-shrink-0">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Class Detail</p>
-            <h3 className="text-xl font-semibold text-gray-900 truncate" title={classItem.name}>{classItem.name}</h3>
-          </div>
-          <div className="flex flex-shrink-0 items-center space-x-2">
-            {canEditClass && (
-              <button
-                type="button"
-                onClick={() => setShowEditForm(true)}
-                aria-label="Edit Class"
-                className="inline-flex items-center whitespace-nowrap px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
-              >
-                <Edit3 className="h-4 w-4 sm:mr-2" aria-hidden="true" />
-                <span className="hidden sm:inline">Edit Class</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 rounded-full p-2"
-              aria-label="Close"
+    <div
+      className={`fixed inset-0 ${MODAL.overlay} z-40 flex items-center justify-center p-4 sm:p-6`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="class-detail-title"
+    >
+      <div className={`${MODAL.panel} max-w-3xl w-full max-h-[90vh] supports-[height:100dvh]:max-h-[90dvh] flex flex-col overflow-hidden`}>
+        <ModalHeader
+          eyebrow="Class Detail"
+          title={classItem.name}
+          titleId="class-detail-title"
+          titleProps={{ title: classItem.name }}
+          onClose={onClose}
+          actions={canEditClass && (
+            <PortalButton
+              variant="secondary"
+              icon={Edit3}
+              onClick={() => setShowEditForm(true)}
+              aria-label="Edit Class"
+              className="whitespace-nowrap"
             >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
+              <span className="hidden sm:inline">Edit Class</span>
+            </PortalButton>
+          )}
+        />
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap gap-2 text-sm text-gray-700">
@@ -704,15 +702,14 @@ const ClassDetailPanel = ({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
+              <PortalButton
+                variant="secondary"
+                icon={Plus}
                 onClick={handleAddTeacher}
                 disabled={!selectedTeacherToAdd || addingTeacher}
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium disabled:opacity-50"
               >
-                <Plus className="h-4 w-4 mr-1" />
                 {addingTeacher ? 'Adding...' : 'Add'}
-              </button>
+              </PortalButton>
             </div>
           )}
         </div>
@@ -725,25 +722,15 @@ const ClassDetailPanel = ({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {canManageStudents && (
-                <button
-                  type="button"
-                  onClick={onRefresh}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1.5" />
+                <PortalButton variant="secondary" icon={RefreshCw} onClick={onRefresh}>
                   Refresh
-                </button>
+                </PortalButton>
               )}
               {/* Teacher (or admin): invite students via code/link */}
               {(isTeacherOnClass || isAdmin) && (
-                <button
-                  type="button"
-                  onClick={handleOpenInviteModal}
-                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 shadow-sm transition-colors"
-                >
-                  <Link2 className="h-4 w-4 mr-1.5" />
+                <PortalButton variant="primary" icon={Link2} onClick={handleOpenInviteModal}>
                   Invite Students
-                </button>
+                </PortalButton>
               )}
             </div>
           </div>
@@ -778,15 +765,16 @@ const ClassDetailPanel = ({
                     })}
                   </select>
                 </div>
-                <button
-                  type="button"
+                <PortalButton
+                  variant="secondary"
+                  size="lg"
+                  icon={Plus}
                   onClick={handleAssign}
                   disabled={!selectedStudentId || assigning}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
                   {assigning ? 'Assigning...' : 'Assign to class'}
-                </button>
+                </PortalButton>
               </div>
             </div>
           )}
@@ -814,7 +802,7 @@ const ClassDetailPanel = ({
               <button
                 onClick={handleRetryEnrollments}
                 disabled={loadingEnrollments}
-                className="ml-4 px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="ml-4 px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-button transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 <RefreshCw className={`h-4 w-4 mr-1 ${loadingEnrollments ? 'animate-spin' : ''}`} />
                 Retry
@@ -1065,12 +1053,9 @@ const ClassDetailPanel = ({
           </div>
 
           <div className="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50">
-            <button
-              onClick={() => setShowInviteModal(false)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
+            <PortalButton variant="primary" size="lg" onClick={() => setShowInviteModal(false)}>
               Done
-            </button>
+            </PortalButton>
           </div>
         </ModalWrapper>
       )}
