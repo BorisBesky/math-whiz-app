@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, linkWithPopup } from 'firebase/auth';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth as firebaseAuth, db as firebaseDb } from '../firebase';
 import { USER_ROLES } from '../utils/userRoles';
+import {
+  completeGoogleRedirect,
+  hasPendingGoogleRedirect,
+  startStudentGoogleAuth,
+  toFriendlyAuthError,
+} from '../services/googleAuth';
 
 const AuthContext = createContext();
 
@@ -19,6 +25,10 @@ export const AuthProvider = ({ children }) => {
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Result of a Google sign-in that fell back to a full-page redirect.
+  const [googleRedirect, setGoogleRedirect] = useState(() => (
+    hasPendingGoogleRedirect() ? { status: 'pending', error: null } : { status: 'idle', error: null }
+  ));
 
   const auth = firebaseAuth;
   const db = firebaseDb;
@@ -229,57 +239,114 @@ export const AuthProvider = ({ children }) => {
   };
 
 
-  // Sign in with Google and verify role
-  const registerWithGoogle = async (expectedRole) => {
-    try {
-      setError(null);
-      const provider = new GoogleAuthProvider();
+  // After Google authenticates a student: upgrade a linked guest profile, or
+  // check/create the student profile for a normal sign-in.
+  const finishStudentGoogleSignIn = useCallback(async ({ user, linkedGuest }) => {
+    if (linkedGuest) {
+      // Same uid as the guest, so all guest progress is kept.
+      await setUserProfile(user.uid, {
+        email: user.email,
+        role: USER_ROLES.STUDENT,
+        isAnonymous: false,
+        displayName: user.displayName,
+        convertedAt: new Date(),
+      });
+      setUser(user);
+      setUserRole(USER_ROLES.STUDENT);
+      return user;
+    }
 
-      // If user is anonymous, link the account.
-      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
-        const result = await linkWithPopup(auth.currentUser, provider);
-        const user = result.user;
-        
-        // Update profile to non-anonymous
-        await setUserProfile(user.uid, {
-          email: user.email,
-          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
-          isAnonymous: false,
-          displayName: user.displayName,
-          convertedAt: new Date()
-        });
-
-        return user;
+    const idTokenResult = await user.getIdTokenResult();
+    if (idTokenResult.claims.admin) {
+      await signOut(auth);
+      throw new Error('This account has administrative privileges. Please use the appropriate login.');
+    }
+    const profile = await getUserProfile(user.uid);
+    if (profile) {
+      if (profile.role && profile.role !== USER_ROLES.STUDENT) {
+        await signOut(auth);
+        throw new Error(`This account is registered as a ${profile.role}, not as a student. Please use the ${profile.role} login.`);
       }
+    } else {
+      await setUserProfile(user.uid, {
+        email: user.email,
+        role: USER_ROLES.STUDENT,
+        createdAt: new Date(),
+        isAnonymous: false,
+        displayName: user.displayName,
+      });
+    }
+    setUserRole(USER_ROLES.STUDENT);
+    return user;
+  }, [auth, getUserProfile, setUserProfile]);
+
+  // Student Google sign-in and sign-up share one flow: popup (redirect if the
+  // popup is blocked), linking an existing guest session when there is one.
+  const studentGoogleAuth = async () => {
+    setError(null);
+    try {
+      const outcome = await startStudentGoogleAuth(auth);
+      if (outcome.redirected) return { redirected: true };
+      const user = await finishStudentGoogleSignIn(outcome);
+      return { user, linkedGuest: outcome.linkedGuest, replacedGuest: outcome.replacedGuest };
     } catch (error) {
       setError(error.message);
       throw error;
     }
   };
+
+  // Finish a Google redirect (popup was blocked) when the page loads again.
+  // Guarded by a ref, not a cancel flag: React StrictMode runs effects twice in
+  // development, and the redirect result can only be consumed once.
+  const redirectHandledRef = useRef(false);
+  useEffect(() => {
+    if (redirectHandledRef.current || !hasPendingGoogleRedirect()) return;
+    redirectHandledRef.current = true;
+    (async () => {
+      try {
+        const outcome = await completeGoogleRedirect(auth);
+        if (!outcome) {
+          setGoogleRedirect({ status: 'idle', error: null });
+          return;
+        }
+        await finishStudentGoogleSignIn(outcome);
+        setGoogleRedirect({ status: 'success', error: null });
+      } catch (redirectError) {
+        console.error('Google redirect sign-in failed:', redirectError);
+        setGoogleRedirect({ status: 'error', error: redirectError.message });
+      }
+    })();
+  }, [auth, finishStudentGoogleSignIn]);
+
+  const clearGoogleRedirect = useCallback(() => {
+    setGoogleRedirect({ status: 'idle', error: null });
+  }, []);
+
+  // Google sign-up (students only).
+  const registerWithGoogle = async (expectedRole = USER_ROLES.STUDENT) => {
+    if (expectedRole !== USER_ROLES.STUDENT) {
+      const roleError = new Error('Only student accounts can be created with Google here.');
+      setError(roleError.message);
+      throw roleError;
+    }
+    return studentGoogleAuth();
+  };
+
   // Sign in with Google and verify role
   const loginWithGoogle = async (expectedRole) => {
+    if (expectedRole === USER_ROLES.STUDENT) {
+      return studentGoogleAuth();
+    }
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
 
-      // If user is anonymous, link the account. Otherwise, sign in.
-      if (auth.currentUser && auth.currentUser.isAnonymous && auth.currentUser.is) {
-        const result = await linkWithPopup(auth.currentUser, provider);
-        const user = result.user;
-        
-        // Update profile to non-anonymous
-        await setUserProfile(user.uid, {
-          email: user.email,
-          role: USER_ROLES.STUDENT, // Can only upgrade student accounts
-          isAnonymous: false,
-          displayName: user.displayName,
-          convertedAt: new Date()
-        });
-
-        return user;
+      let result;
+      try {
+        result = await signInWithPopup(auth, provider);
+      } catch (popupError) {
+        throw toFriendlyAuthError(popupError);
       }
-
-      const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
       // For admin role, check custom claims
@@ -476,6 +543,8 @@ export const AuthProvider = ({ children }) => {
     loginWithEmail,
     loginWithGoogle,
     registerWithGoogle,
+    googleRedirect,
+    clearGoogleRedirect,
     registerWithEmail,
     logout,
     resetPassword,
