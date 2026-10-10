@@ -4,6 +4,8 @@ import { updateEmail, updateProfile } from 'firebase/auth';
 import { updateDoc } from 'firebase/firestore';
 import { getUserDocRef } from '../utils/firebaseHelpers';
 import { normalizeGradeKey } from '../content/registry';
+import AccountDataPanel from './account/AccountDataPanel';
+import { getAppId } from '../utils/common_utils';
 
 // Registry-backed grade normalization (shared semantics with MainApp).
 const normalizeClassGrade = (gradeValue) => normalizeGradeKey(gradeValue);
@@ -227,6 +229,12 @@ const StudentProfile = ({
             )}
           </section>
         </div>
+
+        {user && !user.isAnonymous && (
+          <div className="mt-6">
+            <AccountDataPanel user={user} appId={getAppId()} role="student" />
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <button
