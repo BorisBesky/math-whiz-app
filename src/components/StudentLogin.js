@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
-import { BookOpen, LogIn, UserPlus, AlertCircle, Users } from 'lucide-react';
+import { BookOpen, LogIn, UserPlus, AlertCircle, Users, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { USER_ROLES } from '../utils/userRoles';
+import GuestUpgradeModal from './guest/GuestUpgradeModal';
 
 const StudentLogin = () => {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,11 @@ const StudentLogin = () => {
 
   const {
     loginAsGuest, loginWithEmail, registerWithEmail, loginWithGoogle, registerWithGoogle, resetPassword,
-    googleRedirect, clearGoogleRedirect,
+    googleRedirect, clearGoogleRedirect, user,
   } = useAuth();
+  // A guest visiting this page keeps their session until they choose what to do.
+  const isGuestSession = Boolean(user?.isAnonymous);
+  const [guestUpgrade, setGuestUpgrade] = useState({ open: false, existingAccount: null });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,7 +55,8 @@ const StudentLogin = () => {
       setIsSignUp(true);
     }
     
-    // Auto-trigger guest login if guest=true in URL (but not when joining a class)
+    // Auto-trigger guest login if guest=true in URL (but not when joining a class).
+    // signInAnonymously keeps an existing guest session, so this never resets one.
     if (isGuest === 'true' && !redirectParam) {
       handleGuestLogin();
     }
@@ -70,7 +75,16 @@ const StudentLogin = () => {
 
     try {
       if (isSignUp) {
-        await registerWithEmail(email, password, USER_ROLES.STUDENT);
+        try {
+          await registerWithEmail(email, password, USER_ROLES.STUDENT);
+        } catch (registerError) {
+          if (isGuestSession && ['auth/email-already-in-use', 'auth/credential-already-in-use'].includes(registerError?.code)) {
+            // Offer to sign into that account and bring the guest progress along.
+            setGuestUpgrade({ open: true, existingAccount: { method: 'password', email } });
+            return;
+          }
+          throw registerError;
+        }
       } else {
         await loginWithEmail(email, password, USER_ROLES.STUDENT);
       }
@@ -97,6 +111,10 @@ const StudentLogin = () => {
         redirected = true; // the page is navigating to Google
         return;
       }
+      if (result?.existingAccount) {
+        setGuestUpgrade({ open: true, existingAccount: result.existingAccount });
+        return;
+      }
       if (!result?.user) {
         throw new Error('Google sign-in did not complete. Please try again.');
       }
@@ -115,7 +133,10 @@ const StudentLogin = () => {
   // Coming back from a Google redirect (popup was blocked).
   useEffect(() => {
     if (!googleRedirect) return;
-    if (googleRedirect.status === 'success') {
+    if (googleRedirect.status === 'exists' && googleRedirect.existingAccount) {
+      setGuestUpgrade({ open: true, existingAccount: googleRedirect.existingAccount });
+      clearGoogleRedirect();
+    } else if (googleRedirect.status === 'success') {
       clearGoogleRedirect();
       navigate(from, { replace: true });
     } else if (googleRedirect.status === 'error') {
@@ -189,8 +210,33 @@ const StudentLogin = () => {
             </div>
           )}
 
-          {/* Guest Login Option — hidden when joining a class */}
-          {!isJoinRedirect && (
+          {isGuestSession && (
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4" data-testid="guest-session-card">
+              <p className="text-sm font-semibold text-purple-900">You&apos;re playing as a guest</p>
+              <p className="mt-1 text-xs text-purple-800">
+                Save your progress to an account so your coins, rewards and quiz history are kept.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setGuestUpgrade({ open: true, existingAccount: null })}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700"
+                >
+                  <Save className="h-4 w-4" aria-hidden="true" /> Save my progress
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(from, { replace: true })}
+                  className="flex-1 rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-800 hover:bg-purple-100"
+                >
+                  Keep playing as guest
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Guest Login Option — hidden when joining a class or already a guest */}
+          {!isJoinRedirect && !isGuestSession && (
             <>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -232,7 +278,11 @@ const StudentLogin = () => {
           </button>
 
           <p className="text-xs text-gray-600 text-center">
-            Guest and Google accounts can be converted to registered accounts later to save progress
+            {isGuestSession
+              ? (isSignUp
+                ? 'Signing up here keeps your guest progress.'
+                : 'Signing in switches to that account. To bring your guest progress along, use “Save my progress”.')
+              : 'Playing as a guest? You can save your progress to an account any time.'}
           </p>
 
           {/* Email/Password Form */}
@@ -407,6 +457,12 @@ const StudentLogin = () => {
           </div>
         </div>
       </div>
+      <GuestUpgradeModal
+        open={guestUpgrade.open}
+        initialExistingAccount={guestUpgrade.existingAccount}
+        onClose={() => setGuestUpgrade({ open: false, existingAccount: null })}
+        onSaved={() => navigate(from, { replace: true })}
+      />
     </div>
   );
 };

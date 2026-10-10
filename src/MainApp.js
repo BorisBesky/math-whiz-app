@@ -74,6 +74,8 @@ import AppHeader from './components/AppHeader';
 import StoreMedia from "./components/StoreMedia";
 import TopicSelection from './components/TopicSelection';
 import StudentProfile from './components/StudentProfile';
+import GuestUpgradeModal from './components/guest/GuestUpgradeModal';
+import GuestSaveBanner from './components/guest/GuestSaveBanner';
 import Dashboard from './components/Dashboard';
 import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
 import { getQuestionHistory } from "./services/questionService";
@@ -202,7 +204,7 @@ const ResumeModal = ({ userData, startNewQuiz, resumePausedQuiz, navigateApp }) 
 
 const MainAppContent = () => {
   const { startTutorial } = useTutorial();
-  const { user: authUser, logout: authLogout, userRole } = useAuth();
+  const { user: authUser, logout: authLogout, userRole, googleRedirect, clearGoogleRedirect } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isPlanetStore = /(?:^|\/)store\/?$/.test(location.pathname)
@@ -227,6 +229,21 @@ const MainAppContent = () => {
   });
   const aiStoryEnabled = featureSettings.aiStoryEnabled === true;
   const [userData, setUserData] = useState(null);
+  // Guest (anonymous) students get a "save your progress" flow. The profile
+  // flag covers the moment right after linking, before the auth object updates.
+  const isGuest = Boolean(authUser?.isAnonymous) && userData?.isAnonymous !== false;
+  const [guestUpgrade, setGuestUpgrade] = useState({ open: false, existingAccount: null });
+  const openGuestUpgrade = useCallback(() => setGuestUpgrade({ open: true, existingAccount: null }), []);
+  const closeGuestUpgrade = useCallback(() => setGuestUpgrade({ open: false, existingAccount: null }), []);
+
+  // Back from a Google redirect where the Google account already had its own
+  // Math Whiz account: offer to sign in and move the guest's progress.
+  useEffect(() => {
+    if (googleRedirect?.status === 'exists' && googleRedirect.existingAccount) {
+      setGuestUpgrade({ open: true, existingAccount: googleRedirect.existingAccount });
+      clearGoogleRedirect();
+    }
+  }, [googleRedirect, clearGoogleRedirect]);
   const [selectedGrade, setSelectedGrade] = useState(getDefaultGradeKey());
   const [currentTopic, setCurrentTopic] = useState(null);
   const [currentQuiz, setCurrentQuiz] = useState([]);
@@ -277,6 +294,13 @@ const MainAppContent = () => {
 
   // Custom logout handler that navigates to login page
   const handleLogout = async () => {
+    // Signing a guest out abandons their progress (an anonymous session can't
+    // be signed back into), so point them at "Save progress" first.
+    if (isGuest && !window.confirm(
+      "You're playing as a guest. If you switch user now, your coins and progress will be lost.\n\nPress Cancel and use \"Save progress\" to keep them, or OK to switch anyway."
+    )) {
+      return;
+    }
     try {
       await authLogout();
       navigate('/login');
@@ -2634,12 +2658,27 @@ Answer: [The answer]`;
           navigateApp={navigateApp}
           handleUserClick={handleUserClick}
           handleLogout={handleLogout}
+          isGuest={isGuest}
+          onSaveProgress={openGuestUpgrade}
           quizState={quizState}
           startTutorial={startTutorial}
           returnToTopics={returnToTopics}
           dashboardTutorial={dashboardTutorial}
           storeTutorial={storeTutorial}
           mainAppTutorial={mainAppTutorial}
+        />
+        <GuestSaveBanner
+          key={authUser?.uid || 'none'}
+          uid={authUser?.uid}
+          userData={userData}
+          isGuest={isGuest}
+          hidden={guestUpgrade.open || quizState === APP_STATES.IN_PROGRESS}
+          onSave={openGuestUpgrade}
+        />
+        <GuestUpgradeModal
+          open={guestUpgrade.open}
+          initialExistingAccount={guestUpgrade.existingAccount}
+          onClose={closeGuestUpgrade}
         />
         <div className="flex justify-center p-4 pb-20">
           <div className={`w-full ${isPlanetStore ? '' : 'max-w-6xl'}`}>
@@ -2666,6 +2705,8 @@ Answer: [The answer]`;
                   selectedQuizClassIds={selectedQuizClassIds}
                   chooseQuizClass={chooseQuizClass}
                   returnToTopics={returnToTopics}
+                  isGuest={isGuest}
+                  onSaveProgress={openGuestUpgrade}
                 />
               } />
               <Route path="store" element={

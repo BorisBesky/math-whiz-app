@@ -61,17 +61,17 @@ describe('startStudentGoogleAuth', () => {
     expect(outcome).toMatchObject({ linkedGuest: true, user: { uid: 'guest-uid' } });
   });
 
-  it('signs into the existing account on credential-already-in-use', async () => {
+  it('reports an existing account on credential-already-in-use instead of switching silently', async () => {
     const guest = { uid: 'guest-uid', isAnonymous: true };
     const error = authError('auth/credential-already-in-use');
+    error.customData = { email: 'sam@example.com' };
     mockLinkWithPopup.mockRejectedValue(error);
     mockCredentialFromError.mockReturnValue({ token: 'cred' });
-    mockSignInWithCredential.mockResolvedValue({ user: googleUser });
     const auth = { currentUser: guest };
     const outcome = await startStudentGoogleAuth(auth);
     expect(mockCredentialFromError).toHaveBeenCalledWith(error);
-    expect(mockSignInWithCredential).toHaveBeenCalledWith(auth, { token: 'cred' });
-    expect(outcome).toEqual({ user: googleUser, linkedGuest: false, replacedGuest: true });
+    expect(mockSignInWithCredential).not.toHaveBeenCalled();
+    expect(outcome).toEqual({ existingAccount: { method: 'google', credential: { token: 'cred' }, email: 'sam@example.com' } });
   });
 
   it('explains credential-already-in-use when no credential can be recovered', async () => {
@@ -131,12 +131,15 @@ describe('completeGoogleRedirect', () => {
     expect(await completeGoogleRedirect({})).toBeNull();
   });
 
-  it('signs into the existing account when the redirect link hits credential-already-in-use', async () => {
+  it('reports an existing account when the redirect link hits credential-already-in-use', async () => {
     window.sessionStorage.setItem(GOOGLE_REDIRECT_INTENT_KEY, JSON.stringify({ role: 'student', linking: true }));
     mockGetRedirectResult.mockRejectedValue(authError('auth/credential-already-in-use'));
     mockCredentialFromError.mockReturnValue({ token: 'cred' });
-    mockSignInWithCredential.mockResolvedValue({ user: googleUser });
-    expect(await completeGoogleRedirect({})).toMatchObject({ user: googleUser, replacedGuest: true, role: 'student' });
+    expect(await completeGoogleRedirect({})).toMatchObject({
+      existingAccount: { method: 'google', credential: { token: 'cred' } },
+      role: 'student',
+    });
+    expect(mockSignInWithCredential).not.toHaveBeenCalled();
   });
 
   it('turns redirect errors into readable errors', async () => {

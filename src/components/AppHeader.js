@@ -9,6 +9,7 @@ import {
   LogOut,
   MessageCircle,
   Shield,
+  Save,
   Store,
   User,
   WifiOff,
@@ -25,6 +26,8 @@ const AppHeader = ({
   navigateApp,
   handleUserClick,
   handleLogout,
+  isGuest = false,
+  onSaveProgress,
   quizState,
   startTutorial,
   returnToTopics,
@@ -77,9 +80,11 @@ const AppHeader = ({
         >
           <User size={14} />
           <span className="text-xs font-bold">
-            {userData?.displayName || authUser.displayName || (authUser.isAnonymous ? 'Guest' : authUser.email?.split('@')[0])}
+            {isGuest ? 'Guest' : (userData?.displayName || authUser.displayName || authUser.email?.split('@')[0])}
           </span>
-          {userRole && (
+          {isGuest ? (
+            <span className="whitespace-nowrap text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">not saved</span>
+          ) : userRole && (
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
               userRole === USER_ROLES.ADMIN ? 'bg-purple-100 text-purple-700' :
               userRole === USER_ROLES.TEACHER ? 'bg-blue-100 text-blue-700' :
@@ -89,6 +94,19 @@ const AppHeader = ({
             </span>
           )}
         </div>
+      )}
+
+      {isGuest && onSaveProgress && (
+        <button
+          type="button"
+          onClick={onSaveProgress}
+          className="flex flex-shrink-0 items-center gap-1 rounded-xl bg-brand-purple px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
+          title="Create an account to keep your progress"
+          data-testid="guest-save-progress"
+        >
+          <Save size={14} aria-hidden="true" />
+          <span className="whitespace-nowrap">Save progress</span>
+        </button>
       )}
 
       {/* Divider */}
