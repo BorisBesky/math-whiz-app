@@ -142,7 +142,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} hideCloseButton size="lg">
       {/* Header */}
-      <div className="px-6 py-5 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-t-lg">
+      <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-lg">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             <div className="bg-white/20 rounded-full p-2 flex-shrink-0">
@@ -213,7 +213,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
                     onClick={() => handleGradeChange(g)}
                     className={`px-4 py-1.5 text-sm font-medium rounded-button transition ${
                       grade === g
-                        ? 'bg-white shadow-card text-brand-purple'
+                        ? 'bg-white shadow-card text-blue-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
@@ -239,14 +239,14 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
                         onClick={() => handleTopicChange(t)}
                         className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-button text-sm transition ${
                           isActive
-                            ? 'bg-brand-purple/10 text-brand-purple font-semibold'
+                            ? 'bg-blue-50 text-blue-700 font-semibold'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         <span className="truncate" title={t}>{t}</span>
                         <span className="flex items-center space-x-1 flex-shrink-0">
                           {restrictedCount > 0 && (
-                            <span className="text-xs bg-brand-purple text-white rounded-full px-2 py-0.5">
+                            <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">
                               {restrictedCount}
                             </span>
                           )}
@@ -299,7 +299,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
                             key={sub}
                             className={`flex items-center space-x-2 px-3 py-2 rounded-button cursor-pointer transition border ${
                               checked
-                                ? 'bg-white border-brand-purple/40 shadow-card'
+                                ? 'bg-white border-blue-300 shadow-card'
                                 : 'bg-white border-transparent hover:border-gray-200'
                             }`}
                           >
@@ -310,7 +310,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
                               className="sr-only"
                             />
                             {checked ? (
-                              <CheckCircle2 className="h-5 w-5 text-brand-purple flex-shrink-0" />
+                              <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                             ) : (
                               <Circle className="h-5 w-5 text-gray-300 flex-shrink-0" />
                             )}
@@ -352,7 +352,7 @@ const StudentFocusModal = ({ isOpen, onClose, student, classId: classIdProp, onS
           type="button"
           onClick={handleSave}
           disabled={saving || loading || !classId || !topic}
-          className="px-4 py-2 rounded-button bg-brand-purple text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 inline-flex items-center"
+          className="px-4 py-2 rounded-button bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 inline-flex items-center"
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {saving ? 'Saving…' : 'Save Focus'}

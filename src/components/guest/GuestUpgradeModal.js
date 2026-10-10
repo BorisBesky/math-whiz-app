@@ -11,7 +11,7 @@ const GoogleMark = () => (
   </svg>
 );
 
-const inputClass = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-purple-200';
+const inputClass = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200';
 
 /**
  * "Save your progress" for guest students. Google and email both upgrade the
@@ -114,7 +114,7 @@ const GuestUpgradeModal = ({ open, onClose, initialExistingAccount = null, onSav
           <h2 id="guest-upgrade-title" className="flex items-center gap-2 font-display text-xl font-bold text-gray-800">
             {step === 'done'
               ? <CheckCircle2 className="h-6 w-6 text-green-600" aria-hidden="true" />
-              : <Save className="h-6 w-6 text-brand-purple" aria-hidden="true" />}
+              : <Save className="h-6 w-6 text-blue-600" aria-hidden="true" />}
             {step === 'done' ? 'Progress saved!' : step === 'exists' ? 'You already have an account' : 'Save your progress'}
           </h2>
           <button type="button" onClick={onClose} disabled={closeDisabled} aria-label="Close" className="rounded-full p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50">
@@ -152,7 +152,7 @@ const GuestUpgradeModal = ({ open, onClose, initialExistingAccount = null, onSav
               <button
                 type="submit"
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-4 py-3 font-display font-bold text-white shadow-card transition hover:opacity-90 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-display font-bold text-white shadow-card transition hover:bg-blue-700 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Mail className="h-4 w-4" aria-hidden="true" />}
                 Create account with email
@@ -176,12 +176,12 @@ const GuestUpgradeModal = ({ open, onClose, initialExistingAccount = null, onSav
             )}
             {error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
             {mergeFailed ? (
-              <button type="button" onClick={handleRetry} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-4 py-3 font-display font-bold text-white disabled:opacity-60">
+              <button type="button" onClick={handleRetry} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-display font-bold text-white hover:bg-blue-700 disabled:opacity-60">
                 {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />} Try moving my progress again
               </button>
             ) : (
               <div className="flex flex-col gap-2">
-                <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-4 py-3 font-display font-bold text-white disabled:opacity-60">
+                <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-display font-bold text-white hover:bg-blue-700 disabled:opacity-60">
                   {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />} Sign in and move my progress
                 </button>
                 <button type="button" disabled={busy} onClick={() => { setStep('choose'); setError(''); }} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
@@ -199,7 +199,7 @@ const GuestUpgradeModal = ({ open, onClose, initialExistingAccount = null, onSav
                 ? 'You’re signed in, and your guest progress was added to your account.'
                 : 'Your account is ready. Everything you earned as a guest is saved.'}
             </p>
-            <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl bg-brand-purple px-4 py-3 font-display font-bold text-white">
+            <button type="button" onClick={onClose} className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 font-display font-bold text-white hover:bg-blue-700">
               Keep playing
             </button>
           </>

@@ -91,10 +91,10 @@ const StudentProfile = ({
         {isGuest && onSaveProgress && (
           <section
             aria-labelledby="guest-save-heading"
-            className="mb-5 flex flex-col gap-3 rounded-card border border-purple-200 bg-purple-50/90 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+            className="mb-5 flex flex-col gap-3 rounded-card border border-blue-200 bg-blue-50/90 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-brand-purple">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-blue-600">
                 <Save size={22} aria-hidden="true" />
               </div>
               <div>
@@ -109,7 +109,7 @@ const StudentProfile = ({
             <button
               type="button"
               onClick={onSaveProgress}
-              className="rounded-button bg-brand-purple px-5 py-3 font-display font-bold text-white shadow-card transition hover:opacity-90"
+              className="rounded-button bg-blue-600 px-5 py-3 font-display font-bold text-white shadow-card transition hover:bg-blue-700"
             >
               Save my progress
             </button>
@@ -167,7 +167,7 @@ const StudentProfile = ({
                     {onSaveProgress ? (
                       <>
                         {' '}
-                        <button type="button" onClick={onSaveProgress} className="font-semibold text-brand-purple underline">
+                        <button type="button" onClick={onSaveProgress} className="font-semibold text-blue-700 underline">
                           Save my progress
                         </button>
                       </>

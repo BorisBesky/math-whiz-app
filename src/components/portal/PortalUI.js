@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
+import { ACCENT } from '../../theme/accent';
 
 /**
  * Small presentational building blocks shared by the teacher/admin portal
@@ -66,7 +67,7 @@ export const LoadingRow = ({ label = 'Loading...' }) => (
 );
 
 const BUTTON_VARIANTS = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
+  primary: `${ACCENT.primaryButton} shadow-sm`,
   secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 shadow-sm',
   ghost: 'text-gray-600 hover:bg-gray-100',
   danger: 'bg-white text-red-600 border border-red-200 hover:bg-red-50',
@@ -90,7 +91,6 @@ export const PortalButton = ({ variant = 'secondary', icon: Icon, className = ''
 const ICON_TONES = {
   default: 'text-gray-500 hover:text-gray-900 hover:bg-gray-100',
   blue: 'text-gray-500 hover:text-blue-700 hover:bg-blue-50',
-  purple: 'text-gray-500 hover:text-purple-700 hover:bg-purple-50',
   emerald: 'text-gray-500 hover:text-emerald-700 hover:bg-emerald-50',
   red: 'text-gray-500 hover:text-red-700 hover:bg-red-50',
 };

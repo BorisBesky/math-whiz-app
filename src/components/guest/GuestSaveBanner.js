@@ -12,9 +12,9 @@ const GuestSaveBanner = ({ uid, userData, isGuest, hidden = false, onSave }) => 
 
   const coins = Number(userData?.coins || 0);
   return (
-    <div role="region" aria-label="Save your progress" className="fixed inset-x-3 bottom-3 z-20 mx-auto max-w-md rounded-2xl border border-purple-100 bg-white/95 p-4 shadow-card backdrop-blur-md sm:left-auto sm:right-4 sm:mx-0">
+    <div role="region" aria-label="Save your progress" className="fixed inset-x-3 bottom-3 z-20 mx-auto max-w-md rounded-2xl border border-blue-100 bg-white/95 p-4 shadow-card backdrop-blur-md sm:left-auto sm:right-4 sm:mx-0">
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-purple-100 text-brand-purple">
+        <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
           <Save className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
@@ -22,7 +22,7 @@ const GuestSaveBanner = ({ uid, userData, isGuest, hidden = false, onSave }) => 
           <p className="mt-0.5 text-sm text-gray-600">
             {coins > 0 ? `You've earned ${coins} coins as a guest. ` : ''}Create a free account so you don&apos;t lose it.
           </p>
-          <button type="button" onClick={onSave} className="mt-2 rounded-full bg-brand-purple px-4 py-1.5 text-sm font-bold text-white hover:opacity-90">
+          <button type="button" onClick={onSave} className="mt-2 rounded-full bg-blue-600 px-4 py-1.5 text-sm font-bold text-white hover:bg-blue-700">
             Create account
           </button>
         </div>

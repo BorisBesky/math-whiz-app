@@ -203,7 +203,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
               value={grade}
               onChange={(e) => handleGradeChange(e.target.value)}
               disabled={generating}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {getAllGrades().map((g) => (
                 <option key={g.key} value={g.key}>{g.label}</option>
@@ -220,7 +220,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               disabled={generating}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select a topic...</option>
               {availableTopics.map((t) => (
@@ -244,7 +244,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
                     checked={questionTypes.includes(value)}
                     onChange={() => handleTypeToggle(value)}
                     disabled={generating}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">{label}</span>
                 </label>
@@ -268,7 +268,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
                 min={1}
                 max={MAX_QUESTIONS}
                 aria-label="Number of questions"
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <button
                 type="button"
@@ -299,7 +299,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
               rows={3}
               maxLength={MAX_ADDITIONAL_INSTRUCTIONS_LENGTH}
               placeholder="Example: Focus on word problems with money and keep numbers under 100."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
               Add specific preferences like context, vocabulary, or difficulty emphasis ({additionalInstructions.length}/{MAX_ADDITIONAL_INSTRUCTIONS_LENGTH}).
@@ -311,14 +311,14 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
         {generating && (
           <div className="mt-4">
             <div className="flex items-center space-x-2 mb-2">
-              <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
+              <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
               <span className="text-sm text-gray-700">
                 Generating questions... ({progress.completed} of {progress.total})
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`,
                 }}
@@ -338,7 +338,7 @@ const GenerateQuestionsModal = ({ isOpen, onClose, onGenerated }) => {
           <button
             onClick={handleGenerate}
             disabled={generating || !topic || questionTypes.length === 0}
-            className="px-4 py-2 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Sparkles className="h-4 w-4" />
             <span>{generating ? 'Generating...' : 'Generate'}</span>
