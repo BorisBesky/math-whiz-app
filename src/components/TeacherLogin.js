@@ -61,7 +61,9 @@ const TeacherLogin = () => {
     setLoading(true);
     setError('');
     try {
-      await loginWithGoogle(USER_ROLES.TEACHER);
+      // "Sign up with Google" may create a teacher account (same as the
+      // open email teacher sign-up); "Sign in with Google" only logs in.
+      await loginWithGoogle(USER_ROLES.TEACHER, { allowSignUp: isSignUp });
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Google sign-in error:', error);
@@ -105,7 +107,7 @@ const TeacherLogin = () => {
     } else if (errorMessage.includes('weak-password')) {
       return 'Password is too weak. Please choose a stronger password.';
     } else if (errorMessage.includes('not registered as a teacher')) {
-      return 'This account is not registered as a teacher. Please contact your administrator.';
+      return 'This account is not registered as a teacher. Use "Sign up" to create a teacher account, or use the student login.';
     } else {
       return errorMessage || 'An error occurred. Please try again.';
     }
