@@ -446,18 +446,30 @@ describe('Grade 4 Difficulty Scaling', () => {
     });
 
     test('Operations: Long division with remainder appears only at high difficulty', () => {
-      // At low difficulty, should not see division with remainder
-      const easyQuestions = Array(40).fill(0).map(() => generateOperations(0.3));
-      const easySubtopics = easyQuestions.map(q => q.subtopic);
-      const hasRemainder = easySubtopics.some(s => s === 'long division with remainder');
-      expect(hasRemainder).toBe(false);
-      
-      // At high difficulty, division with remainder should be available
-      // Generate more samples to ensure we see it statistically
-      const hardQuestions = Array(60).fill(0).map(() => generateOperations(0.9));
-      const hardSubtopics = hardQuestions.map(q => q.subtopic);
-      const hasRemainderHard = hardSubtopics.some(s => s === 'long division with remainder');
-      expect(hasRemainderHard).toBe(true);
+      // At difficulty 0.9 all 13 Operations generators are eligible, so each
+      // question is "long division with remainder" with p = 1/13. With 60
+      // unseeded samples that missed ~0.8% of runs, which made CI flaky.
+      // Drive Math.random from a fixed-seed PRNG so the run is reproducible,
+      // and take enough samples that even an unseeded run would miss with
+      // probability (12/13)^400 ≈ 1e-14.
+      const mulberry32 = (seed) => () => {
+        let t = (seed += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      const randomSpy = jest.spyOn(Math, 'random').mockImplementation(mulberry32(20261010));
+      try {
+        // At low difficulty the remainder generator is not eligible at all.
+        const easySubtopics = Array(400).fill(0).map(() => generateOperations(0.3).subtopic);
+        expect(easySubtopics).not.toContain('long division with remainder');
+
+        // At high difficulty it is eligible and shows up in the mix.
+        const hardSubtopics = Array(400).fill(0).map(() => generateOperations(0.9).subtopic);
+        expect(hardSubtopics).toContain('long division with remainder');
+      } finally {
+        randomSpy.mockRestore();
+      }
     });
   });
 
