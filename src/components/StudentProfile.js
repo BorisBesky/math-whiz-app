@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Mail, User, Users } from 'lucide-react';
+import { Check, Mail, Save, User, Users } from 'lucide-react';
 import { updateEmail, updateProfile } from 'firebase/auth';
 import { updateDoc } from 'firebase/firestore';
 import { getUserDocRef } from '../utils/firebaseHelpers';
@@ -19,6 +19,8 @@ const StudentProfile = ({
   selectedQuizClassIds = [],
   chooseQuizClass,
   returnToTopics,
+  isGuest = false,
+  onSaveProgress,
 }) => {
   const [displayName, setDisplayName] = useState(
     userData?.displayName || user?.displayName || ''
@@ -86,6 +88,34 @@ const StudentProfile = ({
           </h1>
         </div>
 
+        {isGuest && onSaveProgress && (
+          <section
+            aria-labelledby="guest-save-heading"
+            className="mb-5 flex flex-col gap-3 rounded-card border border-purple-200 bg-purple-50/90 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-brand-purple">
+                <Save size={22} aria-hidden="true" />
+              </div>
+              <div>
+                <h2 id="guest-save-heading" className="font-display text-xl font-bold text-gray-800">
+                  You&apos;re playing as a guest
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Create a free account to keep your coins, rewards and quiz history. Nothing you&apos;ve earned is lost.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onSaveProgress}
+              className="rounded-button bg-brand-purple px-5 py-3 font-display font-bold text-white shadow-card transition hover:opacity-90"
+            >
+              Save my progress
+            </button>
+          </section>
+        )}
+
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-card border border-gray-100 bg-white/90 p-5 shadow-card backdrop-blur-sm">
             <div className="mb-4 flex items-center gap-3">
@@ -134,6 +164,14 @@ const StudentProfile = ({
                 {user?.isAnonymous && (
                   <p className="mt-1 text-xs text-gray-500">
                     Guest students can add email after creating an account.
+                    {onSaveProgress ? (
+                      <>
+                        {' '}
+                        <button type="button" onClick={onSaveProgress} className="font-semibold text-brand-purple underline">
+                          Save my progress
+                        </button>
+                      </>
+                    ) : null}
                   </p>
                 )}
               </label>

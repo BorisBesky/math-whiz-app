@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, getAdditionalUserInfo, deleteUser } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, getAdditionalUserInfo, deleteUser, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth as firebaseAuth, db as firebaseDb } from '../firebase';
 import { USER_ROLES } from '../utils/userRoles';
@@ -7,9 +7,11 @@ import {
   completeGoogleRedirect,
   createGoogleProvider,
   hasPendingGoogleRedirect,
+  signInWithExistingGoogleCredential,
   startStudentGoogleAuth,
   toFriendlyAuthError,
 } from '../services/googleAuth';
+import { EMAIL_EXISTS_CODES, requestGuestMerge, toFriendlyEmailError } from '../services/guestUpgrade';
 
 const AuthContext = createContext();
 
@@ -309,6 +311,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const outcome = await startStudentGoogleAuth(auth);
       if (outcome.redirected) return { redirected: true };
+      if (outcome.existingAccount) return { existingAccount: outcome.existingAccount };
       const user = await finishStudentGoogleSignIn(outcome);
       return { user, linkedGuest: outcome.linkedGuest, replacedGuest: outcome.replacedGuest };
     } catch (error) {
@@ -329,6 +332,11 @@ export const AuthProvider = ({ children }) => {
         const outcome = await completeGoogleRedirect(auth);
         if (!outcome) {
           setGoogleRedirect({ status: 'idle', error: null });
+          return;
+        }
+        if (outcome.existingAccount) {
+          // A guest tried to link a Google account that already has an account.
+          setGoogleRedirect({ status: 'exists', error: null, existingAccount: outcome.existingAccount });
           return;
         }
         await finishStudentGoogleSignIn(outcome);
@@ -493,17 +501,27 @@ export const AuthProvider = ({ children }) => {
 
       // If user is anonymous, link the account. Otherwise, create a new one.
       if (auth.currentUser && auth.currentUser.isAnonymous) {
-        // Update profile BEFORE linking so onAuthStateChanged reads the correct role
-        await setUserProfile(auth.currentUser.uid, {
+        // Link first (same uid, so the guest's progress is kept), then mark the
+        // profile as converted. Writing the profile first would leave a guest
+        // profile claiming an email it doesn't own when the link fails
+        // (e.g. email already in use).
+        const guestUid = auth.currentUser.uid;
+        roleOverrideRef.current = { uid: guestUid, role };
+        const credential = EmailAuthProvider.credential(email, password);
+        let result;
+        try {
+          result = await linkWithCredential(auth.currentUser, credential);
+        } catch (linkError) {
+          roleOverrideRef.current = null;
+          throw linkError;
+        }
+        await setUserProfile(guestUid, {
           email,
           role,
           isAnonymous: false,
           convertedAt: new Date(),
           ...additionalData
         });
-
-        const credential = EmailAuthProvider.credential(email, password);
-        const result = await linkWithCredential(auth.currentUser, credential);
 
         // For teacher registration, set custom claims via backend
         if (role === USER_ROLES.TEACHER) {
@@ -579,6 +597,98 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Logout
+  // ---- Guest -> real account ------------------------------------------------
+  // Both save paths link a credential to the current anonymous user, so the
+  // uid and all guest data stay put. If the Google account / email already has
+  // its own Math Whiz account they resolve with { existingAccount } and the UI
+  // offers signInAndMergeGuest().
+  const pendingGuestMergeRef = useRef(null);
+
+  const requireGuest = () => {
+    if (!auth.currentUser || !auth.currentUser.isAnonymous) {
+      throw new Error('You’re already signed in to an account.');
+    }
+    return auth.currentUser;
+  };
+
+  const saveGuestWithGoogle = async () => {
+    requireGuest();
+    return studentGoogleAuth();
+  };
+
+  const saveGuestWithEmail = async ({ email, password, displayName }) => {
+    setError(null);
+    const guest = requireGuest();
+    roleOverrideRef.current = { uid: guest.uid, role: USER_ROLES.STUDENT };
+    let result;
+    try {
+      result = await linkWithCredential(guest, EmailAuthProvider.credential(email, password));
+    } catch (linkError) {
+      roleOverrideRef.current = null;
+      if (EMAIL_EXISTS_CODES.has(linkError?.code)) {
+        return { existingAccount: { method: 'password', email } };
+      }
+      throw toFriendlyEmailError(linkError);
+    }
+    const name = (displayName || '').trim();
+    await setUserProfile(guest.uid, {
+      email,
+      role: USER_ROLES.STUDENT,
+      isAnonymous: false,
+      convertedAt: new Date(),
+      ...(name ? { displayName: name } : {}),
+    });
+    if (name) {
+      try {
+        await updateProfile(result.user, { displayName: name });
+      } catch (e) {
+        // the auth user's display name is cosmetic
+      }
+    }
+    setUserRole(USER_ROLES.STUDENT);
+    return { user: result.user, linkedGuest: true };
+  };
+
+  const runGuestMerge = async () => {
+    const pending = pendingGuestMergeRef.current;
+    if (!pending || !auth.currentUser) throw new Error('There is no guest progress waiting to be moved.');
+    const data = await requestGuestMerge({ user: auth.currentUser, guestIdToken: pending.guestIdToken, appId });
+    pendingGuestMergeRef.current = null;
+    return { merged: true, summary: data.summary };
+  };
+
+  // Sign into the existing account and move the guest's progress into it.
+  const signInAndMergeGuest = async (existingAccount, { password } = {}) => {
+    setError(null);
+    const guest = requireGuest();
+    // Captured before switching: the server's proof that this guest is ours.
+    const guestIdToken = await guest.getIdToken();
+
+    let user;
+    if (existingAccount?.method === 'google') {
+      user = await signInWithExistingGoogleCredential(auth, existingAccount.credential);
+    } else {
+      try {
+        const result = await signInWithEmailAndPassword(auth, existingAccount?.email, password);
+        user = result.user;
+      } catch (signInError) {
+        throw toFriendlyEmailError(signInError);
+      }
+    }
+
+    const idTokenResult = await user.getIdTokenResult();
+    const profile = await getUserProfile(user.uid);
+    if (idTokenResult.claims.admin || (profile?.role && profile.role !== USER_ROLES.STUDENT)) {
+      await signOut(auth);
+      throw new Error('That account isn’t a student account, so guest progress can’t be moved into it. Use the teacher login for that account.');
+    }
+    setUserRole(USER_ROLES.STUDENT);
+    pendingGuestMergeRef.current = { guestIdToken };
+    return runGuestMerge();
+  };
+
+  const retryGuestMerge = () => runGuestMerge();
+
   const logout = async () => {
     try {
       setError(null);
@@ -612,6 +722,10 @@ export const AuthProvider = ({ children }) => {
     googleRedirect,
     clearGoogleRedirect,
     registerWithEmail,
+    saveGuestWithGoogle,
+    saveGuestWithEmail,
+    signInAndMergeGuest,
+    retryGuestMerge,
     logout,
     resetPassword,
   };

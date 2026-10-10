@@ -98,23 +98,36 @@ export const takeRedirectIntent = () => {
 
 export const hasPendingGoogleRedirect = () => Boolean(safeSessionStorage()?.getItem(GOOGLE_REDIRECT_INTENT_KEY));
 
-// The Google account already belongs to an existing user: sign into that
-// account. The anonymous guest session is replaced (its progress can't be
-// merged client-side).
-const signInToExistingAccount = async (auth, error) => {
+// The Google account already belongs to another Math Whiz account. Don't
+// switch silently (that would abandon the guest's progress): hand the
+// credential back so the UI can offer "sign in and move my progress".
+const existingAccountFromError = (error) => {
   const credential = GoogleAuthProvider.credentialFromError(error);
   if (!credential) throw toFriendlyAuthError(error);
+  return {
+    existingAccount: {
+      method: 'google',
+      credential,
+      email: error?.customData?.email || null,
+    },
+  };
+};
+
+/** Sign into the existing Google account found by a failed guest link. */
+export const signInWithExistingGoogleCredential = async (auth, credential) => {
   try {
     const result = await signInWithCredential(auth, credential);
-    return { user: result.user, linkedGuest: false, replacedGuest: true };
-  } catch (signInError) {
-    throw toFriendlyAuthError(signInError);
+    return result.user;
+  } catch (error) {
+    throw toFriendlyAuthError(error);
   }
 };
 
 /**
  * Start Google sign-in for a student. Resolves with
- * { user, linkedGuest, replacedGuest } after a popup, or never settles
+ * { user, linkedGuest, replacedGuest } after a popup, with
+ * { existingAccount } when a guest tries to link a Google account that
+ * already has its own Math Whiz account, or never settles
  * meaningfully when it falls back to a redirect (the page navigates away);
  * the result then arrives through completeGoogleRedirect() on return.
  */
@@ -128,7 +141,7 @@ export const startStudentGoogleAuth = async (auth) => {
       return { user: result.user, linkedGuest: true, replacedGuest: false };
     } catch (error) {
       if (error?.code === 'auth/credential-already-in-use') {
-        return signInToExistingAccount(auth, error);
+        return existingAccountFromError(error);
       }
       if (REDIRECT_FALLBACK_CODES.has(error?.code)) {
         rememberRedirectIntent({ role: 'student', linking: true });
@@ -170,8 +183,7 @@ export const completeGoogleRedirect = async (auth) => {
     };
   } catch (error) {
     if (error?.code === 'auth/credential-already-in-use') {
-      const signedIn = await signInToExistingAccount(auth, error);
-      return { ...signedIn, role: intent.role };
+      return { ...existingAccountFromError(error), role: intent.role };
     }
     throw toFriendlyAuthError(error);
   }
