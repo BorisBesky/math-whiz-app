@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, getAdditionalUserInfo, deleteUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth as firebaseAuth, db as firebaseDb } from '../firebase';
 import { USER_ROLES } from '../utils/userRoles';
 import {
   completeGoogleRedirect,
+  createGoogleProvider,
   hasPendingGoogleRedirect,
   startStudentGoogleAuth,
   toFriendlyAuthError,
@@ -56,6 +57,41 @@ export const AuthProvider = ({ children }) => {
       console.error('Error setting user profile:', error);
     }
   }, [db, appId]);
+
+  // Role chosen by an explicit sign-up/sign-in flow for this uid. Keeps
+  // onAuthStateChanged (which can read the profile before the flow writes it)
+  // from downgrading a brand-new teacher to "student".
+  const roleOverrideRef = useRef(null);
+
+  // Make sure a teacher's ID token carries the `role: 'teacher'` custom claim
+  // that Firestore rules (isTeacher()) check. Self-registered teachers get it
+  // from the set-teacher-claims function; refresh the token afterwards.
+  // Skipped for admin-claim users: set-teacher-claims replaces all custom
+  // claims and would drop `admin`, and admins already pass isAdmin().
+  const ensureTeacherClaims = useCallback(async (firebaseUser) => {
+    try {
+      const idTokenResult = await firebaseUser.getIdTokenResult();
+      if (idTokenResult.claims.role === 'teacher' || idTokenResult.claims.admin === true) return true;
+      const idToken = await firebaseUser.getIdToken();
+      const response = await fetch('/.netlify/functions/set-teacher-claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ appId }),
+      });
+      if (!response.ok) {
+        console.error('Failed to set teacher claims:', response.status);
+        return false;
+      }
+      await firebaseUser.getIdToken(true);
+      return true;
+    } catch (claimError) {
+      console.error('Error setting teacher claims:', claimError);
+      return false;
+    }
+  }, [appId]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -136,6 +172,9 @@ export const AuthProvider = ({ children }) => {
             }
           }
 
+          if (roleOverrideRef.current && roleOverrideRef.current.uid === firebaseUser.uid) {
+            role = roleOverrideRef.current.role;
+          }
           setUser(firebaseUser);
           setUserRole(role);
           console.log('Auth Debug - Final role set:', role);
@@ -146,6 +185,7 @@ export const AuthProvider = ({ children }) => {
           setUserRole(null);
         }
       } else {
+        roleOverrideRef.current = null;
         setUser(null);
         setUserRole(null);
       }
@@ -197,25 +237,7 @@ export const AuthProvider = ({ children }) => {
             throw new Error('This account is not registered as a teacher. Please use the appropriate login page.');
           }
           // Patch missing custom claims for existing teachers who registered before the fix
-          const idTokenResult = await result.user.getIdTokenResult();
-          if (idTokenResult.claims.role !== 'teacher') {
-            try {
-              const idToken = await result.user.getIdToken();
-              const response = await fetch('/.netlify/functions/set-teacher-claims', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ appId }),
-              });
-              if (response.ok) {
-                await result.user.getIdToken(true);
-              }
-            } catch (claimError) {
-              console.error('Error patching teacher claims on login:', claimError);
-            }
-          }
+          await ensureTeacherClaims(result.user);
         } else {
           // For student, check Firestore profile and ensure no admin claims
           const idTokenResult = await result.user.getIdTokenResult();
@@ -332,14 +354,68 @@ export const AuthProvider = ({ children }) => {
     return studentGoogleAuth();
   };
 
+  // Teacher Google sign-in uses the same rule as teacher email login: the
+  // Firestore profile must say role 'teacher' (custom claims are patched
+  // afterwards). With allowSignUp (the "Sign up with Google" button), a Google
+  // account with no profile yet becomes a teacher, mirroring the open email
+  // teacher sign-up. Anything else is signed out with a clear message.
+  const finishTeacherGoogleSignIn = async (result, { allowSignUp = false } = {}) => {
+    const user = result.user;
+    const isNewUser = Boolean(getAdditionalUserInfo(result)?.isNewUser);
+    const rejectAccount = async (message) => {
+      if (isNewUser) {
+        // Don't leave an empty auth account behind for a rejected first login.
+        try {
+          await deleteUser(user);
+        } catch (deleteError) {
+          await signOut(auth);
+        }
+      } else {
+        await signOut(auth);
+      }
+      throw new Error(message);
+    };
+
+    const idTokenResult = await user.getIdTokenResult();
+    const profile = await getUserProfile(user.uid);
+
+    if (profile && profile.role === USER_ROLES.TEACHER) {
+      roleOverrideRef.current = { uid: user.uid, role: USER_ROLES.TEACHER };
+      await ensureTeacherClaims(user);
+      setUserRole(USER_ROLES.TEACHER);
+      return user;
+    }
+    if (idTokenResult.claims.admin === true) {
+      return rejectAccount('This Google account is an administrator account. Please use the admin login.');
+    }
+    if (profile && profile.role) {
+      return rejectAccount(`This Google account is registered as a ${profile.role}, not a teacher. Please use the ${profile.role} login.`);
+    }
+    if (!allowSignUp) {
+      return rejectAccount('No teacher account was found for this Google account. Use "Sign up with Google" to create one.');
+    }
+
+    roleOverrideRef.current = { uid: user.uid, role: USER_ROLES.TEACHER };
+    await setUserProfile(user.uid, {
+      email: user.email,
+      role: USER_ROLES.TEACHER,
+      displayName: user.displayName || (user.email ? user.email.split('@')[0] : ''),
+      createdAt: new Date(),
+      isAnonymous: false,
+    });
+    await ensureTeacherClaims(user);
+    setUserRole(USER_ROLES.TEACHER);
+    return user;
+  };
+
   // Sign in with Google and verify role
-  const loginWithGoogle = async (expectedRole) => {
+  const loginWithGoogle = async (expectedRole, options = {}) => {
     if (expectedRole === USER_ROLES.STUDENT) {
       return studentGoogleAuth();
     }
     try {
       setError(null);
-      const provider = new GoogleAuthProvider();
+      const provider = expectedRole === USER_ROLES.TEACHER ? createGoogleProvider() : new GoogleAuthProvider();
 
       let result;
       try {
@@ -363,17 +439,7 @@ export const AuthProvider = ({ children }) => {
           throw new Error('This account is registered as a teacher. Please use the teacher login.');
         }
       } else if (expectedRole === USER_ROLES.TEACHER) {
-        // For teacher role, check both custom claims and profile
-        const idTokenResult = await user.getIdTokenResult();
-        if (!idTokenResult.claims.admin) {
-          await signOut(auth);
-          throw new Error('This account does not have teacher permissions. Please contact your administrator.');
-        }
-        const profile = await getUserProfile(user.uid);
-        if (!profile || profile.role !== USER_ROLES.TEACHER) {
-          await signOut(auth);
-          throw new Error('This account is not registered as a teacher.');
-        }
+        return await finishTeacherGoogleSignIn(result, options);
       } else {
         // For other roles, check Firestore profile
         const idTokenResult = await user.getIdTokenResult();
