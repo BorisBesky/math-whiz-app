@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { Minus, Plus, RotateCcw, Pause, Play } from 'lucide-react';
 import { buildPlanetWorld, planetNormal } from './planetScene';
 import { getPlanetItem } from './planetConfig';
 import { renderPlanetThumbnails } from './planetThumbnails';
+import { rotatePlanetCamera } from './planetCamera';
 
 export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, onThumbnailsReady }) {
   const containerRef = useRef(null);
@@ -39,14 +40,14 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 80);
     const home = new THREE.Vector3(0, 2.8, 15);
     camera.position.copy(home);
-    const controls = new OrbitControls(camera, canvas);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.enablePan = false;
+    const controls = new TrackballControls(camera, canvas);
+    // Let the camera's up direction follow the drag, including across poles.
+    controls.staticMoving = true;
+    controls.noPan = true;
+    controls.keys = [];
     controls.minDistance = 7.5;
     controls.maxDistance = 21;
-    controls.rotateSpeed = 0.65;
-    controls.autoRotateSpeed = 0.5;
+    controls.rotateSpeed = 2.5;
     scene.add(new THREE.HemisphereLight('#f8fbff', '#7183a1', 2.2));
     const sun = new THREE.DirectionalLight('#ffffff', 3);
     sun.position.set(-5, 10, 9);
@@ -63,6 +64,8 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
     }
     let targetPosition = null;
     let targetLookAt = null;
+    let autoRotate = false;
+    let interacting = false;
     let lost = false;
     let inView = true;
     let ready = false;
@@ -81,6 +84,7 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
         canvas.dataset.visibleItems = ids.join(',');
       },
       focus: (id) => {
+        camera.up.set(0, 1, 0);
         const item = getPlanetItem(id);
         if (item) {
           const normal = planetNormal(item.position);
@@ -101,22 +105,26 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
           controls.update();
         }
       },
-      spin: (value) => { controls.autoRotate = value; },
+      spin: (value) => { autoRotate = value; },
       zoom,
     };
     apiRef.current = api;
-    const stopFocus = () => { targetPosition = targetLookAt = null; };
-    controls.addEventListener('start', stopFocus);
+    const startInteraction = () => {
+      targetPosition = targetLookAt = null;
+      interacting = true;
+    };
+    const endInteraction = () => { interacting = false; };
+    controls.addEventListener('start', startInteraction);
+    controls.addEventListener('end', endInteraction);
     const onKey = (event) => {
       if (['+', '=', '-', '_'].includes(event.key)) { event.preventDefault(); zoom(['+', '='].includes(event.key) ? 0.87 : 1.15); }
       if (event.key === 'Home') { event.preventDefault(); api.focus(null); }
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
       event.preventDefault();
       targetPosition = targetLookAt = null;
-      const s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-      s.theta += event.key === 'ArrowLeft' ? -0.15 : event.key === 'ArrowRight' ? 0.15 : 0;
-      s.phi = THREE.MathUtils.clamp(s.phi + (event.key === 'ArrowUp' ? -0.15 : event.key === 'ArrowDown' ? 0.15 : 0), 0.05, Math.PI - 0.05);
-      camera.position.setFromSpherical(s).add(controls.target);
+      rotatePlanetCamera(camera, controls.target,
+        event.key === 'ArrowLeft' ? -0.15 : event.key === 'ArrowRight' ? 0.15 : 0,
+        event.key === 'ArrowUp' ? -0.15 : event.key === 'ArrowDown' ? 0.15 : 0);
       controls.update();
     };
     const onLost = (event) => { event.preventDefault(); lost = true; setFailed(true); };
@@ -129,7 +137,12 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
       camera.aspect = width / height;
       camera.fov = width < height ? 46 : 40;
       camera.updateProjectionMatrix();
+      controls.handleResize();
     };
+    // Re-measure before a drag if content above the globe changed its position.
+    const updateControlBounds = () => controls.handleResize();
+    canvas.addEventListener('pointerdown', updateControlBounds, true);
+    canvas.addEventListener('pointercancel', endInteraction);
     const observer = new ResizeObserver(resize);
     observer.observe(host);
     resize();
@@ -149,7 +162,10 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
         controls.target.lerp(targetLookAt, 1 - Math.exp(-dt * 5));
         if (camera.position.distanceTo(targetPosition) < 0.015 && controls.target.distanceTo(targetLookAt) < 0.015) targetPosition = targetLookAt = null;
       }
-      controls.update(dt);
+      if (autoRotate && !interacting && !targetPosition && !reducedMotion.matches) {
+        rotatePlanetCamera(camera, controls.target, -dt * Math.PI / 60);
+      }
+      controls.update();
       // Focused previews can zoom closer to a landmark. Keep the camera above
       // the ground when students orbit around that off-center target.
       if (camera.position.length() < planet.radius + 0.65) {
@@ -168,7 +184,10 @@ export default function PlanetViewer({ visibleItems, focusItemId, resetKey = 0, 
       intersection.disconnect();
       canvas.removeEventListener('keydown', onKey);
       canvas.removeEventListener('webglcontextlost', onLost);
-      controls.removeEventListener('start', stopFocus);
+      canvas.removeEventListener('pointerdown', updateControlBounds, true);
+      canvas.removeEventListener('pointercancel', endInteraction);
+      controls.removeEventListener('start', startInteraction);
+      controls.removeEventListener('end', endInteraction);
       controls.dispose();
       planet.dispose();
       sun.shadow.dispose();
