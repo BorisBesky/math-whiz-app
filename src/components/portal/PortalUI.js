@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MoreVertical } from 'lucide-react';
-import { ACCENT } from '../../theme/accent';
+import { MoreVertical, X } from 'lucide-react';
+import { MODAL, buttonClasses } from '../../theme/accent';
 
 /**
  * Small presentational building blocks shared by the teacher/admin portal
@@ -66,26 +66,52 @@ export const LoadingRow = ({ label = 'Loading...' }) => (
   </div>
 );
 
-const BUTTON_VARIANTS = {
-  primary: `${ACCENT.primaryButton} shadow-sm`,
-  secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 shadow-sm',
-  ghost: 'text-gray-600 hover:bg-gray-100',
-  danger: 'bg-white text-red-600 border border-red-200 hover:bg-red-50',
-};
-
-export const PortalButton = ({ variant = 'secondary', icon: Icon, className = '', children, type = 'button', ...rest }) => (
+export const PortalButton = ({
+  variant = 'secondary',
+  size = 'md',
+  icon: Icon,
+  className = '',
+  children,
+  type = 'button',
+  ...rest
+}) => (
   <button
     type={type}
-    className={cx(
-      'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
-      BUTTON_VARIANTS[variant] || BUTTON_VARIANTS.secondary,
-      className
-    )}
+    className={cx(buttonClasses({ variant, size }), className)}
     {...rest}
   >
     {Icon && <Icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />}
     {children}
   </button>
+);
+
+/**
+ * White modal header used by every portal dialog: optional icon tile,
+ * Nunito semibold title, optional subtitle, actions and a close button.
+ */
+export const ModalHeader = ({ title, subtitle, eyebrow, icon: Icon, actions, onClose, titleId, titleProps = {} }) => (
+  <div className={MODAL.header}>
+    <div className="flex min-w-0 items-center gap-3">
+      {Icon && (
+        <span className={MODAL.iconTile}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+      )}
+      <div className="min-w-0">
+        {eyebrow && <p className="text-xs uppercase tracking-wide text-gray-500">{eyebrow}</p>}
+        <h2 id={titleId} className={cx(MODAL.title, 'truncate')} {...titleProps}>{title}</h2>
+        {subtitle && <p className={MODAL.subtitle}>{subtitle}</p>}
+      </div>
+    </div>
+    <div className="flex flex-shrink-0 items-center gap-2">
+      {actions}
+      {onClose && (
+        <button type="button" onClick={onClose} className={MODAL.close} aria-label="Close">
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  </div>
 );
 
 const ICON_TONES = {
@@ -129,7 +155,7 @@ export const getInitials = (name = '') => {
 
 const AVATAR_TONES = [
   'bg-blue-100 text-blue-700',
-  'bg-purple-100 text-purple-700',
+  'bg-cyan-100 text-cyan-700',
   'bg-emerald-100 text-emerald-700',
   'bg-amber-100 text-amber-700',
   'bg-pink-100 text-pink-700',

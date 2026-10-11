@@ -1008,21 +1008,21 @@ const QuestionBankManager = ({
           <div className="flex space-x-2">
             <button
               onClick={() => setInternalViewMode('all')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-4 py-2 rounded-button text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${internalViewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               All Questions
             </button>
             <button
               onClick={() => setInternalViewMode('teachers')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'teachers' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-4 py-2 rounded-button text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${internalViewMode === 'teachers' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Teacher Questions ({questions.length})
             </button>
             <button
               onClick={() => setInternalViewMode('shared')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${internalViewMode === 'shared' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-4 py-2 rounded-button text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${internalViewMode === 'shared' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Shared Bank ({sharedQuestions.length})
@@ -1161,7 +1161,7 @@ const QuestionBankManager = ({
           <button
             onClick={handleExportQuestions}
             disabled={selectedQuestions.size === 0}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-green-600 text-white rounded-button hover:bg-green-700 text-sm flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             title={selectedQuestions.size === 0 ? 'Select questions to export' : `Export ${selectedQuestions.size} selected question(s)`}
           >
             <Download className="h-4 w-4" />
@@ -1169,7 +1169,7 @@ const QuestionBankManager = ({
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 text-sm flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           >
             <Upload className="h-4 w-4" />
             <span>Import Questions</span>
@@ -1184,7 +1184,7 @@ const QuestionBankManager = ({
           {isAdmin && (
             <button
               onClick={() => setShowGenerateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 text-sm flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             >
               <Sparkles className="h-4 w-4" />
               <span>Generate Questions</span>
@@ -1261,14 +1261,14 @@ const QuestionBankManager = ({
                 setPendingAssignmentQuestions(selectedQuestions);
                 setShowAssignModal(true);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 text-sm flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             >
               <Users className="h-4 w-4" />
               <span>Assign to Class</span>
             </button>
             <button
               onClick={() => setShowUnassignModal(true)}
-              className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm flex items-center space-x-2"
+              className="px-4 py-2 bg-amber-600 text-white rounded-button hover:bg-amber-700 text-sm flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             >
               <Users className="h-4 w-4" />
               <span>Un-assign from Class</span>
@@ -1280,7 +1280,7 @@ const QuestionBankManager = ({
                 e.stopPropagation();
                 handleDeleteQuestions(selectedQuestions);
               }}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center space-x-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-button hover:bg-red-700 text-sm flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             >
               <Trash2 className="h-4 w-4" />
               <span>Delete</span>
@@ -1478,14 +1478,14 @@ const QuestionBankManager = ({
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="relative inline-flex items-center rounded-button border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="relative ml-3 inline-flex items-center rounded-button border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   Next
                 </button>
@@ -1674,14 +1674,14 @@ const QuestionBankManager = ({
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      className="relative inline-flex items-center rounded-button border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                     >
                       Previous
                     </button>
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalSharedPages))}
                       disabled={currentPage === totalSharedPages}
-                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      className="relative ml-3 inline-flex items-center rounded-button border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                     >
                       Next
                     </button>
@@ -1761,14 +1761,14 @@ const QuestionBankManager = ({
                     setSelectedClassForAssignment('');
                   }}
                   disabled={isAssigning}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-button text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAssignToClass}
                   disabled={!selectedClassForAssignment || isAssigning}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   {isAssigning && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isAssigning ? 'Assigning...' : 'Assign'}
@@ -1806,14 +1806,14 @@ const QuestionBankManager = ({
                     setSelectedClassForUnassignment('');
                   }}
                   disabled={isUnassigning}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-button text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBulkUnassignFromClass}
                   disabled={!selectedClassForUnassignment || isUnassigning}
-                  className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-button hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   {isUnassigning && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isUnassigning ? 'Un-assigning...' : 'Un-assign'}

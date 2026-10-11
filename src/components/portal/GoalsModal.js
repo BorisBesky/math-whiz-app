@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Target, Loader2, AlertCircle } from 'lucide-react';
 import ModalWrapper from '../ui/ModalWrapper';
+import { ModalHeader } from './PortalUI';
+import { buttonClasses } from '../../theme/accent';
 import { getTopicsForGrade } from '../../utils/common_utils';
 import { getAllGrades, getDefaultGradeKey } from '../../content/registry';
 
@@ -110,31 +112,20 @@ const GoalsModal = ({
 
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="" size="lg" hideCloseButton>
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-white/20 rounded-full p-2">
-            <Target className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Set daily goals</h2>
-            <p className="text-sm text-white/80">
-              Choose how many questions per topic{' '}
-              <strong>
-                {studentCount} student{studentCount === 1 ? '' : 's'}
-              </strong>{' '}
-              should answer each day.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-white/80 hover:text-white text-2xl leading-none"
-          aria-label="Close"
-        >
-          ×
-        </button>
-      </div>
+      <ModalHeader
+        icon={Target}
+        title="Set daily goals"
+        subtitle={
+          <>
+            Choose how many questions per topic{' '}
+            <strong className="font-semibold text-gray-700">
+              {studentCount} student{studentCount === 1 ? '' : 's'}
+            </strong>{' '}
+            should answer each day.
+          </>
+        }
+        onClose={onClose}
+      />
 
       <div className="px-6 py-5 space-y-5">
         {error && (
@@ -243,7 +234,7 @@ const GoalsModal = ({
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="px-4 py-2 rounded-button border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className={buttonClasses({ variant: 'secondary', size: 'lg' })}
         >
           Cancel
         </button>
@@ -251,9 +242,9 @@ const GoalsModal = ({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center px-4 py-2 rounded-button bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className={buttonClasses({ variant: 'primary', size: 'lg' })}
         >
-          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {saving ? 'Saving…' : 'Save goals'}
         </button>
       </div>

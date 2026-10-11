@@ -28,7 +28,7 @@ const DownloadButton = ({ onClick, busy, className = '' }) => (
     type="button"
     onClick={onClick}
     disabled={busy}
-    className={`inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    className={`inline-flex items-center justify-center gap-2 rounded-button border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${className}`}
   >
     {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
     {busy ? 'Preparing your data...' : 'Download my data'}
@@ -124,7 +124,7 @@ const AccountDataPanel = ({ user, appId, role = 'student', isAdmin = false }) =>
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+            className="inline-flex items-center justify-center gap-2 rounded-button border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
             Delete account
@@ -213,13 +213,13 @@ const AccountDataPanel = ({ user, appId, role = 'student', isAdmin = false }) =>
               )}
               {deleteError && <p role="alert" className="text-sm text-red-700">{deleteError}</p>}
               <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-                <button type="button" onClick={closeModal} disabled={deleting} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                <button type="button" onClick={closeModal} disabled={deleting} className="rounded-button border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1">
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-button bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 >
                   {deleting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                   {deleting ? 'Deleting...' : 'Delete my account permanently'}

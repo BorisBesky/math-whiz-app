@@ -200,7 +200,7 @@ const StoreImagesManager = () => {
         <div className="flex gap-2">
           <button
               onClick={openGenerateModal}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           >
             <Sparkles className="w-4 h-4" />
             Generate Images
@@ -208,7 +208,7 @@ const StoreImagesManager = () => {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-button hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -259,7 +259,7 @@ const StoreImagesManager = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedTheme('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-button font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
               selectedTheme === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -271,7 +271,7 @@ const StoreImagesManager = () => {
             <div key={theme} className="relative group">
               <button
                 onClick={() => setSelectedTheme(theme)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors pr-8 ${
+                className={`px-4 py-2 rounded-button font-medium transition-colors pr-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
                   selectedTheme === theme
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

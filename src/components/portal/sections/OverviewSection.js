@@ -71,7 +71,7 @@ const OverviewSection = ({ stats, students, loadingStudents, loadingClasses, stu
           label="Avg. Accuracy"
           value={isLoading ? '—' : `${stats.averageAccuracy}%`}
           icon={BarChart3}
-          accent="bg-purple-50 text-purple-600"
+          accent="bg-sky-50 text-sky-600"
         />
         <StatCard
           label="Questions Answered"

@@ -235,6 +235,45 @@ describe('ClassDetailPanel', () => {
     expect(screen.queryByText(/assign student/i)).not.toBeInTheDocument();
   });
 
+  const allActionsProps = {
+    ...defaultProps,
+    userRole: 'admin',
+    onEditClass: jest.fn(),
+    setShowEditForm: jest.fn(),
+    teachers: [
+      ...defaultProps.teachers,
+      { uid: 'teacher-2', displayName: 'Mr. Lee', email: 'lee@school.com' },
+    ],
+  };
+
+  it('has a single primary (blue) action, Invite Students, and no green buttons', () => {
+    render(<ClassDetailPanel {...allActionsProps} />);
+    expect(screen.getByRole('button', { name: /^add$/i })).toBeInTheDocument();
+    const buttons = screen.getAllByRole('button');
+    const primary = buttons.filter((b) => b.classList.contains('bg-blue-600'));
+    expect(primary).toHaveLength(1);
+    expect(primary[0]).toHaveAccessibleName(/invite students/i);
+    expect(buttons.filter((b) => /\bbg-green-\d+/.test(b.className))).toEqual([]);
+  });
+
+  it('renders Edit Class, Add, Refresh and Assign to class as secondary shared buttons with hover and focus styles', () => {
+    render(<ClassDetailPanel {...allActionsProps} />);
+    [/edit class/i, /^add$/i, /refresh/i, /assign to class/i, /invite students/i].forEach((name) => {
+      const button = screen.getByRole('button', { name });
+      expect(button).toHaveClass('rounded-button', 'focus-visible:ring-2');
+      expect(button.className).toMatch(/\bhover:bg-/);
+    });
+    expect(screen.getByRole('button', { name: /assign to class/i })).toHaveClass('bg-white', 'border-gray-300');
+  });
+
+  it('uses the shared modal header with a labelled dialog title', () => {
+    render(<ClassDetailPanel {...defaultProps} />);
+    const title = screen.getByRole('heading', { name: 'Room 12' });
+    expect(title).toHaveClass('text-lg', 'font-semibold', 'text-gray-900');
+    expect(title).not.toHaveClass('font-display');
+    expect(screen.getByRole('dialog', { name: 'Room 12' })).toBeInTheDocument();
+  });
+
   it('opens the invite modal when Invite Students is clicked', async () => {
     render(<ClassDetailPanel {...defaultProps} />);
     fireEvent.click(screen.getByRole('button', { name: /invite students/i }));
