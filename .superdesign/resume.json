@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "portal-accent-review": {
+      "targetKind": "existing-ui",
+      "projectId": "fa666ea1-f13d-4ab4-9adb-7d750650ced9",
+      "baselineDraftId": "22d613a6-6a06-4990-a26a-542ad61d8d52",
+      "activeDraftId": "22d613a6-6a06-4990-a26a-542ad61d8d52",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/index.css",
+        "tailwind.config.js",
+        "src/components/portal/PortalLayout.js",
+        "src/components/portal/PortalUI.js:1:160",
+        "src/components/portal/StudentRowActions.js",
+        "src/components/portal/sections/OverviewSection.js",
+        "src/components/portal/sections/StudentsSection.js:1197:1460",
+        "src/components/portal/sections/ClassDetailPanel.js:590:990",
+        "src/components/portal/QuestionPoolHealthBanner.js",
+        "src/components/portal/GoalsModal.js:111:264"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "2b1f401d64981dedbcc6178af236fd1bda55e61ce518088208a8c0d5fde12105",
+        "src/index.css": "d57aee020dc8cf90a3b148755c102dd7439a3835e45503ae7b76388de6c2a63c",
+        "tailwind.config.js": "75e721eae74bda0509acf2ef42f32868071096de119f52e67348367d4bbac680",
+        "src/components/portal/PortalLayout.js": "1972c031f793d3b53edf1cb24f0618ef14c89429499e0539f5392ea6a2040d60",
+        "src/components/portal/PortalUI.js": "49a1d7eef6dc286eaae8e985a98851567a8fd18789f81ab99d6b4659ad11fbed",
+        "src/components/portal/StudentRowActions.js": "54dfe65b8be94c8a900f25e71e5fd82c7127e2b15b735d491decc354e1178e1d",
+        "src/components/portal/sections/OverviewSection.js": "c317f2da9dfdc6e8d0c0bf308cff00fa8361e1a9ca5022f93bf9e40a356f42ce",
+        "src/components/portal/sections/StudentsSection.js": "0b3c6692ad1146805b0ddb5186bc0171e3396ed13cfe0c508e46ac51da9c43a6",
+        "src/components/portal/sections/ClassDetailPanel.js": "9852e9406e1e8ea5474fb57bd807695c12674fad40a8976f58367e8b05960d42",
+        "src/components/portal/QuestionPoolHealthBanner.js": "927068656009ff12b6fb246cc02c605056e5b2959ab3b9901734dc1f630e0acf",
+        "src/components/portal/GoalsModal.js": "92469e8fb55a3a1753bfcf9b5589d9491121a9c64703a0f9377f9b921cb5d983"
+      },
+      "components": [],
+      "drafts": {
+        "22d613a6-6a06-4990-a26a-542ad61d8d52": {
+          "title": "Math Whiz Portal (v2 = faithful reproduction of current purple accents; v3 = unified blue)",
+          "visualDirection": "unified blue primary",
+          "currentVersion": 3,
+          "baselineVersion": 2
+        }
+      },
+      "updatedAt": "2026-10-10T23:09:53.741949+00:00"
+    }
+  }
+}
