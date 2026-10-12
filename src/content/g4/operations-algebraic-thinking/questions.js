@@ -573,10 +573,22 @@ export function generateLongDivisionWithRemainderQuestion(difficulty = 0.5) {
   const remainder = getRandomInt(1, divisor - 1);
   const dividend = (quotient * divisor) + remainder;
   const correctAnswer = `${quotient} remainder ${remainder}`;
+  // A valid remainder is strictly less than the divisor, so we never emit a
+  // distractor whose remainder equals (or exceeds) the divisor — the old
+  // `remainder + 1` distractor shipped "4 remainder 6" for 25 ÷ 6, which a
+  // student could rule out just from the invariant. When remainder+1 would
+  // reach the divisor, fall back to a different remainder-tweak distractor.
+  const altRemainder = remainder + 1 < divisor
+    ? remainder + 1
+    : Math.max(0, remainder - 1);
   const potentialDistractors = [
       `${quotient + 1} remainder ${remainder}`,
-      `${quotient} remainder ${remainder + 1}`,
+      `${quotient} remainder ${altRemainder}`,
       `${quotient - 1} remainder ${remainder}`,
+      // A fourth misconception-ordered candidate keeps the MC at 4 options
+      // when altRemainder collides with the correct remainder (that happens
+      // only when remainder===1 and divisor===2).
+      `${quotient + 1} remainder ${altRemainder}`,
   ];
 
   return {
@@ -728,10 +740,16 @@ export function generateDivisionWordProblemQuestion(difficulty = 0.5) {
   ];
   
   const scenario = scenarios[getRandomInt(0, scenarios.length - 1)];
+  // A valid remainder is strictly less than the divisor, so skip the
+  // "remainder + 1" distractor when it would reach (or exceed) the divisor.
+  const altRemainder = remainder + 1 < divisor
+    ? remainder + 1
+    : Math.max(0, remainder - 1);
   const potentialDistractors = [
       `${quotient + 1} with ${remainder} left over`,
-      `${quotient} with ${remainder + 1} left over`,
+      `${quotient} with ${altRemainder} left over`,
       `${quotient - 1} with ${remainder} left over`,
+      `${quotient + 1} with ${altRemainder} left over`,
   ];
 
   return {

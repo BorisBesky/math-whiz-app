@@ -1,10 +1,50 @@
 import {
+  generateFractionAdditionQuestion,
   generateFractionSubtractionQuestion,
   generateFractionComparisonQuestion,
   generateFractionMultiplicationQuestion,
   generateMixedNumbersQuestion,
   generateDecimalNotationQuestion,
 } from '../questions.js';
+
+// Helper: a fraction string is "simplified-looking" when gcd(num, den) === 1.
+// The correct answer always simplifies; every distractor must too, or the
+// correct answer stands out by format alone and a student can short-circuit
+// the actual math.
+const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+const isSimplifiedForm = (value) => {
+  if (typeof value !== 'string') return false;
+  // Whole-number form: "3" (returned by simplifyFraction when denom===1).
+  if (/^-?\d+$/.test(value)) return true;
+  const match = value.match(/^(-?\d+)\/(\d+)$/);
+  if (!match) return false;
+  const num = Math.abs(Number(match[1]));
+  const den = Number(match[2]);
+  if (den <= 0) return false;
+  return gcd(num, den) === 1;
+};
+
+describe('G4 fractions addition: every option looks the same shape as the correct answer', () => {
+  // Regression: the old distractor pool emitted un-simplified forms like
+  // "26/60" alongside a simplified correct answer like "13/30". A student
+  // could pick the shortest-looking option without doing the fraction math
+  // because the correct answer was systematically simplified and the
+  // distractors systematically weren't. Every option must now be a simplified
+  // fraction (or whole number) so the student has to actually add.
+  it('every drawn addition question has all simplified options', () => {
+    let seen = 0;
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateFractionAdditionQuestion(Math.random());
+      expect(q.options).toContain(q.correctAnswer);
+      q.options.forEach((opt) => {
+        expect(isSimplifiedForm(opt)).toBe(true);
+      });
+      expect(new Set(q.options).size).toBe(q.options.length);
+      seen += 1;
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});
 
 describe('G4 fractions: mixed-number "toMixed" distractors are never malformed', () => {
   it('never emits a "0 R/D" distractor when the whole part would go to zero', () => {

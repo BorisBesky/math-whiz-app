@@ -511,7 +511,7 @@ const BinaryOperationsExplanation = () => {
           <li><strong>Counting Pattern:</strong> 0, 1, 10, 11, 100, 101, 110, 111...</li>
           <li><strong>Light Switches:</strong> Think of 0 as OFF and 1 as ON</li>
           <li><strong>Multiply by 10:</strong> Just add a 0 at the end (like decimal × 10!)</li>
-          <li><strong>Divide by 10:</strong> Just remove the last digit (like decimal ÷ 10!)</li>
+          <li><strong>Divide by 10:</strong> If the number ends in 0, drop that last 0 (that's like decimal ÷ 10 for an even number). If it ends in 1, the number is odd, so drop the digit <em>and</em> write it as a remainder of 1.</li>
         </ul>
       </div>
 

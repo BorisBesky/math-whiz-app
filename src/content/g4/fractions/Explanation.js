@@ -341,8 +341,8 @@ const FractionsExplanation = () => {
           </div>
           <div style={styles.equals}>=</div>
           <div>
-            <p>🍕🍕 + 🍕🍕🍕 (of 🍕🍕🍕🍕)</p>
-            <p>2 whole pizzas + ³⁄₄ of another</p>
+            <p>🍕 🍕 + ³⁄₄ of another 🍕</p>
+            <p>2 whole pizzas plus three-quarters of one more pizza</p>
           </div>
         </div>
       </div>
