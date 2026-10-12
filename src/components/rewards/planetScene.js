@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PLANET_ITEMS } from './planetConfig';
+import { groundPlanetScenery } from './planetGrounding';
 
 const RADIUS = 4;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -33,6 +34,7 @@ export function buildPlanetWorld() {
   const animated = [];
   const movingObjects = new Set();
   const mergedGeometries = [];
+  const groundedGeometries = [];
   const materials = new Map();
   const geometries = {
     box: new THREE.BoxGeometry(1, 1, 1),
@@ -231,7 +233,9 @@ export function buildPlanetWorld() {
       for (let j = 1; j < 5; j += 1) [-1, 1].forEach((s) => mesh(f, 'ball', '#8abf76', [j * 0.08, 0.055 - j * 0.011, s * 0.047], [0.09, 0.013, 0.029], [0, s * 0.6, -0.15]));
     }
   }
-  const terrain = new THREE.SphereGeometry(RADIUS, 100, 64).toNonIndexed();
+  const surfaceGrid = { widthSegments: 100, heightSegments: 64 };
+  const terrain = new THREE.SphereGeometry(RADIUS, surfaceGrid.widthSegments, surfaceGrid.heightSegments).toNonIndexed();
+  terrain.userData.surfaceGrid = surfaceGrid;
   const positions = terrain.attributes.position;
   const colors = [];
   for (let i = 0; i < positions.count; i += 3) {
@@ -287,6 +291,7 @@ export function buildPlanetWorld() {
     const g = onSurface(item.position);
     g.name = item.id;
     itemGroups.set(item.id, g);
+    const followsTerrain = ['village', 'cottage', 'observatory'].includes(item.kind);
     switch (item.kind) {
       case 'forest':
         scatter(g, 19, 17, 0.82, (p, i) => pine(p, i));
@@ -513,7 +518,12 @@ export function buildPlanetWorld() {
           }
           if (i !== 2) mesh(g, 'box', '#76b2c4', [Math.cos(a) * 0.395, 0.24, Math.sin(a) * 0.395], [0.095, 0.14, 0.015], [0, Math.PI / 2 - a, 0]);
         }
-        [0, 1, 2].forEach((i) => mesh(g, 'box', '#b8b9b1', [0, 0.02 + i * 0.032, 0.59 - i * 0.07], [0.27, 0.04, 0.1]));
+        [0, 1, 2].forEach((i) => {
+          // Each tread has a solid riser extending into the ground below it.
+          const top = 0.04 + i * 0.032;
+          const bottom = -0.012;
+          mesh(g, 'box', '#b8b9b1', [0, (top + bottom) / 2, 0.59 - i * 0.07], [0.27, top - bottom, 0.1]);
+        });
         lantern(group(g, -0.3, 0, 0.48));
         break;
       }
@@ -529,7 +539,10 @@ export function buildPlanetWorld() {
         lantern(group(g, 0.53, 0, 0.5));
         mesh(g, 'box', '#bc946c', [-0.58, 0.12, 0.36], [0.3, 0.03, 0.13]);
         mesh(g, 'box', '#bc946c', [-0.58, 0.22, 0.31], [0.3, 0.1, 0.025]);
-        [-0.68, -0.48].forEach((x) => mesh(g, 'box', '#596c82', [x, 0.07, 0.36], [0.02, 0.12, 0.1]));
+        [-0.68, -0.48].forEach((x) => {
+          mesh(g, 'box', '#596c82', [x, 0.055, 0.36], [0.02, 0.15, 0.1]);
+          beam(g, [x, 0.1, 0.31], [x, 0.27, 0.31], 0.009, '#bc946c');
+        });
         scatter(group(g, 0.63, 0, -0.03), 6, 75, 0.16, (p) => flower(p, '#ed86bd', 0.6));
         break;
       case 'balloon': {
@@ -548,6 +561,9 @@ export function buildPlanetWorld() {
         break;
       }
       default: break;
+    }
+    if (followsTerrain) {
+      groundedGeometries.push(...groundPlanetScenery(g, terrainMesh));
     }
     // Capture just the reward itself for its shop image, before neighboring
     // trees and paths are attached. Geometry and materials remain shared.
@@ -571,6 +587,9 @@ export function buildPlanetWorld() {
       else if (item.kind === 'flowers') {
         mesh(detail, 'ball', ['#d5aac2', '#e9d995', '#ad9ac7'][i % 3], [0, 0.055, 0], [0.055, 0.04, 0.055]);
       } else rock(detail, 0, 0, 0.12 + rand() * 0.1);
+      if (followsTerrain) {
+        groundedGeometries.push(...groundPlanetScenery(detail, terrainMesh));
+      }
       g.attach(detail);
     }
     if (item.position[0] > -35 && item.position[0] < 45 && Math.abs(item.position[1]) < 80) {
@@ -648,6 +667,7 @@ export function buildPlanetWorld() {
       Object.values(geometries).forEach((geometry) => geometry.dispose());
       materials.forEach((material) => material.dispose());
       mergedGeometries.forEach((geometry) => geometry.dispose());
+      groundedGeometries.forEach((geometry) => geometry.dispose());
     },
   };
 }

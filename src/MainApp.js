@@ -95,7 +95,7 @@ import useFeatureSettings from "./hooks/useFeatureSettings";
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-video-bg-v1" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-planet-dome-stairs-v44" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
