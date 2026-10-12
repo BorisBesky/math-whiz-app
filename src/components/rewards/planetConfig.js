@@ -24,7 +24,8 @@ export const PLANET_ITEMS = [
   { id: 'waterfall', name: 'Wishing waterfall', category: 'wonders', price: 60, kind: 'waterfall', color: '#78b3ba', position: [-6, 119], description: 'A sparkling waterfall tumbling down mossy rocks into a pool.' },
   { id: 'sailboat', name: 'Little voyager', category: 'homes', price: 35, kind: 'sailboat', color: '#7ca8b8', position: [-52, -4], description: 'A wooden sailboat with a golden sail, bobbing on the sea.' },
   { id: 'observatory', name: 'Stargazer dome', category: 'wonders', price: 75, kind: 'observatory', color: '#8896be', position: [25, 165], description: 'A hilltop observatory and telescope for dreaming beyond your planet.' },
-  { id: 'village', name: 'Little hillside village', category: 'homes', price: 65, kind: 'village', color: '#b48c9f', position: [-15, -155], description: 'Three colorful cottages, lanterns, and a winding village path.' },
+  // Leave enough land around the whole village, above the rear water channel.
+  { id: 'village', name: 'Little hillside village', category: 'homes', price: 65, kind: 'village', color: '#b48c9f', position: [18, -150], description: 'Three colorful cottages, lanterns, and a winding village path.' },
   { id: 'balloon', name: 'Sky explorer', category: 'wonders', price: 80, kind: 'balloon', color: '#c6937a', position: [-37, -65], description: 'A striped hot-air balloon floating above your growing world.' },
 ];
 
