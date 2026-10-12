@@ -50,3 +50,6 @@ __pycache__/
 firestore-debug.log
 firebase-debug.log
 ui-debug.log
+
+# Superdesign local scratch output
+.superdesign/tmp/
