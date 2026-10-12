@@ -5,6 +5,7 @@ import {
   generateAngleMeasurementQuestion,
   generateLineSymmetryQuestion,
   generateLinesAndAnglesQuestion,
+  generateMissingSideQuestion,
   generatePointsLinesRaysQuestion,
   generateShapeClassificationQuestion,
   generateQuadrilateralPropertiesQuestion,
@@ -494,5 +495,28 @@ describe('line symmetry: no hierarchy-driven ambiguity', () => {
       const q = generateLineSymmetryQuestion();
       expect(q.subtopic).toBe('symmetry');
     }
+  });
+});
+
+describe('G4 geometry generateMissingSideQuestion', () => {
+  // Regression: the old rectangle-area distractor pool was
+  //   [area-givenSide, max(1, area-2*givenSide), otherSide+1, otherSide-1]
+  // which collapsed to only two unique values for small rectangles like
+  // (length=3, width=2): [3, 1, 3, 1]. After generateUniqueOptions filtered
+  // duplicates the MC shipped only 3 options, so a student saw an obviously
+  // short list of choices. The widened pool now always carries at least four
+  // distinct values across the full generator domain.
+  it('always ships a 4-option MC with the correct answer among them', () => {
+    let seenRectangleArea = 0;
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateMissingSideQuestion(Math.random());
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      expect(q.options).toContain(q.correctAnswer);
+      if (/^A rectangle has an area of /.test(q.question)) seenRectangleArea += 1;
+    }
+    // Rectangle-area is one of the four branches, so a decent sample should
+    // hit it many times — this is the branch the regression lived in.
+    expect(seenRectangleArea).toBeGreaterThan(0);
   });
 });

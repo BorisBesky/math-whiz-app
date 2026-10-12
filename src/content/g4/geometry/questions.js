@@ -1208,11 +1208,19 @@ export function generateMissingSideQuestion(difficulty = 0.5) {
       correctAnswerVal = side;
       question = `The area of a square is ${area} square units. What is the length of each side?`;
       hint = 'For a square, area = side × side. Find a number that, multiplied by itself, equals the area.';
+      // At side=2 the previous four candidates all mapped onto the set
+      // {1, 2, 3} after `area / 2` collided with the correct answer and the
+      // off-by-one and area/4 candidates collapsed to 1 — leaving only two
+      // unique distractors and a 3-option MC. The widened misconception pool
+      // keeps a 4-option MC across the full side domain [2..12].
       rawDistractors = [
         Math.round(area / 2),
         Math.round(area / 4),
         side + 1,
         Math.max(1, side - 1),
+        side + 2,
+        area,
+        Math.max(1, area - side),
       ];
     } else {
       const side = getRandomInt(2, 20);
@@ -1245,11 +1253,18 @@ export function generateMissingSideQuestion(difficulty = 0.5) {
       const area = length * width;
       question = `A rectangle has an area of ${area} square units. If its ${givenSideName} is ${givenSide} units, what is its ${otherSideName}?`;
       hint = 'Area = length × width. Divide the area by the known side to find the other side.';
+      // A longer, misconception-ordered pool keeps the MC at 4 options even at
+      // small dimensions. The old pool collapsed to only two unique distractors
+      // for cases like length=3, width=2: [area-given=3, 1, other+1=3, other-1=1].
+      // generateUniqueOptions below picks the first three distinct distractors.
       rawDistractors = [
         area - givenSide,
         Math.max(1, area - givenSide * 2),
         otherSide + 1,
         Math.max(1, otherSide - 1),
+        otherSide + 2,
+        otherSide + givenSide,
+        Math.max(1, Math.abs(area - givenSide * otherSide + 1)),
       ];
     } else {
       const perimeter = 2 * (length + width);
@@ -1260,6 +1275,9 @@ export function generateMissingSideQuestion(difficulty = 0.5) {
         Math.max(1, perimeter / 2 - givenSide + 1),
         otherSide + 2,
         Math.max(1, otherSide - 1),
+        otherSide + 1,
+        perimeter / 2,
+        perimeter / 4,
       ];
     }
   }
