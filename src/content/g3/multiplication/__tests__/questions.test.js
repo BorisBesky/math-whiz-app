@@ -114,32 +114,38 @@ describe('G3 multiplication: default export only contains functions that actuall
   });
 });
 
-describe('G3 multiplication: fact family never asks a trivially identical commutative question', () => {
-  it('never asks "If A x A = X, what is A x A?"', () => {
+describe('G3 multiplication: fact family commutative variant is not self-answering', () => {
+  // The previous commutative stem was "If A × B = P, what is B × A?" with the
+  // product P printed right there — a student could copy the number without
+  // applying the commutative property. The new stem states the identity
+  // without revealing the product so the student still has to compute it.
+  it('never prints the product the student is being asked for', () => {
     let commutativeSeen = 0;
-    for (let i = 0; i < 400; i += 1) {
+    for (let i = 0; i < 500; i += 1) {
       const q = generateFactFamilyQuestion();
-      // Only the commutative branch has × on BOTH sides of the comma — the
-      // inverse branches use ÷ on the right side.
+      // Only the commutative branch mentions "the same answer".
       const commutativeMatch = q.question.match(
-        /^If (\d+) × (\d+) = \d+, what is (\d+) × (\d+)\?$/
+        /^(\d+) × (\d+) and (\d+) × (\d+) have the same answer\. What is that answer\?$/
       );
       if (!commutativeMatch) continue;
       commutativeSeen += 1;
       const [, a, b, c, d] = commutativeMatch;
-      // The two factors must differ (or the question is the trivial
-      // "If 4×4=16, what is 4×4?").
+      // The two factors must differ (or the identity is the trivial 4×4=4×4).
       expect(a).not.toBe(b);
-      expect(c).not.toBe(d);
-      // The commutative branch always asks for the swap, so {a,b} == {c,d}.
+      // The stem presents a × b and b × a (both orderings of the same pair).
       expect(new Set([a, b])).toEqual(new Set([c, d]));
+      // The stem must not include the product (the self-answering regression).
+      const product = Number(a) * Number(b);
+      expect(q.question).not.toContain(String(product));
+      // And the correct answer IS that product.
+      expect(q.correctAnswer).toBe(String(product));
       [a, b, c, d].forEach((n) => {
         expect(Number(n)).toBeGreaterThanOrEqual(2);
         expect(Number(n)).toBeLessThanOrEqual(9);
       });
     }
     // The generator picks the commutative branch ~1/3 of the time, so we
-    // should have hit it many times in 400 iterations.
+    // should have hit it many times in 500 iterations.
     expect(commutativeSeen).toBeGreaterThan(0);
   });
 });

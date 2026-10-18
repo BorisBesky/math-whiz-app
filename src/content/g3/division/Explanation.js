@@ -93,7 +93,7 @@ const DivisionExplanation = () => {
       </div>
 
       <h2 style={styles.h2}>🔢 Arrays: Rows &amp; Columns</h2>
-      <p>An <strong>array</strong> is a rectangle of dots or objects lined up in equal rows. Every array gives you TWO division facts.</p>
+      <p>An <strong>array</strong> is a rectangle of dots or objects lined up in equal rows. When the number of rows is different from the number of columns, the array gives you <strong>two</strong> division facts — one for each way of grouping.</p>
 
       <div style={styles.example}>
         <strong>Example:</strong> This array has 24 dots.
@@ -108,7 +108,7 @@ const DivisionExplanation = () => {
       </div>
 
       <div style={styles.tip}>
-        <span style={styles.emoji}>🧠</span><strong>Two facts, one array:</strong> If you know the total and one side, dividing gives you the other side. Arrays make sharing and grouping the SAME question!
+        <span style={styles.emoji}>🧠</span><strong>Two facts, one array:</strong> If you know the total and one side, dividing gives you the other side. Arrays make sharing and grouping the SAME question! (A square array — like 5 rows of 5 — gives just one unique fact, since both sides are the same.)
       </div>
 
       <h2 style={styles.h2}>🔄 Division and Multiplication are Partners!</h2>

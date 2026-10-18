@@ -4,7 +4,67 @@
 //   shuffle: jest.fn((array) => array), // Return array as-is for predictable testing
 // });
 
-import questions from '../questions.js';
+import questions, {
+  generateDivisionWordProblemQuestion,
+  generateLongDivisionWithRemainderQuestion,
+} from '../questions.js';
+
+describe('long division: distractors are never mathematically-invalid remainders', () => {
+  // Regression: the old pool emitted "`${quotient} remainder ${remainder + 1}`",
+  // which produced remainders equal to (or greater than) the divisor on the
+  // boundary case `remainder === divisor - 1` — e.g. "4 remainder 6" when the
+  // real answer was "4 remainder 2" for 26 ÷ 6. A student who knows that a
+  // remainder is strictly less than the divisor could rule it out without
+  // doing the math, giving a free elimination step.
+  const parseRemainder = (text, pattern) => {
+    const match = text.match(pattern);
+    return match ? Number(match[1]) : null;
+  };
+
+  it('generateLongDivisionWithRemainderQuestion: every option remainder is < divisor', () => {
+    let seen = 0;
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateLongDivisionWithRemainderQuestion(Math.random());
+      const divisorMatch = q.question.match(/÷ (\d+)/);
+      expect(divisorMatch).not.toBeNull();
+      const divisor = Number(divisorMatch[1]);
+      // Every option is "<quotient> remainder <remainder>" — the remainder
+      // part is the number after "remainder".
+      for (const option of q.options) {
+        const r = parseRemainder(option, /remainder (\d+)/);
+        expect(r).not.toBeNull();
+        expect(r).toBeLessThan(divisor);
+        expect(r).toBeGreaterThanOrEqual(0);
+      }
+      expect(q.options).toContain(q.correctAnswer);
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+      seen += 1;
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('generateDivisionWordProblemQuestion: every option\'s "left over" is < divisor', () => {
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateDivisionWordProblemQuestion(Math.random());
+      // Divisor appears in the stem text; find the second number in the
+      // generic templates "N ... among/into D ..." — easier: parse the
+      // correctAnswer's remainder and the stem's second number.
+      const digits = q.question.match(/\d+/g).map(Number);
+      // The templates always have the dividend first, divisor second.
+      const divisor = digits[1];
+      for (const option of q.options) {
+        const left = parseRemainder(option, /with (\d+) left over/);
+        expect(left).not.toBeNull();
+        expect(left).toBeLessThan(divisor);
+        expect(left).toBeGreaterThanOrEqual(0);
+      }
+      expect(q.options).toContain(q.correctAnswer);
+      expect(q.options.length).toBe(4);
+      expect(new Set(q.options).size).toBe(4);
+    }
+  });
+});
 
 describe('generateTwoStepPatternQuestion', () => {
   it('should return a question object with required properties', () => {

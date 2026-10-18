@@ -199,17 +199,22 @@ export function generateEqualGroupsQuestion() {
  */
 export function generateFactFamilyQuestion() {
   const factor1 = getRandomInt(2, 9);
-  // factor2 must differ from factor1: when they're equal the commutative
-  // question "If 4 × 4 = 16, what is 4 × 4?" is trivial (the same expression).
+  // factor2 must differ from factor1: when they're equal the "find the other
+  // factor" question has the same number on both sides and the inverse
+  // variants collapse to one unique fact instead of two.
   let factor2 = getRandomInt(2, 9);
   while (factor2 === factor1) {
     factor2 = getRandomInt(2, 9);
   }
   const product = factor1 * factor2;
-  
+
+  // The old commutative variant was "If a × b = P, what is b × a?" — the
+  // product P was printed in the stem, so a student could copy the number
+  // without applying the commutative property. The replacement states the
+  // commutative identity and asks the student to actually compute the product.
   const questionTypes = [
     {
-      question: `If ${factor1} × ${factor2} = ${product}, what is ${factor2} × ${factor1}?`,
+      question: `${factor1} × ${factor2} and ${factor2} × ${factor1} have the same answer. What is that answer?`,
       answer: product,
       property: "commutative",
     },
@@ -224,16 +229,16 @@ export function generateFactFamilyQuestion() {
       property: "inverse",
     },
   ];
-  
+
   const selected = questionTypes[getRandomInt(0, questionTypes.length - 1)];
   const correctAnswer = selected.answer.toString();
-  
+
   return {
     question: selected.question,
     correctAnswer: correctAnswer,
     questionType: QUESTION_TYPES.NUMERIC,
-    hint: selected.property === "commutative" 
-      ? "The order of factors doesn't change the product!" 
+    hint: selected.property === "commutative"
+      ? "The order of factors doesn't change the product!"
       : "Multiplication and division are opposite operations.",
     standard: "3.OA.B.5",
     concept: "Multiplication",

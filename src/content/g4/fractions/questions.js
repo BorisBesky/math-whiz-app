@@ -136,11 +136,32 @@ export function generateFractionAdditionQuestion(difficulty = 0.5) {
 
   const sum = num1 * denominator2 + num2 * denominator;
   const simplifiedAnswer = simplifyFraction(sum, common_denominator);
-  const potentialDistractors = [
-      `${sum}/${common_denominator + 1}`,
-      `${sum + 1}/${common_denominator}`,
-      `${num1 + num2}/${common_denominator * 2}`,
+  // Every distractor passes through simplifyFraction so the student can't
+  // single out the correct answer by format alone: previously the correct
+  // answer was simplified while distractors stayed unsimplified (e.g.
+  // "26/60"), giving away which option was the right one. These misconception
+  // sources collapse to the correct answer sometimes, so the Set-dedup below
+  // ensures we only ship distinct options.
+  const rawDistractors = [
+      // "Add straight across" — add tops AND bottoms (classic error).
+      simplifyFraction(num1 + num2, denominator + denominator2),
+      // Off-by-one on the un-simplified numerator.
+      simplifyFraction(sum + 1, common_denominator),
+      // Off-by-one on the un-simplified denominator.
+      simplifyFraction(sum, common_denominator + 1),
+      // Kept only the first numerator over the common denominator.
+      simplifyFraction(num1 * denominator2, common_denominator),
+      // Forgot the second term entirely.
+      simplifyFraction(num1, denominator),
   ];
+  const seen = new Set([simplifiedAnswer]);
+  const potentialDistractors = [];
+  for (const candidate of rawDistractors) {
+    if (!seen.has(candidate)) {
+      seen.add(candidate);
+      potentialDistractors.push(candidate);
+    }
+  }
 
   return {
     question: `What is ${num1}/${denominator} + ${num2}/${denominator2}?`,
