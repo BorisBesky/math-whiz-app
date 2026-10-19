@@ -64,21 +64,22 @@ describe('G4 fractions: mixed-number "toMixed" distractors are never malformed',
     // `${wholeNumber} ${remainder + 1}/${denominator}` — which produces an
     // improper mixed form like "2 5/5" whenever remainder = denominator - 1.
     // That's not a proper mixed number and visually tells a student the answer
-    // isn't it.
+    // isn't it. Filter + forEach keeps the assertion unconditional so
+    // jest/no-conditional-expect stays happy.
     for (let i = 0; i < 1500; i += 1) {
       // Draw across the full difficulty range so we hit the smallest
       // denominator (where remainder = denominator - 1 is forced) too.
       const q = generateMixedNumbersQuestion(Math.random());
       if (!/Convert \d+\/\d+ to a mixed number\./.test(q.question)) continue;
-      q.options.forEach((opt) => {
-        const parts = opt.match(/^(\d+) (\d+)\/(\d+)$/);
-        if (parts) {
+      q.options
+        .map((opt) => opt.match(/^(\d+) (\d+)\/(\d+)$/))
+        .filter(Boolean)
+        .forEach((parts) => {
           const r = Number(parts[2]);
           const d = Number(parts[3]);
           // A proper mixed number has fractional part < 1.
           expect(r).toBeLessThan(d);
-        }
-      });
+        });
     }
   });
 
@@ -109,10 +110,11 @@ describe('G4 fractions: mixed-number "toMixed" distractors are never malformed',
         /What is (\d+) (\d+)\/(\d+) \+ (\d+) (\d+)\/(\d+)\?/
       );
       if (!addMatch) continue;
-      const [, w1Str, n1Str, dStr, w2Str, n2Str] = addMatch;
-      const n1 = Number(n1Str);
-      const n2 = Number(n2Str);
-      const d = Number(dStr);
+      // Only the numerators and denominator drive the carry/proper check;
+      // the two whole numbers aren't used in the assertions below.
+      const n1 = Number(addMatch[2]);
+      const d = Number(addMatch[3]);
+      const n2 = Number(addMatch[5]);
       const carried = n1 + n2 >= d;
 
       expect(q.options).toContain(q.correctAnswer);
@@ -125,14 +127,13 @@ describe('G4 fractions: mixed-number "toMixed" distractors are never malformed',
         return Number(parts[2]) >= Number(parts[3]);
       }).length;
 
-      if (carried) {
-        // At most one improper-mixed option is allowed, and it's the
-        // "forgot to carry" distractor.
-        expect(improperMixedCount).toBeLessThanOrEqual(1);
-      } else {
-        // No carry → no improper-mixed option should appear at all.
-        expect(improperMixedCount).toBe(0);
-      }
+      // At most one improper-mixed option is allowed and only when the
+      // correct answer required carrying — that one is the "forgot to carry"
+      // distractor. No carry means every option must be a proper mixed
+      // number (or a whole-number form that doesn't match the "W R/D" regex
+      // used to count). Collapse the branch into a single unconditional
+      // expect so jest/no-conditional-expect stays satisfied.
+      expect(improperMixedCount).toBeLessThanOrEqual(carried ? 1 : 0);
     }
   });
 });
