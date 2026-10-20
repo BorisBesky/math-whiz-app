@@ -496,7 +496,7 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
     const wholeNumber = getRandomInt(1, 3 + Math.floor(difficulty * 3));
     const remainder = getRandomInt(1, denominator - 1);
     const improperNumerator = wholeNumber * denominator + remainder;
-    
+
     const correctAnswer = `${wholeNumber} ${remainder}/${denominator}`;
 
     // Never emit "0 R/D" as a distractor — that's malformed mixed-number
@@ -505,9 +505,21 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
     const oneFewerWhole = wholeNumber - 1 === 0
       ? `${remainder}/${denominator}`
       : `${wholeNumber - 1} ${remainder}/${denominator}`;
+    // The "off-by-one on the remainder" distractor must stay a proper mixed
+    // number: when remainder + 1 === denominator the naive form reads
+    // "W D/D" (e.g. "2 5/5"), an improper-mixed artifact that equals W+1
+    // and visually tells a student the answer isn't it. Clamp back down by
+    // bumping the remainder low instead so the distractor is still a
+    // plausible off-by-one, and swap to a "wrong denominator" shape when
+    // the fraction would reduce to zero (remainder=1 → remainder-1=0).
+    const bumpedRemainderDistractor = remainder + 1 < denominator
+      ? `${wholeNumber} ${remainder + 1}/${denominator}`
+      : remainder - 1 > 0
+        ? `${wholeNumber} ${remainder - 1}/${denominator}`
+        : `${wholeNumber} ${remainder}/${denominator + 1}`;
     const potentialDistractors = [
       `${wholeNumber + 1} ${remainder}/${denominator}`,
-      `${wholeNumber} ${remainder + 1}/${denominator}`,
+      bumpedRemainderDistractor,
       oneFewerWhole,
     ];
     
@@ -553,9 +565,23 @@ export function generateMixedNumbersQuestion(difficulty = 0.5) {
     const forgotToCarryDistractor = carried
       ? `${whole1 + whole2} ${num1 + num2}/${denominator}`
       : `${resultWhole} ${Math.max(1, resultNum - 1)}/${denominator}`;
+    // The "off-by-one on the fractional part" distractor must stay a proper
+    // mixed number: when resultNum + 1 === denominator the naive form reads
+    // "W D/D" (an improper-mixed artifact that equals W+1). Pivot to the
+    // "wrong denominator" shape in that case so the distractor is still a
+    // plausible mistake AND still distinct from the no-carry forgot-to-carry
+    // distractor (which already uses resultNum - 1). When the result had no
+    // fractional part at all (resultNum === 0, i.e. a whole-number answer),
+    // start from 1/d so the "add one more" shape still reads as a mixed
+    // number.
+    const bumpedFractionDistractor = resultNum === 0
+      ? `${resultWhole} 1/${denominator}`
+      : resultNum + 1 < denominator
+        ? `${resultWhole} ${resultNum + 1}/${denominator}`
+        : `${resultWhole} ${resultNum}/${denominator + 1}`;
     const potentialDistractors = [
       `${resultWhole + 1} ${resultNum === 0 ? 1 : resultNum}/${denominator}`,
-      `${resultWhole} ${resultNum + 1}/${denominator}`,
+      bumpedFractionDistractor,
       forgotToCarryDistractor,
     ];
     

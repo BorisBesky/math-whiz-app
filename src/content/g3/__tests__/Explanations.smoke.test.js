@@ -32,3 +32,26 @@ describe('G3 Explanations render without crashing', () => {
     expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
   });
 });
+
+// Every subtopic the question bank can ask about needs something to read when
+// a student taps "Explain". Mirror the G5 pattern of locking subtopic coverage
+// in so a future edit can't quietly drop a section a kid depends on.
+describe('G3 Explanations cover every subtopic listed in the manifest', () => {
+  const textOf = (Component) => {
+    render(<Component />);
+    return document.body.textContent.toLowerCase();
+  };
+
+  it('Measurement & Data covers area, perimeter, and volume (3.MD.C.5–D.8)', () => {
+    const text = textOf(MeasurementData);
+    expect(text).toMatch(/area/);
+    expect(text).toMatch(/perimeter/);
+    expect(text).toMatch(/volume/);
+    // The three units of measure the standard calls out specifically:
+    // "square units" (area), plain units (perimeter), "cubic units" (volume).
+    expect(text).toMatch(/square units?/);
+    expect(text).toMatch(/cubic units?/);
+    // And a working formula a student can latch onto for a rectangle.
+    expect(text).toMatch(/length [×x] width/);
+  });
+});

@@ -58,6 +58,84 @@ describe('G4 fractions: mixed-number "toMixed" distractors are never malformed',
       });
     }
   });
+
+  it('never emits an improper-mixed form like "W D/D" (R/D with R >= D)', () => {
+    // Before the fix, the "off-by-one on the fractional part" distractor was
+    // `${wholeNumber} ${remainder + 1}/${denominator}` — which produces an
+    // improper mixed form like "2 5/5" whenever remainder = denominator - 1.
+    // That's not a proper mixed number and visually tells a student the answer
+    // isn't it. Filter + forEach keeps the assertion unconditional so
+    // jest/no-conditional-expect stays happy.
+    for (let i = 0; i < 1500; i += 1) {
+      // Draw across the full difficulty range so we hit the smallest
+      // denominator (where remainder = denominator - 1 is forced) too.
+      const q = generateMixedNumbersQuestion(Math.random());
+      if (!/Convert \d+\/\d+ to a mixed number\./.test(q.question)) continue;
+      q.options
+        .map((opt) => opt.match(/^(\d+) (\d+)\/(\d+)$/))
+        .filter(Boolean)
+        .forEach((parts) => {
+          const r = Number(parts[2]);
+          const d = Number(parts[3]);
+          // A proper mixed number has fractional part < 1.
+          expect(r).toBeLessThan(d);
+        });
+    }
+  });
+
+  it('convert-to-mixed questions always render 4 distinct options including the correct answer', () => {
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateMixedNumbersQuestion(Math.random());
+      if (!/Convert \d+\/\d+ to a mixed number\./.test(q.question)) continue;
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options.length).toBe(4);
+    }
+  });
+
+  it('add-mixed questions never emit an improper-mixed distractor and always render 4 distinct options', () => {
+    // The "forgot to carry" distractor legitimately ships an improper mixed
+    // form like "4 7/5" (that's the whole point — a student who forgot to
+    // carry writes exactly that). The "off-by-one on the fractional part"
+    // distractor, by contrast, must stay proper: "W D/D" is just W+1 in
+    // weird clothes and leaks the right answer.
+    //
+    // Validate behavior per draw: whatever the hint and question text say,
+    // ensure the pool is distinct, contains the correct answer, and that
+    // at MOST one option is an improper mixed form (the forgot-to-carry one),
+    // and that it only appears when the correct answer required carrying.
+    for (let i = 0; i < 1500; i += 1) {
+      const q = generateMixedNumbersQuestion(Math.random());
+      const addMatch = q.question.match(
+        /What is (\d+) (\d+)\/(\d+) \+ (\d+) (\d+)\/(\d+)\?/
+      );
+      if (!addMatch) continue;
+      // Only the numerators and denominator drive the carry/proper check;
+      // the two whole numbers aren't used in the assertions below.
+      const n1 = Number(addMatch[2]);
+      const d = Number(addMatch[3]);
+      const n2 = Number(addMatch[5]);
+      const carried = n1 + n2 >= d;
+
+      expect(q.options).toContain(q.correctAnswer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options.length).toBe(4);
+
+      const improperMixedCount = q.options.filter((opt) => {
+        const parts = opt.match(/^(\d+) (\d+)\/(\d+)$/);
+        if (!parts) return false;
+        return Number(parts[2]) >= Number(parts[3]);
+      }).length;
+
+      // At most one improper-mixed option is allowed and only when the
+      // correct answer required carrying — that one is the "forgot to carry"
+      // distractor. No carry means every option must be a proper mixed
+      // number (or a whole-number form that doesn't match the "W R/D" regex
+      // used to count). Collapse the branch into a single unconditional
+      // expect so jest/no-conditional-expect stays satisfied.
+      expect(improperMixedCount).toBeLessThanOrEqual(carried ? 1 : 0);
+    }
+  });
 });
 
 describe('G4 fractions: subtraction hint matches the question setup', () => {
