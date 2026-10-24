@@ -91,6 +91,10 @@ import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreS
 import { purchaseCharacterSkill } from './services/characterSkillStoreService';
 import useFeatureSettings from "./hooks/useFeatureSettings";
 
+// Keep the quote catalog and progress helpers out of the initial app bundle.
+const saveSecretMessageCompletion = (...args) => import('./services/secretMessageProgressService')
+  .then(module => module.saveSecretMessageCompletion(...args));
+
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
 const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
@@ -2750,6 +2754,13 @@ Answer: [The answer]`;
                 <SecretMessageQuiz
                   key={`${user?.uid}:${selectedGrade}`}
                   userId={user?.uid}
+                  savedProgress={userData?.secretMessageProgress}
+                  saveCompletion={saveSecretMessageCompletion}
+                  initialComplexity={(() => {
+                    const levels = getTopicNamesForGrade(selectedGrade)
+                      .map(topic => lastAskedComplexityByTopic[topic]).filter(Number.isFinite);
+                    return levels.length ? levels.reduce((sum, value) => sum + value, 0) / levels.length : 0.5;
+                  })()}
                   selectedGrade={selectedGrade}
                   returnToTopics={() => navigateApp('/')}
                 />
