@@ -93,6 +93,7 @@ import useFeatureSettings from "./hooks/useFeatureSettings";
 
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
+const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
   import(/* webpackChunkName: "rewards-store-planet-dome-stairs-v44" */ './components/RewardsStore')
@@ -2745,6 +2746,14 @@ Answer: [The answer]`;
                   />
                 )
               } />
+              <Route path="secret-message" element={
+                <SecretMessageQuiz
+                  key={`${user?.uid}:${selectedGrade}`}
+                  userId={user?.uid}
+                  selectedGrade={selectedGrade}
+                  returnToTopics={() => navigateApp('/')}
+                />
+              } />
               <Route path="results/:topic/*" element={
                 <QuizResults
                   score={score}
@@ -2805,6 +2814,7 @@ Answer: [The answer]`;
                   user={user}
                   gradeChangeInProgressRef={gradeChangeInProgressRef}
                   handleTopicSelection={handleTopicSelection}
+                  startSecretMessageQuiz={() => navigateApp('/secret-message')}
                   feedback={feedback}
                   resetAllProgress={resetAllProgress}
                 />
@@ -2818,6 +2828,7 @@ Answer: [The answer]`;
                   user={user}
                   gradeChangeInProgressRef={gradeChangeInProgressRef}
                   handleTopicSelection={handleTopicSelection}
+                  startSecretMessageQuiz={() => navigateApp('/secret-message')}
                   feedback={feedback}
                   resetAllProgress={resetAllProgress}
                 />
