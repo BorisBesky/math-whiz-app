@@ -22,10 +22,29 @@ export const SECRET_MESSAGES = [
 export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 export const messageLetters = message => message.text.toUpperCase().replace(/[^A-Z]/g, '');
 
-// A saved seed recreates the same clues on reload. All answers are integers 1–26.
+// Seeded shuffling keeps a puzzle's private code stable across reloads.
+function shuffle(items, seed) {
+  const result = [...items];
+  let state = seed + 1;
+  for (let index = result.length - 1; index > 0; index--) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const other = Math.floor((state / 4294967296) * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
+export function makeNumberLetterMap(seed) {
+  const numbers = shuffle(Array.from({ length: 26 }, (_, index) => index + 1), seed);
+  return Object.fromEntries([...ALPHABET].map((letter, index) => [letter, numbers[index]]));
+}
+
+// One clue per distinct letter, in an order independent of the message.
+// Repeated letters share a number and are filled together when their key is clicked.
 export function makeClues(message, grade, seed = 0) {
-  return [...messageLetters(message)].map((letter, index) => {
-    const answer = ALPHABET.indexOf(letter) + 1;
+  const code = makeNumberLetterMap(seed);
+  return shuffle([...new Set(messageLetters(message))], seed + 7919).map((letter, index) => {
+    const answer = code[letter];
     const offset = ((seed + index * 7) % 9) + 2;
     const operation = (seed + index) % (grade === 'G3' ? 3 : 4);
     let expression;
@@ -54,7 +73,7 @@ export function readSecretSession(key) {
     const saved = JSON.parse(localStorage.getItem(key));
     const message = SECRET_MESSAGES.find(item => item.id === saved?.quoteId);
     if (message && Number.isInteger(saved.seed) && saved.seed >= 0 && saved.seed < 1000000 &&
-        Number.isInteger(saved.solved) && saved.solved >= 0 && saved.solved <= messageLetters(message).length &&
+        Number.isInteger(saved.solved) && saved.solved >= 0 && saved.solved <= new Set(messageLetters(message)).size &&
         typeof saved.mathSolved === 'boolean') return saved;
   } catch (_) { /* Browser storage may be unavailable or contain an older session. */ }
   return null;
