@@ -91,8 +91,13 @@ import { purchasePlanetItem, setPlanetItemActive } from './services/planetStoreS
 import { purchaseCharacterSkill } from './services/characterSkillStoreService';
 import useFeatureSettings from "./hooks/useFeatureSettings";
 
+// Keep the quote catalog and progress helpers out of the initial app bundle.
+const saveSecretMessageCompletion = (...args) => import('./services/secretMessageProgressService')
+  .then(module => module.saveSecretMessageCompletion(...args));
+
 // Lazy-loaded components — only fetched when the user navigates to them
 const QuizView = React.lazy(() => import('./components/QuizView'));
+const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
   import(/* webpackChunkName: "rewards-store-planet-dome-stairs-v44" */ './components/RewardsStore')
@@ -2745,6 +2750,21 @@ Answer: [The answer]`;
                   />
                 )
               } />
+              <Route path="secret-message" element={
+                <SecretMessageQuiz
+                  key={`${user?.uid}:${selectedGrade}`}
+                  userId={user?.uid}
+                  savedProgress={userData?.secretMessageProgress}
+                  saveCompletion={saveSecretMessageCompletion}
+                  initialComplexity={(() => {
+                    const levels = getTopicNamesForGrade(selectedGrade)
+                      .map(topic => lastAskedComplexityByTopic[topic]).filter(Number.isFinite);
+                    return levels.length ? levels.reduce((sum, value) => sum + value, 0) / levels.length : 0.5;
+                  })()}
+                  selectedGrade={selectedGrade}
+                  returnToTopics={() => navigateApp('/')}
+                />
+              } />
               <Route path="results/:topic/*" element={
                 <QuizResults
                   score={score}
@@ -2805,6 +2825,7 @@ Answer: [The answer]`;
                   user={user}
                   gradeChangeInProgressRef={gradeChangeInProgressRef}
                   handleTopicSelection={handleTopicSelection}
+                  startSecretMessageQuiz={() => navigateApp('/secret-message')}
                   feedback={feedback}
                   resetAllProgress={resetAllProgress}
                 />
@@ -2818,6 +2839,7 @@ Answer: [The answer]`;
                   user={user}
                   gradeChangeInProgressRef={gradeChangeInProgressRef}
                   handleTopicSelection={handleTopicSelection}
+                  startSecretMessageQuiz={() => navigateApp('/secret-message')}
                   feedback={feedback}
                   resetAllProgress={resetAllProgress}
                 />

@@ -30,6 +30,7 @@ const TopicSelection = ({
   user,
   gradeChangeInProgressRef,
   handleTopicSelection,
+  startSecretMessageQuiz,
   feedback,
   resetAllProgress,
 }) => {
@@ -156,6 +157,17 @@ const TopicSelection = ({
         >
           {feedback.message}
         </div>
+      )}
+
+      {startSecretMessageQuiz && (
+        <button onClick={startSecretMessageQuiz} className="max-w-4xl mx-auto mb-6 w-full border-2 border-teal-300 bg-teal-50 rounded-card p-5 flex items-center gap-4 text-left hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
+          <span className="text-3xl" aria-hidden="true">🔐</span>
+          <span>
+            <span className="block font-display text-xl font-bold text-teal-900">Secret Message</span>
+            <span className="block text-sm text-teal-800">Solve math clues, decode letters, and discover an inspiring message.</span>
+            <span className="block text-xs text-teal-700 mt-1">Bonus arithmetic practice</span>
+          </span>
+        </button>
       )}
 
       {/* Topic Cards */}
