@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { ArrowLeft, KeyRound } from 'lucide-react';
-import { ALPHABET, makeClues, makeNumberLetterMap, messageLetters, readSecretSession } from './secretMessageConfig';
+import { makeClues, makeNumberLetterMap, messageLetters, readSecretSession } from './secretMessageConfig';
 
+import SecretMessageBoard from './SecretMessageBoard';
 import { generateMessageBatch, normalizeMessageProgress, completeMessage } from './messageLibrary';
 
 const primaryButton = 'rounded-button bg-brand-blue px-6 py-3 font-bold text-white hover:bg-blue-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700';
@@ -23,6 +24,8 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
   const [completionState, setCompletionState] = useState('idle');
   const [completionError, setCompletionError] = useState('');
   const [saveAttempt, setSaveAttempt] = useState(0);
+  const [scanRequest, setScanRequest] = useState(null);
+  const scanRef = useRef(null);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [showHint, setShowHint] = useState(false);
@@ -82,6 +85,8 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
   }, [session?.solved, session?.mathSolved]);
 
   const start = (item) => {
+    scanRef.current = null;
+    setScanRequest(null);
     const complexity = progress.complexityByGrade[selectedGrade] ?? Math.max(0.15, Math.min(0.95, initialComplexity));
     setSession({ quoteId: item.id, message: item, batch: progress.batch, seed: Math.floor(Math.random() * 1000000), solved: 0, mathSolved: false, complexity, firstTry: 0, hadMistake: false });
     setCompletionState('idle');
@@ -105,12 +110,25 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
     setFeedback(`Correct! ${clue.answer} = ${clue.letter}. Click ${clue.letter} in your key to fill every ${clue.answer} in the message.`);
   };
 
-  const placeLetter = () => {
-    if (!session.mathSolved || !clue) return;
-    setSession({ ...session, solved: session.solved + 1, mathSolved: false, firstTry: session.firstTry + (session.hadMistake ? 0 : 1), hadMistake: false });
+  const finishPlacement = useCallback(() => {
+    const request = scanRef.current;
+    if (!request) return;
+    scanRef.current = null;
+    setScanRequest(null);
+    setSession(current => current && current.quoteId === request.quoteId && current.solved === request.solved
+      ? { ...current, solved: current.solved + 1, mathSolved: false, firstTry: current.firstTry + (current.hadMistake ? 0 : 1), hadMistake: false }
+      : current);
     setAnswer('');
     setShowHint(false);
-    setFeedback(`You placed ${clue.letter} in every space numbered ${clue.answer}!`);
+    setFeedback(`You placed ${request.letter} in every space numbered ${request.number}!`);
+  }, []);
+
+  const placeLetter = () => {
+    if (!session.mathSolved || !clue || scanRef.current) return;
+    const request = { quoteId: session.quoteId, solved: session.solved, letter: clue.letter, number: clue.answer };
+    scanRef.current = request;
+    setScanRequest(request);
+    setFeedback(`Searching the message for ${clue.answer}… Watch for ${clue.letter}!`);
   };
 
   return (
@@ -142,25 +160,15 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
         </div>
       ) : (
         <>
-          <div className="bg-teal-50 rounded-xl p-4 sm:p-6 mb-6">
-            <h2 className="font-bold mb-4">{complete ? 'Message decoded!' : `Your message · ${session.solved} of ${clues.length} number–letter pairs found`}</h2>
-            <div className="flex flex-wrap gap-x-4 gap-y-3" aria-label="Decoded message">
-              {message.text.toUpperCase().split(' ').map((word, wordIndex) => (
-                <span className="inline-flex flex-wrap max-w-full gap-0.5 sm:gap-1" key={wordIndex}>
-                  {[...word].map((character, characterIndex) => {
-                    if (!ALPHABET.includes(character)) return <span key={characterIndex} className="self-end font-bold">{character}</span>;
-                    const revealed = decodedLetters.has(character);
-                    const number = code[character];
-                    const ready = session.mathSolved && character === clue?.letter;
-                    return <span key={characterIndex} aria-label={revealed ? `${number} decoded as ${character}` : `Number ${number}, hidden letter`} className={`inline-flex flex-col items-center justify-center w-10 h-12 sm:w-12 border-b-2 font-display font-bold ${revealed ? 'bg-white border-teal-600 text-teal-800' : ready ? 'bg-yellow-100 border-yellow-600' : 'border-teal-200'}`}>
-                      <span className="text-sm sm:text-base">{revealed ? character : number}</span>
-                      {revealed && <span className="text-xs font-normal text-gray-500">{number}</span>}
-                    </span>;
-                  })}
-                </span>
-              ))}
-            </div>
-          </div>
+          <SecretMessageBoard
+            message={message}
+            code={code}
+            decodedLetters={decodedLetters}
+            activeLetter={session.mathSolved ? clue?.letter : null}
+            heading={complete ? 'Message decoded!' : `Your message · ${session.solved} of ${clues.length} number–letter pairs found`}
+            scanRequest={scanRequest}
+            onScanComplete={finishPlacement}
+          />
           {complete ? (
             <div className="space-y-4">
               <blockquote className="text-2xl font-display font-bold">“{message.text}”</blockquote>
@@ -189,12 +197,12 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
               {!session.mathSolved && <button onClick={() => { setShowHint(!showHint); if (!showHint) setSession({ ...session, hadMistake: true }); }} aria-expanded={showHint} className="text-blue-700 underline mb-3">{showHint ? 'Hide hint' : 'Need a hint?'}</button>}
               {showHint && !session.mathSolved && <p className="bg-blue-50 p-3 rounded-lg mb-4">{clue.hint}</p>}
               <h3 className="font-bold mb-2">Your number–letter key</h3>
-              <p className="text-sm text-gray-600 mb-3">{session.mathSolved ? `Click ${clue.letter} to place it in the message.` : 'Solve a clue to unlock a letter. Its number will appear here.'}</p>
+              <p className="text-sm text-gray-600 mb-3">{scanRequest ? 'Watch the magnifying glass find each matching number.' : session.mathSolved ? `Click ${clue.letter} to place it in the message.` : 'Solve a clue to unlock a letter. Its number will appear here.'}</p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2" aria-label="Number-letter decoding key">
                 {[...clues].sort((a, b) => a.letter.localeCompare(b.letter)).map(item => {
                   const ready = session.mathSolved && item.letter === clue.letter;
                   const placed = decodedLetters.has(item.letter);
-                  return <button key={item.letter} ref={ready ? letterRef : null} disabled={!ready} onClick={placeLetter}
+                  return <button key={item.letter} ref={ready ? letterRef : null} disabled={!ready || Boolean(scanRequest)} onClick={placeLetter}
                     aria-label={ready ? `Place ${item.letter} in every ${item.answer}` : placed ? `${item.answer} = ${item.letter}, placed` : `${item.letter}, locked`}
                     className={`min-h-[52px] rounded-lg border-2 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${ready ? 'bg-yellow-100 border-yellow-600 text-gray-900 hover:bg-yellow-200' : placed ? 'bg-teal-50 border-teal-300 text-teal-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
                     <span className="block font-bold text-lg">{item.letter}</span>
@@ -202,7 +210,7 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
                   </button>;
                 })}
               </div>
-              <button onClick={() => { setSession(null); setAnswer(''); setFeedback(''); setShowHint(false); }} className="mt-6 text-sm text-blue-700 underline">Choose a different message</button>
+              <button disabled={Boolean(scanRequest)} onClick={() => { setSession(null); setAnswer(''); setFeedback(''); setShowHint(false); }} className="mt-6 text-sm text-blue-700 underline">Choose a different message</button>
             </>
           )}
         </>
