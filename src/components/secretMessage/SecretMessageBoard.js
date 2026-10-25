@@ -57,8 +57,11 @@ export default function SecretMessageBoard({ message, code, decodedLetters, acti
         if (tile.dataset.letter === scanRequest.letter) {
           tile.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
           setStoppedAt(index);
+          // Let students see the lens resting on the number before it changes.
+          await pause(220);
+          if (cancelled) return;
           setFoundPositions(found => [...found, index]);
-          await pause(320);
+          await pause(180);
         }
       }
       if (!cancelled) onScanComplete();

@@ -32,24 +32,33 @@ const boardProps = {
   activeLetter: 'A', heading: 'Your message', scanRequest: { letter: 'A' },
 };
 
-it('scans the phrase in reading order, pauses at every match, and reveals each occurrence separately', async () => {
+it('stops on each number before revealing its letter, leaving later matches hidden', async () => {
   const onScanComplete = jest.fn();
   render(<SecretMessageBoard {...boardProps} onScanComplete={onScanComplete} />);
   expect(screen.getAllByLabelText('Number 42, hidden letter')).toHaveLength(2);
   await advance(90);
+  expect(screen.getAllByLabelText('Number 42, hidden letter')[0]).toHaveClass('secret-message-found');
+  expect(screen.queryByLabelText('42 decoded as A')).not.toBeInTheDocument();
+  await advance(200);
+  expect(screen.queryByLabelText('42 decoded as A')).not.toBeInTheDocument();
+  expect(HTMLElement.prototype.animate).toHaveBeenCalledTimes(1);
+  await advance(25);
   expect(screen.getAllByLabelText('42 decoded as A')).toHaveLength(1);
   expect(screen.getAllByLabelText('Number 42, hidden letter')).toHaveLength(1);
   expect(screen.getByLabelText('42 decoded as A')).toHaveClass('secret-message-found');
-  await advance(250);
-  expect(HTMLElement.prototype.animate).toHaveBeenCalledTimes(1);
   expect(onScanComplete).not.toHaveBeenCalled();
-  await advance(75);
+  await advance(185);
   await advance(90);
   expect(screen.getByLabelText('Number 7, hidden letter')).toBeInTheDocument();
   await advance(90);
+  expect(screen.getByLabelText('Number 42, hidden letter')).toHaveClass('secret-message-found');
+  expect(screen.getAllByLabelText('42 decoded as A')).toHaveLength(1);
+  await advance(200);
+  expect(screen.getAllByLabelText('42 decoded as A')).toHaveLength(1);
+  await advance(25);
   expect(screen.getAllByLabelText('42 decoded as A')).toHaveLength(2);
   expect(onScanComplete).not.toHaveBeenCalled();
-  await advance(325);
+  await advance(185);
   expect(HTMLElement.prototype.animate).toHaveBeenCalledTimes(3);
   expect(onScanComplete).toHaveBeenCalledTimes(1);
 });
