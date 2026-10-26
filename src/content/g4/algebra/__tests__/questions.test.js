@@ -104,6 +104,50 @@ describe('Algebra correctness', () => {
     }
   });
 
+  test('input output tables (reverse): distractors are plausible inputs, not the raw output', () => {
+    // Regression: the old reverse branch used `output` itself as a
+    // candidate distractor. Because `output = a*input + b` is typically
+    // much larger than `input`, students could trivially eliminate it,
+    // reducing a 4-option MC to effectively 3. Distractors should sit
+    // close to the real input or model a specific wrong path.
+    let asked = 0;
+    for (let i = 0; i < 400; i += 1) {
+      const q = generateQuestion(0.95, ['input output tables']);
+      if (!q) continue;
+      const backward = q.question.match(/output is (\d+), what was the input\?$/);
+      if (!backward) continue;
+      asked += 1;
+      const output = Number(backward[1]);
+      const rule = q.question.match(
+        /rule: multiply by (\d+)(?:, then add (\d+))?\./
+      );
+      const a = Number(rule[1]);
+      const b = Number(rule[2] || 0);
+      const inputVal = Number(q.correctAnswer);
+      // Every distractor must be numeric and "reasonable" — i.e. no
+      // option exceeds the real input by more than a factor of a (so a
+      // kid can't eliminate the much-too-large raw output on sight).
+      // Also permits the two pedagogically-valuable traps the fix
+      // introduces (output/a when b>0, and output-b when b>0).
+      for (const opt of q.options) {
+        const value = Number(opt);
+        expect(Number.isFinite(value)).toBe(true);
+        // Every option is either close to the input (reasonable guess) or
+        // one of the two documented wrong-step traps. Raw `output` is far
+        // larger than `input` whenever a*input is well above input (the
+        // typical case), so this blanket check catches the regression —
+        // the old distractors list ending in `output` surfaced e.g. 55
+        // next to the input 2.
+        const skippedSubtract = b > 0 ? Math.floor(output / a) : null;
+        const skippedDivide = b > 0 ? output - b : null;
+        const nearInput = Math.abs(value - inputVal) <= inputVal + 3;
+        const isTrap = value === skippedSubtract || value === skippedDivide;
+        expect(nearInput || isTrap).toBe(true);
+      }
+    }
+    expect(asked).toBeGreaterThan(0);
+  });
+
   test('growing patterns: sequences are arithmetic and answers fit the rule', () => {
     for (const q of draw('growing patterns')) {
       if (q.question.startsWith('What number comes next')) {

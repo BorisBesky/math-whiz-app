@@ -840,13 +840,11 @@ export function generateLineSymmetryQuestion(difficulty = 0.5) {
 }
 
 function generateAngleAdditionQuestion() {
-  let angleCBD = getRandomInt(20, 85);
-  let angleDBA = getRandomInt(15, 80);
-
-  while (angleCBD + angleDBA >= 180) {
-    angleCBD = getRandomInt(20, 85);
-    angleDBA = getRandomInt(15, 80);
-  }
+  // Ranges are chosen so angleCBA stays strictly obtuse (< 180°). Maximum
+  // possible sum is 85 + 80 = 165, so no runtime check is needed; the
+  // previous `while (sum >= 180)` loop body was unreachable.
+  const angleCBD = getRandomInt(20, 85);
+  const angleDBA = getRandomInt(15, 80);
 
   const angleCBA = angleCBD + angleDBA;
   const missingAngleType = ['angle CBD', 'angle DBA', 'angle CBA'][getRandomInt(0, 2)];

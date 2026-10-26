@@ -143,6 +143,31 @@ describe('geometry angle real-life examples', () => {
     expect(additionQuestionCount).toBeGreaterThan(0);
   });
 
+  it('angle addition total (CBA) stays strictly below 180°', () => {
+    // Regression guard: the generator used to re-roll until the sum was
+    // < 180° — but its ranges (20..85 + 15..80) can never reach 180 (max
+    // 165), so the loop body was unreachable. We dropped the dead loop;
+    // this test ensures a future widening of either range doesn't quietly
+    // start producing straight/reflex angles that the "ray BD is inside
+    // angle CBA" phrasing can't support.
+    const additionQuestionPrefix = 'Rays BC, BD, and BA all start at point B.';
+    let saw = 0;
+    for (let i = 0; i < 1000; i += 1) {
+      const question = generateAngleMeasurementQuestion();
+      if (!question.question.startsWith(additionQuestionPrefix)) continue;
+      saw += 1;
+      const matches = [...question.question.matchAll(/angle\s([A-Z]{3})\s=\s(\d+)°/g)];
+      const values = Object.fromEntries(
+        matches.map(([, name, v]) => [name, Number(v)])
+      );
+      const total =
+        values.CBA ?? ((values.CBD ?? 0) + (values.DBA ?? 0));
+      expect(total).toBeLessThan(180);
+      expect(total).toBeGreaterThan(0);
+    }
+    expect(saw).toBeGreaterThan(0);
+  });
+
   it('refreshes stale angle addition diagrams from question text', () => {
     const staleQuestion = {
       question: 'Rays BC, BD, and BA all start at point B. Ray BD is inside angle CBA. If angle CBD = 85° and angle DBA = 69°, what is angle CBA?',
