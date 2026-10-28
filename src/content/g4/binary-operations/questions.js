@@ -149,22 +149,43 @@ export function generateDecimalToBinaryQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryAdditionQuestion(difficulty = 0.5) {
-  // Use small numbers to keep it manageable for 4th graders
-  const num1 = getRandomInt(1, 7);  // 1-7 in decimal
-  const num2 = getRandomInt(1, 7);  // 1-7 in decimal
+  // Scale the operand range with difficulty so the adaptive engine can
+  // actually stretch stronger students. The old code hard-coded (1,7) at
+  // every difficulty, so easy and hard quizzes showed the same bit widths.
+  const maxOperand = difficulty < 0.6 ? 7 : difficulty < 0.85 ? 10 : 15;
+  const num1 = getRandomInt(1, maxOperand);
+  const num2 = getRandomInt(1, maxOperand);
 
   const binary1 = decimalToBinary(num1);
   const binary2 = decimalToBinary(num2);
   const correctSum = addBinary(binary1, binary2);
 
-  // Generate wrong answers
+  // Generate wrong answers. Draw from a larger range than the operand range
+  // so plausible near-sum distractors are available; the attempts guard
+  // keeps a future narrowing of the pool from spinning forever.
+  const wrongPoolMax = Math.max(maxOperand * 2 + 2, 20);
   const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    const wrongNum1 = getRandomInt(1, 10);
-    const wrongNum2 = getRandomInt(1, 10);
+  let attempts = 0;
+  while (wrongAnswers.length < 3 && attempts < 50) {
+    attempts++;
+    const wrongNum1 = getRandomInt(1, wrongPoolMax);
+    const wrongNum2 = getRandomInt(1, wrongPoolMax);
     const wrongSum = decimalToBinary(wrongNum1 + wrongNum2);
     if (wrongSum !== correctSum && !wrongAnswers.includes(wrongSum)) {
       wrongAnswers.push(wrongSum);
+    }
+  }
+  // Deterministic fallback — plausible near-sum values the student can
+  // reasonably mis-add to. Guarantees four distinct options even if the
+  // random draws keep colliding.
+  const correctDecimalSum = num1 + num2;
+  for (const delta of [1, -1, 2, -2, 3]) {
+    if (wrongAnswers.length >= 3) break;
+    const value = correctDecimalSum + delta;
+    if (value < 1) continue;
+    const bin = decimalToBinary(value);
+    if (bin !== correctSum && !wrongAnswers.includes(bin)) {
+      wrongAnswers.push(bin);
     }
   }
 
@@ -186,21 +207,40 @@ export function generateBinaryAdditionQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinarySubtractionQuestion(difficulty = 0.5) {
-  // Ensure num1 > num2 so result is non-negative (appropriate for 4th graders)
-  const num1 = getRandomInt(4, 15);
+  // Scale minuend ceiling with difficulty — the old code used (4,15) at
+  // every difficulty, so stronger students never saw wider bit patterns.
+  // Ensure num1 > num2 so result is non-negative (appropriate for 4th graders).
+  const maxMinuend = difficulty < 0.65 ? 10 : difficulty < 0.9 ? 15 : 31;
+  const num1 = getRandomInt(4, maxMinuend);
   const num2 = getRandomInt(1, num1 - 1);
 
   const binary1 = decimalToBinary(num1);
   const binary2 = decimalToBinary(num2);
   const correctDifference = subtractBinary(binary1, binary2);
 
-  // Generate wrong answers
+  // Generate wrong answers. Attempt cap guards against a future narrowing
+  // of the pool (e.g. tiny num1) that would otherwise exhaust the draws.
+  const wrongPoolMax = Math.max(num1, 14);
   const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    const wrongVal = getRandomInt(0, 14);
+  let attempts = 0;
+  while (wrongAnswers.length < 3 && attempts < 50) {
+    attempts++;
+    const wrongVal = getRandomInt(0, wrongPoolMax);
     const wrongBin = decimalToBinary(wrongVal);
     if (wrongBin !== correctDifference && !wrongAnswers.includes(wrongBin)) {
       wrongAnswers.push(wrongBin);
+    }
+  }
+  // Deterministic fallback — common off-by-one errors around the real
+  // difference. Ensures four distinct options regardless of draws.
+  const correctDecimalDiff = num1 - num2;
+  for (const delta of [1, -1, 2, -2, 3]) {
+    if (wrongAnswers.length >= 3) break;
+    const value = correctDecimalDiff + delta;
+    if (value < 0) continue;
+    const bin = decimalToBinary(value);
+    if (bin !== correctDifference && !wrongAnswers.includes(bin)) {
+      wrongAnswers.push(bin);
     }
   }
 
@@ -222,28 +262,43 @@ export function generateBinarySubtractionQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryMultiplicationQuestion(difficulty = 0.5) {
-  // Keep products in 1-15 range for 4th graders
-  let num1 = getRandomInt(1, 7);
-  let num2 = getRandomInt(1, 3);
-
-  // Ensure product doesn't exceed 15
-  if (num1 * num2 > 15) {
-    num1 = getRandomInt(1, 5);
-    num2 = getRandomInt(1, 3);
-  }
+  // Keep products in a difficulty-scaled range. Compute num2's ceiling from
+  // num1 so the product never exceeds productMax — the old roll-and-reroll
+  // guard only fired when num1 happened to be 6 or 7 and otherwise capped
+  // at the same ceiling, which was close to dead code.
+  const productMax = difficulty < 0.8 ? 15 : difficulty < 0.95 ? 24 : 31;
+  const num1Max = Math.min(7, productMax);
+  const num1 = getRandomInt(1, num1Max);
+  const num2 = getRandomInt(1, Math.max(1, Math.floor(productMax / num1)));
 
   const product = num1 * num2;
   const binary1 = decimalToBinary(num1);
   const binary2 = decimalToBinary(num2);
   const correctProduct = decimalToBinary(product);
 
-  // Generate wrong answers
+  // Generate wrong answers from a range that comfortably exceeds the
+  // product ceiling so plausible distractors exist; attempts guard added
+  // for defense in depth.
+  const wrongPoolMax = Math.max(productMax, 15);
   const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    const wrongVal = getRandomInt(1, 15);
+  let attempts = 0;
+  while (wrongAnswers.length < 3 && attempts < 50) {
+    attempts++;
+    const wrongVal = getRandomInt(1, wrongPoolMax);
     const wrongBin = decimalToBinary(wrongVal);
     if (wrongBin !== correctProduct && !wrongAnswers.includes(wrongBin)) {
       wrongAnswers.push(wrongBin);
+    }
+  }
+  // Deterministic fallback — common slip-ups: num1+num2 (added instead of
+  // multiplied) and product +/-1. Guarantees four distinct options.
+  const fallbackCandidates = [num1 + num2, product + 1, product - 1, product + 2];
+  for (const value of fallbackCandidates) {
+    if (wrongAnswers.length >= 3) break;
+    if (value < 1) continue;
+    const bin = decimalToBinary(value);
+    if (bin !== correctProduct && !wrongAnswers.includes(bin)) {
+      wrongAnswers.push(bin);
     }
   }
 
@@ -265,30 +320,43 @@ export function generateBinaryMultiplicationQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryDivisionQuestion(difficulty = 0.5) {
-  // Generate clean division problems (no remainders) for 4th graders
-  // Pick a divisor (2-4) and quotient (1-5), then compute dividend
-  let divisor = getRandomInt(2, 4);
-  let quotient = getRandomInt(1, 5);
-  let dividend = divisor * quotient;
-
-  // Ensure dividend is within range
-  if (dividend > 15) {
-    divisor = 2;
-    quotient = getRandomInt(1, 7);
-    dividend = divisor * quotient;
-  }
+  // Generate clean division problems (no remainders) for 4th graders.
+  // Compute the quotient's ceiling from the chosen divisor and a scaled
+  // dividend ceiling, so the product never exceeds dividendMax up front —
+  // the old roll-and-reroll guard still allowed the first path to produce
+  // a dividend of 20 (4*5) and only reliably capped on the second roll.
+  const dividendMax = difficulty < 0.85 ? 15 : difficulty < 0.95 ? 24 : 31;
+  const divisor = getRandomInt(2, 4);
+  const quotient = getRandomInt(1, Math.max(1, Math.floor(dividendMax / divisor)));
+  const dividend = divisor * quotient;
 
   const binaryDividend = decimalToBinary(dividend);
   const binaryDivisor = decimalToBinary(divisor);
   const correctQuotient = decimalToBinary(quotient);
 
-  // Generate wrong answers
+  // Generate wrong answers. Pool exceeds the quotient ceiling comfortably;
+  // attempts guard added for defense in depth.
+  const quotientMax = Math.max(10, Math.ceil(dividendMax / 2));
   const wrongAnswers = [];
-  while (wrongAnswers.length < 3) {
-    const wrongVal = getRandomInt(1, 10);
+  let attempts = 0;
+  while (wrongAnswers.length < 3 && attempts < 50) {
+    attempts++;
+    const wrongVal = getRandomInt(1, quotientMax);
     const wrongBin = decimalToBinary(wrongVal);
     if (wrongBin !== correctQuotient && !wrongAnswers.includes(wrongBin)) {
       wrongAnswers.push(wrongBin);
+    }
+  }
+  // Deterministic fallback — plausible slips: off-by-one around the real
+  // quotient, and the dividend itself (forgot to divide). Guarantees four
+  // distinct options.
+  const fallbackCandidates = [quotient + 1, Math.max(1, quotient - 1), quotient + 2, dividend];
+  for (const value of fallbackCandidates) {
+    if (wrongAnswers.length >= 3) break;
+    if (value < 1) continue;
+    const bin = decimalToBinary(value);
+    if (bin !== correctQuotient && !wrongAnswers.includes(bin)) {
+      wrongAnswers.push(bin);
     }
   }
 
@@ -310,11 +378,21 @@ export function generateBinaryDivisionQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryComparisonQuestion(difficulty = 0.5) {
-  const num1 = getRandomInt(3, 12);
-  let num2 = getRandomInt(3, 12);
+  // Scale the comparison range with difficulty — the old code used (3,12)
+  // at every difficulty, so stronger students never had to compare wider
+  // bit patterns.
+  const maxVal = difficulty < 0.6 ? 7 : difficulty < 0.85 ? 15 : 31;
+  const minVal = Math.min(3, maxVal - 1);
+  const num1 = getRandomInt(minVal, maxVal);
+  let num2 = getRandomInt(minVal, maxVal);
   // Ensure num2 is different from num1
-  while (num2 === num1) {
-    num2 = getRandomInt(3, 12);
+  let numAttempts = 0;
+  while (num2 === num1 && numAttempts++ < 50) {
+    num2 = getRandomInt(minVal, maxVal);
+  }
+  if (num2 === num1) {
+    // Guaranteed-distinct fallback when the pool is small.
+    num2 = num1 === maxVal ? minVal : num1 + 1;
   }
 
   const binary1 = decimalToBinary(num1);
@@ -362,8 +440,12 @@ export function generateBinaryComparisonQuestion(difficulty = 0.5) {
  * @param {number} difficulty - Difficulty level from 0 to 1
  */
 export function generateBinaryPlaceValueQuestion(difficulty = 0.5) {
-  // Use numbers that clearly show place value (powers of 2)
-  const powers = [1, 2, 4, 8]; // 2^0, 2^1, 2^2, 2^3
+  // Use numbers that clearly show place value (powers of 2). Scale which
+  // powers are drawn so stronger students see higher place-value positions.
+  // The old code hard-coded [1,2,4,8] regardless of difficulty.
+  const allPowers = [1, 2, 4, 8, 16, 32];
+  const powerCount = difficulty < 0.4 ? 3 : difficulty < 0.7 ? 4 : difficulty < 0.9 ? 5 : 6;
+  const powers = allPowers.slice(0, powerCount);
   const selectedPower = powers[getRandomInt(0, powers.length - 1)];
   const binary = decimalToBinary(selectedPower);
 
@@ -371,11 +453,18 @@ export function generateBinaryPlaceValueQuestion(difficulty = 0.5) {
     1: "ones place (2⁰)",
     2: "twos place (2¹)",
     4: "fours place (2²)",
-    8: "eights place (2³)"
+    8: "eights place (2³)",
+    16: "sixteens place (2⁴)",
+    32: "thirty-twos place (2⁵)",
   };
 
   const correctAnswer = placeNames[selectedPower];
-  const wrongAnswers = Object.values(placeNames).filter(name => name !== correctAnswer);
+  // Draw distractors from the full set of other place names, then shuffle
+  // before slicing so students see varied distractors at higher difficulty
+  // (not just the three smallest places every time).
+  const wrongAnswers = shuffleArray(
+    Object.values(placeNames).filter((name) => name !== correctAnswer)
+  );
 
   return {
     question: `In the binary number ${binary}, the digit 1 is in which place value?`,

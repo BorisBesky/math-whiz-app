@@ -249,13 +249,28 @@ const generateInputOutputQuestion = (difficulty) => {
     };
   }
 
-  // Reverse: given the output, find the input (clean by construction)
+  // Reverse: given the output, find the input (clean by construction).
+  // Distractors are pedagogically plausible slip-ups rather than raw
+  // `output`, which — being roughly a*input+b — is far too large to be a
+  // believable input for the student and wastes an option slot. The
+  // "skipped the subtract-b step" trap (output/a instead of (output-b)/a)
+  // models a common error directly.
   const input = randomInt(2, 12);
   const output = a * input + b;
+  const skippedSubtract = b > 0 ? Math.floor(output / a) : null; // forgot to subtract b first
+  const skippedDivide = b > 0 ? output - b : null; // subtracted b but forgot to divide
+  const candidateDistractors = [
+    input + 1,
+    Math.max(2, input - 1),
+    input + 2,
+    skippedSubtract,
+    skippedDivide,
+    input + 3,
+  ].filter((v) => v !== null && v !== input);
   return {
     question: `A number machine uses the rule: ${ruleText}. If the output is ${output}, what was the input?`,
     correctAnswer: String(input),
-    options: buildOptions(input, [input + 1, Math.max(2, input - 1), input + 2, output]),
+    options: buildOptions(input, candidateDistractors),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
     hint: `Work backwards: ${b > 0 ? `subtract ${b}, then divide by ${a}` : `divide by ${a}`}.`,
     ...baseFields('input output tables', '4.OA.C.5'),
