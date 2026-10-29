@@ -197,3 +197,18 @@ it('saves the final available message at capacity without recycling the library'
   expect(next.completedIds).toHaveLength(200);
   expect(next.completedCount).toBe((batch + 1) * 200);
 });
+
+
+it('opens scratch work without clearing the current clue or the entered answer', () => {
+  const openSketch = jest.fn();
+  render(<SecretMessageQuiz {...props} openSketch={openSketch} />);
+  expect(screen.queryByRole('button', { name: 'Sketch' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /A message from Carl Sagan/ }));
+  fireEvent.change(screen.getByLabelText('Your math answer'), { target: { value: '123' } });
+  const clue = screen.getByRole('heading', { name: /Find the number for/ }).textContent;
+  fireEvent.click(screen.getByRole('button', { name: 'Sketch' }));
+  expect(openSketch).toHaveBeenCalledTimes(1);
+  expect(screen.getByLabelText('Your math answer')).toHaveValue('123');
+  expect(screen.getByRole('heading', { name: clue })).toBeInTheDocument();
+  expect(readSecretSession(key).solved).toBe(0);
+});
