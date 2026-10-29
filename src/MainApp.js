@@ -2750,10 +2750,11 @@ Answer: [The answer]`;
                   />
                 )
               } />
-              <Route path="secret-message" element={
+              <Route path="secret-message/*" element={
                 <SecretMessageQuiz
                   key={`${user?.uid}:${selectedGrade}`}
                   userId={user?.uid}
+                  openSketch={() => navigateApp('/secret-message/sketch')}
                   savedProgress={userData?.secretMessageProgress}
                   saveCompletion={saveSecretMessageCompletion}
                   initialComplexity={(() => {
@@ -2867,6 +2868,12 @@ Answer: [The answer]`;
                 setGeneratedContent={setGeneratedContent}
                 navigate={navigate}
               />} />
+          <Route path="secret-message/sketch" element={
+            <SketchOverlay
+              isVisible={true}
+              onClose={() => navigateApp('/secret-message')}
+            />
+          } />
           <Route path="quiz/:topic/sketch" element={
             <SketchOverlay
               isVisible={true}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, KeyRound } from 'lucide-react';
+import { ArrowLeft, KeyRound, PenTool } from 'lucide-react';
 import { makeClues, makeNumberLetterMap, messageLetters, readSecretSession } from './secretMessageConfig';
 
 import SecretMessageBoard from './SecretMessageBoard';
@@ -7,7 +7,7 @@ import { generateMessageBatch, normalizeMessageProgress, completeMessage } from 
 
 const primaryButton = 'rounded-button bg-brand-blue px-6 py-3 font-bold text-white hover:bg-blue-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700';
 
-export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopics, savedProgress, saveCompletion, initialComplexity = 0.5 }) {
+export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopics, openSketch, savedProgress, saveCompletion, initialComplexity = 0.5 }) {
   const storageKey = `mathwhiz-secret-message-v4:${userId}:${selectedGrade}`;
   const progressKey = `mathwhiz-secret-progress-v1:${userId}`;
   const [progress, setProgress] = useState(() => {
@@ -194,7 +194,14 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
                 <button type="submit" disabled={!answer.trim()} className={primaryButton}>Check answer</button>
               </form>}
               <p role="status" className="min-h-[28px] font-semibold text-teal-800 mb-3">{feedback}</p>
-              {!session.mathSolved && <button onClick={() => { setShowHint(!showHint); if (!showHint) setSession({ ...session, hadMistake: true }); }} aria-expanded={showHint} className="text-blue-700 underline mb-3">{showHint ? 'Hide hint' : 'Need a hint?'}</button>}
+              <div className="flex flex-wrap items-center gap-4 mb-3">
+                {openSketch && <button onClick={openSketch} disabled={Boolean(scanRequest)}
+                  title="Open the drawing overlay to work out this problem"
+                  className="flex items-center gap-2 text-orange-600 font-semibold py-1.5 px-3 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                  <PenTool size={18} aria-hidden="true" /> Sketch
+                </button>}
+              {!session.mathSolved && <button onClick={() => { setShowHint(!showHint); if (!showHint) setSession({ ...session, hadMistake: true }); }} aria-expanded={showHint} className="text-blue-700 underline">{showHint ? 'Hide hint' : 'Need a hint?'}</button>}
+              </div>
               {showHint && !session.mathSolved && <p className="bg-blue-50 p-3 rounded-lg mb-4">{clue.hint}</p>}
               <h3 className="font-bold mb-2">Your number–letter key</h3>
               <p className="text-sm text-gray-600 mb-3">{scanRequest ? 'Watch the magnifying glass find each matching number.' : session.mathSolved ? `Click ${clue.letter} to place it in the message.` : 'Solve a clue to unlock a letter. Its number will appear here.'}</p>
