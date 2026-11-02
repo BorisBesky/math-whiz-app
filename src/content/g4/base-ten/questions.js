@@ -199,7 +199,22 @@ export function generatePlaceValueQuestion(difficulty = 0.5) {
   const digitIndex = getRandomInt(0, maxIndex);
   const digit = number.toString()[digitIndex];
   const correctPosition = positions[6 - (numDigits - 1) + digitIndex];
-  const potentialDistractors = positions.filter((p) => p !== correctPosition).slice(0, 3);
+  // Prefer distractors that *appear in this number* — the previous
+  // `positions.filter(...).slice(0, 3)` always took the top of the positions
+  // list, so a 3-digit number like 345 shipped distractors {millions,
+  // hundred thousands, ten thousands} that a child can rule out without
+  // doing any place-value work. Narrowing to the number's own places
+  // (hundreds/tens/ones for 345) forces a real decision; if fewer than 3
+  // in-number distractors are available (3-digit numbers), top up from the
+  // next larger places so the question still ships 4 options.
+  const startPos = 7 - numDigits;
+  const positionsInNumber = positions.slice(startPos);
+  const inNumberDistractors = positionsInNumber.filter((p) => p !== correctPosition);
+  const padDistractors = positions
+    .slice(0, startPos)
+    .reverse()
+    .filter((p) => p !== correctPosition);
+  const potentialDistractors = [...inNumberDistractors, ...padDistractors].slice(0, 3);
 
   return {
     question: `In the number ${addCommas(Number(number))}, what is the place value of the digit ${digit}?`,

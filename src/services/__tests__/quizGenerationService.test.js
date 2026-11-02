@@ -92,6 +92,67 @@ describe('generateQuizQuestions — generated-question retirement', () => {
     const questions = await run({ tagMastery: { [key]: 3 }, tagMasteryThreshold: 5 });
     expect(questions).toHaveLength(1);
   });
+
+  test('exits early when every draw is retired by the mastery filter', async () => {
+    // A thin generator whose entire output space is already mastered must not
+    // burn `maxAttempts` empty retries before giving up — the student would
+    // see a long "Starting your quiz…" pause and then an empty quiz. The
+    // mastery filter now feeds the same consecutive-filtered early-exit the
+    // subtopic filter does, so the loop stops after ~50 dead draws, not the
+    // full 10 × dailyGoal (= 100 for a daily goal of 10). We ask for 10
+    // questions so the attempts budget (100) exceeds the consecutive-filtered
+    // threshold (50) — otherwise the attempts budget would run out first and
+    // we wouldn't observe the early-exit branch.
+    const key = getQuestionMasteryKey(GEN_QUESTION);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const questions = await generateQuizQuestions(
+        'Geometry',
+        { Geometry: 10 }, // dailyGoals → 10 → maxAttempts = 100
+        [], 0.5, 'G3',
+        'student-1', ['class-1'], [], 'app-1',
+        0, // force generated pool
+        null,
+        { [key]: 3 },
+        3,
+      );
+      expect(questions).toHaveLength(0);
+      // The generator should be called at most ~maxConsecutiveFiltered (50) +
+      // a small fudge for the pre-filter accept path. If this ever ballooned
+      // back to maxAttempts (100), that regresses the quiz-open latency.
+      expect(mockGenerate.mock.calls.length).toBeLessThanOrEqual(60);
+      // And the surfaced warning names mastery, not subtopic restrictions,
+      // so a teacher reading logs can tell the difference between "focus
+      // too narrow" and "student has mastered everything in this topic".
+      const consecutiveWarn = warnSpy.mock.calls
+        .map((args) => args.join(' '))
+        .find((msg) => msg.includes('consecutive questions'));
+      expect(consecutiveWarn).toBeDefined();
+      expect(consecutiveWarn).toMatch(/mastered/i);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('surfaces mastery-retired count in the end-of-loop shortfall warning', async () => {
+    // Even when the loop ends via the attempts budget (small daily goal),
+    // the teacher-visible warning should name HOW the shortfall happened
+    // ("retired because the student had already mastered them"), not just
+    // "could only generate N". A teacher reading logs needs to tell "focus
+    // too narrow" apart from "pool exhausted by mastery".
+    const key = getQuestionMasteryKey(GEN_QUESTION);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await run({ tagMastery: { [key]: 3 }, tagMasteryThreshold: 3 });
+      const shortfallWarn = warnSpy.mock.calls
+        .map((args) => args.join(' '))
+        .find((msg) => msg.includes('Could only generate'));
+      expect(shortfallWarn).toBeDefined();
+      expect(shortfallWarn).toMatch(/retired because the student had already mastered/i);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });
 
 describe('isMultipleChoiceAnswerable', () => {

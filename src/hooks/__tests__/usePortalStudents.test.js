@@ -73,6 +73,39 @@ describe('usePortalStudents - parallel enrollment fetch', () => {
     });
   });
 
+  it('does not refetch when the classes array identity flips but the id set is unchanged', async () => {
+    // usePortalClasses is backed by onSnapshot, which hands back a new array
+    // identity on every tick regardless of whether the data changed. The
+    // Students tab must not pay a round-trip + /get-all-students call per
+    // tick — only when the actual set of enrolled classes changes.
+    getDocs.mockResolvedValue({ forEach: () => {} });
+
+    const makeClasses = () => [
+      { id: 'class-a', name: 'A' },
+      { id: 'class-b', name: 'B' },
+    ];
+
+    const { rerender } = renderHook(
+      ({ classes }) => usePortalStudents({ appId: 'test-app', classes }),
+      { initialProps: { classes: makeClasses() } }
+    );
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+
+    // Fresh array, same ids, different OBJECT identity on every element too —
+    // the exact pattern an onSnapshot tick produces.
+    rerender({ classes: makeClasses() });
+    rerender({ classes: makeClasses() });
+    rerender({ classes: makeClasses() });
+
+    // Give any accidental useEffect refetch a chance to fire.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    // ADD a class — the id set changed, this SHOULD refetch.
+    rerender({ classes: [...makeClasses(), { id: 'class-c', name: 'C' }] });
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+  });
+
   it('does not fail the whole refresh when one class query throws', async () => {
     const classes = [
       { id: 'class-a', name: 'A' },

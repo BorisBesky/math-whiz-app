@@ -54,4 +54,40 @@ describe('G3 Explanations cover every subtopic listed in the manifest', () => {
     // And a working formula a student can latch onto for a rectangle.
     expect(text).toMatch(/length [×x] width/);
   });
+
+  // The other three G3 topics had no subtopic-coverage lock. Mirror the G5
+  // pattern across the whole G3 cohort so a future edit can't quietly delete
+  // an "Equivalent Fractions" or "Fact Families" section and leave the
+  // youngest cohort reading a page that doesn't mention the thing they just
+  // missed.
+  it('Division covers basic division, equal sharing, grouping, fact families, remainders, arrays', () => {
+    const text = textOf(Division);
+    expect(text).toMatch(/divid/);
+    expect(text).toMatch(/equal.*shar|shar.*equal/);
+    expect(text).toMatch(/group/);
+    expect(text).toMatch(/fact famil/);
+    expect(text).toMatch(/remainder/);
+    expect(text).toMatch(/array/);
+  });
+
+  it('Fractions covers equivalent, comparison, addition, subtraction, simplification (3.NF)', () => {
+    const text = textOf(Fractions);
+    expect(text).toMatch(/equivalent/);
+    expect(text).toMatch(/compar/);
+    expect(text).toMatch(/add/);
+    expect(text).toMatch(/subtract/);
+    expect(text).toMatch(/simplif|reduc/);
+    // The 3rd-grade bar for a fraction: numerator and denominator both named.
+    expect(text).toMatch(/numerator/);
+    expect(text).toMatch(/denominator/);
+  });
+
+  it('Multiplication covers basic, skip counting, arrays, word problems, fact families', () => {
+    const text = textOf(Multiplication);
+    expect(text).toMatch(/multipl/);
+    expect(text).toMatch(/skip count/);
+    expect(text).toMatch(/array|group/);
+    expect(text).toMatch(/word problem/);
+    expect(text).toMatch(/fact famil/);
+  });
 });

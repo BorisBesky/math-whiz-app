@@ -25,6 +25,29 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
     }, new Map());
   }, [classes]);
 
+  // Stable signature of the current class-id SET so we only trigger a fetch
+  // when the set of enrolled classes actually changes — not every time the
+  // classes array identity flips (which happens on each `onSnapshot` tick in
+  // usePortalClasses). Without this, a teacher sitting on the Students tab
+  // paid an N× Firestore round-trip + /get-all-students call every time
+  // their classes stream re-fired, dominated by the parent snapshot
+  // frequency, not by their own actions.
+  const classIdsKey = useMemo(
+    () => classes.map((cls) => cls.id).sort().join('|'),
+    [classes]
+  );
+
+  // Keep `classes` + `classMap` reachable from the fetch callback without
+  // forcing a re-fetch when only their identity changed. `classMap.get(id)`
+  // for the row's className/gradeLevel uses the freshest data available at
+  // fetch time, same as before.
+  const classesRef = useRef(classes);
+  const classMapRef = useRef(classMap);
+  useEffect(() => {
+    classesRef.current = classes;
+    classMapRef.current = classMap;
+  }, [classes, classMap]);
+
   const fetchStudents = useCallback(async () => {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
@@ -66,8 +89,10 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       // (30 s tick + focus/visibility handlers). Errors on one class don't
       // block the others; a bad snapshot logs and yields an empty enrollment
       // list for that class.
+      const classesSnapshot = classesRef.current;
+      const classMapSnapshot = classMapRef.current;
       const enrollmentSnapshots = await Promise.all(
-        classes.map(async (classItem) => {
+        classesSnapshot.map(async (classItem) => {
           try {
             const enrollmentsQuery = query(
               collection(db, 'artifacts', appId, 'classStudents'),
@@ -116,9 +141,9 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
         const classIds = classEnrollmentsMap.get(data.id) || (data.classId ? [data.classId] : []);
         const primaryClassId = classIds[0] || null;
         const classNames = classIds
-          .map((classId) => classMap.get(classId)?.name)
+          .map((classId) => classMapSnapshot.get(classId)?.name)
           .filter(Boolean);
-        const primaryClass = primaryClassId ? classMap.get(primaryClassId) : null;
+        const primaryClass = primaryClassId ? classMapSnapshot.get(primaryClassId) : null;
 
         return {
           id: data.id,
@@ -158,7 +183,10 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       refreshInFlightRef.current = false;
       if (isInitialLoad) setLoading(false);
     }
-  }, [appId, classMap, classes]);
+    // Deliberately depends on `classIdsKey`, not `classes` or `classMap`:
+    // see the comment above where `classIdsKey` is declared.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId, classIdsKey]);
 
   useEffect(() => {
     fetchStudents();
