@@ -13,6 +13,34 @@ import {
   refreshAngleAdditionDiagram,
 } from '../questions.js';
 
+describe('angle-measurement hint reads as a complete sentence', () => {
+  // Regression: the classify/measure/realLife hint was
+  // `Remember: ${angle.name}s ${angle.range}.` which rendered as
+  // "Remember: acute angles less than 90°." — a sentence fragment missing a
+  // verb. 4th graders expect a full definition sentence. The fix inserts
+  // the verb "measure" so every hint reads "<kind>s measure <range>."
+  // (The addition-type questions use a different hint built elsewhere and
+  // don't go through this template, so we only inspect "Remember: " hints.)
+  it('includes a verb in every "Remember: ..." angle-type hint', () => {
+    const seenKinds = new Set();
+    let rememberHintsSeen = 0;
+    for (let i = 0; i < 800; i += 1) {
+      const q = generateAngleMeasurementQuestion();
+      if (!q.hint || !q.hint.startsWith('Remember:')) continue;
+      rememberHintsSeen += 1;
+      const match = q.hint.match(/^Remember: (acute|right|obtuse|straight) angles (.+)\.$/);
+      expect(match).not.toBeNull();
+      const [, kind, body] = match;
+      seenKinds.add(kind);
+      // The body must START with a verb (not a comparator), i.e. "measure".
+      expect(body).toMatch(/^measure /);
+    }
+    // Sanity: a healthy sample of each hint template surfaced.
+    expect(rememberHintsSeen).toBeGreaterThan(100);
+    expect(seenKinds.size).toBe(4);
+  });
+});
+
 describe('geometry real-life angle question grammar', () => {
   it('uses "a right angle" / "a straight angle" and "an acute angle" / "an obtuse angle"', () => {
     const expectedArticle = { acute: 'an', obtuse: 'an', right: 'a', straight: 'a' };

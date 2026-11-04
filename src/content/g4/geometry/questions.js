@@ -998,7 +998,7 @@ export function generateAngleMeasurementQuestion(difficulty = 0.5) {
     options: finalOptions,
     ...(optionImages && Object.keys(optionImages).length > 0 && { optionImages }),
     questionType: QUESTION_TYPES.MULTIPLE_CHOICE,
-    hint: `Remember: ${angle.name}s ${angle.range}.`,
+    hint: `Remember: ${angle.name}s measure ${angle.range}.`,
     standard: "4.G.A.1",
     concept: "Geometry",
     grade: "G4",

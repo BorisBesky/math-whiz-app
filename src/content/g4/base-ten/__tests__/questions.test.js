@@ -117,6 +117,38 @@ describe('G4 base-ten: place-value question renders large numbers with commas', 
     expect(badlyGrouped).toEqual([]);
     expect(longNumbersSeen).toBeGreaterThan(0);
   });
+
+  it('distractors are drawn from places that appear in the number, not just the top of the positions list', () => {
+    // Regression: the old `potentialDistractors` was
+    // `positions.filter(p => p !== correctPosition).slice(0, 3)`, which always
+    // took the leftmost three (millions, hundred thousands, ten thousands)
+    // for any number. For a 3-digit number like 345 the student saw
+    // {hundreds, millions, hundred thousands, ten thousands} and could rule
+    // out three options without doing any place-value reasoning. The fix
+    // narrows distractors to the places that actually appear in the number,
+    // padding from the next larger places only if needed to reach 4 options.
+    const positions = ['millions', 'hundred thousands', 'ten thousands', 'thousands', 'hundreds', 'tens', 'ones'];
+    const trivialThreeDigitFloods = [];
+    for (let i = 0; i < 400; i += 1) {
+      // Difficulty 0 → always 3 digits (per the generator's `numDigits` formula).
+      const q = generatePlaceValueQuestion(0);
+      const numMatch = q.question.match(/In the number ([\d,]+),/);
+      const digitCount = numMatch[1].replace(/,/g, '').length;
+      expect(digitCount).toBe(3);
+      // Every option must come from the positions vocabulary and remain unique.
+      for (const opt of q.options) expect(positions).toContain(opt);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.options).toContain(q.correctAnswer);
+      // The three in-number places are hundreds/tens/ones. At least ONE of
+      // the three distractors must be among those three places. In the old
+      // code it was 0 of 3 for every single 3-digit draw.
+      const inNumberPlaces = new Set(['hundreds', 'tens', 'ones']);
+      const distractors = q.options.filter((opt) => opt !== q.correctAnswer);
+      const inNumberDistractors = distractors.filter((d) => inNumberPlaces.has(d));
+      if (inNumberDistractors.length === 0) trivialThreeDigitFloods.push(q);
+    }
+    expect(trivialThreeDigitFloods).toEqual([]);
+  });
 });
 
 describe('G4 base-ten: decimal expanded form — no distractor evaluates to the correct number', () => {

@@ -88,6 +88,7 @@ export const generateQuizQuestions = async (
 
   // Track statistics for better error reporting
   let filteredBySubtopicCount = 0;
+  let filteredByMasteryCount = 0;
   let consecutiveFilteredCount = 0;
   const maxConsecutiveFiltered = 50; // Early exit if too many consecutive filtered questions
 
@@ -137,9 +138,12 @@ export const generateQuizQuestions = async (
 
     // Early exit if too many consecutive questions are filtered (likely no valid questions exist)
     if (consecutiveFilteredCount >= maxConsecutiveFiltered) {
+      const dominantReason = filteredByMasteryCount > filteredBySubtopicCount
+        ? 'already-mastered question retirement'
+        : 'subtopic restrictions';
       console.warn(
-        `Stopped quiz generation after ${maxConsecutiveFiltered} consecutive questions were filtered by subtopic restrictions. ` +
-        `This may indicate that no valid questions exist for the current subtopic restrictions. ` +
+        `Stopped quiz generation after ${maxConsecutiveFiltered} consecutive questions were filtered by ${dominantReason}. ` +
+        `This may indicate that no valid questions exist for the current filters. ` +
         `Generated ${questions.length} out of ${numQuestions} requested questions for ${topic}.`
       );
       break;
@@ -245,8 +249,17 @@ export const generateQuizQuestions = async (
     // class "Question Mastery Threshold" exactly like tagged ones. Bank questions whose
     // ids are already in answeredQuestionIds were filtered upstream; this adds cross-quiz
     // retirement for the generated pool, which previously had no repeat guard at all.
+    //
+    // Count a mastery-retire as a filtered draw, same as the subtopic filter above:
+    // a thin generator whose entire output space is mastered would otherwise burn the
+    // full `maxAttempts` (300 with subtopic restrictions) without ever tripping the
+    // consecutive-filtered early-exit, so the quiz would open blank after a visible
+    // delay. Counting it lets the loop exit after `maxConsecutiveFiltered` dead draws
+    // and surface a specific "all mastered" warning instead of a generic shortfall.
     const masteryKey = getQuestionMasteryKey(question);
     if (masteryKey && (tagMastery[masteryKey] || 0) >= tagMasteryThreshold) {
+      filteredByMasteryCount++;
+      consecutiveFilteredCount++;
       continue;
     }
 
@@ -298,6 +311,12 @@ export const generateQuizQuestions = async (
     if (filteredBySubtopicCount > 0) {
       warningParts.push(
         `${filteredBySubtopicCount} question${filteredBySubtopicCount > 1 ? 's were' : ' was'} filtered out due to subtopic restrictions`
+      );
+    }
+
+    if (filteredByMasteryCount > 0) {
+      warningParts.push(
+        `${filteredByMasteryCount} question${filteredByMasteryCount > 1 ? 's were' : ' was'} retired because the student had already mastered them`
       );
     }
 
