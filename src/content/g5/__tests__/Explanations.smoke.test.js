@@ -73,4 +73,16 @@ describe('G5 Explanations cover the newer subtopics', () => {
     expect(text).toMatch(/4 − 3 = 1 cm/);
     expect(text).toMatch(/24 × 3 = 72 cubic centimeters/);
   });
+
+  it('Operations & Algebraic Thinking has a dedicated "Interpreting expressions" section (5.OA.A.2)', () => {
+    const text = textOf(OperationsAlgebraicThinking);
+    // Pin the heading itself — the generator emits questions with
+    // subtopic: 'interpreting expressions', and a student tapping Explain
+    // needs matching guidance, not just the adjacent "writing expressions"
+    // section (a different skill).
+    expect(text).toMatch(/Interpreting expressions/i);
+    // And the big idea the generator leans on: compare without evaluating.
+    expect(text).toMatch(/times as large/i);
+    expect(text).toMatch(/outer/i);
+  });
 });

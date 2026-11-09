@@ -115,6 +115,35 @@ const OperationsAlgebraicThinking5thExplanation = () => {
         exactly <strong>3 times as large</strong> as 18932 + 921 — no adding needed!
       </p>
 
+      <h2 style={styles.h2}>🔍 Interpreting expressions</h2>
+      <p>
+        You can read an expression like a map and <strong>compare its size to another</strong>{' '}
+        without ever doing the arithmetic. The outer operation tells you what&apos;s happening to
+        the whole inside.
+      </p>
+      <div style={styles.example}>
+        <span style={styles.emoji}>🧭</span>
+        Which is bigger: <strong>4 × (582 + 917)</strong> or <strong>582 + 917</strong>?
+        <br />
+        Same sum inside, but the first one <strong>multiplies the whole sum by 4</strong>, so it is
+        exactly <strong>4 times as large</strong>. No adding!
+      </div>
+      <div style={styles.example}>
+        <span style={styles.emoji}>🎯</span>
+        &ldquo;Which expression is <strong>5 times as large</strong> as 302 + 648?&rdquo;
+        <br />
+        Keep the sum together with parentheses, then multiply: <strong>5 × (302 + 648)</strong>.
+        <br />
+        <em>Not</em> 5 + (302 + 648) — that only adds 5, it doesn&apos;t multiply.
+        <br />
+        <em>Not</em> 5 × 302 + 648 — without parentheses only 302 gets multiplied.
+      </div>
+      <div style={styles.tip}>
+        <span style={styles.emoji}>🧠</span>
+        <strong>Big idea:</strong> the <strong>outer</strong> operation acts on everything inside
+        the parentheses. &ldquo;<em>k</em> times as large&rdquo; means <strong>k × (whole thing)</strong>.
+      </div>
+
       <h2 style={styles.h2}>🔢 Prime factorization</h2>
       <p>
         Every whole number can be broken down into <strong>prime</strong> building blocks (2, 3,

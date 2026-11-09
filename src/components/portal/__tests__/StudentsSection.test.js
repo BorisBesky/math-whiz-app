@@ -121,6 +121,18 @@ const renderSection = (students = [baseStudent], overrides = {}) =>
     })
   );
 
+// Rerenderable variant for identity-churn tests.
+const renderSectionWithRerender = (students = [baseStudent]) =>
+  render(
+    React.createElement(StudentsSection, {
+      students,
+      loading: false,
+      error: null,
+      onRefresh: jest.fn(),
+      appId: 'test-app',
+    })
+  );
+
 const makeAiRecommendation = (overrides = {}) => ({
   id: 'ai-focus-1',
   status: 'draft',
@@ -385,6 +397,55 @@ describe('StudentsSection - Focus integration', () => {
 
     await waitFor(() => expect(fetchBodyForMode('delete')).toBeTruthy());
     expect(screen.queryByText('AI Focus Recommendations')).not.toBeInTheDocument();
+  });
+
+  test('does not refire the saved-recommendation fetch when the roster array identity flips but ids are unchanged', async () => {
+    // Regression: `requestAiFocus` used to depend on the full `viewingStudent`
+    // object, so every 30 s roster poll — which merges a fresh object in
+    // place — rebuilt the callback and refired this effect, issuing another
+    // round-trip to the Gemini-adjacent /teacher-ai-focus-analysis function
+    // with `mode: 'get'`. The deps are now scoped to viewingStudent.id and
+    // classId, so identity-only changes must not trigger a reload.
+    const getCalls = () =>
+      global.fetch.mock.calls.filter(([, request]) => {
+        try {
+          return JSON.parse(request.body).mode === 'get';
+        } catch (e) {
+          return false;
+        }
+      });
+
+    const { rerender } = renderSectionWithRerender([baseStudent]);
+    fireEvent.click(screen.getByTitle('View details'));
+
+    await waitFor(() => expect(getCalls().length).toBeGreaterThanOrEqual(1));
+    const initialGetCount = getCalls().length;
+
+    // Simulate a 30 s roster tick: brand-new array/object identity, same ids
+    // and same core scalar fields. The AI-focus fetch must NOT fire again.
+    const freshStudent = { ...baseStudent };
+    rerender(
+      React.createElement(StudentsSection, {
+        students: [freshStudent],
+        loading: false,
+        error: null,
+        onRefresh: jest.fn(),
+        appId: 'test-app',
+      })
+    );
+    rerender(
+      React.createElement(StudentsSection, {
+        students: [{ ...baseStudent }],
+        loading: false,
+        error: null,
+        onRefresh: jest.fn(),
+        appId: 'test-app',
+      })
+    );
+
+    // Give any accidental useEffect refetch time to fire.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(getCalls().length).toBe(initialGetCount);
   });
 
   test('shows loading and error states for AI focus analysis', async () => {
