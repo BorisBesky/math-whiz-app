@@ -7,12 +7,13 @@ import {
   CHARACTER_PRICE,
   COLOR_SWATCHES,
   DEFAULT_CHARACTER_ID,
+  AVAILABLE_CHARACTERS,
   REWARD_ACCESSORIES,
-  REWARD_CHARACTERS,
   getCharacterById,
   getCharacterSkills,
   getColorRegions,
   getConflictingCategories,
+  resolveSelectedCharacterId,
 } from "./rewardConfig";
 
 const isCategoryAvailableForCharacter = (categoryId, characterId) =>
@@ -29,7 +30,9 @@ const CharacterStore = ({
   handleUnequipAccessory,
   handleSetCharacterColor,
 }) => {
-  const persistedCharacterId = userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+  const persistedCharacterId = resolveSelectedCharacterId(
+    userData?.selectedCharacterId || DEFAULT_CHARACTER_ID
+  );
   const [stagedCharacterId, setStagedCharacterId] = useState(null);
   const selectedCharacterId = stagedCharacterId || persistedCharacterId;
   const selectedCharacter = getCharacterById(selectedCharacterId);
@@ -159,7 +162,7 @@ const CharacterStore = ({
       <section className="min-w-0 rounded-lg border border-sky-100 bg-white p-4 shadow-card">
         {/* Compact character picker row at the top */}
         <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
-          {REWARD_CHARACTERS.map((character) => {
+          {AVAILABLE_CHARACTERS.map((character) => {
             const isOwned = ownedCharacterIds.includes(character.id);
             const isSelected = character.id === selectedCharacterId;
             return (

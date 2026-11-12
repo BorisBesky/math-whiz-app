@@ -77,7 +77,13 @@ import StudentProfile from './components/StudentProfile';
 import GuestUpgradeModal from './components/guest/GuestUpgradeModal';
 import GuestSaveBanner from './components/guest/GuestSaveBanner';
 import Dashboard from './components/Dashboard';
-import { CHARACTER_PRICE, DEFAULT_CHARACTER_ID, getConflictingCategories } from './components/rewards/rewardConfig';
+import {
+  CHARACTER_PRICE,
+  DEFAULT_CHARACTER_ID,
+  getConflictingCategories,
+  isCharacterAvailable,
+  resolveSelectedCharacterId,
+} from './components/rewards/rewardConfig';
 import { getQuestionHistory } from "./services/questionService";
 import { generateQuizQuestions } from "./services/quizGenerationService";
 import { getQuestionMasteryKey } from "./utils/questionKey";
@@ -100,7 +106,7 @@ const QuizView = React.lazy(() => import('./components/QuizView'));
 const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-planet-dome-stairs-v44" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-retired-characters-v45" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -1009,7 +1015,12 @@ const MainAppContent = () => {
               }
 
               // Reward character profile defaults for the 3D store.
-              if (!data.selectedCharacterId) {
+              // A missing selection, or one pointing at a retired character
+              // (no longer offered in the store), resets to the default.
+              if (
+                !data.selectedCharacterId ||
+                resolveSelectedCharacterId(data.selectedCharacterId) !== data.selectedCharacterId
+              ) {
                 data.selectedCharacterId = DEFAULT_CHARACTER_ID;
                 updatePayload.selectedCharacterId = DEFAULT_CHARACTER_ID;
                 needsUpdate = true;
@@ -2242,6 +2253,7 @@ const MainAppContent = () => {
 
   const handleSelectCharacter = async (characterId) => {
     if (!user) return;
+    if (!isCharacterAvailable(characterId)) return;
     const ownedCharacters = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
     if (!ownedCharacters.includes(characterId)) {
       setPurchaseFeedback({
@@ -2258,6 +2270,7 @@ const MainAppContent = () => {
 
   const handlePurchaseCharacter = async (character) => {
     if (!user || !character) return;
+    if (!isCharacterAvailable(character.id)) return;
 
     const ownedCharacters = userData?.ownedCharacters || [DEFAULT_CHARACTER_ID];
     if (ownedCharacters.includes(character.id)) {
@@ -2303,7 +2316,7 @@ const MainAppContent = () => {
     }
 
     const targetCharacterId =
-      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+      characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
@@ -2355,7 +2368,7 @@ const MainAppContent = () => {
     if (!userData?.ownedAccessories?.includes(item.id)) return;
 
     const targetCharacterId =
-      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+      characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
@@ -2372,7 +2385,7 @@ const MainAppContent = () => {
     if (!user || !category) return;
 
     const targetCharacterId =
-      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+      characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
@@ -2387,7 +2400,7 @@ const MainAppContent = () => {
     }
 
     const targetCharacterId =
-      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+      characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 
@@ -2402,7 +2415,7 @@ const MainAppContent = () => {
     if (!user || !slot || !styleId) return;
 
     const targetCharacterId =
-      characterId || userData?.selectedCharacterId || DEFAULT_CHARACTER_ID;
+      characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);
     const userDocRef = getUserDocRef(user.uid);
     if (!userDocRef) return;
 

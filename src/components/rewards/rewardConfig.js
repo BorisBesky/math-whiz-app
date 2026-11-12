@@ -150,6 +150,39 @@ export const REWARD_CHARACTERS = [
   },
 ];
 
+// Characters whose definitions, models and builders stay in the repo but are
+// no longer offered in the app (store picker, purchase, selection). Profiles
+// that saved one of these as `selectedCharacterId` fall back to the default
+// character; see resolveSelectedCharacterId. Remove an id here to bring the
+// character back.
+export const RETIRED_CHARACTER_IDS = [
+  "pip-penguin",
+  "cora-cat",
+  "sunny-bird",
+  "max-boy",
+  "ava-girl",
+  "rover-dog",
+  "ollie-owl",
+  "frost-penguin",
+  "nico-kid",
+  "quinn-kid",
+  "felix-fox",
+  "bruno-bear",
+];
+
+export const isCharacterAvailable = (characterId) =>
+  REWARD_CHARACTERS.some((character) => character.id === characterId) &&
+  !RETIRED_CHARACTER_IDS.includes(characterId);
+
+// Characters shown to users in the store.
+export const AVAILABLE_CHARACTERS = REWARD_CHARACTERS.filter((character) =>
+  isCharacterAvailable(character.id)
+);
+
+// Saved selection -> a character the app still offers (default otherwise).
+export const resolveSelectedCharacterId = (characterId) =>
+  isCharacterAvailable(characterId) ? characterId : DEFAULT_CHARACTER_ID;
+
 // Character-specific animation skills. Included moves are available as soon as
 // the character is owned; paid moves are permanent profile unlocks.
 export const REWARD_CHARACTER_SKILLS = [
