@@ -38,14 +38,16 @@ describe("retired characters", () => {
   });
 
   test("retired definitions and model files stay in the repo", () => {
-    RETIRED_CHARACTER_IDS.forEach((id) => {
-      const character = REWARD_CHARACTERS.find((entry) => entry.id === id);
-      expect(character).toBeTruthy();
-      if (character.model) {
+    const retired = RETIRED_CHARACTER_IDS.map((id) =>
+      REWARD_CHARACTERS.find((entry) => entry.id === id)
+    );
+    retired.forEach((character) => expect(character).toBeTruthy());
+    retired
+      .filter((character) => character.model)
+      .forEach((character) => {
         const modelPath = path.join(process.cwd(), "public", character.model.split("?")[0]);
         expect(fs.existsSync(modelPath)).toBe(true);
-      }
-    });
+      });
   });
 
   test("saved selections of retired characters fall back to the default", () => {
