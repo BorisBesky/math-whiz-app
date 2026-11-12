@@ -305,32 +305,12 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialStudentId, loading, students]);
 
-  // Keep an open history panel fresh without making the teacher close and
-  // reopen it. Background refreshes retain the current list while revalidating.
-  useEffect(() => {
-    if (!viewingStudent?.id) return undefined;
-    const studentId = viewingStudent.id;
-    const invalidateHistory = () => {
-      if (document.visibilityState !== 'visible') return;
-      setViewingStudent((current) => {
-        if (current?.id !== studentId || current.historyRequestKey === null) return current;
-        return { ...current, historyRequestKey: null };
-      });
-    };
-
-    const intervalId = window.setInterval(invalidateHistory, 30000);
-    window.addEventListener('focus', invalidateHistory);
-    document.addEventListener('visibilitychange', invalidateHistory);
-    return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', invalidateHistory);
-      document.removeEventListener('visibilitychange', invalidateHistory);
-    };
-  }, [viewingStudent?.id]);
-
   // The roster refresh carries compact totals/latest activity. Merge those
   // into an open detail panel and immediately invalidate history when its
-  // summary proves a new answer exists.
+  // summary proves a new answer exists. This is the ONLY invalidation path —
+  // a separate interval that unconditionally dropped historyRequestKey every
+  // 30 s used to live here too, duplicating this refresh and quietly costing
+  // one extra /get-student-history call per open detail panel per 30 s.
   useEffect(() => {
     if (!viewingStudent?.id) return;
     const latestStudent = students.find((student) => student.id === viewingStudent.id);
@@ -368,6 +348,13 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
     setAiFocusCollapsed(false);
   };
 
+  // Stable across every roster-tick that merges a fresh `viewingStudent`
+  // object in place — depend on the identity-free scalar fields only.
+  // Full-object deps here made this callback (and every effect that uses it,
+  // notably the "load saved AI focus" effect below) refire every 30 s,
+  // issuing a pointless `mode: 'get'` round-trip to a Gemini-backed function.
+  const viewingStudentId = viewingStudent?.id || null;
+  const viewingStudentClassId = viewingStudent?.classId || '';
   const requestAiFocus = useCallback(async (payload) => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
@@ -384,8 +371,8 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
       },
       body: JSON.stringify({
         appId,
-        studentId: viewingStudent.id,
-        classId: viewingStudent.classId || '',
+        studentId: viewingStudentId,
+        classId: viewingStudentClassId,
         ...payload,
       }),
     });
@@ -395,7 +382,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
       throw new Error(data.error || `AI focus request failed with status ${response.status}`);
     }
     return data;
-  }, [appId, viewingStudent]);
+  }, [appId, viewingStudentId, viewingStudentClassId]);
 
   const pollAiFocusJob = useCallback(async (jobId) => {
     const auth = getAuth();
@@ -472,7 +459,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
   };
 
   useEffect(() => {
-    if (!viewingStudent || !appId || !viewingStudent.classId) return undefined;
+    if (!viewingStudentId || !appId || !viewingStudentClassId) return undefined;
 
     let cancelled = false;
     const loadSavedRecommendation = async () => {
@@ -492,7 +479,7 @@ const StudentsSection = ({ students, loading, error, onRefresh, appId, initialSt
     return () => {
       cancelled = true;
     };
-  }, [viewingStudent, appId, requestAiFocus, setRecommendationState]);
+  }, [viewingStudentId, viewingStudentClassId, appId, requestAiFocus, setRecommendationState]);
 
   const toggleReviewSubtopic = (topic, subtopic) => {
     setReviewFocusMap((prev) => {
