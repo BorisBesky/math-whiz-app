@@ -8,6 +8,8 @@ export const REWARD_CHARACTERS = [
     title: "Toy Bear",
     accent: "#b98252",
     summary: "A cozy bear who looks great in hats, capes, and adventure gear.",
+    model: "/models/generated/buddy-bear.glb?v=1",
+    generated: true,
   },
   {
     id: "milo-robot",
@@ -15,6 +17,8 @@ export const REWARD_CHARACTERS = [
     title: "Round Robot",
     accent: "#38bdf8",
     summary: "A cheerful robot with bright gadgets, badges, and headphones.",
+    model: "/models/generated/milo-robot.glb?v=1",
+    generated: true,
   },
   {
     id: "pip-penguin",
@@ -43,6 +47,8 @@ export const REWARD_CHARACTERS = [
     title: "Boy Hero",
     accent: "#2563eb",
     summary: "A friendly kid avatar for shorts, jewelry, and adventure gear.",
+    model: "/models/generated/leo-boy.glb?v=1",
+    generated: true,
   },
   {
     id: "mia-girl",
@@ -50,6 +56,8 @@ export const REWARD_CHARACTERS = [
     title: "Girl Hero",
     accent: "#ec4899",
     summary: "A cheerful kid avatar for dresses, skirts, jewelry, and props.",
+    model: "/models/generated/mia-girl.glb?v=1",
+    generated: true,
   },
   {
     id: "max-boy",
@@ -222,10 +230,12 @@ export const getCharacterSkills = (characterId) =>
 export const getCharacterSkillById = (skillId) =>
   REWARD_CHARACTER_SKILLS.find((skill) => skill.id === skillId) || null;
 
-// Characters whose look is hand-built from primitives (and therefore support
-// the dress-up accessories). GLB model characters are buy-only for now.
+// Characters that support the dress-up accessories: the ones hand-built from
+// primitives plus the textured `generated` GLBs (ComfyUI text-to-3D), which
+// wear generated accessory models placed via generatedFits.js. Other GLB model
+// characters are buy-only for now.
 export const PROCEDURAL_CHARACTER_IDS = REWARD_CHARACTERS.filter(
-  (character) => !character.model
+  (character) => !character.model || character.generated
 ).map((character) => character.id);
 
 export const isModelCharacter = (characterId) =>
@@ -275,16 +285,9 @@ export const COLOR_SWATCHES = [
 
 // Recolorable surface regions per character. Each region id maps to one or
 // more materials in CharacterViewer's builders; `default` is the base color.
+// Generated characters (Buddy, Milo, Leo, Mia) have painted textures and no
+// color regions, so the color picker is hidden for them.
 export const CHARACTER_COLOR_REGIONS = {
-  "buddy-bear": [
-    { id: "body", label: "Fur", default: "#b98252" },
-    { id: "muzzle", label: "Muzzle", default: "#f5d0a9" },
-    { id: "nose", label: "Nose", default: "#111827" },
-  ],
-  "milo-robot": [
-    { id: "body", label: "Body", default: "#9ca3af" },
-    { id: "trim", label: "Trim", default: "#38bdf8" },
-  ],
   "pip-penguin": [
     { id: "body", label: "Body", default: "#334155" },
     { id: "belly", label: "Belly", default: "#f8fafc" },
@@ -300,18 +303,6 @@ export const CHARACTER_COLOR_REGIONS = {
     { id: "body", label: "Feathers", default: "#facc15" },
     { id: "wings", label: "Wings", default: "#f59e0b" },
     { id: "beak", label: "Beak & Feet", default: "#fb923c" },
-  ],
-  "leo-boy": [
-    { id: "skin", label: "Skin", default: "#f2c7a0" },
-    { id: "hair", label: "Hair", default: "#7c2d12" },
-    { id: "shirt", label: "Shirt", default: "#2563eb" },
-    { id: "pants", label: "Pants", default: "#0f766e" },
-  ],
-  "mia-girl": [
-    { id: "skin", label: "Skin", default: "#f2c7a0" },
-    { id: "hair", label: "Hair", default: "#4a044e" },
-    { id: "shirt", label: "Shirt", default: "#ec4899" },
-    { id: "pants", label: "Pants", default: "#7c3aed" },
   ],
   "max-boy": [
     { id: "skin", label: "Skin", default: "#f2c7a0" },

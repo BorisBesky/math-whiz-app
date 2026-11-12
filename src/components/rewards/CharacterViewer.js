@@ -11,6 +11,12 @@ import {
   getModelPartAccessories,
 } from "./rewardConfig";
 import {
+  generatedAccessoryUrl,
+  getGeneratedAccessoryFit,
+  getGeneratedAnchors,
+} from "./generatedFits";
+import { fitGeneratedAccessory, loadAccessoryModel } from "./generatedAccessoryFit";
+import {
   WILLOW_CHARACTER_ID,
   applyWillowHeadTexture,
   improveWillowMaterials,
@@ -1125,6 +1131,27 @@ const CharacterViewer = ({
           modelObject = new THREE.Group();
           modelObject.add(modelRoot);
           group.add(modelObject);
+          // Generated characters wear generated accessory GLBs at measured anchors.
+          const anchors = getGeneratedAnchors(character.id);
+          if (anchors) {
+            const target = modelObject;
+            Object.values(equippedItems || {})
+              .map(getAccessoryById)
+              .filter((item) => item && (item.characterIds || []).includes(character.id))
+              .forEach((item) => {
+                const fit = getGeneratedAccessoryFit(item.id);
+                if (!fit) return;
+                loadAccessoryModel(generatedAccessoryUrl(item.id))
+                  .then((source) => {
+                    if (cancelled) return;
+                    fitGeneratedAccessory(source, fit, anchors).forEach((placed) => target.add(placed));
+                  })
+                  .catch((error) => {
+                    // eslint-disable-next-line no-console
+                    console.error(`Failed to load accessory model: ${item.id}`, error);
+                  });
+              });
+          }
           if (animations.length) {
             modelAnimations = animations;
             modelMixer = new THREE.AnimationMixer(modelRoot);
