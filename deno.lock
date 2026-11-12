@@ -21,6 +21,7 @@
         "npm:ajv@^8.20.0",
         "npm:autoprefixer@^10.4.20",
         "npm:busboy@^1.6.0",
+        "npm:cross-env@^7.0.3",
         "npm:dotenv@^17.2.2",
         "npm:eslint@^8.57.1",
         "npm:firebase-admin@^12.7.0",
