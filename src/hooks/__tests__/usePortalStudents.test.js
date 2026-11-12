@@ -1,8 +1,8 @@
-// Regression coverage for the parallelization of per-class enrollment reads.
-// The previous implementation used a serial `for` loop, so a teacher with N
-// classes paid an N× RPC latency on every 30-second auto-refresh. This test
-// asserts that every enrollment query is in flight before any of them
-// completes.
+// Regression coverage for the batched `classId in [...]` enrollment reads.
+// Earlier shapes paid either N round-trips in a serial loop, then N in
+// parallel; this test pins the current shape: one Firestore query per chunk
+// of up to 30 classes, so a typical teacher's refresh is a single round-trip
+// instead of one per class.
 
 let mockGetIdToken;
 
@@ -13,8 +13,8 @@ jest.mock('firebase/auth', () => ({
 jest.mock('firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
   collection: jest.fn(() => 'collection-ref'),
-  query: jest.fn((ref) => ref),
-  where: jest.fn(),
+  query: jest.fn((ref, ...constraints) => ({ ref, constraints })),
+  where: jest.fn((field, op, value) => ({ field, op, value })),
   getDocs: jest.fn(),
 }));
 
@@ -25,11 +25,19 @@ jest.mock('../../utils/studentName', () => ({
 const { renderHook, waitFor, act } = require('@testing-library/react');
 const usePortalStudents = require('../usePortalStudents').default;
 const { getAuth } = require('firebase/auth');
-const { getDocs } = require('firebase/firestore');
+const { collection, query, where, getDocs, getFirestore } = require('firebase/firestore');
 
 describe('usePortalStudents - parallel enrollment fetch', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // react-scripts sets `resetMocks: true` in its default jest config, which
+    // wipes implementations between tests. Re-install them here so the
+    // mocked Firestore helpers still return the shapes we assert on.
+    getFirestore.mockImplementation(() => ({}));
+    collection.mockImplementation(() => 'collection-ref');
+    query.mockImplementation((ref, ...constraints) => ({ ref, constraints }));
+    where.mockImplementation((field, op, value) => ({ field, op, value }));
+
     mockGetIdToken = jest.fn().mockResolvedValue('token-abc');
     getAuth.mockReturnValue({ currentUser: { getIdToken: mockGetIdToken } });
     global.fetch = jest.fn().mockResolvedValue({
@@ -42,35 +50,43 @@ describe('usePortalStudents - parallel enrollment fetch', () => {
     delete global.fetch;
   });
 
-  it('starts every class enrollment query in parallel, not serially', async () => {
+  it('batches all class enrollments into one query per 30-class chunk', async () => {
     const classes = Array.from({ length: 5 }, (_, i) => ({ id: `class-${i}`, name: `Class ${i}` }));
 
-    // Each getDocs call resolves only when we manually release it. If the
-    // hook fired the queries serially, we'd see exactly one in flight at a
-    // time. In parallel we should see all `classes.length` calls issued
-    // before any resolves.
-    let calls = 0;
-    const releasers = [];
-    getDocs.mockImplementation(() => {
-      calls += 1;
-      return new Promise((resolve) => {
-        releasers.push(() => resolve({
-          forEach: () => {},
-        }));
-      });
+    const seenQueries = [];
+    getDocs.mockImplementation((queryRef) => {
+      seenQueries.push(queryRef);
+      return Promise.resolve({ forEach: () => {} });
     });
 
-    renderHook(() =>
-      usePortalStudents({ appId: 'test-app', classes })
-    );
+    renderHook(() => usePortalStudents({ appId: 'test-app', classes }));
 
-    // Wait until every getDocs invocation is pending.
-    await waitFor(() => expect(calls).toBe(classes.length), { timeout: 2000 });
-    // At this point NONE of the releasers have fired, so the only way
-    // `calls === classes.length` is if the hook issued them in parallel.
-    await act(async () => {
-      releasers.forEach((r) => r());
+    // 5 classes fit into a single `classId in [...]` chunk — one Firestore
+    // round-trip, not five.
+    await waitFor(() => expect(seenQueries.length).toBe(1), { timeout: 2000 });
+    const constraint = seenQueries[0].constraints[0];
+    expect(constraint.field).toBe('classId');
+    expect(constraint.op).toBe('in');
+    expect(new Set(constraint.value)).toEqual(new Set(classes.map((c) => c.id)));
+  });
+
+  it('splits into multiple chunks when a teacher has more than 30 classes', async () => {
+    // Firestore's `in` operator caps at 30 values.
+    const classes = Array.from({ length: 42 }, (_, i) => ({ id: `class-${i}`, name: `Class ${i}` }));
+
+    const seenQueries = [];
+    getDocs.mockImplementation((queryRef) => {
+      seenQueries.push(queryRef);
+      return Promise.resolve({ forEach: () => {} });
     });
+
+    renderHook(() => usePortalStudents({ appId: 'test-app', classes }));
+
+    await waitFor(() => expect(seenQueries.length).toBe(2), { timeout: 2000 });
+    const sizes = seenQueries.map((q) => q.constraints[0].value.length).sort((a, b) => a - b);
+    expect(sizes).toEqual([12, 30]);
+    const allIds = new Set(seenQueries.flatMap((q) => q.constraints[0].value));
+    expect(allIds.size).toBe(42);
   });
 
   it('does not refetch when the classes array identity flips but the id set is unchanged', async () => {
@@ -106,17 +122,15 @@ describe('usePortalStudents - parallel enrollment fetch', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
   });
 
-  it('does not fail the whole refresh when one class query throws', async () => {
-    const classes = [
-      { id: 'class-a', name: 'A' },
-      { id: 'class-bad', name: 'B' },
-      { id: 'class-c', name: 'C' },
-    ];
+  it('does not fail the whole refresh when one chunk query throws', async () => {
+    // >30 classes so the hook emits multiple chunk queries; one of them
+    // throws and the hook must still settle with error:null.
+    const classes = Array.from({ length: 35 }, (_, i) => ({ id: `class-${i}`, name: `Class ${i}` }));
 
-    getDocs.mockImplementation((ref) => {
-      const constraints = ref?.constraints || [];
-      const classFilter = constraints.find((c) => c?.field === 'classId');
-      if (classFilter?.value === 'class-bad') {
+    let callIndex = 0;
+    getDocs.mockImplementation(() => {
+      callIndex += 1;
+      if (callIndex === 1) {
         return Promise.reject(new Error('permission denied'));
       }
       return Promise.resolve({ forEach: () => {} });

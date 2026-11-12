@@ -83,43 +83,46 @@ const usePortalStudents = ({ appId = 'default-app-id', classes = [] }) => {
       const db = getFirestore();
       const classEnrollmentsMap = new Map();
 
-      // Fire every class's enrollment query in parallel — the serial `for` loop
-      // this replaced round-tripped once per class, so a teacher with N classes
-      // paid an unnecessary N× Firestore latency on every portal refresh
-      // (30 s tick + focus/visibility handlers). Errors on one class don't
-      // block the others; a bad snapshot logs and yields an empty enrollment
-      // list for that class.
+      // Batch every class's enrollment read through a single `classId in [...]`
+      // query per 30-class chunk (Firestore's `in` operator cap). The previous
+      // per-class parallel fan-out still cost one round-trip per class on
+      // every 30 s auto-refresh; one chunk of 30 classes is now one round-trip
+      // and one billed read-set, not 30. Errors on one chunk don't block the
+      // others; a bad chunk logs and yields empty enrollments for its classes.
       const classesSnapshot = classesRef.current;
       const classMapSnapshot = classMapRef.current;
-      const enrollmentSnapshots = await Promise.all(
-        classesSnapshot.map(async (classItem) => {
+      const classIds = classesSnapshot.map((cls) => cls.id);
+      const knownClassIds = new Set(classIds);
+      const classIdChunks = [];
+      for (let i = 0; i < classIds.length; i += 30) {
+        classIdChunks.push(classIds.slice(i, i + 30));
+      }
+      const enrollmentsCol = collection(db, 'artifacts', appId, 'classStudents');
+
+      await Promise.all(
+        classIdChunks.map(async (chunk) => {
           try {
-            const enrollmentsQuery = query(
-              collection(db, 'artifacts', appId, 'classStudents'),
-              where('classId', '==', classItem.id)
-            );
-            const snapshot = await getDocs(enrollmentsQuery);
-            return { classItem, snapshot };
+            const snapshot = await getDocs(query(enrollmentsCol, where('classId', 'in', chunk)));
+            snapshot.forEach((docSnapshot) => {
+              const enrollment = docSnapshot.data();
+              if (!enrollment || !enrollment.studentId || !enrollment.classId) return;
+              if (!knownClassIds.has(enrollment.classId)) return;
+              const existingClassIds = classEnrollmentsMap.get(enrollment.studentId) || [];
+              if (!existingClassIds.includes(enrollment.classId)) {
+                classEnrollmentsMap.set(
+                  enrollment.studentId,
+                  [...existingClassIds, enrollment.classId]
+                );
+              }
+            });
           } catch (enrollmentError) {
             console.warn(
-              `[usePortalStudents] Failed to load enrollments for class ${classItem.id}`,
-              enrollmentError
+              '[usePortalStudents] Failed to load enrollments for a class chunk',
+              { chunk, error: enrollmentError }
             );
-            return { classItem, snapshot: null };
           }
         })
       );
-
-      enrollmentSnapshots.forEach(({ classItem, snapshot }) => {
-        if (!snapshot) return;
-        snapshot.forEach((docSnapshot) => {
-          const enrollment = docSnapshot.data();
-          const existingClassIds = classEnrollmentsMap.get(enrollment.studentId) || [];
-          if (!existingClassIds.includes(classItem.id)) {
-            classEnrollmentsMap.set(enrollment.studentId, [...existingClassIds, classItem.id]);
-          }
-        });
-      });
 
       let totalQuestions = 0;
       let totalCorrect = 0;
