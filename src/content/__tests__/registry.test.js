@@ -75,6 +75,7 @@ describe('topics', () => {
       'Fractions 5th',
       'Measurement & Data 5th',
       'Geometry 5th',
+      'Algebra',
     ]);
     expect(getTopicNamesForGrade('G6')).toEqual([]);
   });

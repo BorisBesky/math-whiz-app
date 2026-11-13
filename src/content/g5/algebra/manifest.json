@@ -2,8 +2,8 @@
   "$schema": "../../manifest.schema.json",
   "id": "algebra",
   "name": "Algebra",
-  "grade": "G4",
-  "order": 7,
+  "grade": "G5",
+  "order": 6,
   "description": "Pre-algebra foundations: variables, evaluating expressions, one-step equations, and patterns",
   "standards": ["4.OA.A.3", "4.OA.C.5", "5.OA.A.1", "5.OA.A.2"],
   "subtopics": [

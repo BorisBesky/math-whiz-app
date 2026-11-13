@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 // Every G5 Explanation ships inline SVG teaching figures. Rendering each one
 // here catches a broken figure (bad JSX, missing export) before a student taps
 // "Explain" and gets a blank screen.
+import Algebra from '../algebra/Explanation';
 import BaseTen from '../base-ten/Explanation';
 import Fractions from '../fractions/Explanation';
 import Geometry from '../geometry/Explanation';
@@ -48,6 +49,21 @@ describe('G5 Explanations cover the newer subtopics', () => {
     render(<Component />);
     return document.body.textContent;
   };
+
+  it('Algebra renders with a heading', () => {
+    render(<Algebra />);
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  });
+
+  it('Algebra covers variables, evaluating, equations, input/output, growing patterns (4.OA.A/B)', () => {
+    const text = textOf(Algebra).toLowerCase();
+    expect(text).toMatch(/variable/);
+    expect(text).toMatch(/evaluat/);
+    expect(text).toMatch(/equation/);
+    // Input/output tables appear as "Number machines" in this file — accept either.
+    expect(text).toMatch(/input|number machine/);
+    expect(text).toMatch(/pattern/);
+  });
 
   it('Base Ten covers expanded form and number names (5.NBT.A.3.a)', () => {
     const text = textOf(BaseTen);

@@ -1,4 +1,4 @@
-// Algebra (G4 pre-algebra) question generator.
+// Algebra (G5 pre-algebra) question generator.
 //
 // Contract (enforced by src/content/__tests__/topicContracts.test.js):
 // generateQuestion(difficulty [0..1], allowedSubtopics | null) returns a

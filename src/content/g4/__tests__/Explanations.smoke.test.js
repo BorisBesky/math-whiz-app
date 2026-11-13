@@ -7,7 +7,6 @@ import { render, screen } from '@testing-library/react';
 // accessible name — the geometry parallel/perpendicular demos regressed this
 // way and left screen-reader users with no text where the picture carries
 // the concept.
-import Algebra from '../algebra/Explanation';
 import BaseTen from '../base-ten/Explanation';
 import BinaryOperations from '../binary-operations/Explanation';
 import Fractions from '../fractions/Explanation';
@@ -16,7 +15,6 @@ import MeasurementData from '../measurement-data/Explanation';
 import OperationsAlgebraicThinking from '../operations-algebraic-thinking/Explanation';
 
 const EXPLANATIONS = [
-  ['Algebra 4th', Algebra],
   ['Base Ten 4th', BaseTen],
   ['Binary Operations 4th', BinaryOperations],
   ['Fractions 4th', Fractions],
@@ -53,16 +51,6 @@ describe('G4 Explanations cover every subtopic in the manifest', () => {
     render(<Component />);
     return document.body.textContent.toLowerCase();
   };
-
-  it('Algebra covers variables, evaluating, equations, input/output, growing patterns (4.OA.A/B)', () => {
-    const text = textOf(Algebra);
-    expect(text).toMatch(/variable/);
-    expect(text).toMatch(/evaluat/);
-    expect(text).toMatch(/equation/);
-    // Input/output tables appear as "Number machines" in this file — accept either.
-    expect(text).toMatch(/input|number machine/);
-    expect(text).toMatch(/pattern/);
-  });
 
   it('Base Ten covers place value, rounding, +/−/×/÷, comparison, decimals (4.NBT & 4.NF.C)', () => {
     const text = textOf(BaseTen);

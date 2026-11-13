@@ -50,7 +50,6 @@ const CANONICAL_TOPICS = {
     'Measurement & Data 4th',
     'Geometry',
     'Binary Operations',
-    'Algebra',
   ],
   G5: [
     'Operations & Algebraic Thinking 5th',
@@ -58,6 +57,7 @@ const CANONICAL_TOPICS = {
     'Fractions 5th',
     'Measurement & Data 5th',
     'Geometry 5th',
+    'Algebra',
   ],
 };
 const ALL_CANONICAL_TOPICS = [
