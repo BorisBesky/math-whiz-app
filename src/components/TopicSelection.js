@@ -159,17 +159,6 @@ const TopicSelection = ({
         </div>
       )}
 
-      {startSecretMessageQuiz && (
-        <button onClick={startSecretMessageQuiz} className="max-w-4xl mx-auto mb-6 w-full border-2 border-teal-300 bg-teal-50 rounded-card p-5 flex items-center gap-4 text-left hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
-          <span className="text-3xl" aria-hidden="true">🔐</span>
-          <span>
-            <span className="block font-display text-xl font-bold text-teal-900">Secret Message</span>
-            <span className="block text-sm text-teal-800">Solve math clues, decode letters, and discover an inspiring message.</span>
-            <span className="block text-xs text-teal-700 mt-1">Bonus arithmetic practice</span>
-          </span>
-        </button>
-      )}
-
       {/* Topic Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto" data-tutorial-id="topic-selection">
         {currentTopics.map((topic, index) => {
@@ -295,6 +284,17 @@ const TopicSelection = ({
           </div>
         )}
       </div>
+
+      {startSecretMessageQuiz && (
+        <button onClick={startSecretMessageQuiz} className="max-w-4xl mx-auto mt-8 mb-6 w-full border-2 border-teal-300 bg-teal-50 rounded-card p-5 flex items-center gap-4 text-left hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
+          <span className="text-3xl" aria-hidden="true">🔐</span>
+          <span>
+            <span className="block font-display text-xl font-bold text-teal-900">Secret Message</span>
+            <span className="block text-sm text-teal-800">Solve math clues, decode letters, and discover an inspiring message.</span>
+            <span className="block text-xs text-teal-700 mt-1">Bonus arithmetic practice</span>
+          </span>
+        </button>
+      )}
     </div>
   );
 };
