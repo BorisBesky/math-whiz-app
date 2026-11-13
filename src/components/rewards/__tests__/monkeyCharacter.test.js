@@ -42,8 +42,8 @@ describe("monkey store character", () => {
   test("includes a free hello plus purchasable jump and floss skills", () => {
     expect(getCharacterSkills("koko-monkey")).toEqual([
       expect.objectContaining({ id: "koko-wave", animation: "Wave", included: true, price: 0 }),
-      expect.objectContaining({ id: "koko-jump", animation: "Jump", price: 8 }),
-      expect.objectContaining({ id: "koko-floss", animation: "Floss", price: 12 }),
+      expect.objectContaining({ id: "koko-jump", animation: "Jump", price: 5 }),
+      expect.objectContaining({ id: "koko-floss", animation: "Floss", price: 8 }),
     ]);
     expect(getCharacterSkillById("koko-floss")).toEqual(
       expect.objectContaining({ characterId: "koko-monkey", animation: "Floss" })

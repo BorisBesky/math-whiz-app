@@ -26,7 +26,7 @@ test("previews Sage without selecting or purchasing, then buys at the normal cha
   expect(buy).not.toHaveBeenCalled();
   expect(screen.queryByTestId("character-skills")).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Buy Sage · 30" }));
+  fireEvent.click(screen.getByRole("button", { name: "Buy Sage · 20" }));
   expect(buy).toHaveBeenCalledWith(expect.objectContaining({ id: "sage-owl" }));
 });
 
@@ -41,5 +41,5 @@ test("selects an owned Sage without charging for its included idle animations", 
   fireEvent.click(screen.getByRole("button", { name: /Sage preview Sage/ }));
   expect(select).toHaveBeenCalledWith("sage-owl");
   expect(buy).not.toHaveBeenCalled();
-  expect(screen.queryByRole("button", { name: "Buy Sage · 30" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Buy Sage · 20" })).not.toBeInTheDocument();
 });

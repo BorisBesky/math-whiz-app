@@ -8,25 +8,25 @@ export const PLANET_CATEGORIES = [
 ];
 
 export const PLANET_ITEMS = [
-  { id: 'pine-forest', name: 'Whispering woods', category: 'nature', price: 8, kind: 'forest', color: '#5c8661', position: [22, -27], description: 'A whole grove of evergreens, with little rocks tucked between the trees.' },
-  { id: 'wildflowers', name: 'Wildflower meadow', category: 'nature', price: 8, kind: 'flowers', color: '#b792bc', position: [-12, -10], description: 'Pink, golden, and lavender flowers for a little burst of happiness.' },
-  { id: 'campfire', name: 'Campfire hideaway', category: 'homes', price: 10, kind: 'camp', color: '#c48959', position: [0, 17], description: 'A canvas tent, log seats, and a flickering fire under the stars.' },
-  { id: 'pond', name: 'Lily-pad pond', category: 'nature', price: 12, kind: 'pond', color: '#79b6b4', position: [15, 3], description: 'A quiet blue pond with lily pads, reeds, and a friendly duck.' },
-  { id: 'cottage', name: 'Fernwood cottage', category: 'homes', price: 18, kind: 'cottage', color: '#b87b5c', position: [-20, -36], description: 'A cozy cottage with a tiled roof, warm windows, and a garden fence.' },
-  { id: 'orchard', name: 'Apple orchard', category: 'nature', price: 12, kind: 'orchard', color: '#8d9e58', position: [12, -65], description: 'Round apple trees and a basketful of bright red fruit.' },
-  { id: 'windmill', name: 'Sunbeam windmill', category: 'homes', price: 22, kind: 'windmill', color: '#c5ab70', position: [35, -68], description: 'Slowly turning sails and golden rows of wheat on a sunny hillside.' },
-  { id: 'mountains', name: 'Snowcap peaks', category: 'nature', price: 18, kind: 'mountains', color: '#a3bec0', position: [53, 9], description: 'A tiny mountain range with frosty peaks and boulders.' },
-  { id: 'crystals', name: 'Crystal garden', category: 'wonders', price: 22, kind: 'crystals', color: '#8ac7d1', position: [52, 66], description: 'A cluster of tall, shimmering blue crystals in the snowy north.' },
-  { id: 'lighthouse', name: 'Seaside lighthouse', category: 'homes', price: 25, kind: 'lighthouse', color: '#c67f6b', position: [-29, 43], description: 'A red-and-cream lighthouse to guide a tiny boat home.' },
-  { id: 'palms', name: 'Palm oasis', category: 'nature', price: 12, kind: 'palms', color: '#c3a563', position: [9, 64], description: 'Swaying palm fronds, warm sand, and cool water in the desert.' },
-  { id: 'ruins', name: 'Sunstone ruins', category: 'wonders', price: 25, kind: 'ruins', color: '#ceac77', position: [30, 100], description: 'Ancient columns and a stone arch waiting for a new story.' },
-  { id: 'mushrooms', name: 'Mushroom grove', category: 'nature', price: 15, kind: 'mushrooms', color: '#bd7881', position: [-21, -95], description: 'Spotted toadstools and tiny ferns in a magical woodland.' },
-  { id: 'waterfall', name: 'Wishing waterfall', category: 'wonders', price: 30, kind: 'waterfall', color: '#78b3ba', position: [-6, 119], description: 'A sparkling waterfall tumbling down mossy rocks into a pool.' },
-  { id: 'sailboat', name: 'Little voyager', category: 'homes', price: 18, kind: 'sailboat', color: '#7ca8b8', position: [-52, -4], description: 'A wooden sailboat with a golden sail, bobbing on the sea.' },
-  { id: 'observatory', name: 'Stargazer dome', category: 'wonders', price: 38, kind: 'observatory', color: '#8896be', position: [25, 165], description: 'A hilltop observatory and telescope for dreaming beyond your planet.' },
+  { id: 'pine-forest', name: 'Whispering woods', category: 'nature', price: 5, kind: 'forest', color: '#5c8661', position: [22, -27], description: 'A whole grove of evergreens, with little rocks tucked between the trees.' },
+  { id: 'wildflowers', name: 'Wildflower meadow', category: 'nature', price: 5, kind: 'flowers', color: '#b792bc', position: [-12, -10], description: 'Pink, golden, and lavender flowers for a little burst of happiness.' },
+  { id: 'campfire', name: 'Campfire hideaway', category: 'homes', price: 6, kind: 'camp', color: '#c48959', position: [0, 17], description: 'A canvas tent, log seats, and a flickering fire under the stars.' },
+  { id: 'pond', name: 'Lily-pad pond', category: 'nature', price: 8, kind: 'pond', color: '#79b6b4', position: [15, 3], description: 'A quiet blue pond with lily pads, reeds, and a friendly duck.' },
+  { id: 'cottage', name: 'Fernwood cottage', category: 'homes', price: 12, kind: 'cottage', color: '#b87b5c', position: [-20, -36], description: 'A cozy cottage with a tiled roof, warm windows, and a garden fence.' },
+  { id: 'orchard', name: 'Apple orchard', category: 'nature', price: 8, kind: 'orchard', color: '#8d9e58', position: [12, -65], description: 'Round apple trees and a basketful of bright red fruit.' },
+  { id: 'windmill', name: 'Sunbeam windmill', category: 'homes', price: 15, kind: 'windmill', color: '#c5ab70', position: [35, -68], description: 'Slowly turning sails and golden rows of wheat on a sunny hillside.' },
+  { id: 'mountains', name: 'Snowcap peaks', category: 'nature', price: 12, kind: 'mountains', color: '#a3bec0', position: [53, 9], description: 'A tiny mountain range with frosty peaks and boulders.' },
+  { id: 'crystals', name: 'Crystal garden', category: 'wonders', price: 15, kind: 'crystals', color: '#8ac7d1', position: [52, 66], description: 'A cluster of tall, shimmering blue crystals in the snowy north.' },
+  { id: 'lighthouse', name: 'Seaside lighthouse', category: 'homes', price: 16, kind: 'lighthouse', color: '#c67f6b', position: [-29, 43], description: 'A red-and-cream lighthouse to guide a tiny boat home.' },
+  { id: 'palms', name: 'Palm oasis', category: 'nature', price: 8, kind: 'palms', color: '#c3a563', position: [9, 64], description: 'Swaying palm fronds, warm sand, and cool water in the desert.' },
+  { id: 'ruins', name: 'Sunstone ruins', category: 'wonders', price: 16, kind: 'ruins', color: '#ceac77', position: [30, 100], description: 'Ancient columns and a stone arch waiting for a new story.' },
+  { id: 'mushrooms', name: 'Mushroom grove', category: 'nature', price: 10, kind: 'mushrooms', color: '#bd7881', position: [-21, -95], description: 'Spotted toadstools and tiny ferns in a magical woodland.' },
+  { id: 'waterfall', name: 'Wishing waterfall', category: 'wonders', price: 20, kind: 'waterfall', color: '#78b3ba', position: [-6, 119], description: 'A sparkling waterfall tumbling down mossy rocks into a pool.' },
+  { id: 'sailboat', name: 'Little voyager', category: 'homes', price: 12, kind: 'sailboat', color: '#7ca8b8', position: [-52, -4], description: 'A wooden sailboat with a golden sail, bobbing on the sea.' },
+  { id: 'observatory', name: 'Stargazer dome', category: 'wonders', price: 25, kind: 'observatory', color: '#8896be', position: [25, 165], description: 'A hilltop observatory and telescope for dreaming beyond your planet.' },
   // Leave enough land around the whole village, above the rear water channel.
-  { id: 'village', name: 'Little hillside village', category: 'homes', price: 32, kind: 'village', color: '#b48c9f', position: [18, -150], description: 'Three colorful cottages, lanterns, and a winding village path.' },
-  { id: 'balloon', name: 'Sky explorer', category: 'wonders', price: 40, kind: 'balloon', color: '#c6937a', position: [-37, -65], description: 'A striped hot-air balloon floating above your growing world.' },
+  { id: 'village', name: 'Little hillside village', category: 'homes', price: 20, kind: 'village', color: '#b48c9f', position: [18, -150], description: 'Three colorful cottages, lanterns, and a winding village path.' },
+  { id: 'balloon', name: 'Sky explorer', category: 'wonders', price: 25, kind: 'balloon', color: '#c6937a', position: [-37, -65], description: 'A striped hot-air balloon floating above your growing world.' },
 ];
 
 export const getPlanetItem = (id) => PLANET_ITEMS.find((item) => item.id === id);

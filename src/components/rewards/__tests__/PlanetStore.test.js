@@ -26,7 +26,7 @@ test('previewing one item or the full world never spends coins or changes owners
 test('a student with too few coins can preview but cannot buy', () => {
   render(<PlanetStore {...props({ coins: 4 })} />);
   fireEvent.click(screen.getByRole('button', { name: /Preview Whispering woods/ }));
-  expect(screen.getByRole('button', { name: '4 more coins to go' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '1 more coins to go' })).toBeDisabled();
 });
 
 test('buying waits for saving and blocks repeated clicks before reporting success', async () => {
@@ -35,7 +35,7 @@ test('buying waits for saving and blocks repeated clicks before reporting succes
   p.handlePurchasePlanetItem.mockImplementation(() => new Promise((resolve) => { complete = resolve; }));
   render(<PlanetStore {...p} />);
   fireEvent.click(screen.getByRole('button', { name: /Preview Whispering woods/ }));
-  const buy = screen.getByRole('button', { name: 'Add to my planet · 8' });
+  const buy = screen.getByRole('button', { name: 'Add to my planet · 5' });
   fireEvent.click(buy);
   fireEvent.click(buy);
   expect(p.handlePurchasePlanetItem).toHaveBeenCalledTimes(1);
@@ -49,9 +49,9 @@ test('a failed save leaves the item purchasable and explains the failure', async
   p.handlePurchasePlanetItem.mockRejectedValue(new Error('Please try again.'));
   render(<PlanetStore {...p} />);
   fireEvent.click(screen.getByRole('button', { name: /Preview Whispering woods/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Add to my planet · 8' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add to my planet · 5' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Please try again.');
-  expect(screen.getByRole('button', { name: 'Add to my planet · 8' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Add to my planet · 5' })).toBeEnabled();
 });
 
 test('owned items can be tucked away without a second purchase, and restored after remount', async () => {
