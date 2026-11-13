@@ -88,7 +88,7 @@ describe('gemini-proxy', () => {
       message = err.message;
     }
     expect(message).toBe(
-      'Invalid topic: Calculus for 4th grade. Valid topics are: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations, Algebra'
+      'Invalid topic: Calculus for 4th grade. Valid topics are: Operations & Algebraic Thinking, Base Ten, Fractions 4th, Measurement & Data 4th, Geometry, Binary Operations'
     );
   });
 

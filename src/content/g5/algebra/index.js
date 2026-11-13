@@ -1,4 +1,4 @@
-// 4th Grade Algebra Topic Module
+// 5th Grade Algebra Topic Module
 // Metadata lives in manifest.json; heavy imports (questions.js, Explanation.js)
 // load on demand when a quiz starts or an explanation opens.
 import manifest from './manifest.json';
