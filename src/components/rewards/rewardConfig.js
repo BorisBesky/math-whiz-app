@@ -1,5 +1,5 @@
 export const DEFAULT_CHARACTER_ID = "buddy-bear";
-export const CHARACTER_PRICE = 60;
+export const CHARACTER_PRICE = 20;
 
 export const REWARD_CHARACTERS = [
   {
@@ -210,7 +210,7 @@ export const REWARD_CHARACTER_SKILLS = [
     name: "Big Jump",
     description: "Leap up with both hands in the air.",
     animation: "Jump",
-    price: 15,
+    price: 5,
     color: "#22c55e",
   },
   {
@@ -219,7 +219,7 @@ export const REWARD_CHARACTER_SKILLS = [
     name: "Floss Dance",
     description: "Unlock Koko's side-to-side floss dance.",
     animation: "Floss",
-    price: 25,
+    price: 8,
     color: "#a855f7",
   },
 ];
