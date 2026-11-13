@@ -6,6 +6,7 @@ import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.j
 import {
   DEFAULT_CHARACTER_ID,
   getAccessoryById,
+  resolveEquippedAccessory,
   getCharacterById,
   getColorRegions,
   getModelPartAccessories,
@@ -1136,10 +1137,10 @@ const CharacterViewer = ({
           if (anchors) {
             const target = modelObject;
             Object.values(equippedItems || {})
-              .map(getAccessoryById)
-              .filter((item) => item && (item.characterIds || []).includes(character.id))
+              .map((itemId) => resolveEquippedAccessory(itemId, character.id))
+              .filter(Boolean)
               .forEach((item) => {
-                const fit = getGeneratedAccessoryFit(item.id);
+                const fit = getGeneratedAccessoryFit(item.id, character.id);
                 if (!fit) return;
                 loadAccessoryModel(generatedAccessoryUrl(item.id))
                   .then((source) => {

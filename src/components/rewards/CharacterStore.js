@@ -13,6 +13,8 @@ import {
   getCharacterSkills,
   getColorRegions,
   getConflictingCategories,
+  isAccessoryOwned,
+  resolveEquippedAccessory,
   resolveSelectedCharacterId,
 } from "./rewardConfig";
 
@@ -434,8 +436,10 @@ const CharacterStore = ({
               No {activeCategoryLabel.toLowerCase()} for {selectedCharacter.name} yet.
             </div>
           ) : visibleItems.map((item) => {
-            const isOwned = ownedAccessoryIds.includes(item.id);
-            const isEquipped = equippedForCharacter[item.category] === item.id;
+            const isOwned = isAccessoryOwned(ownedAccessoryIds, item);
+            const isEquipped =
+              resolveEquippedAccessory(equippedForCharacter[item.category], selectedCharacterId)?.id ===
+              item.id;
             const isPreviewing = previewItem?.id === item.id;
 
             return (

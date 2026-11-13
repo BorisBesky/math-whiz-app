@@ -571,7 +571,7 @@ export const getResolvedFaceLooks = (characterId, savedLooks = {}) => ({
 export const getColorRegionsByGroup = (characterId, group) =>
   getColorRegions(characterId).filter((region) => (region.group || "body") === group);
 
-export const REWARD_ACCESSORIES = [
+const BASE_ACCESSORIES = [
   {
     id: "sunny-red-cap",
     name: "Red Cap",
@@ -968,7 +968,396 @@ export const REWARD_ACCESSORIES = [
     modelPart: "part_5_sneakers",
     characterIds: ["quinn-kid"],
   },
+  // Per-character versions of items that used to be shared. `legacyIds` lists
+  // the shared item they replace: owning it counts as owning this version.
+  {
+    id: "buddy-bow-tie",
+    name: "Gingham Bow Tie",
+    category: "neckwear",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#ffffff",
+    shape: "bowTie",
+    legacyIds: ["bright-bow-tie"],
+    characterIds: [],
+  },
+  {
+    id: "milo-bow-tie",
+    name: "Metal Bow Tie",
+    category: "neckwear",
+    price: 10,
+    color: "#3b82f6",
+    accentColor: "#22d3ee",
+    shape: "bowTie",
+    legacyIds: ["bright-bow-tie"],
+    characterIds: [],
+  },
+  {
+    id: "buddy-medal",
+    name: "Honeycomb Medal",
+    category: "neckwear",
+    price: 10,
+    color: "#f59e0b",
+    accentColor: "#ef4444",
+    shape: "medal",
+    legacyIds: ["math-medal"],
+    characterIds: [],
+  },
+  {
+    id: "milo-medal",
+    name: "Gear Medal",
+    category: "neckwear",
+    price: 10,
+    color: "#9ca3af",
+    accentColor: "#38bdf8",
+    shape: "medal",
+    legacyIds: ["math-medal"],
+    characterIds: [],
+  },
+  {
+    id: "leo-medal",
+    name: "Champion Medal",
+    category: "neckwear",
+    price: 10,
+    color: "#f6c844",
+    accentColor: "#2563eb",
+    shape: "medal",
+    legacyIds: ["math-medal"],
+    characterIds: [],
+  },
+  {
+    id: "buddy-backpack",
+    name: "Beehive Backpack",
+    category: "back",
+    price: 10,
+    color: "#f6c844",
+    accentColor: "#92400e",
+    shape: "backpack",
+    legacyIds: ["explorer-backpack"],
+    characterIds: [],
+  },
+  {
+    id: "leo-backpack",
+    name: "School Backpack",
+    category: "back",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#f97316",
+    shape: "backpack",
+    legacyIds: ["explorer-backpack"],
+    characterIds: [],
+  },
+  {
+    id: "buddy-cape",
+    name: "Cozy Blanket Cape",
+    category: "back",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#f6c844",
+    shape: "cape",
+    legacyIds: ["hero-cape"],
+    characterIds: [],
+  },
+  {
+    id: "leo-cape",
+    name: "Lightning Cape",
+    category: "back",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#facc15",
+    shape: "cape",
+    legacyIds: ["hero-cape"],
+    characterIds: [],
+  },
+  {
+    id: "leo-bracelet",
+    name: "Sport Bracelet",
+    category: "jewelry",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#f97316",
+    shape: "friendshipBracelet",
+    legacyIds: ["friendship-bracelet"],
+    characterIds: [],
+  },
+  {
+    id: "mia-bracelet",
+    name: "Heart Bead Bracelet",
+    category: "jewelry",
+    price: 10,
+    color: "#ec4899",
+    accentColor: "#c4b5fd",
+    shape: "friendshipBracelet",
+    legacyIds: ["friendship-bracelet"],
+    characterIds: [],
+  },
+  {
+    id: "leo-sneakers",
+    name: "High-Top Sneakers",
+    category: "feet",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#f97316",
+    shape: "sneakers",
+    legacyIds: ["mint-sneakers"],
+    characterIds: [],
+  },
+  {
+    id: "mia-sneakers",
+    name: "Glitter Sneakers",
+    category: "feet",
+    price: 10,
+    color: "#ec4899",
+    accentColor: "#c4b5fd",
+    shape: "sneakers",
+    legacyIds: ["mint-sneakers"],
+    characterIds: [],
+  },
+  // Character-specific generated accessories (ComfyUI text-to-3D); who can
+  // wear them is set by GENERATED_CHARACTER_ACCESSORY_SETS below.
+  {
+    id: "buddy-straw-hat",
+    name: "Straw Sun Hat",
+    category: "hat",
+    price: 10,
+    color: "#e9c46a",
+    accentColor: "#ef4444",
+    shape: "cap",
+    characterIds: [],
+  },
+  {
+    id: "buddy-nightcap",
+    name: "Sleepy Nightcap",
+    category: "hat",
+    price: 10,
+    color: "#60a5fa",
+    accentColor: "#ffffff",
+    shape: "wizardHat",
+    characterIds: [],
+  },
+  {
+    id: "buddy-honey-pot",
+    name: "Honey Pot",
+    category: "prop",
+    price: 10,
+    color: "#f59e0b",
+    accentColor: "#92400e",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "buddy-picnic-basket",
+    name: "Picnic Basket",
+    category: "prop",
+    price: 10,
+    color: "#b45309",
+    accentColor: "#ef4444",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "buddy-overalls",
+    name: "Denim Overalls",
+    category: "shorts",
+    price: 10,
+    color: "#3b82f6",
+    accentColor: "#f6c844",
+    shape: "shorts",
+    characterIds: [],
+  },
+  {
+    id: "milo-hard-hat",
+    name: "Builder Hard Hat",
+    category: "hat",
+    price: 10,
+    color: "#facc15",
+    accentColor: "#f59e0b",
+    shape: "cap",
+    characterIds: [],
+  },
+  {
+    id: "milo-visor",
+    name: "Glow Visor",
+    category: "eyewear",
+    price: 10,
+    color: "#22d3ee",
+    accentColor: "#0e7490",
+    shape: "goggles",
+    characterIds: [],
+  },
+  {
+    id: "milo-wrench",
+    name: "Toy Wrench",
+    category: "prop",
+    price: 10,
+    color: "#9ca3af",
+    accentColor: "#f97316",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "milo-magnet",
+    name: "Super Magnet",
+    category: "prop",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#e5e7eb",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "milo-rocket-boots",
+    name: "Rocket Boots",
+    category: "feet",
+    price: 10,
+    color: "#9ca3af",
+    accentColor: "#f97316",
+    shape: "boots",
+    characterIds: [],
+  },
+  {
+    id: "leo-explorer-hat",
+    name: "Explorer Hat",
+    category: "hat",
+    price: 10,
+    color: "#c2a878",
+    accentColor: "#7c2d12",
+    shape: "cap",
+    characterIds: [],
+  },
+  {
+    id: "leo-hero-mask",
+    name: "Hero Mask",
+    category: "eyewear",
+    price: 10,
+    color: "#ef4444",
+    accentColor: "#111827",
+    shape: "goggles",
+    characterIds: [],
+  },
+  {
+    id: "leo-soccer-ball",
+    name: "Soccer Ball",
+    category: "prop",
+    price: 10,
+    color: "#ffffff",
+    accentColor: "#111827",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "leo-skateboard",
+    name: "Skateboard",
+    category: "prop",
+    price: 10,
+    color: "#2563eb",
+    accentColor: "#f97316",
+    shape: "book",
+    characterIds: [],
+  },
+  {
+    id: "mia-flower-crown",
+    name: "Flower Crown",
+    category: "hat",
+    price: 10,
+    color: "#f9a8d4",
+    accentColor: "#22c55e",
+    shape: "crown",
+    characterIds: [],
+  },
+  {
+    id: "mia-hair-bow",
+    name: "Big Hair Bow",
+    category: "hat",
+    price: 10,
+    color: "#ec4899",
+    accentColor: "#ffffff",
+    shape: "bowTie",
+    characterIds: [],
+  },
+  {
+    id: "mia-tiara",
+    name: "Sparkle Tiara",
+    category: "hat",
+    price: 10,
+    color: "#e5e7eb",
+    accentColor: "#ec4899",
+    shape: "crown",
+    characterIds: [],
+  },
+  {
+    id: "mia-heart-sunglasses",
+    name: "Heart Shades",
+    category: "eyewear",
+    price: 10,
+    color: "#ec4899",
+    accentColor: "#f9a8d4",
+    shape: "starGlasses",
+    characterIds: [],
+  },
+  {
+    id: "mia-pinafore",
+    name: "Pinafore Dress",
+    category: "dress",
+    price: 10,
+    color: "#c4b5fd",
+    accentColor: "#ec4899",
+    shape: "dress",
+    characterIds: [],
+  },
+  {
+    id: "mia-butterfly-wings",
+    name: "Butterfly Wings",
+    category: "back",
+    price: 10,
+    color: "#f9a8d4",
+    accentColor: "#a78bfa",
+    shape: "cape",
+    characterIds: [],
+  },
 ];
+
+// Each generated character has its own curated accessory set, picked to suit
+// the character (a honey pot for the bear, tools for the robot, ...). Legacy
+// procedural characters keep their original per-item lists.
+export const GENERATED_CHARACTER_ACCESSORY_SETS = {
+  "buddy-bear": [
+    "buddy-straw-hat", "buddy-nightcap", "buddy-bow-tie", "rainbow-scarf", "buddy-medal",
+    "buddy-backpack", "buddy-cape", "buddy-honey-pot", "buddy-picnic-basket", "buddy-overalls",
+  ],
+  "milo-robot": [
+    "robot-antenna", "milo-hard-hat", "milo-visor", "milo-bow-tie", "milo-medal",
+    "rocket-pack", "milo-wrench", "milo-magnet", "milo-rocket-boots",
+  ],
+  "leo-boy": [
+    "sunny-red-cap", "leo-explorer-hat", "round-sky-glasses", "leo-hero-mask", "sport-shorts",
+    "comfy-shorts", "leo-bracelet", "leo-medal", "leo-backpack", "leo-cape",
+    "leo-sneakers", "leo-soccer-ball", "leo-skateboard", "quiz-book",
+  ],
+  "mia-girl": [
+    "mia-flower-crown", "mia-hair-bow", "mia-tiara", "star-spark-glasses", "mia-heart-sunglasses",
+    "mia-pinafore", "twirl-skirt", "sport-skirt", "heart-necklace", "mia-bracelet",
+    "mia-butterfly-wings", "mia-sneakers", "sparkle-wand",
+  ],
+};
+
+const GENERATED_SET_CHARACTER_IDS = Object.keys(GENERATED_CHARACTER_ACCESSORY_SETS);
+
+// Store-card thumbnails rendered from each generated accessory's reference image.
+const GENERATED_ACCESSORY_IDS = new Set(Object.values(GENERATED_CHARACTER_ACCESSORY_SETS).flat());
+
+export const REWARD_ACCESSORIES = BASE_ACCESSORIES.map((item) => ({
+  ...item,
+  ...(GENERATED_ACCESSORY_IDS.has(item.id) && {
+    image: `/models/accessories/thumbs/${item.id}.jpg`,
+  }),
+  characterIds: [
+    ...item.characterIds.filter((id) => !GENERATED_SET_CHARACTER_IDS.includes(id)),
+    ...GENERATED_SET_CHARACTER_IDS.filter((id) =>
+      GENERATED_CHARACTER_ACCESSORY_SETS[id].includes(item.id)
+    ),
+  ],
+}));
 
 export const getCharacterById = (characterId) =>
   REWARD_CHARACTERS.find((character) => character.id === characterId) ||
@@ -976,3 +1365,24 @@ export const getCharacterById = (characterId) =>
 
 export const getAccessoryById = (itemId) =>
   REWARD_ACCESSORIES.find((item) => item.id === itemId);
+
+// Owning an item, or a shared item it replaced (`legacyIds`), counts as owning it.
+export const isAccessoryOwned = (ownedIds, item) =>
+  Boolean(item) &&
+  Array.isArray(ownedIds) &&
+  (ownedIds.includes(item.id) || (item.legacyIds || []).some((id) => ownedIds.includes(id)));
+
+// The item a character actually wears for an equipped id: the item itself when
+// that character can wear it, otherwise its per-character replacement (an old
+// shared item equipped before the split), otherwise null.
+export const resolveEquippedAccessory = (itemId, characterId) => {
+  const item = getAccessoryById(itemId);
+  if (!item) return null;
+  if (item.characterIds.includes(characterId)) return item;
+  return (
+    REWARD_ACCESSORIES.find(
+      (candidate) =>
+        candidate.legacyIds?.includes(itemId) && candidate.characterIds.includes(characterId)
+    ) || null
+  );
+};

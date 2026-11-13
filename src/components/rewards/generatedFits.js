@@ -78,12 +78,54 @@ export const GENERATED_ACCESSORY_FITS = {
   "moon-boots": { anchor: "feet", size: 0.95, rotationY: -Math.PI / 2 },
   "sparkle-wand": { anchor: "handRight", size: 0.6 },
   "quiz-book": { anchor: "handRight", size: 0.4, offsetZ: 0.08 },
+  // Character-specific items.
+  "buddy-straw-hat": { anchor: "head", size: 0.95, sink: 0.3 },
+  "buddy-nightcap": { anchor: "head", size: 0.8, sink: 0.22 },
+  "buddy-honey-pot": { anchor: "handRight", size: 0.42, offsetZ: 0.08 },
+  "buddy-picnic-basket": { anchor: "handRight", size: 0.46, offsetZ: 0.06 },
+  "buddy-overalls": { anchor: "dress", size: 1.05, offsetY: -0.2 },
+  "milo-hard-hat": { anchor: "head", size: 1.0, sink: 0.35 },
+  "milo-visor": { anchor: "eyes", size: 0.95, offsetY: -0.1, offsetZ: 0.04 },
+  "milo-wrench": { anchor: "handRight", size: 0.6 },
+  "milo-magnet": { anchor: "handRight", size: 0.4 },
+  "milo-rocket-boots": { anchor: "feet", size: 1.85, rotationY: -Math.PI / 2 },
+  "leo-explorer-hat": { anchor: "head", size: 1.05, sink: 0.55 },
+  "leo-hero-mask": { anchor: "eyes", size: 0.8, offsetY: -0.06 },
+  "leo-soccer-ball": { anchor: "handRight", size: 0.32, offsetZ: 0.1 },
+  "leo-skateboard": { anchor: "handLeft", size: 0.75 },
+  "mia-flower-crown": { anchor: "head", size: 0.85, sink: 0.5, rotationX: -1.3 },
+  "mia-hair-bow": { anchor: "head", size: 0.6, sink: 0.4 },
+  "mia-tiara": { anchor: "head", size: 0.6, sink: 0.2, offsetZ: 0.15 },
+  "mia-heart-sunglasses": { anchor: "eyes", size: 0.74, offsetY: -0.07 },
+  "mia-pinafore": { anchor: "dress", size: 1.5, offsetZ: 0.03 },
+  // Per-character versions of formerly shared items.
+  "buddy-bow-tie": { anchor: "neckFront", size: 0.38, offsetY: 0.02 },
+  "milo-bow-tie": { anchor: "neckFront", size: 0.38, offsetY: 0.02 },
+  "buddy-medal": { anchor: "chest", size: 0.32 },
+  "milo-medal": { anchor: "chest", size: 0.32 },
+  "leo-medal": { anchor: "chest", size: 0.32 },
+  "buddy-backpack": { anchor: "back", size: 0.7, rotationY: Math.PI, offsetZ: 0.5 },
+  "leo-backpack": { anchor: "back", size: 0.7, rotationY: Math.PI, offsetZ: 0.1 },
+  "buddy-cape": { anchor: "backTop", size: 1.0, rotationY: Math.PI, rotationX: 0.12, offsetY: 0.3, offsetZ: 0.32 },
+  "leo-cape": { anchor: "backTop", size: 0.82, rotationY: Math.PI, rotationX: 0.12 },
+  "leo-bracelet": { anchor: "handLeft", size: 0.24 },
+  "mia-bracelet": { anchor: "handLeft", size: 0.24 },
+  "leo-sneakers": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
+  "mia-sneakers": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
+  "mia-butterfly-wings": { anchor: "back", size: 2.3, rotationY: Math.PI, offsetY: 0.12, offsetZ: -0.04 },
 };
+
+// Per-character adjustments merged over the shared fit above, for items whose
+// generic placement doesn't suit one body (keyed by item id, then character id).
+export const GENERATED_ACCESSORY_FIT_OVERRIDES = {};
 
 export const getGeneratedAnchors = (characterId) =>
   GENERATED_CHARACTER_ANCHORS[characterId] || null;
 
-export const getGeneratedAccessoryFit = (itemId) =>
-  GENERATED_ACCESSORY_FITS[itemId] || null;
+export const getGeneratedAccessoryFit = (itemId, characterId) => {
+  const fit = GENERATED_ACCESSORY_FITS[itemId];
+  if (!fit) return null;
+  return { ...fit, ...GENERATED_ACCESSORY_FIT_OVERRIDES[itemId]?.[characterId] };
+};
 
 export const generatedAccessoryUrl = (itemId) => `${GENERATED_ACCESSORY_DIR}/${itemId}.glb`;
