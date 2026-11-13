@@ -20,29 +20,29 @@ beforeEach(() => {
 
 test('a first purchase deducts its catalog price and permanently adds it to the world', async () => {
   await purchasePlanetItem(db, ref, 'pine-forest');
-  expect(profile).toEqual({ coins: 85, ownedPlanetItems: ['pine-forest'], activePlanetItems: ['pine-forest'] });
+  expect(profile).toEqual({ coins: 92, ownedPlanetItems: ['pine-forest'], activePlanetItems: ['pine-forest'] });
 });
 
 test('a repeated purchase cannot charge twice', async () => {
   await purchasePlanetItem(db, ref, 'pine-forest');
   const result = await purchasePlanetItem(db, ref, 'pine-forest');
   expect(result.alreadyOwned).toBe(true);
-  expect(profile.coins).toBe(85);
+  expect(profile.coins).toBe(92);
   expect(transaction.update).toHaveBeenCalledTimes(1);
 });
 
 test('the current stored balance, including an exactly sufficient balance, governs spending', async () => {
-  profile.coins = 15;
+  profile.coins = 8;
   await purchasePlanetItem(db, ref, 'pine-forest');
   expect(profile.coins).toBe(0);
-  await expect(purchasePlanetItem(db, ref, 'wildflowers')).rejects.toThrow('15 more coins');
+  await expect(purchasePlanetItem(db, ref, 'wildflowers')).rejects.toThrow('8 more coins');
   expect(transaction.update).toHaveBeenCalledTimes(1);
 });
 
 test('unknown items, missing profiles, and invalid balances cannot be purchased', async () => {
   await expect(purchasePlanetItem(db, ref, 'made-up-item')).rejects.toThrow('unavailable');
   profile.coins = NaN;
-  await expect(purchasePlanetItem(db, ref, 'pine-forest')).rejects.toThrow('15 more coins');
+  await expect(purchasePlanetItem(db, ref, 'pine-forest')).rejects.toThrow('8 more coins');
   transaction.get.mockResolvedValue({ exists: () => false });
   await expect(purchasePlanetItem(db, ref, 'pine-forest')).rejects.toThrow('profile is still loading');
   expect(transaction.update).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ test('tucking away and restoring never loses ownership or charges coins', async 
   await setPlanetItemActive(db, ref, 'pine-forest', true);
   await setPlanetItemActive(db, ref, 'pine-forest', true);
   expect(profile.activePlanetItems).toEqual(['pine-forest']);
-  expect(profile.coins).toBe(85);
+  expect(profile.coins).toBe(92);
 });
 
 test('unowned scenery cannot be activated and hidden items stay hidden after a new purchase', async () => {

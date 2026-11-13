@@ -49,8 +49,8 @@ describe("Koko character skills", () => {
 
     const jumpCard = screen.getByRole("article", { name: "Big Jump skill" });
     const flossCard = screen.getByRole("article", { name: "Floss Dance skill" });
-    fireEvent.click(within(jumpCard).getByRole("button", { name: /buy · 15/i }));
-    fireEvent.click(within(flossCard).getByRole("button", { name: /buy · 25/i }));
+    fireEvent.click(within(jumpCard).getByRole("button", { name: /buy · 8/i }));
+    fireEvent.click(within(flossCard).getByRole("button", { name: /buy · 12/i }));
 
     expect(baseProps.handlePurchaseCharacterSkill).toHaveBeenNthCalledWith(
       1,

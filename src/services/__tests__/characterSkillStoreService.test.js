@@ -25,7 +25,7 @@ beforeEach(() => {
 
 test("purchases Koko's jump at the catalog price", async () => {
   await purchaseCharacterSkill(db, ref, "koko-jump", "koko-monkey");
-  expect(profile.coins).toBe(45);
+  expect(profile.coins).toBe(52);
   expect(profile.ownedCharacterSkills).toEqual(["koko-jump"]);
 });
 
@@ -33,7 +33,7 @@ test("cannot charge twice for the same move", async () => {
   await purchaseCharacterSkill(db, ref, "koko-floss", "koko-monkey");
   const result = await purchaseCharacterSkill(db, ref, "koko-floss", "koko-monkey");
   expect(result.alreadyOwned).toBe(true);
-  expect(profile.coins).toBe(35);
+  expect(profile.coins).toBe(48);
   expect(transaction.update).toHaveBeenCalledTimes(1);
 });
 
@@ -44,7 +44,7 @@ test("requires the character and the current stored coin balance", async () => {
   ).rejects.toThrow("Buy Koko");
 
   profile.ownedCharacters.push("koko-monkey");
-  profile.coins = 14;
+  profile.coins = 7;
   await expect(
     purchaseCharacterSkill(db, ref, "koko-jump", "koko-monkey")
   ).rejects.toThrow("1 more coins");

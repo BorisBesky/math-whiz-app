@@ -46,7 +46,7 @@
 - Character store code lives in `src/components/rewards/` with the lazy-loaded store chunk named in `src/MainApp.js`.
 - When changing reward store or character viewer code, always update the `webpackChunkName` for `RewardsStore`, rebuild, and validate against the new query/chunk URL on `localhost:8888`. The in-app browser may keep old chunks cached unless the chunk id changes.
 - Visual QA for store items must wait for the category and item card to be visible, click the item, then wait for the canvas render to settle before taking screenshots. Fast snapshots can capture the previous/default preview.
-- Users must buy characters before selecting them. Character price is 60 coins; Buddy is the default starter character. Existing users may keep their previously selected character during migration.
+- Users must buy characters before selecting them. Character price is 30 coins; Buddy is the default starter character. Existing users may keep their previously selected character during migration.
 - Current character availability rule: Buddy, Milo, Pip, and Leo should not have Dresses or Skirts. Cora, Sunny, and Mia may have Dresses and Skirts.
 - Cora intentionally has no tail; previous tail shapes looked detached or odd from side/rear angles.
 - Koko's source generator is `scripts/generate-koko-monkey.py`; run it with Blender to rebuild `public/models/monkey_parts.glb`. The GLB must retain the named `Idle`, `Wave`, `Jump`, and `Floss` clips.
