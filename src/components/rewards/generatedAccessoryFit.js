@@ -2401,3 +2401,25 @@ export const fitGeneratedAccessory = (source, fit, anchors, characterRoot = null
   };
   return fit.anchor === "feet" ? [place(false), place(true)] : [place(false)];
 };
+
+// Dressed-character models (built by the ComfyUI + Blender "dressed" pipeline) carry
+// their accessories as named nodes: `item__<id>` is the accessory, made together with
+// the body so it already fits, and `body__<id>` is the body region it replaces (e.g. the
+// hair under a hat), hidden while the item is worn. Returns the ids handled this way so
+// callers don't also fit a separate accessory GLB for them.
+export const applyDressedParts = (root, equippedIds = []) => {
+  const worn = new Set(equippedIds);
+  const handled = new Set();
+  root.traverse((child) => {
+    const match = /^(item|body)__(.+)$/.exec(child.name);
+    if (!match) return;
+    const [, kind, id] = match;
+    if (kind === "item") {
+      child.visible = worn.has(id);
+      if (worn.has(id)) handled.add(id);
+    } else {
+      child.visible = !worn.has(id);
+    }
+  });
+  return handled;
+};

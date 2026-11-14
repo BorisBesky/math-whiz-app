@@ -47,7 +47,7 @@ export const REWARD_CHARACTERS = [
     title: "Boy Hero",
     accent: "#2563eb",
     summary: "A friendly kid avatar for shorts, jewelry, and adventure gear.",
-    model: "/models/generated/leo-boy.glb?v=1",
+    model: "/models/generated/leo-boy.glb?v=2",
     generated: true,
   },
   {
