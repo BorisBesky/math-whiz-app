@@ -2,7 +2,14 @@ import React from 'react';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import SecretMessageQuiz from './SecretMessageQuiz';
 import { ALPHABET, SECRET_MESSAGES, makeClues, makeNumberLetterMap, messageLetters, readSecretSession } from './secretMessageConfig';
-import { generateMessageBatch, completeMessage, emptyMessageProgress, ORIGINAL_MESSAGE_CAPACITY } from './messageLibrary';
+import {
+  calculateSecretMessageCoins,
+  completeMessage,
+  emptyMessageProgress,
+  generateMessageBatch,
+  ORIGINAL_MESSAGE_CAPACITY,
+  SECRET_MESSAGE_COMPLETION_BONUS,
+} from './messageLibrary';
 
 beforeEach(() => localStorage.clear());
 const normalized = text => text.toLowerCase().replace(/[^a-z]/g, '');
@@ -122,6 +129,10 @@ it('requires correct math before clicking a letter, resumes, and never offers a 
     expect(screen.getAllByLabelText(`${clue.answer} decoded as ${clue.letter}`)).toHaveLength([...messageLetters(message)].filter(letter => letter === clue.letter).length);
   }
   expect(screen.getByText(`“${message.text}”`)).toBeInTheDocument();
+  const expectedCoins = SECRET_MESSAGE_COMPLETION_BONUS + (clues.length - 1);
+  expect(screen.getByText(new RegExp(`\\+${expectedCoins} Coins earned!`, 'i'))).toBeInTheDocument();
+  expect(calculateSecretMessageCoins({ total: clues.length, firstTry: clues.length - 1 })).toBe(expectedCoins);
+  expect(calculateSecretMessageCoins({ total: clues.length, firstTry: 0 })).toBe(SECRET_MESSAGE_COMPLETION_BONUS);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Choose another message' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Choose another message' }));
   expect(screen.queryByRole('button', { name: /A message from Carl Sagan/ })).not.toBeInTheDocument();

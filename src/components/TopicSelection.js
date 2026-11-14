@@ -399,7 +399,7 @@ const TopicSelection = ({
           <span>
             <span className="block font-display text-xl font-bold text-teal-900">Secret Message</span>
             <span className="block text-sm text-teal-800">Solve math clues, decode letters, and discover an inspiring message.</span>
-            <span className="block text-xs text-teal-700 mt-1">Bonus arithmetic practice</span>
+            <span className="block text-xs text-teal-700 mt-1">Bonus arithmetic practice · Earn coins for every decoded message!</span>
           </span>
         </button>
       )}
