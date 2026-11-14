@@ -1,38 +1,106 @@
-<svg width="400" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80">
+<svg width="400" height="96" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96">
   <defs>
+    <filter id="stickerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="0" flood-color="#1e293b" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#2563eb" flood-opacity="0.16"/>
+    </filter>
     <style>
-      .letter { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-        font-weight: 900; 
-        font-size: 48px; 
+      .letter {
+        font-family: 'Baloo 2', 'Fredoka', 'Comic Sans MS', 'Trebuchet MS', cursive, sans-serif;
+        font-weight: 800;
+        font-size: 52px;
         text-anchor: middle;
         dominant-baseline: middle;
+        stroke: #ffffff;
+        stroke-width: 5px;
+        paint-order: stroke fill;
+        filter: url(#stickerShadow);
+        transform-box: fill-box;
+        transform-origin: center bottom;
+        animation: wave 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
       }
-      .bounce0 { animation: bounce 2s ease-in-out infinite; animation-delay: 0s; }
-      .bounce1 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.1s; }
-      .bounce2 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.2s; }
-      .bounce3 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.3s; }
-      .bounce4 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.5s; }
-      .bounce5 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.6s; }
-      .bounce6 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.7s; }
-      .bounce7 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.8s; }
-      .bounce8 { animation: bounce 2s ease-in-out infinite; animation-delay: 0.9s; }
-      
-      @keyframes bounce {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-12px); }
+      .d0 { animation-delay: 0s; }
+      .d1 { animation-delay: 0.08s; }
+      .d2 { animation-delay: 0.16s; }
+      .d3 { animation-delay: 0.24s; }
+      .d4 { animation-delay: 0.36s; }
+      .d5 { animation-delay: 0.44s; }
+      .d6 { animation-delay: 0.52s; }
+      .d7 { animation-delay: 0.60s; }
+      .d8 { animation-delay: 0.68s; }
+
+      .spark {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: sparkFloat 2.8s ease-in-out infinite;
+      }
+      .s1 { animation-delay: 0s; }
+      .s2 { animation-delay: 0.7s; }
+      .s3 { animation-delay: 1.3s; }
+      .s4 { animation-delay: 1.9s; }
+
+      .hat {
+        transform-box: fill-box;
+        transform-origin: center bottom;
+        animation: hatWiggle 3.6s ease-in-out infinite;
+      }
+
+      @keyframes wave {
+        0%, 38%, 100% { transform: translateY(0px) scale(1, 1) rotate(0deg); }
+        8% { transform: translateY(3px) scale(1.12, 0.88); }
+        18% { transform: translateY(-14px) scale(0.92, 1.1) rotate(-4deg); }
+        26% { transform: translateY(2px) scale(1.06, 0.94) rotate(2deg); }
+        32% { transform: translateY(-3px) scale(0.98, 1.02); }
+      }
+
+      @keyframes sparkFloat {
+        0%, 100% { transform: translateY(0px) rotate(-6deg) scale(1); }
+        50% { transform: translateY(-7px) rotate(8deg) scale(1.1); }
+      }
+
+      @keyframes hatWiggle {
+        0%, 42%, 100% { transform: rotate(-16deg) translateY(0px); }
+        14% { transform: rotate(-24deg) translateY(-5px) scale(1.06); }
+        26% { transform: rotate(-9deg) translateY(1px); }
       }
     </style>
   </defs>
-  
-  <text x="35" y="50" class="letter bounce0" fill="#ef4444">M</text>
-  <text x="70" y="50" class="letter bounce1" fill="#f97316">a</text>
-  <text x="95" y="50" class="letter bounce2" fill="#eab308">t</text>
-  <text x="125" y="50" class="letter bounce3" fill="#22c55e">h</text>
-  
-  <text x="185" y="50" class="letter bounce4" fill="#6366f1">W</text>
-  <text x="225" y="50" class="letter bounce5" fill="#8b5cf6">h</text>
-  <text x="250" y="50" class="letter bounce6" fill="#ec4899">i</text>
-  <text x="275" y="50" class="letter bounce7" fill="#dc2626">z</text>
-  <text x="305" y="50" class="letter bounce8" fill="#ea580c">!</text>
+
+  <!-- Floating Math Sparks -->
+  <g class="spark s1" transform="translate(18, 12)">
+    <rect width="24" height="24" rx="7" fill="#dbeafe" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text x="12" y="13" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-weight="800" font-size="14" fill="#2563eb">×</text>
+  </g>
+  <g class="spark s2" transform="translate(358, 12)">
+    <rect width="24" height="24" rx="7" fill="#fef3c7" stroke="#fde68a" stroke-width="1.5"/>
+    <text x="12" y="13" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-weight="800" font-size="14" fill="#d97706">+</text>
+  </g>
+  <g class="spark s3" transform="translate(42, 68)">
+    <rect width="22" height="22" rx="6" fill="#d1fae5" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="11" y="12" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-weight="800" font-size="12" fill="#059669">÷</text>
+  </g>
+  <g class="spark s4" transform="translate(338, 68)">
+    <rect width="22" height="22" rx="6" fill="#fce7f3" stroke="#fbcfe8" stroke-width="1.5"/>
+    <text x="11" y="12" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-weight="800" font-size="11" fill="#db2777">½</text>
+  </g>
+
+  <!-- Centered Letters (x: 68 .. 336) -->
+  <text x="68" y="56" class="letter d0" fill="#2563eb">M</text>
+  <!-- Wizard Hat perched on M -->
+  <g class="hat" transform="translate(44, 6) scale(0.55)">
+    <ellipse cx="32" cy="50" rx="26" ry="7" fill="#1e1b4b"/>
+    <path d="M32 6 L14 48 L50 48 Z" fill="#4338ca" stroke="#1e1b4b" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M17 42 Q32 47 47 42 L49 47 Q32 52 15 47 Z" fill="#f59e0b"/>
+    <polygon points="32,20 34,26 40,26 35,30 37,36 32,32 27,36 29,30 24,26 30,26" fill="#fde047"/>
+  </g>
+
+  <text x="105" y="56" class="letter d1" fill="#f56565">a</text>
+  <text x="133" y="56" class="letter d2" fill="#f6c844">t</text>
+  <text x="163" y="56" class="letter d3" fill="#48d1a5">h</text>
+
+  <text x="220" y="56" class="letter d4" fill="#7c3aed">W</text>
+  <text x="260" y="56" class="letter d5" fill="#38bdf8">h</text>
+  <text x="285" y="56" class="letter d6" fill="#ec4899">i</text>
+  <text x="310" y="56" class="letter d7" fill="#fb923c">z</text>
+  <text x="336" y="56" class="letter d8" fill="#eab308">!</text>
 </svg>

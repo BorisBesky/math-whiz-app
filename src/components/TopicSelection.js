@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Award } from "lucide-react";
 import { updateDoc } from "firebase/firestore";
 import { getTodayDateString, getUserDocRef, sanitizeTopicName } from "../utils/firebaseHelpers";
@@ -11,16 +11,124 @@ import { getTopicTheme } from "./topicThemes";
 // Active-pill colors cycle per grade position (G3 blue, G4 purple, ...).
 const GRADE_PILL_ACTIVE_CLASSES = ["bg-brand-blue", "bg-brand-purple"];
 
-const AnimatedTitle = () => (
-  <img
-    src="/math-whiz-animated.svg"
-    alt="Math Whiz!"
-    className="h-16 md:h-20 w-auto"
-    width={400}
-    height={88}
-    fetchPriority="high"
-  />
-);
+const TITLE_LETTERS = [
+  { char: "M", color: "#2563eb", delay: "0s", hasHat: true },
+  { char: "a", color: "#f56565", delay: "0.08s" },
+  { char: "t", color: "#f6c844", delay: "0.16s" },
+  { char: "h", color: "#48d1a5", delay: "0.24s" },
+  { char: " ", isSpace: true },
+  { char: "W", color: "#7c3aed", delay: "0.36s" },
+  { char: "h", color: "#38bdf8", delay: "0.44s" },
+  { char: "i", color: "#ec4899", delay: "0.52s" },
+  { char: "z", color: "#fb923c", delay: "0.60s" },
+  { char: "!", color: "#eab308", delay: "0.68s" },
+];
+
+const FLOATING_MATH_SPARKS = [
+  {
+    symbol: "×",
+    delay: "0s",
+    className:
+      "-left-2 -top-1 w-7 h-7 rounded-xl bg-blue-100 text-blue-600 text-sm border-blue-200",
+  },
+  {
+    symbol: "+",
+    delay: "0.7s",
+    className:
+      "-right-3 -top-1 w-7 h-7 rounded-xl bg-amber-100 text-amber-600 text-sm border-amber-200",
+  },
+  {
+    symbol: "÷",
+    delay: "1.3s",
+    className:
+      "left-5 -bottom-2 w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 text-xs border-emerald-200",
+  },
+  {
+    symbol: "½",
+    delay: "1.9s",
+    className:
+      "right-7 -bottom-2 w-6 h-6 rounded-lg bg-pink-100 text-pink-600 text-xs border-pink-200",
+  },
+];
+
+const AnimatedTitle = () => {
+  const [poppedIndex, setPoppedIndex] = useState(null);
+
+  const handleLetterClick = (index) => {
+    setPoppedIndex(index);
+    setTimeout(() => {
+      setPoppedIndex((prev) => (prev === index ? null : prev));
+    }, 550);
+  };
+
+  return (
+    <div className="relative inline-flex items-center justify-center px-9 py-2">
+      {/* Floating Math Sparks */}
+      {FLOATING_MATH_SPARKS.map((spark) => (
+        <span
+          key={spark.symbol}
+          aria-hidden="true"
+          className={`math-whiz-spark absolute font-display font-bold flex items-center justify-center shadow-sm border pointer-events-none select-none ${spark.className}`}
+          style={{ animationDelay: spark.delay }}
+        >
+          {spark.symbol}
+        </span>
+      ))}
+
+      {/* Main Animated Heading */}
+      <h1
+        aria-label="Math Whiz!"
+        className="font-display text-5xl md:text-6xl font-extrabold tracking-tight flex items-center select-none m-0 leading-none"
+      >
+        {TITLE_LETTERS.map((item, idx) => {
+          if (item.isSpace) {
+            return <span key={`space-${idx}`} className="w-3.5 md:w-4" aria-hidden="true" />;
+          }
+
+          return (
+            <span key={`${item.char}-${idx}`} className="relative inline-block" aria-hidden="true">
+              {item.hasHat && (
+                <svg
+                  className="math-whiz-hat absolute -top-6 -left-2.5 md:-top-7 md:-left-3 w-9 h-9 md:w-11 md:h-11 pointer-events-none z-10"
+                  viewBox="0 0 64 64"
+                >
+                  <ellipse cx="32" cy="50" rx="26" ry="7" fill="#1e1b4b" />
+                  <path
+                    d="M32 6 L14 48 L50 48 Z"
+                    fill="#4338ca"
+                    stroke="#1e1b4b"
+                    strokeWidth="3"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M17 42 Q32 47 47 42 L49 47 Q32 52 15 47 Z"
+                    fill="#f59e0b"
+                  />
+                  <polygon
+                    points="32,20 34,26 40,26 35,30 37,36 32,32 27,36 29,30 24,26 30,26"
+                    fill="#fde047"
+                  />
+                </svg>
+              )}
+              <span
+                onClick={() => handleLetterClick(idx)}
+                className={`math-whiz-letter ${
+                  poppedIndex === idx ? "math-whiz-letter-popped" : ""
+                }`}
+                style={{
+                  color: item.color,
+                  animationDelay: item.delay,
+                }}
+              >
+                {item.char}
+              </span>
+            </span>
+          );
+        })}
+      </h1>
+    </div>
+  );
+};
 
 const TopicSelection = ({
   userData,

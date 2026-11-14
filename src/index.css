@@ -62,3 +62,98 @@ body {
 .stagger-4 { animation-delay: 0.2s; }
 .stagger-5 { animation-delay: 0.25s; }
 .stagger-6 { animation-delay: 0.3s; }
+
+/* ── Math Whiz Hero Title Animation ────────────────────── */
+@keyframes math-whiz-wave {
+  0%, 38%, 100% {
+    transform: translateY(0) scale(1, 1) rotate(0deg);
+  }
+  8% {
+    transform: translateY(3px) scale(1.12, 0.88);
+  }
+  18% {
+    transform: translateY(-16px) scale(0.92, 1.1) rotate(-4deg);
+  }
+  26% {
+    transform: translateY(2px) scale(1.06, 0.94) rotate(2deg);
+  }
+  32% {
+    transform: translateY(-3px) scale(0.98, 1.02);
+  }
+}
+
+@keyframes math-whiz-hat-wiggle {
+  0%, 42%, 100% {
+    transform: rotate(-16deg) translateY(0) scale(1);
+  }
+  14% {
+    transform: rotate(-25deg) translateY(-6px) scale(1.08);
+  }
+  26% {
+    transform: rotate(-9deg) translateY(1px) scale(0.97);
+  }
+}
+
+@keyframes math-whiz-spark-float {
+  0%, 100% {
+    transform: translateY(0) rotate(-6deg) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-9px) rotate(8deg) scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes math-whiz-letter-pop {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-20px) scale(1.28) rotate(-10deg);
+  }
+  60% {
+    transform: translateY(-8px) scale(1.15) rotate(8deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.math-whiz-letter {
+  display: inline-block;
+  animation: math-whiz-wave 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  cursor: pointer;
+  user-select: none;
+  -webkit-text-stroke: 3.5px #ffffff;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 4px 0 rgba(30, 41, 59, 0.22)) drop-shadow(0 8px 14px rgba(37, 99, 235, 0.18));
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.16s ease;
+}
+
+.math-whiz-letter:hover {
+  transform: translateY(-14px) scale(1.22) rotate(-6deg) !important;
+  filter: drop-shadow(0 8px 0 rgba(30, 41, 59, 0.25)) drop-shadow(0 0 16px rgba(246, 200, 68, 0.8));
+}
+
+.math-whiz-letter-popped {
+  animation: math-whiz-letter-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  filter: drop-shadow(0 8px 0 rgba(30, 41, 59, 0.25)) drop-shadow(0 0 18px rgba(246, 200, 68, 0.9));
+}
+
+.math-whiz-hat {
+  animation: math-whiz-hat-wiggle 3.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.math-whiz-spark {
+  animation: math-whiz-spark-float 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .math-whiz-letter,
+  .math-whiz-hat,
+  .math-whiz-spark {
+    animation: none;
+  }
+}
