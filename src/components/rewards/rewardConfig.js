@@ -205,16 +205,6 @@ export const REWARD_CHARACTER_SKILLS = [
     color: "#38bdf8",
   },
   {
-    id: "leo-wave",
-    characterId: "leo-boy",
-    name: "Hello Wave",
-    description: "Leo's friendly hello is included.",
-    animation: "Wave",
-    included: true,
-    price: 0,
-    color: "#38bdf8",
-  },
-  {
     id: "koko-jump",
     characterId: "koko-monkey",
     name: "Big Jump",
