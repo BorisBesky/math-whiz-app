@@ -8,7 +8,7 @@ export const REWARD_CHARACTERS = [
     title: "Toy Bear",
     accent: "#b98252",
     summary: "A cozy bear who looks great in hats, capes, and adventure gear.",
-    model: "/models/generated/buddy-bear.glb?v=1",
+    model: "/models/generated/buddy-bear.glb?v=3",
     generated: true,
   },
   {
@@ -17,7 +17,7 @@ export const REWARD_CHARACTERS = [
     title: "Round Robot",
     accent: "#38bdf8",
     summary: "A cheerful robot with bright gadgets, badges, and headphones.",
-    model: "/models/generated/milo-robot.glb?v=1",
+    model: "/models/generated/milo-robot.glb?v=2",
     generated: true,
   },
   {
@@ -47,7 +47,7 @@ export const REWARD_CHARACTERS = [
     title: "Boy Hero",
     accent: "#2563eb",
     summary: "A friendly kid avatar for shorts, jewelry, and adventure gear.",
-    model: "/models/generated/leo-boy.glb?v=1",
+    model: "/models/generated/leo-boy.glb?v=4",
     generated: true,
   },
   {

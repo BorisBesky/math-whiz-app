@@ -16,7 +16,13 @@ import {
   getGeneratedAccessoryFit,
   getGeneratedAnchors,
 } from "./generatedFits";
-import { fitGeneratedAccessory, loadAccessoryModel } from "./generatedAccessoryFit";
+import {
+  applyDressedParts,
+  attachToSkeleton,
+  fitGeneratedAccessory,
+  loadAccessoryModel,
+} from "./generatedAccessoryFit";
+import { HANGING_ANCHORS, addHangingSway } from "./hangingSway";
 import {
   WILLOW_CHARACTER_ID,
   applyWillowHeadTexture,
@@ -30,15 +36,30 @@ import {
 const TARGET_HEIGHT = 2.0;
 const modelCache = new Map();
 
+// Bounds of the character's own body: built-in accessory nodes (item__*, shown only
+// while worn) are left out so a tall hat can't shrink the character when normalized.
+const bodyBounds = (root) => {
+  const box = new THREE.Box3();
+  root.updateMatrixWorld(true);
+  root.traverse((child) => {
+    if (!child.isMesh) return;
+    for (let node = child; node && node !== root; node = node.parent) {
+      if (node.name.startsWith("item__")) return;
+    }
+    box.expandByObject(child);
+  });
+  return box.isEmpty() ? new THREE.Box3().setFromObject(root) : box;
+};
+
 const loadCharacterModel = (url) => {
   if (!modelCache.has(url)) {
     const loader = new GLTFLoader();
     const promise = loader.loadAsync(url).then((gltf) => {
       const root = gltf.scene;
-      const box = new THREE.Box3().setFromObject(root);
+      const box = bodyBounds(root);
       const size = box.getSize(new THREE.Vector3());
       root.scale.setScalar(TARGET_HEIGHT / (size.y || 1));
-      const scaledBox = new THREE.Box3().setFromObject(root);
+      const scaledBox = bodyBounds(root);
       const center = scaledBox.getCenter(new THREE.Vector3());
       root.position.x -= center.x;
       root.position.z -= center.z;
@@ -1059,6 +1080,8 @@ const CharacterViewer = ({
     let modelObject = null;
     let modelMixer = null;
     let modelAnimations = [];
+    // Capes and scarves hanging off the character: springs stepped every frame.
+    const hangingItems = [];
     let activeAnimationAction = null;
     let queuedAnimationName = null;
     let pmrem = null;
@@ -1136,16 +1159,26 @@ const CharacterViewer = ({
           const anchors = getGeneratedAnchors(character.id);
           if (anchors) {
             const target = modelObject;
-            Object.values(equippedItems || {})
+            const wornItems = Object.values(equippedItems || {})
               .map((itemId) => resolveEquippedAccessory(itemId, character.id))
-              .filter(Boolean)
+              .filter(Boolean);
+            // Items built into a dressed-character model are shown in place, not fitted.
+            const builtIn = applyDressedParts(modelRoot, wornItems.map((item) => item.id));
+            wornItems
+              .filter((item) => !builtIn.has(item.id))
               .forEach((item) => {
                 const fit = getGeneratedAccessoryFit(item.id, character.id);
                 if (!fit) return;
                 loadAccessoryModel(generatedAccessoryUrl(item.id))
                   .then((source) => {
                     if (cancelled) return;
-                    fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => target.add(placed));
+                    fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => {
+                      // Rigged characters carry the item on a bone; others keep it static.
+                      if (!attachToSkeleton(modelRoot, target, placed, fit.anchor)) target.add(placed);
+                      const side = HANGING_ANCHORS[fit.anchor];
+                      const sway = side && addHangingSway(placed, modelRoot, side);
+                      if (sway) hangingItems.push(sway);
+                    });
                   })
                   .catch((error) => {
                     // eslint-disable-next-line no-console
@@ -1244,7 +1277,12 @@ const CharacterViewer = ({
       const time = performance.now() * 0.001;
       group.rotation.y = manualRotation + Math.sin(time * 0.8) * 0.08;
       group.position.y = -0.15 + (modelMixer ? 0 : Math.sin(time * 1.8) * 0.025);
-      modelMixer?.update(Math.min(clock.getDelta(), 0.05));
+      const delta = Math.min(clock.getDelta(), 0.05);
+      modelMixer?.update(delta);
+      if (hangingItems.length) {
+        group.updateMatrixWorld();
+        hangingItems.forEach((item) => item.update(delta, time));
+      }
       renderer.render(scene, camera);
     };
     animate();

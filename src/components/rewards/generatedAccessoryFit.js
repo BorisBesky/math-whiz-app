@@ -2401,3 +2401,67 @@ export const fitGeneratedAccessory = (source, fit, anchors, characterRoot = null
   };
   return fit.anchor === "feet" ? [place(false), place(true)] : [place(false)];
 };
+
+// Dressed-character models (built by the ComfyUI + Blender "dressed" pipeline) carry
+// their accessories as named nodes: `item__<id>` is the accessory, made together with
+// the body so it already fits, and `body__<id>` is the body region it replaces (e.g. the
+// hair under a hat), hidden while the item is worn. A region several items replace is named
+// after all of them, `body__<a>+<b>`, and hidden while any of them is worn. Returns the ids
+// handled this way so callers don't also fit a separate accessory GLB for them.
+export const applyDressedParts = (root, equippedIds = []) => {
+  const worn = new Set(equippedIds);
+  const handled = new Set();
+  root.traverse((child) => {
+    const match = /^(item|body)__(.+)$/.exec(child.name);
+    if (!match) return;
+    const [, kind, id] = match;
+    if (kind === "item") {
+      // `item__<id>~<other>` is the bit of <id> that would poke through <other> (e.g. the
+      // shorts' ankles under sneakers): shown only while <other> isn't worn.
+      const [itemId, ...yieldsTo] = id.split("~");
+      child.visible = worn.has(itemId) && !yieldsTo.some((other) => worn.has(other));
+      if (worn.has(itemId)) handled.add(itemId);
+    } else {
+      child.visible = !id.split("+").some((part) => worn.has(part));
+    }
+  });
+  return handled;
+};
+
+// Rigged (dressed) characters: a fitted accessory rides on the bone under its anchor, so it
+// follows the character's animation. three.js strips "." from glTF node names, so the
+// Blender bones "hand.L" / "foot.R" arrive as "handL" / "footR".
+const ANCHOR_BONES = {
+  head: ["head"],
+  eyes: ["head"],
+  neckFront: ["chest"],
+  neckWrap: ["chest"],
+  chest: ["chest"],
+  back: ["chest"],
+  backTop: ["chest"],
+  dress: ["hips"],
+  waist: ["hips"],
+  feet: ["footL", "footR"],
+  handLeft: ["handL", "handR"],
+  handRight: ["handL", "handR"],
+};
+
+// Moves `object` (already placed under `container`) onto the nearest matching bone of
+// `characterRoot`, keeping its world transform. Returns false for unrigged characters.
+export const attachToSkeleton = (characterRoot, container, object, anchor) => {
+  const bones = (ANCHOR_BONES[anchor] || [])
+    .map((name) => characterRoot.getObjectByName(name))
+    .filter((node) => node && node.isBone);
+  if (!bones.length) return false;
+  container.add(object);
+  container.updateMatrixWorld(true);
+  characterRoot.updateMatrixWorld(true);
+  const at = new THREE.Vector3().setFromMatrixPosition(object.matrixWorld);
+  const boneAt = new THREE.Vector3();
+  const nearest = bones.reduce((best, bone) => {
+    const d = boneAt.setFromMatrixPosition(bone.matrixWorld).distanceToSquared(at);
+    return !best || d < best.d ? { bone, d } : best;
+  }, null).bone;
+  nearest.attach(object);
+  return true;
+};
