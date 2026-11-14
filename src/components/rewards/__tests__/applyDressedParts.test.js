@@ -39,6 +39,30 @@ describe("applyDressedParts", () => {
       "item__leo-medal": false,
     });
   });
+
+  test("hides a region shared by several items while any of them is worn", () => {
+    const root = new THREE.Group();
+    const shared = new THREE.Mesh();
+    shared.name = "body__leo-explorer-hat+sunny-red-cap";
+    root.add(shared);
+    applyDressedParts(root, ["sunny-red-cap"]);
+    expect(shared.visible).toBe(false);
+    applyDressedParts(root, ["leo-backpack"]);
+    expect(shared.visible).toBe(true);
+  });
+
+  test("drops the part of an item that would poke through another worn item", () => {
+    const root = new THREE.Group();
+    ["item__sport-shorts", "item__sport-shorts~leo-sneakers"].forEach((name) => {
+      const mesh = new THREE.Mesh();
+      mesh.name = name;
+      root.add(mesh);
+    });
+    expect([...applyDressedParts(root, ["sport-shorts"])]).toEqual(["sport-shorts"]);
+    expect(visibility(root)).toEqual({ "item__sport-shorts": true, "item__sport-shorts~leo-sneakers": true });
+    applyDressedParts(root, ["sport-shorts", "leo-sneakers"]);
+    expect(visibility(root)).toEqual({ "item__sport-shorts": true, "item__sport-shorts~leo-sneakers": false });
+  });
 });
 
 describe("attachToSkeleton", () => {

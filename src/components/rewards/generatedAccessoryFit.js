@@ -2405,8 +2405,9 @@ export const fitGeneratedAccessory = (source, fit, anchors, characterRoot = null
 // Dressed-character models (built by the ComfyUI + Blender "dressed" pipeline) carry
 // their accessories as named nodes: `item__<id>` is the accessory, made together with
 // the body so it already fits, and `body__<id>` is the body region it replaces (e.g. the
-// hair under a hat), hidden while the item is worn. Returns the ids handled this way so
-// callers don't also fit a separate accessory GLB for them.
+// hair under a hat), hidden while the item is worn. A region several items replace is named
+// after all of them, `body__<a>+<b>`, and hidden while any of them is worn. Returns the ids
+// handled this way so callers don't also fit a separate accessory GLB for them.
 export const applyDressedParts = (root, equippedIds = []) => {
   const worn = new Set(equippedIds);
   const handled = new Set();
@@ -2415,10 +2416,13 @@ export const applyDressedParts = (root, equippedIds = []) => {
     if (!match) return;
     const [, kind, id] = match;
     if (kind === "item") {
-      child.visible = worn.has(id);
-      if (worn.has(id)) handled.add(id);
+      // `item__<id>~<other>` is the bit of <id> that would poke through <other> (e.g. the
+      // shorts' ankles under sneakers): shown only while <other> isn't worn.
+      const [itemId, ...yieldsTo] = id.split("~");
+      child.visible = worn.has(itemId) && !yieldsTo.some((other) => worn.has(other));
+      if (worn.has(itemId)) handled.add(itemId);
     } else {
-      child.visible = !worn.has(id);
+      child.visible = !id.split("+").some((part) => worn.has(part));
     }
   });
   return handled;
