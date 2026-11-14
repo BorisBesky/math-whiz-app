@@ -16,7 +16,12 @@ import {
   getGeneratedAccessoryFit,
   getGeneratedAnchors,
 } from "./generatedFits";
-import { applyDressedParts, fitGeneratedAccessory, loadAccessoryModel } from "./generatedAccessoryFit";
+import {
+  applyDressedParts,
+  attachToSkeleton,
+  fitGeneratedAccessory,
+  loadAccessoryModel,
+} from "./generatedAccessoryFit";
 import {
   WILLOW_CHARACTER_ID,
   applyWillowHeadTexture,
@@ -1164,7 +1169,10 @@ const CharacterViewer = ({
                 loadAccessoryModel(generatedAccessoryUrl(item.id))
                   .then((source) => {
                     if (cancelled) return;
-                    fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => target.add(placed));
+                    fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => {
+                      // Rigged characters carry the item on a bone; others keep it static.
+                      if (!attachToSkeleton(modelRoot, target, placed, fit.anchor)) target.add(placed);
+                    });
                   })
                   .catch((error) => {
                     // eslint-disable-next-line no-console

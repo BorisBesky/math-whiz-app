@@ -225,7 +225,7 @@ const CharacterStore = ({
             colors={characterColorMap}
             focus={hasFaceColors && stylePanel === "face" ? "face" : "full"}
             animationRequest={animationRequest}
-            hoverAnimation={selectedCharacterId === "koko-monkey" ? "Wave" : null}
+            hoverAnimation={characterSkills.some((skill) => skill.included && skill.animation === "Wave") ? "Wave" : null}
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent px-4 pb-3 pt-10">
             <h3 className="font-display text-2xl font-bold leading-tight text-white drop-shadow">

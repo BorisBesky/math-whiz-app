@@ -2423,3 +2423,41 @@ export const applyDressedParts = (root, equippedIds = []) => {
   });
   return handled;
 };
+
+// Rigged (dressed) characters: a fitted accessory rides on the bone under its anchor, so it
+// follows the character's animation. three.js strips "." from glTF node names, so the
+// Blender bones "hand.L" / "foot.R" arrive as "handL" / "footR".
+const ANCHOR_BONES = {
+  head: ["head"],
+  eyes: ["head"],
+  neckFront: ["chest"],
+  neckWrap: ["chest"],
+  chest: ["chest"],
+  back: ["chest"],
+  backTop: ["chest"],
+  dress: ["hips"],
+  waist: ["hips"],
+  feet: ["footL", "footR"],
+  handLeft: ["handL", "handR"],
+  handRight: ["handL", "handR"],
+};
+
+// Moves `object` (already placed under `container`) onto the nearest matching bone of
+// `characterRoot`, keeping its world transform. Returns false for unrigged characters.
+export const attachToSkeleton = (characterRoot, container, object, anchor) => {
+  const bones = (ANCHOR_BONES[anchor] || [])
+    .map((name) => characterRoot.getObjectByName(name))
+    .filter((node) => node && node.isBone);
+  if (!bones.length) return false;
+  container.add(object);
+  container.updateMatrixWorld(true);
+  characterRoot.updateMatrixWorld(true);
+  const at = new THREE.Vector3().setFromMatrixPosition(object.matrixWorld);
+  const boneAt = new THREE.Vector3();
+  const nearest = bones.reduce((best, bone) => {
+    const d = boneAt.setFromMatrixPosition(bone.matrixWorld).distanceToSquared(at);
+    return !best || d < best.d ? { bone, d } : best;
+  }, null).bone;
+  nearest.attach(object);
+  return true;
+};
