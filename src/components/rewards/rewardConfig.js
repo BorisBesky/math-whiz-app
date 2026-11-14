@@ -17,7 +17,7 @@ export const REWARD_CHARACTERS = [
     title: "Round Robot",
     accent: "#38bdf8",
     summary: "A cheerful robot with bright gadgets, badges, and headphones.",
-    model: "/models/generated/milo-robot.glb?v=1",
+    model: "/models/generated/milo-robot.glb?v=2",
     generated: true,
   },
   {
