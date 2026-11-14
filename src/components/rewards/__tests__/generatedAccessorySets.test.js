@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import * as THREE from "three";
 import {
   GENERATED_CHARACTER_ACCESSORY_SETS,
   REWARD_ACCESSORIES,
@@ -8,6 +9,11 @@ import {
   resolveEquippedAccessory,
 } from "../rewardConfig";
 import { getGeneratedAccessoryFit, getGeneratedAnchors } from "../generatedFits";
+import { fitGeneratedAccessory } from "../generatedAccessoryFit";
+
+jest.mock("three/examples/jsm/loaders/GLTFLoader.js", () => ({
+  GLTFLoader: jest.fn(),
+}));
 
 const publicDir = path.join(__dirname, "..", "..", "..", "..", "public");
 
@@ -94,3 +100,67 @@ describe("resolveEquippedAccessory", () => {
     expect(resolveEquippedAccessory(undefined, "leo-boy")).toBeNull();
   });
 });
+
+describe("fitGeneratedAccessory", () => {
+  const createTemplateMesh = () => {
+    const geometry = new THREE.BoxGeometry(0.4, 0.5, 0.3);
+    const material = new THREE.MeshBasicMaterial();
+    return new THREE.Mesh(geometry, material);
+  };
+
+  test.each(Object.entries(GENERATED_CHARACTER_ACCESSORY_SETS))(
+    "places every %s accessory with finite transforms and valid scales",
+    (characterId, itemIds) => {
+      const template = createTemplateMesh();
+      const anchors = getGeneratedAnchors(characterId);
+      itemIds.forEach((itemId) => {
+        const fit = getGeneratedAccessoryFit(itemId, characterId);
+        const objects = fitGeneratedAccessory(template, fit, anchors);
+        const expectedCount = fit.anchor === "feet" ? 2 : 1;
+        expect(objects).toHaveLength(expectedCount);
+        expect(objects[0].scale.x).toBeGreaterThan(0);
+
+        objects.forEach((obj) => {
+          expect(Number.isFinite(obj.position.x)).toBe(true);
+          expect(Number.isFinite(obj.position.y)).toBe(true);
+          expect(Number.isFinite(obj.position.z)).toBe(true);
+          expect(obj.scale.y).toBeGreaterThan(0);
+          expect(obj.scale.z).toBeGreaterThan(0);
+        });
+      });
+    }
+  );
+
+  test("mirrors foot scale and offsetX across left and right feet and preserves bodyZ override", () => {
+    const template = createTemplateMesh();
+    const anchors = getGeneratedAnchors("milo-robot");
+    const bootsFit = getGeneratedAccessoryFit("milo-rocket-boots", "milo-robot");
+    const boots = fitGeneratedAccessory(template, bootsFit, anchors);
+    expect(boots).toHaveLength(2);
+    expect(boots[0].scale.x).toBeGreaterThan(0);
+    expect(boots[1].scale.x).toBeLessThan(0);
+    expect(Math.abs(boots[0].scale.x)).toBeCloseTo(Math.abs(boots[1].scale.x));
+    expect(boots[0].position.x + boots[1].position.x).toBeCloseTo(
+      anchors.footLeft[0] + anchors.footRight[0],
+      5
+    );
+
+    const miaAnchors = getGeneratedAnchors("mia-girl");
+    const dressFit = getGeneratedAccessoryFit("party-dress", "mia-girl");
+    const dress = fitGeneratedAccessory(template, dressFit, miaAnchors);
+    expect(dress).toHaveLength(1);
+    expect(dress[0].position.z).toBeCloseTo(
+      miaAnchors.bodyZ + (dressFit.offsetZ || 0),
+      5
+    );
+
+    const pinaforeFit = getGeneratedAccessoryFit("mia-pinafore", "mia-girl");
+    const pinafore = fitGeneratedAccessory(template, pinaforeFit, miaAnchors);
+    expect(pinafore).toHaveLength(1);
+    expect(pinafore[0].children.length).toBeGreaterThan(1);
+
+    expect(getAccessoryById("milo-hard-hat")).toBeUndefined();
+    expect(GENERATED_CHARACTER_ACCESSORY_SETS["milo-robot"]).not.toContain("milo-hard-hat");
+  });
+});
+

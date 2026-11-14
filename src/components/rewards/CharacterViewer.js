@@ -1145,7 +1145,7 @@ const CharacterViewer = ({
                 loadAccessoryModel(generatedAccessoryUrl(item.id))
                   .then((source) => {
                     if (cancelled) return;
-                    fitGeneratedAccessory(source, fit, anchors).forEach((placed) => target.add(placed));
+                    fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => target.add(placed));
                   })
                   .catch((error) => {
                     // eslint-disable-next-line no-console

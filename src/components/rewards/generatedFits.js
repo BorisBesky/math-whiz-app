@@ -11,32 +11,32 @@ export const GENERATED_ACCESSORY_DIR = "/models/accessories";
 
 export const GENERATED_CHARACTER_ANCHORS = {
   "buddy-bear": {
-    headWidth: 1.19, headZ: 0, eyeY: 1.52, faceZ: 0.5,
-    neckY: 1.2, chestY: 0.95, chestFrontZ: 0.42, backZ: -0.54, torsoWidth: 1.3,
+    headWidth: 1.19, headZ: 0, crownY: 1.9, eyeX: 0, eyeY: 1.448, faceZ: 0.5,
+    neckY: 1.2, chestY: 0.95, chestFrontZ: 0.42, backZ: -0.54, bodyZ: -0.08, torsoWidth: 1.3,
     waistY: 0.36, hipWidth: 0.98,
-    handLeft: [-0.5, 0.55, 0.0], handRight: [0.5, 0.55, 0.0],
-    footLeft: [-0.25, 0, -0.06], footRight: [0.23, 0, -0.08], footLength: 0.54,
+    handLeft: [-0.62, 0.56, 0.14], handRight: [0.62, 0.56, 0.14],
+    footLeft: [-0.26, 0, -0.08], footRight: [0.256, 0, -0.076], footLength: 0.54,
   },
   "milo-robot": {
-    headWidth: 1.0, headZ: 0, eyeY: 1.66, faceZ: 0.5,
-    neckY: 1.3, chestY: 1.05, chestFrontZ: 0.47, backZ: -0.5, torsoWidth: 1.05,
+    headWidth: 1.0, headZ: 0.06, crownY: 1.98, eyeX: -0.002, eyeY: 1.576, faceZ: 0.5,
+    neckY: 1.3, chestY: 1.05, chestFrontZ: 0.47, backZ: -0.5, bodyZ: -0.02, torsoWidth: 1.05,
     waistY: 0.5, hipWidth: 0.95,
-    handLeft: [-0.61, 0.4, 0.07], handRight: [0.62, 0.4, 0.05],
-    footLeft: [-0.26, 0, -0.06], footRight: [0.27, 0, -0.06], footLength: 0.44,
+    handLeft: [-0.65, 0.44, 0.08], handRight: [0.65, 0.44, 0.08],
+    footLeft: [-0.265, 0, -0.1], footRight: [0.275, 0, -0.1], footLength: 0.44,
   },
   "leo-boy": {
-    headWidth: 1.05, headZ: -0.06, crownY: 1.86, eyeY: 1.38, faceZ: 0.36,
-    neckY: 1.07, chestY: 0.85, chestFrontZ: 0.2, backZ: -0.16, torsoWidth: 0.62,
-    waistY: 0.54, hipWidth: 0.55,
-    handLeft: [-0.3, 0.47, 0.02], handRight: [0.33, 0.47, 0.02],
-    footLeft: [-0.2, 0, 0.08], footRight: [0.22, 0, 0.08], footLength: 0.4,
+    headWidth: 1.05, headZ: -0.02, crownY: 1.9, eyeX: 0.012, eyeY: 1.354, faceZ: 0.36,
+    neckY: 1.04, chestY: 0.85, chestFrontZ: 0.18, backZ: -0.14, bodyZ: 0.028, torsoWidth: 0.62,
+    waistY: 0.54, hipWidth: 0.56,
+    handLeft: [-0.31, 0.5, 0.04], handRight: [0.33, 0.5, 0.04],
+    footLeft: [-0.176, 0, 0.072], footRight: [0.215, 0, 0.072], footLength: 0.42,
   },
   "mia-girl": {
-    headWidth: 1.1, headZ: -0.05, crownY: 1.88, eyeY: 1.4, faceZ: 0.35,
-    neckY: 1.1, chestY: 0.88, chestFrontZ: 0.23, backZ: -0.3, torsoWidth: 0.58,
+    headWidth: 1.1, headZ: -0.02, crownY: 1.92, eyeX: 0.018, eyeY: 1.376, faceZ: 0.35,
+    neckY: 1.06, chestY: 0.88, chestFrontZ: 0.23, backZ: -0.3, bodyZ: 0.061, torsoWidth: 0.58,
     waistY: 0.6, hipWidth: 0.57,
-    handLeft: [-0.28, 0.52, 0.02], handRight: [0.3, 0.52, 0.02],
-    footLeft: [-0.18, 0, 0.13], footRight: [0.22, 0, 0.13], footLength: 0.36,
+    handLeft: [-0.3, 0.52, 0.05], handRight: [0.31, 0.52, 0.05],
+    footLeft: [-0.163, 0, 0.12], footRight: [0.214, 0, 0.12], footLength: 0.38,
   },
 };
 
@@ -48,71 +48,205 @@ export const GENERATED_CHARACTER_ANCHORS = {
 //              lower for characters with tall hair)
 //  rotationY:  radians applied to the GLB before fitting (front of generated items faces +z)
 //  rotationX:  optional tilt in radians (applied after rotationY)
-//  heightScale: optional extra vertical scale (shortens long skirts)
-//  offsetY / offsetZ: fine-tuning in units
+//  rotationZ:  optional roll in radians
+//  widthScale / heightScale / depthScale: optional per-axis scale multipliers
+//  offsetX / offsetY / offsetZ: fine-tuning in units
 export const GENERATED_ACCESSORY_FITS = {
-  "sunny-red-cap": { anchor: "head", size: 0.92, sink: 0.38 },
+  "sunny-red-cap": {
+    anchor: "head", size: 1.14, widthScale: 1.08, depthScale: 1.14,
+    sink: 0.52, rotationX: -0.04, rotationY: -0.24, offsetY: -0.02, offsetZ: 0.04,
+  },
   "star-wizard-hat": { anchor: "head", size: 0.9, sink: 0.12 },
   "gold-crown": { anchor: "head", size: 0.62, sink: 0.15 },
-  "robot-antenna": { anchor: "head", size: 0.9, sink: 0.5 },
-  "round-sky-glasses": { anchor: "eyes", size: 0.72, offsetY: -0.08 },
-  "star-spark-glasses": { anchor: "eyes", size: 0.74, offsetY: -0.07 },
+  "robot-antenna": {
+    anchor: "head", size: 1.02, widthScale: 1.02, heightScale: 0.88,
+    sink: 0.62, offsetY: -0.03, offsetZ: 0.02,
+  },
+  "round-sky-glasses": {
+    anchor: "eyes", size: 0.72, offsetY: -0.02, offsetZ: -0.04,
+  },
+  "star-spark-glasses": {
+    anchor: "eyes", size: 0.7, offsetY: -0.02, offsetZ: -0.025,
+  },
   "snow-goggles": { anchor: "eyes", size: 0.86 },
   "party-dress": { anchor: "dress", size: 1.28 },
   "rainbow-dress": { anchor: "dress", size: 1.28 },
-  "twirl-skirt": { anchor: "waist", size: 1.6, heightScale: 0.6 },
-  "sport-skirt": { anchor: "waist", size: 1.45, heightScale: 0.75 },
-  "comfy-shorts": { anchor: "waist", size: 1.32 },
-  "sport-shorts": { anchor: "waist", size: 1.32 },
-  "heart-necklace": { anchor: "neckFront", size: 0.42, offsetZ: -0.04 },
+  "twirl-skirt": {
+    anchor: "waist", size: 1.45,
+  },
+  "sport-skirt": {
+    anchor: "waist", size: 1.42,
+  },
+  "comfy-shorts": {
+    anchor: "waist", size: 1.32,
+  },
+  "sport-shorts": {
+    anchor: "waist", size: 1.3,
+  },
+  "heart-necklace": {
+    anchor: "neckFront", size: 0.28,
+    rotationX: -0.1, offsetX: 0.015, offsetY: -0.12, offsetZ: -0.01,
+  },
   "friendship-bracelet": { anchor: "handLeft", size: 0.24 },
   "sparkle-ring": { anchor: "handRight", size: 0.16 },
-  "rainbow-scarf": { anchor: "neckWrap", size: 0.85 },
+  "rainbow-scarf": {
+    anchor: "neckWrap", size: 0.85,
+  },
   "bright-bow-tie": { anchor: "neckFront", size: 0.38, offsetY: 0.02 },
   "math-medal": { anchor: "chest", size: 0.32 },
   "hero-cape": { anchor: "backTop", size: 0.82, rotationY: Math.PI, rotationX: 0.12 },
-  "rocket-pack": { anchor: "back", size: 0.75, rotationY: Math.PI },
+  "rocket-pack": {
+    anchor: "back", size: 0.76, rotationY: Math.PI, offsetY: 0.05, offsetZ: 0.24,
+  },
   "explorer-backpack": { anchor: "back", size: 0.7, rotationY: Math.PI },
   "mint-sneakers": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
   "polar-skates": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
   "moon-boots": { anchor: "feet", size: 0.95, rotationY: -Math.PI / 2 },
-  "sparkle-wand": { anchor: "handRight", size: 0.6 },
-  "quiz-book": { anchor: "handRight", size: 0.4, offsetZ: 0.08 },
+  "sparkle-wand": {
+    anchor: "handRight", size: 0.68,
+    rotationX: 0.22, rotationY: -0.15, rotationZ: -0.45,
+    offsetX: 0.11, offsetY: 0.14, offsetZ: 0.12,
+  },
+  "quiz-book": {
+    anchor: "handRight", size: 0.4,
+    rotationX: -0.18, rotationY: 0.28, rotationZ: -0.14,
+    offsetX: 0.05, offsetY: -0.03, offsetZ: 0.09,
+  },
   // Character-specific items.
-  "buddy-straw-hat": { anchor: "head", size: 0.95, sink: 0.3 },
-  "buddy-nightcap": { anchor: "head", size: 0.8, sink: 0.22 },
-  "buddy-honey-pot": { anchor: "handRight", size: 0.42, offsetZ: 0.08 },
-  "buddy-picnic-basket": { anchor: "handRight", size: 0.46, offsetZ: 0.06 },
-  "buddy-overalls": { anchor: "dress", size: 1.05, offsetY: -0.2 },
-  "milo-hard-hat": { anchor: "head", size: 1.0, sink: 0.35 },
-  "milo-visor": { anchor: "eyes", size: 0.95, offsetY: -0.1, offsetZ: 0.04 },
-  "milo-wrench": { anchor: "handRight", size: 0.6 },
-  "milo-magnet": { anchor: "handRight", size: 0.4 },
-  "milo-rocket-boots": { anchor: "feet", size: 1.85, rotationY: -Math.PI / 2 },
-  "leo-explorer-hat": { anchor: "head", size: 1.05, sink: 0.55 },
-  "leo-hero-mask": { anchor: "eyes", size: 0.8, offsetY: -0.06 },
-  "leo-soccer-ball": { anchor: "handRight", size: 0.32, offsetZ: 0.1 },
-  "leo-skateboard": { anchor: "handLeft", size: 0.75 },
-  "mia-flower-crown": { anchor: "head", size: 0.85, sink: 0.5, rotationX: -1.3 },
-  "mia-hair-bow": { anchor: "head", size: 0.6, sink: 0.4 },
-  "mia-tiara": { anchor: "head", size: 0.6, sink: 0.2, offsetZ: 0.15 },
-  "mia-heart-sunglasses": { anchor: "eyes", size: 0.74, offsetY: -0.07 },
-  "mia-pinafore": { anchor: "dress", size: 1.5, offsetZ: 0.03 },
+  "buddy-straw-hat": {
+    anchor: "head", size: 1.12, widthScale: 1.08, heightScale: 0.86, depthScale: 1.06,
+    sink: 0.38, rotationX: 0.04, offsetY: 0.02, offsetZ: 0.0,
+  },
+  "buddy-nightcap": {
+    anchor: "head", size: 0.98, widthScale: 1.04, heightScale: 0.8, depthScale: 1.08,
+    sink: 0.42, rotationX: 0.02, offsetY: -0.01, offsetZ: -0.02,
+  },
+  "buddy-honey-pot": {
+    anchor: "handRight", size: 0.44,
+    rotationX: 0.08, rotationY: -0.25, rotationZ: -0.08,
+    offsetX: 0.04, offsetY: -0.04, offsetZ: 0.1,
+  },
+  "buddy-picnic-basket": {
+    anchor: "handRight", size: 0.46,
+    rotationX: 0.06, rotationY: -0.28,
+    offsetX: 0.04, offsetY: -0.14, offsetZ: 0.08,
+  },
+  "buddy-overalls": {
+    anchor: "dress", size: 1.18,
+  },
+  "milo-hard-hat": {
+    anchor: "head", size: 1.16, widthScale: 1.06, heightScale: 0.92, depthScale: 0.98,
+    sink: 0.62, rotationX: 0.03, offsetY: -0.05, offsetZ: -0.01,
+  },
+  "milo-visor": {
+    anchor: "eyes", size: 0.98, rotationX: -0.02, offsetY: -0.03, offsetZ: -0.015,
+  },
+  "milo-wrench": {
+    anchor: "handRight", size: 0.58,
+    rotationX: 0.55, rotationY: -0.35, rotationZ: -0.28,
+    offsetX: 0.04, offsetY: 0.12, offsetZ: 0.16,
+  },
+  "milo-magnet": {
+    anchor: "handRight", size: 0.42,
+    rotationX: 0.35, rotationY: -0.3, rotationZ: -0.25,
+    offsetX: 0.03, offsetY: -0.02, offsetZ: 0.12,
+  },
+  "milo-rocket-boots": {
+    anchor: "feet", size: 1.28, widthScale: 1.28, heightScale: 0.88, depthScale: 1.2,
+    rotationY: -Math.PI / 2, offsetX: 0.01, offsetZ: 0.09,
+  },
+  "leo-explorer-hat": {
+    anchor: "head", size: 1.36, widthScale: 1.06, depthScale: 1.12,
+    sink: 0.72, rotationX: 0.02, offsetY: -0.04, offsetZ: -0.02,
+  },
+  "leo-hero-mask": {
+    anchor: "eyes", size: 0.82, widthScale: 1.05,
+    rotationX: 0.28, offsetY: 0.03, offsetZ: 0.09,
+  },
+  "leo-soccer-ball": {
+    anchor: "handRight", size: 0.3,
+    offsetX: 0.03, offsetY: -0.02, offsetZ: 0.07,
+  },
+  "leo-skateboard": {
+    anchor: "handLeft", size: 0.72,
+    rotationY: -0.45, rotationZ: 0.1,
+    offsetX: -0.09, offsetY: -0.04, offsetZ: 0.05,
+  },
+  "mia-flower-crown": {
+    anchor: "head", size: 0.9, widthScale: 0.98, depthScale: 0.92,
+    sink: 0.62, rotationX: -1.38, offsetY: -0.03, offsetZ: -0.03,
+  },
+  "mia-hair-bow": {
+    anchor: "head", size: 0.5, sink: 0.28,
+    rotationX: -0.18, offsetY: 0.01, offsetZ: 0.14,
+  },
+  "mia-tiara": {
+    anchor: "head", size: 0.64, sink: 0.38,
+    rotationX: 0.14, offsetY: -0.01, offsetZ: 0.13,
+  },
+  "mia-heart-sunglasses": {
+    anchor: "eyes", size: 0.7, offsetY: -0.01, offsetZ: -0.015,
+  },
+  "mia-pinafore": {
+    anchor: "dress", size: 1.48,
+  },
   // Per-character versions of formerly shared items.
-  "buddy-bow-tie": { anchor: "neckFront", size: 0.38, offsetY: 0.02 },
-  "milo-bow-tie": { anchor: "neckFront", size: 0.38, offsetY: 0.02 },
-  "buddy-medal": { anchor: "chest", size: 0.32 },
-  "milo-medal": { anchor: "chest", size: 0.32 },
-  "leo-medal": { anchor: "chest", size: 0.32 },
-  "buddy-backpack": { anchor: "back", size: 0.7, rotationY: Math.PI, offsetZ: 0.5 },
-  "leo-backpack": { anchor: "back", size: 0.7, rotationY: Math.PI, offsetZ: 0.1 },
-  "buddy-cape": { anchor: "backTop", size: 1.0, rotationY: Math.PI, rotationX: 0.12, offsetY: 0.3, offsetZ: 0.32 },
-  "leo-cape": { anchor: "backTop", size: 0.82, rotationY: Math.PI, rotationX: 0.12 },
-  "leo-bracelet": { anchor: "handLeft", size: 0.24 },
-  "mia-bracelet": { anchor: "handLeft", size: 0.24 },
-  "leo-sneakers": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
-  "mia-sneakers": { anchor: "feet", size: 1.12, rotationY: -Math.PI / 2 },
-  "mia-butterfly-wings": { anchor: "back", size: 2.3, rotationY: Math.PI, offsetY: 0.12, offsetZ: -0.04 },
+  "buddy-bow-tie": {
+    anchor: "neckFront", size: 0.32,
+    rotationX: -0.22, offsetY: 0.01, offsetZ: -0.105,
+  },
+  "milo-bow-tie": {
+    anchor: "neckFront", size: 0.34,
+    rotationX: -0.08, offsetY: 0.02, offsetZ: -0.065,
+  },
+  "buddy-medal": {
+    anchor: "chest", size: 0.28,
+    rotationX: -0.06, offsetY: -0.14, offsetZ: -0.045,
+  },
+  "milo-medal": {
+    anchor: "chest", size: 0.3,
+    rotationX: -0.08, offsetY: -0.08, offsetZ: -0.04,
+  },
+  "leo-medal": {
+    anchor: "chest", size: 0.32,
+    rotationX: -0.08, offsetX: 0.015, offsetY: -0.06, offsetZ: 0.0,
+  },
+  "buddy-backpack": {
+    anchor: "back", size: 0.7, rotationY: Math.PI,
+    rotationX: 0.04, offsetY: 0.06, offsetZ: 0.62,
+  },
+  "leo-backpack": {
+    anchor: "back", size: 0.76, rotationY: Math.PI,
+    rotationX: 0.06, offsetX: 0.015, offsetY: 0.04, offsetZ: 0.22,
+  },
+  "buddy-cape": {
+    anchor: "backTop", size: 1.0,
+  },
+  "leo-cape": {
+    anchor: "backTop", size: 0.96,
+  },
+  "leo-bracelet": {
+    anchor: "handLeft", size: 0.2,
+    rotationX: 1.35, rotationZ: 0.15,
+    offsetX: 0.01, offsetY: 0.07, offsetZ: -0.01,
+  },
+  "mia-bracelet": {
+    anchor: "handLeft", size: 0.2,
+    rotationX: 1.45, rotationZ: 0.15,
+    offsetX: 0.01, offsetY: 0.06, offsetZ: 0.0,
+  },
+  "leo-sneakers": {
+    anchor: "feet", size: 1.18, widthScale: 1.38, heightScale: 0.92,
+    rotationY: -Math.PI / 2, offsetX: 0.01, offsetZ: 0.02,
+  },
+  "mia-sneakers": {
+    anchor: "feet", size: 1.18, widthScale: 1.28, heightScale: 0.98,
+    rotationY: Math.PI / 2, offsetX: 0.005, offsetZ: -0.01,
+  },
+  "mia-butterfly-wings": {
+    anchor: "back", size: 2.55, rotationY: Math.PI,
+    rotationX: 0.06, offsetY: 0.32, offsetZ: -0.02,
+  },
 };
 
 // Per-character adjustments merged over the shared fit above, for items whose
@@ -125,7 +259,12 @@ export const getGeneratedAnchors = (characterId) =>
 export const getGeneratedAccessoryFit = (itemId, characterId) => {
   const fit = GENERATED_ACCESSORY_FITS[itemId];
   if (!fit) return null;
-  return { ...fit, ...GENERATED_ACCESSORY_FIT_OVERRIDES[itemId]?.[characterId] };
+  return {
+    itemId,
+    characterId,
+    ...fit,
+    ...GENERATED_ACCESSORY_FIT_OVERRIDES[itemId]?.[characterId],
+  };
 };
 
 export const generatedAccessoryUrl = (itemId) => `${GENERATED_ACCESSORY_DIR}/${itemId}.glb`;

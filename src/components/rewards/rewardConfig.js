@@ -1166,16 +1166,6 @@ const BASE_ACCESSORIES = [
     characterIds: [],
   },
   {
-    id: "milo-hard-hat",
-    name: "Builder Hard Hat",
-    category: "hat",
-    price: 10,
-    color: "#facc15",
-    accentColor: "#f59e0b",
-    shape: "cap",
-    characterIds: [],
-  },
-  {
     id: "milo-visor",
     name: "Glow Visor",
     category: "eyewear",
@@ -1326,7 +1316,7 @@ export const GENERATED_CHARACTER_ACCESSORY_SETS = {
     "buddy-backpack", "buddy-cape", "buddy-honey-pot", "buddy-picnic-basket", "buddy-overalls",
   ],
   "milo-robot": [
-    "robot-antenna", "milo-hard-hat", "milo-visor", "milo-bow-tie", "milo-medal",
+    "robot-antenna", "milo-visor", "milo-bow-tie", "milo-medal",
     "rocket-pack", "milo-wrench", "milo-magnet", "milo-rocket-boots",
   ],
   "leo-boy": [

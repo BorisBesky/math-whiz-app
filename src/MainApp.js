@@ -107,7 +107,7 @@ const QuizView = React.lazy(() => import('./components/QuizView'));
 const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-retired-characters-v45" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-accessory-fits-v50" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
