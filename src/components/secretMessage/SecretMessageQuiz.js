@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, KeyRound, PenTool } from 'lucide-react';
+import { ArrowLeft, Coins, KeyRound, PenTool } from 'lucide-react';
 import { makeClues, makeNumberLetterMap, messageLetters, readSecretSession } from './secretMessageConfig';
 
 import SecretMessageBoard from './SecretMessageBoard';
-import { generateMessageBatch, normalizeMessageProgress, completeMessage } from './messageLibrary';
+import {
+  calculateSecretMessageCoins,
+  completeMessage,
+  generateMessageBatch,
+  normalizeMessageProgress,
+  SECRET_MESSAGE_COMPLETION_BONUS,
+} from './messageLibrary';
 
 const primaryButton = 'rounded-button bg-brand-blue px-6 py-3 font-bold text-white hover:bg-blue-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700';
 
@@ -39,6 +45,13 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
   const decodedLetters = new Set(clues.slice(0, session?.solved || 0).map(item => item.letter));
   const complete = !!message && session.solved === clues.length;
   const clue = clues[session?.solved];
+  const coinsEarned = message
+    ? calculateSecretMessageCoins({
+        firstTry: session.firstTry,
+        total: clues.length,
+        complexity: session.complexity,
+      })
+    : 0;
 
   useEffect(() => {
     const incoming = normalizeMessageProgress(savedProgress);
@@ -120,12 +133,16 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
       : current);
     setAnswer('');
     setShowHint(false);
-    setFeedback(`You placed ${request.letter} in every space numbered ${request.number}!`);
+    setFeedback(
+      request.hadMistake
+        ? `You placed ${request.letter} in every space numbered ${request.number}!`
+        : `You placed ${request.letter} in every space numbered ${request.number}! (+1 coin)`
+    );
   }, []);
 
   const placeLetter = () => {
     if (!session.mathSolved || !clue || scanRef.current) return;
-    const request = { quoteId: session.quoteId, solved: session.solved, letter: clue.letter, number: clue.answer };
+    const request = { quoteId: session.quoteId, solved: session.solved, letter: clue.letter, number: clue.answer, hadMistake: session.hadMistake };
     scanRef.current = request;
     setScanRequest(request);
     setFeedback(`Searching the message for ${clue.answer}… Watch for ${clue.letter}!`);
@@ -141,7 +158,7 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
         <h1 className="font-display text-3xl font-bold">Secret Message</h1>
       </div>
       <p className="text-gray-600 mb-6">This message is written in numbers! Solve each letter’s math clue to discover its number. Then click the letter in your key to fill every matching space. Each puzzle has its own secret code.</p>
-      <p className="text-sm text-gray-500 mb-5">Bonus arithmetic practice. {saveCompletion ? 'Completed messages are saved to your account across grades and devices.' : 'Progress is saved on this device.'}{!storageAvailable && ' Browser storage is unavailable, so unfinished puzzles cannot be saved on this device.'}</p>
+      <p className="text-sm text-gray-500 mb-5">Bonus arithmetic practice · Earn 1 coin per first-try clue + {SECRET_MESSAGE_COMPLETION_BONUS} bonus coins for decoding a message. {saveCompletion ? 'Completed messages are saved to your account across grades and devices.' : 'Progress is saved on this device.'}{!storageAvailable && ' Browser storage is unavailable, so unfinished puzzles cannot be saved on this device.'}</p>
       {!message ? (
         <div className="space-y-3">
           <h2 className="font-display text-xl font-bold">Choose a mystery</h2>
@@ -149,13 +166,17 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
           {feedback && <p role="status" className="text-teal-800">{feedback}</p>}
           {progress.batch > 0 && <p className="text-sm text-teal-800">New batch: 200 Math Whiz original messages, composed for learning and kindness.</p>}
           {availableMessages.length > 0 ? <button onClick={() => start(availableMessages[Math.floor(Math.random() * availableMessages.length)])} className={primaryButton}>Start a surprise message</button> : <p>You have completed every message currently available. More messages need to be added to the library.</p>}
-          {availableMessages.slice(0, visibleCount).map(item => (
-            <button key={item.id} onClick={() => start(item)} className="w-full text-left p-5 border-2 border-teal-200 rounded-xl hover:border-teal-600 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
-              <span className="block text-xs font-semibold text-teal-700 mb-1">Mystery {progress.batch * 200 + messages.indexOf(item) + 1}</span>
-              <span className="block text-lg font-bold">A message {item.attribution === 'attributed' ? 'attributed to' : 'from'} {item.scientist}</span>
-              <span className="text-sm text-gray-600">{item.attribution === 'original' ? 'Original message · ' : ''}{new Set(messageLetters(item)).size} clues · {item.description}</span>
-            </button>
-          ))}
+          {availableMessages.slice(0, visibleCount).map(item => {
+            const clueCount = new Set(messageLetters(item)).size;
+            const maxCoins = calculateSecretMessageCoins({ total: clueCount, firstTry: clueCount });
+            return (
+              <button key={item.id} onClick={() => start(item)} className="w-full text-left p-5 border-2 border-teal-200 rounded-xl hover:border-teal-600 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
+                <span className="block text-xs font-semibold text-teal-700 mb-1">Mystery {progress.batch * 200 + messages.indexOf(item) + 1}</span>
+                <span className="block text-lg font-bold">A message {item.attribution === 'attributed' ? 'attributed to' : 'from'} {item.scientist}</span>
+                <span className="text-sm text-gray-600">{item.attribution === 'original' ? 'Original message · ' : ''}{clueCount} clues · Up to {maxCoins} coins · {item.description}</span>
+              </button>
+            );
+          })}
           {visibleCount < availableMessages.length && <button onClick={() => setVisibleCount(value => value + 12)} className={primaryButton}>Show more mysteries</button>}
         </div>
       ) : (
@@ -176,13 +197,25 @@ export default function SecretMessageQuiz({ userId, selectedGrade, returnToTopic
               <p>{message.description}</p>
               <p>{message.meaning}</p>
               {message.source && <a href={message.source} target="_blank" rel="noopener noreferrer" className="inline-block text-blue-700 underline">Read the quote’s source</a>}
-              <p role="status" className="text-sm text-gray-600">{completionState === 'saved' ? 'Completion saved. This message will not repeat.' : completionState === 'error' ? completionError : 'Saving your completion…'}</p>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-amber-900 font-bold">
+                <Coins className="text-amber-500 shrink-0" size={20} aria-hidden="true" />
+                <span>
+                  +{coinsEarned} Coins earned! ({session.firstTry} first-try {session.firstTry === 1 ? 'clue' : 'clues'} + {SECRET_MESSAGE_COMPLETION_BONUS} completion bonus)
+                </span>
+              </div>
+              <p role="status" className="text-sm text-gray-600">{completionState === 'saved' ? `Completion saved (+${coinsEarned} coins). This message will not repeat.` : completionState === 'error' ? completionError : 'Saving your completion…'}</p>
               {completionState === 'error' && <button onClick={() => { setCompletionState('idle'); setSaveAttempt(value => value + 1); }} className={primaryButton}>Retry saving completion</button>}
               <div><button disabled={completionState !== 'saved'} onClick={() => { setSession(null); setFeedback(''); setVisibleCount(6); }} className={primaryButton}>Choose another message</button></div>
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-600 mb-2">{selectedGrade.replace('G', 'Grade ')} · {session.complexity < 0.35 ? 'Building confidence' : session.complexity >= 0.7 ? 'Extra challenge' : 'Growing skills'}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <p className="text-sm text-gray-600">{selectedGrade.replace('G', 'Grade ')} · {session.complexity < 0.35 ? 'Building confidence' : session.complexity >= 0.7 ? 'Extra challenge' : 'Growing skills'}</p>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-xs font-bold text-amber-800">
+                  <Coins size={14} className="text-amber-500" aria-hidden="true" />
+                  First-try coins: {session.firstTry} (+{SECRET_MESSAGE_COMPLETION_BONUS} completion bonus)
+                </span>
+              </div>
               <p className="text-sm font-semibold text-gray-500 mb-2">Clue {session.solved + 1} of {clues.length}</p>
               <h3 className="text-lg font-bold mb-2">Find the number for {clue.letter}</h3>
               <p className={`${clue.skill.includes('word problem') ? 'text-lg leading-relaxed' : 'text-3xl'} font-display font-bold mb-5`}>{clue.expression}{session.mathSolved && <span className="block text-teal-800 text-lg mt-2">Answer: {clue.answer}</span>}</p>

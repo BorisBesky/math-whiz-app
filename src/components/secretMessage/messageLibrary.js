@@ -1,6 +1,15 @@
 import { SECRET_MESSAGES } from './secretMessageConfig';
 
 export const MESSAGE_BATCH_SIZE = 200;
+export const SECRET_MESSAGE_COMPLETION_BONUS = 5;
+
+export function calculateSecretMessageCoins(performance = {}) {
+  const total = Number.isInteger(performance?.total) && performance.total > 0 ? performance.total : 0;
+  const firstTry = Number.isInteger(performance?.firstTry) && performance.firstTry > 0
+    ? Math.min(performance.firstTry, total || performance.firstTry)
+    : 0;
+  return SECRET_MESSAGE_COMPLETION_BONUS + firstTry;
+}
 // Distinct, reviewed fragments: composition produces original messages, not invented quotations.
 const openings = ['Each day', 'At school', 'While learning', 'During practice', 'With a friend', 'When solving problems', 'In your next lesson', 'As you explore', 'When you feel stuck', 'As you begin', 'With curiosity', 'When you try again', 'With patience', 'In a quiet moment', 'During a challenge', 'As you make progress'];
 const actions = ['look closely', 'ask a question', 'draw your idea', 'take a small step', 'listen carefully', 'check your work', 'try your own example', 'notice a pattern', 'make a connection', 'use what you know', 'take time to think', 'compare two methods', 'write what you know', 'test your idea', 'think about the parts', 'practice a new skill'];
