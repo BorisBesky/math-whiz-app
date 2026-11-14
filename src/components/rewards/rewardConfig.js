@@ -8,7 +8,7 @@ export const REWARD_CHARACTERS = [
     title: "Toy Bear",
     accent: "#b98252",
     summary: "A cozy bear who looks great in hats, capes, and adventure gear.",
-    model: "/models/generated/buddy-bear.glb?v=1",
+    model: "/models/generated/buddy-bear.glb?v=2",
     generated: true,
   },
   {
