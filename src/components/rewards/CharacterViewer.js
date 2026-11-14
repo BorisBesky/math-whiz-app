@@ -22,6 +22,7 @@ import {
   fitGeneratedAccessory,
   loadAccessoryModel,
 } from "./generatedAccessoryFit";
+import { HANGING_ANCHORS, addHangingSway } from "./hangingSway";
 import {
   WILLOW_CHARACTER_ID,
   applyWillowHeadTexture,
@@ -1079,6 +1080,8 @@ const CharacterViewer = ({
     let modelObject = null;
     let modelMixer = null;
     let modelAnimations = [];
+    // Capes and scarves hanging off the character: springs stepped every frame.
+    const hangingItems = [];
     let activeAnimationAction = null;
     let queuedAnimationName = null;
     let pmrem = null;
@@ -1172,6 +1175,9 @@ const CharacterViewer = ({
                     fitGeneratedAccessory(source, fit, anchors, modelRoot).forEach((placed) => {
                       // Rigged characters carry the item on a bone; others keep it static.
                       if (!attachToSkeleton(modelRoot, target, placed, fit.anchor)) target.add(placed);
+                      const side = HANGING_ANCHORS[fit.anchor];
+                      const sway = side && addHangingSway(placed, modelRoot, side);
+                      if (sway) hangingItems.push(sway);
                     });
                   })
                   .catch((error) => {
@@ -1271,7 +1277,12 @@ const CharacterViewer = ({
       const time = performance.now() * 0.001;
       group.rotation.y = manualRotation + Math.sin(time * 0.8) * 0.08;
       group.position.y = -0.15 + (modelMixer ? 0 : Math.sin(time * 1.8) * 0.025);
-      modelMixer?.update(Math.min(clock.getDelta(), 0.05));
+      const delta = Math.min(clock.getDelta(), 0.05);
+      modelMixer?.update(delta);
+      if (hangingItems.length) {
+        group.updateMatrixWorld();
+        hangingItems.forEach((item) => item.update(delta, time));
+      }
       renderer.render(scene, camera);
     };
     animate();
