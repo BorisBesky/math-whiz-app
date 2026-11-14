@@ -81,6 +81,7 @@ import {
   CHARACTER_PRICE,
   DEFAULT_CHARACTER_ID,
   getConflictingCategories,
+  isAccessoryOwned,
   isCharacterAvailable,
   resolveSelectedCharacterId,
 } from './components/rewards/rewardConfig';
@@ -106,7 +107,7 @@ const QuizView = React.lazy(() => import('./components/QuizView'));
 const SecretMessageQuiz = React.lazy(() => import('./components/secretMessage/SecretMessageQuiz'));
 const QuizResults = React.lazy(() => import('./components/QuizResults'));
 const RewardsStore = React.lazy(() =>
-  import(/* webpackChunkName: "rewards-store-retired-characters-v45" */ './components/RewardsStore')
+  import(/* webpackChunkName: "rewards-store-accessory-fits-v50" */ './components/RewardsStore')
 );
 const ContentModal = React.lazy(() => import('./components/ContentModal'));
 const StudentInbox = React.lazy(() => import('./components/messaging/StudentInbox'));
@@ -2303,7 +2304,7 @@ const MainAppContent = () => {
   const handlePurchaseAccessory = async (item, characterId) => {
     if (!user || !item) return;
 
-    const alreadyOwned = userData?.ownedAccessories?.includes(item.id);
+    const alreadyOwned = isAccessoryOwned(userData?.ownedAccessories, item);
     if (alreadyOwned) {
       await handleEquipAccessory(item, characterId);
       return;
@@ -2365,7 +2366,7 @@ const MainAppContent = () => {
 
   const handleEquipAccessory = async (item, characterId) => {
     if (!user || !item) return;
-    if (!userData?.ownedAccessories?.includes(item.id)) return;
+    if (!isAccessoryOwned(userData?.ownedAccessories, item)) return;
 
     const targetCharacterId =
       characterId || resolveSelectedCharacterId(userData?.selectedCharacterId);

@@ -5,6 +5,18 @@ const ItemPreview = ({ item }) => {
   const color = item?.color || "#7c3aed";
   const accent = item?.accentColor || "#f6c844";
 
+  // Generated accessories show a thumbnail of their reference render.
+  if (item?.image) {
+    return (
+      <img
+        src={item.image}
+        alt={`${item.name} preview`}
+        loading="lazy"
+        className="aspect-[120/88] h-full w-full bg-gradient-to-br from-blue-50 to-emerald-50 object-contain"
+      />
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 120 88"
