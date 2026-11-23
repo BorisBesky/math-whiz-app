@@ -131,14 +131,24 @@ export function generateFractionComparisonQuestion(difficulty = 0.5) {
       subtopic: "comparison",
     };
   } else {
-    // Same numerator
+    // Same numerator. Both denominators must stay strictly greater than the
+    // numerator so neither fraction renders as a whole number (e.g. 7/7 = 1):
+    // the old "fall back to comp_den1 - 1" fix could land on comp_num when
+    // comp_num === maxDen - 1 and both initial draws were maxDen, producing
+    // a "comparison" like `7/8 ___ 7/7` which looks malformed to a student.
+    // Capping comp_num at maxDen - 2 guarantees the denominator range
+    // [comp_num + 1, maxDen] holds at least two distinct values, so the
+    // re-roll loop below always lands on a different proper denominator.
     const minDen = 2 + Math.floor(5 * difficulty);
     const maxDen = 8 + Math.floor(7 * difficulty);
-    const comp_num = getRandomInt(minDen, maxDen - 1);
+    const maxNum = Math.max(minDen, maxDen - 2);
+    const comp_num = getRandomInt(minDen, maxNum);
     let comp_den1 = getRandomInt(comp_num + 1, maxDen);
     let comp_den2 = getRandomInt(comp_num + 1, maxDen);
-    if (comp_den1 === comp_den2) {
-      comp_den2 = comp_den1 + 1 <= maxDen ? comp_den1 + 1 : comp_den1 - 1;
+    let safety = 0;
+    while (comp_den1 === comp_den2 && safety < 20) {
+      comp_den2 = getRandomInt(comp_num + 1, maxDen);
+      safety += 1;
     }
     const correctAnswer = comp_den1 < comp_den2 ? ">" : "<";
 
