@@ -102,6 +102,46 @@ describe('generateFractionComparisonQuestion: consistent multiple-choice across 
       expect(['<', '>']).toContain(q.correctAnswer);
     }
   });
+
+  it('never produces a whole-number "fraction" (numerator === denominator) in either branch', () => {
+    // Regression: the same-numerator branch's "fall back to comp_den1 - 1"
+    // when both initial denominators collided could land on comp_num when
+    // comp_num === maxDen - 1 and both draws returned maxDen. That produced
+    // malformed comparisons like "7/8 ___ 7/7" where the second operand is
+    // the whole number 1 written as a fraction — the student is told the
+    // question is a fraction comparison, but one side is really an integer.
+    // Fix: cap comp_num so the denominator range always holds ≥2 distinct
+    // values greater than comp_num, and re-roll to one of those.
+    const bothBranchForms = [
+      /(\d+)\/(\d+) ___ (\d+)\/(\d+)/,
+    ];
+    let seenHighDifficulty = 0;
+    for (let i = 0; i < 2000; i += 1) {
+      const difficulty = i % 2 === 0 ? 0 : Math.random();
+      const q = generateFractionComparisonQuestion(difficulty);
+      const match = bothBranchForms[0].exec(q.question);
+      expect(match).not.toBeNull();
+      const [, n1, d1, n2, d2] = match.map(Number);
+      // Every operand must be a proper fraction (numerator < denominator).
+      expect(n1).toBeLessThan(d1);
+      expect(n2).toBeLessThan(d2);
+      if (difficulty > 0) seenHighDifficulty += 1;
+    }
+    expect(seenHighDifficulty).toBeGreaterThan(0);
+  });
+
+  it('same-numerator branch produces two genuinely different fractions', () => {
+    // The two fractions must be unequal — same-numerator comparisons rely on
+    // the denominators differing so a true "<" or ">" answer exists.
+    for (let i = 0; i < 500; i += 1) {
+      const q = generateFractionComparisonQuestion(Math.random());
+      const match = /(\d+)\/(\d+) ___ (\d+)\/(\d+)/.exec(q.question);
+      if (!match) continue;
+      const [, n1, d1, n2, d2] = match.map(Number);
+      // Cross-multiplied comparison: the two fractions must not be equal.
+      expect(n1 * d2).not.toBe(n2 * d1);
+    }
+  });
 });
 
 describe('generateFractionAdditionQuestion: distractor pool never collapses to 3-option MC', () => {
