@@ -425,24 +425,37 @@ describe('Grade 4 Difficulty Scaling', () => {
 
   describe('Difficulty affects output distribution', () => {
     test('Easy questions generally produce simpler values', () => {
-      // Generate many easy Base Ten questions
-      const easyQuestions = Array(50).fill(0).map(() => generateBaseTen(0.1));
-      const hardQuestions = Array(50).fill(0).map(() => generateBaseTen(0.9));
-      
-      // Count questions with specific characteristics
-      const easyBasicCount = easyQuestions.filter(q => 
-        q.subtopic === 'place value' || q.subtopic === 'comparison'
-      ).length;
-      
-      const hardComplexCount = hardQuestions.filter(q => 
-        q.subtopic === 'multi-step word problems' || q.subtopic === 'rounding'
-      ).length;
-      
-      // Easy questions should have more basic types
-      expect(easyBasicCount).toBeGreaterThan(0);
-      
-      // Hard questions should have more complex types
-      expect(hardComplexCount).toBeGreaterThan(0);
+      // At difficulty 0.9 all ~17 Base Ten generators are eligible, so each
+      // draw hits "multi-step word problems" or "rounding" with p ≈ 2/17.
+      // With 50 unseeded samples the test missed ~0.16 % of runs, which made
+      // CI flaky. Drive Math.random from a fixed-seed PRNG so the run is
+      // reproducible, and take enough samples that even an unseeded run would
+      // miss with vanishing probability — matches the pattern used by the
+      // "long division with remainder" test below.
+      const mulberry32 = (seed) => () => {
+        let t = (seed += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      const randomSpy = jest.spyOn(Math, 'random').mockImplementation(mulberry32(20261123));
+      try {
+        const easyQuestions = Array(400).fill(0).map(() => generateBaseTen(0.1));
+        const hardQuestions = Array(400).fill(0).map(() => generateBaseTen(0.9));
+
+        const easyBasicCount = easyQuestions.filter(q =>
+          q.subtopic === 'place value' || q.subtopic === 'comparison'
+        ).length;
+
+        const hardComplexCount = hardQuestions.filter(q =>
+          q.subtopic === 'multi-step word problems' || q.subtopic === 'rounding'
+        ).length;
+
+        expect(easyBasicCount).toBeGreaterThan(0);
+        expect(hardComplexCount).toBeGreaterThan(0);
+      } finally {
+        randomSpy.mockRestore();
+      }
     });
 
     test('Operations: Long division with remainder appears only at high difficulty', () => {
